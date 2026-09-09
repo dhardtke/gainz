@@ -5,16 +5,6 @@ import { toast, toastError } from "./gz-toast.js";
 
 /** The exercise catalogue — the vocabulary the rest of the log is written in. */
 class GzExerciseList extends GzElement {
-  static styles = `
-    .new-form .fields > * { flex: 1 1 160px; }
-    .new-form .fields .field-notes { flex: 2 1 240px; }
-    td.name { font-weight: 600; }
-    td.actions { text-align: right; white-space: nowrap; }
-    .edit-row td { background: var(--surface-2); }
-    .edit-fields { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
-    .edit-fields > * { flex: 1 1 150px; }
-  `;
-
   #state = { status: "loading", items: [] };
   #editingId = null;
 
@@ -98,7 +88,7 @@ class GzExerciseList extends GzElement {
     return html`
       <tr class="edit-row">
         <td colspan="6">
-          <form class="edit-fields" data-action="save" data-id="${exercise.id}">
+          <form class="edit-fields fields" data-action="save" data-id="${exercise.id}">
             <div class="field">
               <label>Name</label>
               <input name="name" type="text" maxlength="120" value="${exercise.name}" required />
@@ -111,18 +101,41 @@ class GzExerciseList extends GzElement {
               <label>Notes</label>
               <input name="notes" type="text" maxlength="2000" value="${exercise.notes ?? ""}" />
             </div>
-            <div class="row">
-              <button class="primary" type="submit">Save</button>
-              <button class="ghost" type="button" data-action="cancel">Cancel</button>
-            </div>
+            <button type="submit">Save</button>
+            <button class="secondary outline" type="button" data-action="cancel">Cancel</button>
           </form>
         </td>
       </tr>
     `;
   }
 
+  #row(exercise) {
+    return html`
+      <tr>
+        <td class="name">
+          <a href="#/exercises/${exercise.id}">${exercise.name}</a>
+          ${exercise.notes ? html`<div class="muted small">${exercise.notes}</div>` : ""}
+        </td>
+        <td>${exercise.muscle_group ?? html`<span class="muted">–</span>`}</td>
+        <td class="num">${exercise.set_count}</td>
+        <td class="num">${exercise.best_weight === null ? "–" : formatWeight(exercise.best_weight)}</td>
+        <td class="nowrap">
+          ${exercise.last_performed_on
+            ? relativeDay(exercise.last_performed_on)
+            : html`<span class="muted">never</span>`}
+        </td>
+        <td class="actions">
+          <button class="secondary outline compact" data-action="edit" data-id="${exercise.id}">Edit</button>
+          <button class="danger compact" data-action="delete" data-id="${exercise.id}" data-name="${exercise.name}">
+            Delete
+          </button>
+        </td>
+      </tr>
+    `;
+  }
+
   template() {
-    if (this.#state.status === "loading") return html`<p class="muted">Loading exercises…</p>`;
+    if (this.#state.status === "loading") return html`<p aria-busy="true">Loading exercises…</p>`;
     if (this.#state.status === "error") return html`<p class="error-text">${this.#state.message}</p>`;
 
     const { items } = this.#state;
@@ -134,77 +147,51 @@ class GzExerciseList extends GzElement {
           <span class="badge">${plural(items.length, "exercise")}</span>
         </div>
 
-        <form class="card new-form stack-sm" data-action="create">
+        <article class="stack-sm">
           <h2>Add an exercise</h2>
-          <div class="fields">
-            <div class="field">
-              <label for="name">Name</label>
-              <input id="name" name="name" type="text" placeholder="Back Squat" maxlength="120" required />
+          <form class="new-form" data-action="create">
+            <div class="fields">
+              <div class="field">
+                <label for="name">Name</label>
+                <input id="name" name="name" type="text" placeholder="Back Squat" maxlength="120" required />
+              </div>
+              <div class="field">
+                <label for="muscle_group">Muscle group</label>
+                <input id="muscle_group" name="muscle_group" type="text" placeholder="Legs" maxlength="60" />
+              </div>
+              <div class="field field-notes">
+                <label for="notes">Notes</label>
+                <input id="notes" name="notes" type="text" placeholder="Low bar, belt over 100 kg" maxlength="2000" />
+              </div>
+              <button type="submit">Add</button>
             </div>
-            <div class="field">
-              <label for="muscle_group">Muscle group</label>
-              <input id="muscle_group" name="muscle_group" type="text" placeholder="Legs" maxlength="60" />
-            </div>
-            <div class="field field-notes">
-              <label for="notes">Notes</label>
-              <input id="notes" name="notes" type="text" placeholder="Low bar, belt over 100 kg" maxlength="2000" />
-            </div>
-            <button class="primary" type="submit">Add</button>
-          </div>
-        </form>
+          </form>
+        </article>
 
         ${items.length === 0
           ? html`<p class="empty">No exercises yet. Add the lifts you train above.</p>`
           : html`
-              <section class="card">
-                <div class="scroll-x">
+              <article>
+                <div class="overflow-auto">
                   <table>
                     <thead>
                       <tr>
-                        <th>Exercise</th>
-                        <th>Muscle group</th>
-                        <th class="num">Sets</th>
-                        <th class="num">Best</th>
-                        <th>Last done</th>
-                        <th></th>
+                        <th scope="col">Exercise</th>
+                        <th scope="col">Muscle group</th>
+                        <th scope="col" class="num">Sets</th>
+                        <th scope="col" class="num">Best</th>
+                        <th scope="col">Last done</th>
+                        <th scope="col"></th>
                       </tr>
                     </thead>
                     <tbody>
                       ${items.map((exercise) =>
-                        this.#editingId === exercise.id
-                          ? this.#editRow(exercise)
-                          : html`
-                              <tr>
-                                <td class="name">
-                                  <a href="#/exercises/${exercise.id}">${exercise.name}</a>
-                                  ${exercise.notes ? html`<div class="muted small">${exercise.notes}</div>` : ""}
-                                </td>
-                                <td>${exercise.muscle_group ?? html`<span class="muted">–</span>`}</td>
-                                <td class="num">${exercise.set_count}</td>
-                                <td class="num">${exercise.best_weight === null ? "–" : formatWeight(exercise.best_weight)}</td>
-                                <td class="nowrap">
-                                  ${exercise.last_performed_on
-                                    ? relativeDay(exercise.last_performed_on)
-                                    : html`<span class="muted">never</span>`}
-                                </td>
-                                <td class="actions">
-                                  <button class="ghost small" data-action="edit" data-id="${exercise.id}">Edit</button>
-                                  <button
-                                    class="danger small"
-                                    data-action="delete"
-                                    data-id="${exercise.id}"
-                                    data-name="${exercise.name}"
-                                  >
-                                    Delete
-                                  </button>
-                                </td>
-                              </tr>
-                            `,
+                        this.#editingId === exercise.id ? this.#editRow(exercise) : this.#row(exercise),
                       )}
                     </tbody>
                   </table>
                 </div>
-              </section>
+              </article>
             `}
       </div>
     `;

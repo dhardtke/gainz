@@ -1,4 +1,4 @@
-import { sharedStyles } from "./shared-styles.js";
+import { stylesFor } from "./styles.js";
 
 /** Marks a string as already-safe HTML so `html` will not escape it again. */
 class RawHtml {
@@ -37,27 +37,18 @@ export function html(strings, ...values) {
 }
 
 /**
- * Base class for every gainz component: an open shadow root with the shared
- * stylesheet plus the subclass's own `styles`, a render hook, and click/submit
- * delegation driven by `data-action` attributes.
+ * Base class for every gainz component: an open shadow root styled by Pico,
+ * the shared utilities and the element's own stylesheet, a render hook, and
+ * click/submit delegation driven by `data-action` attributes.
+ *
+ * The component's CSS file is found by convention — `<gz-chart>` is styled by
+ * `public/css/gz-chart.css` — so a component never carries CSS in JavaScript.
  */
 export class GzElement extends HTMLElement {
-  static styles = "";
-
-  /** Lazily builds (and caches per subclass) the component's stylesheet. */
-  static ownSheet() {
-    if (!Object.hasOwn(this, "_sheet")) {
-      const sheet = new CSSStyleSheet();
-      sheet.replaceSync(this.styles ?? "");
-      this._sheet = sheet;
-    }
-    return this._sheet;
-  }
-
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
-    this.shadowRoot.adoptedStyleSheets = [sharedStyles, this.constructor.ownSheet()];
+    this.shadowRoot.adoptedStyleSheets = stylesFor(this.localName);
 
     this.shadowRoot.addEventListener("click", (event) => {
       const target = event.target.closest?.("[data-action]");

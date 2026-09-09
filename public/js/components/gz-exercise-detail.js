@@ -27,20 +27,6 @@ const METRICS = [
 
 /** Progress view for a single exercise. */
 class GzExerciseDetail extends GzElement {
-  static styles = `
-    .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
-    .metric-switch { display: flex; gap: 6px; flex-wrap: wrap; }
-    .metric-switch button[aria-pressed="true"] {
-      background: var(--accent-soft);
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-    .chart-card { display: flex; flex-direction: column; gap: 10px; }
-    .up { color: var(--success); }
-    .down { color: var(--danger); }
-    td.name { font-weight: 600; }
-  `;
-
   #exerciseId = null;
   #state = { status: "loading" };
   #metric = METRICS[0].key;
@@ -120,18 +106,18 @@ class GzExerciseDetail extends GzElement {
   #sessionsTable() {
     const { sessions } = this.#state;
     return html`
-      <section class="card">
+      <article class="stack-sm">
         <h2>Session history</h2>
-        <div class="scroll-x">
+        <div class="overflow-auto">
           <table>
             <thead>
               <tr>
-                <th>Date</th>
-                <th class="num">Sets</th>
-                <th class="num">Reps</th>
-                <th class="num">Top set</th>
-                <th class="num">Est. 1RM</th>
-                <th class="num">Volume</th>
+                <th scope="col">Date</th>
+                <th scope="col" class="num">Sets</th>
+                <th scope="col" class="num">Reps</th>
+                <th scope="col" class="num">Top set</th>
+                <th scope="col" class="num">Est. 1RM</th>
+                <th scope="col" class="num">Volume</th>
               </tr>
             </thead>
             <tbody>
@@ -158,12 +144,12 @@ class GzExerciseDetail extends GzElement {
             </tbody>
           </table>
         </div>
-      </section>
+      </article>
     `;
   }
 
   template() {
-    if (this.#state.status === "loading") return html`<p class="muted">Loading progress…</p>`;
+    if (this.#state.status === "loading") return html`<p aria-busy="true">Loading progress…</p>`;
     if (this.#state.status === "error") {
       return html`
         <div class="stack">
@@ -180,22 +166,22 @@ class GzExerciseDetail extends GzElement {
       <div class="stack">
         <div>
           <p class="small"><a href="#/exercises">← Exercises</a></p>
-          <h1>${exercise.name}</h1>
-          <p class="muted">
-            ${exercise.muscle_group ?? "No muscle group set"}${exercise.notes ? html` · ${exercise.notes}` : ""}
-          </p>
+          <hgroup>
+            <h1>${exercise.name}</h1>
+            <p>${exercise.muscle_group ?? "No muscle group set"}${exercise.notes ? html` · ${exercise.notes}` : ""}</p>
+          </hgroup>
         </div>
 
         ${this.#summaryTiles()}
 
-        <section class="card chart-card">
+        <article class="stack-sm">
           <div class="row-between">
             <h2>${metric.label}</h2>
             <div class="metric-switch">
               ${METRICS.map(
                 (candidate) => html`
                   <button
-                    class="small"
+                    class="secondary outline compact"
                     data-action="metric"
                     data-metric="${candidate.key}"
                     aria-pressed="${candidate.key === this.#metric}"
@@ -208,7 +194,7 @@ class GzExerciseDetail extends GzElement {
           </div>
           <gz-chart></gz-chart>
           <p class="muted small">${metric.hint}</p>
-        </section>
+        </article>
 
         ${sessions.length === 0
           ? html`<p class="empty">No sets logged for this exercise yet.</p>`

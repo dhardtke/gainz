@@ -1,0 +1,81 @@
+/* Application shell: sticky header, centred content column, footer. */
+
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--pico-background-color);
+  border-bottom: 1px solid var(--pico-muted-border-color);
+}
+
+header nav {
+  padding-block: 0.35rem;
+}
+
+/* Pico pads nav items generously; the header is a single compact row. */
+header nav ul {
+  gap: 0.15rem;
+}
+
+header nav li {
+  padding-block: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+
+.brand strong {
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+  color: var(--pico-primary);
+}
+
+.brand small {
+  color: var(--pico-muted-color);
+}
+
+header nav a:not(.brand) {
+  display: block;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--pico-border-radius);
+  color: var(--pico-muted-color);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+header nav a:not(.brand):hover {
+  background: var(--pico-card-sectioning-background-color);
+  color: var(--pico-contrast);
+}
+
+header nav a[aria-current="page"] {
+  background: var(--pico-primary-focus, var(--pico-card-sectioning-background-color));
+  color: var(--pico-primary);
+}
+
+main {
+  flex: 1 0 auto;
+  padding-block: calc(var(--pico-block-spacing-vertical) * 0.8) 3rem;
+}
+
+footer {
+  flex: 0 0 auto;
+  padding-bottom: 2rem;
+  color: var(--pico-muted-color);
+}
+
+@media (max-width: 560px) {
+  .brand small {
+    display: none;
+  }
+}

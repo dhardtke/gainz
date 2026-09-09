@@ -7,27 +7,6 @@ import "./gz-stat-tile.js";
 
 /** Landing view: the numbers that answer "am I actually progressing?". */
 class GzDashboard extends GzElement {
-  static styles = `
-    .tiles {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-    }
-    .workout-link {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 12px;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      background: var(--surface);
-      color: inherit;
-    }
-    .workout-link:hover { border-color: var(--accent); text-decoration: none; }
-    .title { font-weight: 600; }
-  `;
-
   #state = { status: "loading" };
 
   async connectedCallback() {
@@ -57,7 +36,7 @@ class GzDashboard extends GzElement {
   }
 
   template() {
-    if (this.#state.status === "loading") return html`<p class="muted">Loading your log…</p>`;
+    if (this.#state.status === "loading") return html`<p aria-busy="true">Loading your log…</p>`;
     if (this.#state.status === "error") return html`<p class="error-text">${this.#state.message}</p>`;
 
     const { summary, workouts } = this.#state;
@@ -73,7 +52,7 @@ class GzDashboard extends GzElement {
                 : html`Nothing logged yet — time for session one.`}
             </p>
           </div>
-          <button class="primary" data-action="start-workout">Log today's workout</button>
+          <button data-action="start-workout">Log today's workout</button>
         </div>
 
         <div class="tiles">
@@ -83,7 +62,7 @@ class GzDashboard extends GzElement {
           <gz-stat-tile label="Exercises" value="${summary.exercise_count}" hint="${plural(summary.total_reps, "rep")} lifted"></gz-stat-tile>
         </div>
 
-        <section class="card stack-sm">
+        <article class="stack-sm">
           <div class="row-between">
             <h2>Recent workouts</h2>
             <a href="#/workouts">See all</a>
@@ -101,7 +80,7 @@ class GzDashboard extends GzElement {
                   </a>
                 `,
               )}
-        </section>
+        </article>
       </div>
     `;
   }

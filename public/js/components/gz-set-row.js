@@ -8,42 +8,6 @@ import { toast, toastError } from "./gz-toast.js";
  * reload with a `sets-changed` event rather than trying to patch the list.
  */
 class GzSetRow extends GzElement {
-  static styles = `
-    :host { display: block; }
-    .row-view {
-      display: grid;
-      grid-template-columns: 2.2rem minmax(7rem, 1.4fr) auto minmax(0, 1.6fr) auto;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 10px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      background: var(--surface);
-    }
-    :host(:hover) .row-view { border-color: var(--border-strong); }
-    .index { color: var(--text-muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
-    .exercise { font-weight: 600; color: inherit; }
-    .load { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
-    .volume { color: var(--text-muted); font-size: 0.8rem; }
-    .note { color: var(--text-muted); font-size: 0.85rem; overflow-wrap: anywhere; }
-    .actions { display: flex; gap: 2px; justify-content: flex-end; }
-
-    form.edit { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; padding: 10px; border: 1px solid var(--accent); border-radius: var(--radius-sm); background: var(--surface); }
-    form.edit .field-exercise { flex: 2 1 180px; }
-    form.edit .field-num { flex: 0 1 110px; }
-    form.edit .field-notes { flex: 3 1 200px; }
-
-    @media (max-width: 720px) {
-      .row-view { grid-template-columns: 2rem 1fr auto; grid-template-areas: "i e l" ". n n" ". a a"; }
-      .index { grid-area: i; }
-      .exercise { grid-area: e; }
-      .load { grid-area: l; }
-      .volume { display: none; }
-      .note { grid-area: n; }
-      .actions { grid-area: a; justify-content: flex-start; }
-    }
-  `;
-
   #editing = false;
   #set = null;
   #exercises = [];
@@ -123,7 +87,7 @@ class GzSetRow extends GzElement {
   #editTemplate() {
     const set = this.#set;
     return html`
-      <form class="edit" data-action="save">
+      <form class="edit fields" data-action="save">
         <div class="field field-exercise">
           <label>Exercise</label>
           <select name="exercise_id">
@@ -148,8 +112,8 @@ class GzSetRow extends GzElement {
           <label>Notes</label>
           <input name="notes" type="text" maxlength="2000" value="${set.notes ?? ""}" />
         </div>
-        <button class="primary" type="submit">Save</button>
-        <button class="ghost" type="button" data-action="cancel">Cancel</button>
+        <button type="submit">Save</button>
+        <button class="secondary outline" type="button" data-action="cancel">Cancel</button>
       </form>
     `;
   }
@@ -167,9 +131,15 @@ class GzSetRow extends GzElement {
         <span class="note">${set.notes ?? ""}</span>
         <span class="actions">
           <span class="volume mono">${formatVolume(set.weight * set.reps)}</span>
-          <button class="ghost small" data-action="edit">Edit</button>
-          <button class="ghost small" data-action="duplicate" title="Log another set just like this one">+1</button>
-          <button class="danger small" data-action="delete" aria-label="Delete set">×</button>
+          <button class="secondary outline compact" data-action="edit">Edit</button>
+          <button
+            class="secondary outline compact"
+            data-action="duplicate"
+            title="Log another set just like this one"
+          >
+            +1
+          </button>
+          <button class="danger compact" data-action="delete" aria-label="Delete set">×</button>
         </span>
       </div>
     `;

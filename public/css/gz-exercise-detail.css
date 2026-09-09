@@ -1,0 +1,44 @@
+/* Progress view for a single exercise. */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+  gap: 0.75rem;
+}
+
+.metric-switch {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.metric-switch button {
+  margin-bottom: 0;
+}
+
+/* The selected metric reads as pressed rather than merely hovered. */
+.metric-switch button[aria-pressed="true"] {
+  --pico-background-color: var(--pico-primary-background);
+  --pico-border-color: var(--pico-primary-border);
+  --pico-color: var(--pico-primary-inverse);
+}
+
+.up {
+  color: var(--pico-ins-color, #2e7d32);
+}
+
+.down {
+  color: var(--pico-del-color, #c0392b);
+}
+
+td.name {
+  font-weight: 600;
+}
+
+td.name a {
+  text-decoration: none;
+}
+
+td.name a:hover {
+  text-decoration: underline;
+}

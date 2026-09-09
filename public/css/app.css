@@ -1,0 +1,22 @@
+/*
+ * Document-level styles.
+ *
+ * Pico (linked before this file) does the heavy lifting: typography, colours,
+ * form controls and the light/dark themes. Only what Pico cannot know about
+ * the app belongs here — everything else lives in a component stylesheet that
+ * js/styles.js adopts into that component's shadow root.
+ */
+
+body {
+  margin: 0;
+}
+
+gz-app {
+  display: block;
+  min-height: 100vh;
+}
+
+/* The app renders inside a shadow root; this only matters before it upgrades. */
+gz-app:not(:defined) {
+  min-height: 100vh;
+}

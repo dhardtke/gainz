@@ -1,0 +1,31 @@
+/* A single headline number with a label and a sub-line. */
+
+article {
+  height: 100%;
+  margin: 0;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--pico-muted-color);
+  font-weight: 600;
+}
+
+.value {
+  font-size: 1.5rem;
+  font-weight: 650;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.hint {
+  font-size: 0.82rem;
+  color: var(--pico-muted-color);
+}

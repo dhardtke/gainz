@@ -1,0 +1,167 @@
+/*
+ * Adopted into every component's shadow root, right after Pico.
+ *
+ * Deliberately small: Pico already styles buttons, form controls, tables,
+ * <article> cards and headings. What is left are layout utilities and the few
+ * things Pico has no opinion about, all built from Pico's own custom
+ * properties so they follow the active theme.
+ */
+
+:host {
+  display: block;
+}
+
+/* ------------------------------------------------------------------ layout */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pico-spacing);
+}
+
+.stack-sm {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--pico-spacing) * 0.5);
+}
+
+/* Pico gives block elements a trailing margin; inside a flex stack the gap
+   already provides the rhythm, so the margin would double it up. */
+.stack > *,
+.stack-sm > * {
+  margin-bottom: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--pico-spacing) * 0.5);
+  flex-wrap: wrap;
+}
+
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--pico-spacing) * 0.5);
+  flex-wrap: wrap;
+}
+
+.grow {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ------------------------------------------------------------------- forms */
+
+/* A row of inputs that wraps on narrow screens. Pico's own role="group" packs
+   controls edge to edge, which is wrong when each one needs its own label. */
+.fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--pico-spacing) * 0.5);
+  align-items: flex-end;
+}
+
+.fields > .field {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+
+.field > label {
+  margin-bottom: calc(var(--pico-spacing) * 0.25);
+}
+
+/* Inputs carry a bottom margin in Pico so stacked forms breathe; in a .fields
+   row it misaligns them against the submit button. */
+.fields :is(input, select, textarea),
+.fields > button {
+  margin-bottom: 0;
+}
+
+/* Pico stretches submit buttons to full width, which is right for a stacked
+   form and wrong for a button sitting at the end of a row of inputs. */
+.fields > button,
+.row > button,
+.row-between button {
+  width: auto;
+  margin-bottom: 0;
+}
+
+/* ------------------------------------------------------------------ typography */
+
+.muted {
+  color: var(--pico-muted-color);
+}
+
+.small {
+  font-size: 0.85em;
+}
+
+.mono {
+  font-family: var(--pico-font-family-monospace);
+  font-variant-numeric: tabular-nums;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.error-text {
+  color: var(--pico-del-color, #c0392b);
+}
+
+/* ------------------------------------------------------------------ pieces */
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 1rem;
+  background: var(--pico-card-sectioning-background-color);
+  color: var(--pico-muted-color);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.empty {
+  margin: 0;
+  padding: calc(var(--pico-spacing) * 1.5);
+  border: 1px dashed var(--pico-muted-border-color);
+  border-radius: var(--pico-border-radius);
+  color: var(--pico-muted-color);
+  text-align: center;
+}
+
+/* Pico sizes every button for touch; log screens are dense lists of them. */
+button.compact {
+  width: auto;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
+  margin-bottom: 0;
+}
+
+button.danger {
+  --pico-background-color: transparent;
+  --pico-border-color: transparent;
+  --pico-color: var(--pico-del-color, #c0392b);
+  --pico-underline: transparent;
+}
+
+button.danger:is(:hover, :active, :focus) {
+  --pico-background-color: var(--pico-card-sectioning-background-color);
+  --pico-border-color: var(--pico-del-color, #c0392b);
+  --pico-color: var(--pico-del-color, #c0392b);
+}
+
+/* ------------------------------------------------------------------ tables */
+
+:is(td, th).num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+table {
+  margin-bottom: 0;
+}

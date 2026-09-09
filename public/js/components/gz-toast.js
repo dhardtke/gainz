@@ -14,44 +14,6 @@ export function toastError(error) {
 }
 
 class GzToast extends GzElement {
-  static styles = `
-    :host {
-      position: fixed;
-      inset: auto 16px 16px auto;
-      z-index: 100;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      align-items: flex-end;
-      pointer-events: none;
-    }
-    .toast {
-      pointer-events: auto;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      max-width: min(90vw, 420px);
-      padding: 10px 12px;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--border-strong);
-      background: var(--surface);
-      box-shadow: var(--shadow);
-      font-size: 0.92rem;
-      animation: slide-in 160ms ease-out;
-    }
-    .toast.error { border-color: var(--danger); background: var(--danger-soft); color: var(--danger); }
-    .toast.success { border-color: var(--success); color: var(--success); }
-    .toast button { padding: 0 4px; border: none; background: none; color: inherit; font-size: 1.1rem; line-height: 1; }
-
-    @keyframes slide-in {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: none; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .toast { animation: none; }
-    }
-  `;
-
   #items = [];
 
   connectedCallback() {

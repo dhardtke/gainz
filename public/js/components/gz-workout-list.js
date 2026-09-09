@@ -8,24 +8,6 @@ const PAGE_SIZE = 25;
 
 /** The training log: every session, newest first. */
 class GzWorkoutList extends GzElement {
-  static styles = `
-    .workout {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 14px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      background: var(--surface);
-    }
-    .workout:hover { border-color: var(--border-strong); }
-    .workout a { color: inherit; font-weight: 600; }
-    .date { font-size: 0.85rem; color: var(--text-muted); }
-    .actions { display: flex; gap: 4px; }
-    .new-form .fields > * { flex: 1 1 160px; }
-    .new-form .fields .field-notes { flex: 2 1 260px; }
-  `;
-
   #state = { status: "loading", items: [], total: 0 };
 
   async connectedCallback() {
@@ -98,29 +80,31 @@ class GzWorkoutList extends GzElement {
 
   #newWorkoutForm() {
     return html`
-      <form class="card new-form stack-sm" data-action="create">
+      <article class="stack-sm">
         <h2>New workout</h2>
-        <div class="fields">
-          <div class="field">
-            <label for="performed_on">Date</label>
-            <input id="performed_on" name="performed_on" type="date" value="${todayIso()}" required />
+        <form class="new-form" data-action="create">
+          <div class="fields">
+            <div class="field">
+              <label for="performed_on">Date</label>
+              <input id="performed_on" name="performed_on" type="date" value="${todayIso()}" required />
+            </div>
+            <div class="field">
+              <label for="title">Title</label>
+              <input id="title" name="title" type="text" placeholder="Push day" maxlength="120" />
+            </div>
+            <div class="field field-notes">
+              <label for="notes">Notes</label>
+              <input id="notes" name="notes" type="text" placeholder="Slept badly, kept it light" maxlength="2000" />
+            </div>
+            <button type="submit">Start session</button>
           </div>
-          <div class="field">
-            <label for="title">Title</label>
-            <input id="title" name="title" type="text" placeholder="Push day" maxlength="120" />
-          </div>
-          <div class="field field-notes">
-            <label for="notes">Notes</label>
-            <input id="notes" name="notes" type="text" placeholder="Slept badly, kept it light" maxlength="2000" />
-          </div>
-          <button class="primary" type="submit">Start session</button>
-        </div>
-      </form>
+        </form>
+      </article>
     `;
   }
 
   template() {
-    if (this.#state.status === "loading") return html`<p class="muted">Loading workouts…</p>`;
+    if (this.#state.status === "loading") return html`<p aria-busy="true">Loading workouts…</p>`;
 
     const { items, total } = this.#state;
 
@@ -143,13 +127,13 @@ class GzWorkoutList extends GzElement {
                       <a href="#/workouts/${workout.id}">${workout.title ?? formatDate(workout.performed_on)}</a>
                       <div class="date">${formatDate(workout.performed_on)} · ${relativeDay(workout.performed_on)}</div>
                     </div>
-                    <span class="badge nowrap">
+                    <span class="badge">
                       ${plural(workout.set_count, "set")} · ${plural(workout.exercise_count, "exercise")} ·
                       ${formatVolume(workout.total_volume)}
                     </span>
                     <div class="actions">
                       <button
-                        class="ghost small"
+                        class="secondary outline compact"
                         data-action="repeat"
                         data-id="${workout.id}"
                         data-title="${workout.title ?? ""}"
@@ -158,7 +142,7 @@ class GzWorkoutList extends GzElement {
                         Repeat
                       </button>
                       <button
-                        class="danger small"
+                        class="danger compact"
                         data-action="delete"
                         data-id="${workout.id}"
                         data-label="${workout.title ?? formatDate(workout.performed_on)}"
@@ -172,7 +156,11 @@ class GzWorkoutList extends GzElement {
         </div>
 
         ${items.length < total
-          ? html`<button data-action="load-more">Load ${Math.min(PAGE_SIZE, total - items.length)} more</button>`
+          ? html`
+              <button class="secondary outline" data-action="load-more">
+                Load ${Math.min(PAGE_SIZE, total - items.length)} more
+              </button>
+            `
           : ""}
       </div>
     `;

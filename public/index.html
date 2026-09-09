@@ -10,13 +10,21 @@
       rel="icon"
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>&#127947;</text></svg>"
     />
-    <link rel="stylesheet" href="/styles.css" />
+    <!--
+      Pico styles the document itself; the same file is also adopted into every
+      component's shadow root by js/styles.js, which is why Pico 2 ships :host
+      selectors next to its :root ones.
+    -->
+    <link rel="stylesheet" href="/vendor/pico.css" />
+    <link rel="stylesheet" href="/css/app.css" />
     <script type="module" src="/js/main.js"></script>
   </head>
   <body>
     <gz-app></gz-app>
     <noscript>
-      <p class="noscript">gainz is a client-rendered app and needs JavaScript enabled.</p>
+      <main class="container">
+        <p>gainz is a client-rendered app and needs JavaScript enabled.</p>
+      </main>
     </noscript>
   </body>
 </html>
