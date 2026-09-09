@@ -52,6 +52,7 @@ async function request(method, path, body) {
     response = await fetch(`/api${path}`, {
       method,
       headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+      // oxlint-disable-next-line unicorn/no-invalid-fetch-options
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch (cause) {
