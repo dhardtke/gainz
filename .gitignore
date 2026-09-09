@@ -1,0 +1,20 @@
+# dependencies
+node_modules/
+
+# bun (bun.lock is committed on purpose)
+.bun/
+
+# database (local data, not source)
+data/*.sqlite
+data/*.sqlite-shm
+data/*.sqlite-wal
+data/*.db
+
+# editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
