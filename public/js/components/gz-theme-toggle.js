@@ -1,27 +1,15 @@
 import { define, GzElement, html } from "../base.js";
-import { currentTheme, onThemeChange, setTheme, THEMES } from "../theme.js";
+import { currentTheme, onThemeChange, setTheme } from "../theme.js";
 
-const LABELS = {
-  system: "Auto",
-  light: "Light",
-  dark: "Dark",
-};
-
-const TITLES = {
-  system: "Follow the operating system's colour scheme",
-  light: "Always use the light theme",
-  dark: "Always use the dark theme",
-};
-
-/** Segmented control for the colour theme: Auto, Light or Dark. */
+/** Switch for the colour theme: off is light, on is dark. */
 class GzThemeToggle extends GzElement {
   #stopThemeSync = null;
 
   connectedCallback() {
     super.connectedCallback();
-    // The base class keeps this element's own colours in step; this redraw is
-    // for the pressed state, so the control agrees with a change made anywhere.
-    this.#stopThemeSync = onThemeChange(() => this.render());
+    // The base class keeps this element's own colours in step; this keeps the
+    // switch position in step, so it agrees with a change made anywhere.
+    this.#stopThemeSync = onThemeChange(() => this.#syncSwitch());
   }
 
   disconnectedCallback() {
@@ -30,28 +18,37 @@ class GzThemeToggle extends GzElement {
     this.#stopThemeSync = null;
   }
 
+  afterRender() {
+    this.#syncSwitch();
+  }
+
+  /**
+   * Sets the position as a property rather than re-rendering: the input has to
+   * survive its own click, or a keyboard toggle would destroy the element the
+   * user is standing on and drop focus.
+   */
+  #syncSwitch() {
+    const input = this.$('input[role="switch"]');
+    if (input) input.checked = currentTheme() === "dark";
+  }
+
   handleAction(action, element) {
-    if (action === "set-theme") setTheme(element.dataset.theme);
+    if (action === "toggle-theme") setTheme(element.checked ? "dark" : "light");
   }
 
   template() {
-    const active = currentTheme();
+    // The aria-label duplicates the visible text on purpose: the text is hidden
+    // on a narrow header, and the switch still has to announce itself there.
     return html`
-      <div role="group" aria-label="Colour theme">
-        ${THEMES.map(
-          (theme) => html`
-            <button
-              class="secondary outline"
-              data-action="set-theme"
-              data-theme="${theme}"
-              aria-pressed="${theme === active}"
-              title="${TITLES[theme]}"
-            >
-              ${LABELS[theme]}
-            </button>
-          `,
-        )}
-      </div>
+      <label>
+        <input
+          type="checkbox"
+          role="switch"
+          data-action="toggle-theme"
+          aria-label="Dark mode"
+        />
+        <span class="label">Dark mode</span>
+      </label>
     `;
   }
 }

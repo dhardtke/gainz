@@ -74,10 +74,13 @@ class GzApp extends GzElement {
     const route = currentRoute();
     this.$("main")?.replaceChildren(this.#viewElement(route));
 
-    // aria-current marks the active page for assistive tech, and Pico's own
-    // nav styling keys off it — one attribute does both jobs.
+    // The active page is a solid Pico button and the rest are outlined ones,
+    // which is a change of variant rather than of colour: dropping .outline
+    // swaps one stock Pico button for another, so no stylesheet has to know.
     for (const link of this.$$("nav a[data-path]")) {
-      if (isActive(link.dataset.path)) link.setAttribute("aria-current", "page");
+      const active = isActive(link.dataset.path);
+      link.classList.toggle("outline", !active);
+      if (active) link.setAttribute("aria-current", "page");
       else link.removeAttribute("aria-current");
     }
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -95,7 +98,9 @@ class GzApp extends GzElement {
           <ul>
             ${NAV.map(
               (item) => html`
-                <li><a href="#${item.path}" data-path="${item.path}">${item.label}</a></li>
+                <li>
+                  <a role="button" class="secondary outline" href="#${item.path}" data-path="${item.path}">${item.label}</a>
+                </li>
               `,
             )}
             <li><gz-theme-toggle></gz-theme-toggle></li>

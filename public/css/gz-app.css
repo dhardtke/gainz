@@ -43,23 +43,14 @@ header nav li {
   color: var(--pico-muted-color);
 }
 
-header nav a:not(.brand) {
-  display: block;
+/* The nav entries are Pico buttons. Every colour — resting, hover and the
+   solid fill on the active page — comes from Pico's own variants, so the only
+   thing left to say here is the sizing: Pico sizes buttons for touch, and the
+   header is a single compact row. */
+header nav a[role="button"] {
   padding: 0.35rem 0.75rem;
-  border-radius: var(--pico-border-radius);
-  color: var(--pico-muted-color);
-  text-decoration: none;
-  font-weight: 500;
-}
-
-header nav a:not(.brand):hover {
-  background: var(--pico-card-sectioning-background-color);
-  color: var(--pico-contrast);
-}
-
-header nav a[aria-current="page"] {
-  background: var(--pico-primary-focus, var(--pico-card-sectioning-background-color));
-  color: var(--pico-primary);
+  margin-bottom: 0;
+  white-space: nowrap;
 }
 
 main {
