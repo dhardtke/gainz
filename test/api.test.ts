@@ -188,9 +188,7 @@ describe("workouts and sets", () => {
   test("updates and deletes a set", async () => {
     const exercise = await createExercise();
     const workout = await createWorkout();
-    const set = await (
-      await post(`/api/workouts/${workout.id}/sets`, { exercise_id: exercise.id, reps: 5, weight: 60 })
-    ).json();
+    const set = await (await post(`/api/workouts/${workout.id}/sets`, { exercise_id: exercise.id, reps: 5, weight: 60 })).json();
 
     const updated = await (await patch(`/api/sets/${set.id}`, { reps: 6, weight: 62.5 })).json();
     expect(updated).toMatchObject({ reps: 6, weight: 62.5 });
@@ -203,9 +201,7 @@ describe("workouts and sets", () => {
   test("deleting a workout removes its sets", async () => {
     const exercise = await createExercise();
     const workout = await createWorkout();
-    const set = await (
-      await post(`/api/workouts/${workout.id}/sets`, { exercise_id: exercise.id, reps: 5, weight: 60 })
-    ).json();
+    const set = await (await post(`/api/workouts/${workout.id}/sets`, { exercise_id: exercise.id, reps: 5, weight: 60 })).json();
 
     expect((await api(`/api/workouts/${workout.id}`, { method: "DELETE" })).status).toBe(204);
     expect((await api(`/api/sets/${set.id}`)).status).toBe(404);

@@ -18,13 +18,13 @@ bun run seed         # optional: a few weeks of sample history
 bun start            # http://localhost:3000
 ```
 
-| Script             | What it does                                    |
-| ------------------ | ----------------------------------------------- |
-| `bun start`        | Serves the API and the frontend on `PORT`(3000) |
-| `bun run dev`      | Same, restarting on file changes                |
-| `bun run seed`     | Fills an empty database with sample workouts    |
-| `bun test`         | Runs the API test suite against in-memory SQLite|
-| `bun run typecheck`| Type-checks the backend                         |
+| Script              | What it does                                     |
+| ------------------- | ------------------------------------------------ |
+| `bun start`         | Serves the API and the frontend on `PORT`(3000)  |
+| `bun run dev`       | Same, restarting on file changes                 |
+| `bun run seed`      | Fills an empty database with sample workouts     |
+| `bun test`          | Runs the API test suite against in-memory SQLite |
+| `bun run typecheck` | Type-checks the backend                          |
 
 The database lives at `data/gainz.sqlite` (override with `GAINZ_DB`) and is
 created on first run. It is git-ignored — the log is your data, not source.
@@ -43,9 +43,9 @@ the field on install: it documents the requirement rather than gating it.
 
 - **Dashboard** — totals, the last 30 days, and the most recent sessions.
 - **Workouts** — one entry per session. Open one to log sets: pick the exercise,
-  type weight and reps, hit *Log set*. The form keeps the last values so a
+  type weight and reps, hit _Log set_. The form keeps the last values so a
   second set of the same thing is one keystroke away, `+1` duplicates a set
-  outright, and *Repeat* on the workout list copies a whole session to today.
+  outright, and _Repeat_ on the workout list copies a whole session to today.
 - **Exercises** — the catalogue. Each one has a progress page charting estimated
   1RM, top set, or session volume over time.
 
@@ -110,7 +110,7 @@ exist only to make that hold:
 - `shared.css` sets `font-size: inherit` on `:host`. Pico applies
   `font-size: var(--pico-font-size)` to `:host, :root`, which is written to
   land once at the document root — but every component adopts Pico, so the
-  percentage re-applied at each shadow host and *multiplied* with nesting.
+  percentage re-applied at each shadow host and _multiplied_ with nesting.
   `gz-app > gz-dashboard > gz-stat-tile` reached 39px from a 20px root.
 
 For the same reason `gz-chart` draws only geometry in SVG and positions its
@@ -143,7 +143,7 @@ Two pieces make that safe. `define()` in `base.js` awaits the component's
 stylesheet before registering the element, and every component module `await`s
 its own `define()` at the top level. Because a top-level await blocks the
 modules that import it, `await import("…/gz-exercise-detail.js")` in `gz-app`
-resolves only when that view *and* everything it renders — the chart, the stat
+resolves only when that view _and_ everything it renders — the chart, the stat
 tiles — have their scripts and their CSS. So a lazily loaded page is fully
 styled on its first paint; there is no flash to guard against.
 
@@ -165,9 +165,9 @@ Only the five route views in `gz-app`'s `VIEWS` table are loaded dynamically.
 mirrors it onto every component host too, because Pico can only reach a shadow
 root through `:host`. There are two states, and one Pico rule covers each:
 
-| Host `data-theme` | Rule that matches            | Result             |
-| ----------------- | ---------------------------- | ------------------ |
-| `light`           | `:host(:not([data-theme=dark]))` | forced light   |
+| Host `data-theme` | Rule that matches                                                                                            | Result                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| `light`           | `:host(:not([data-theme=dark]))`                                                                             | forced light                                    |
 | `dark`            | none — Pico only ships a bare `[data-theme=dark]`, which cannot match a host from inside its own shadow root | colours inherit from `<html data-theme="dark">` |
 
 The second row works because custom properties inherit and Pico's base
@@ -190,36 +190,36 @@ All endpoints live under `/api` and speak JSON. Errors come back as
 
 ### Exercises
 
-| Method   | Path                          | Notes                                             |
-| -------- | ----------------------------- | ------------------------------------------------- |
-| `GET`    | `/api/exercises`              | With set counts, last performed date, best weight |
+| Method   | Path                          | Notes                                                                  |
+| -------- | ----------------------------- | ---------------------------------------------------------------------- |
+| `GET`    | `/api/exercises`              | With set counts, last performed date, best weight                      |
 | `POST`   | `/api/exercises`              | `{ name, muscle_group?, notes? }`; names are unique (case-insensitive) |
-| `GET`    | `/api/exercises/:id`          |                                                   |
-| `PATCH`  | `/api/exercises/:id`          | Only the fields you send are changed              |
-| `DELETE` | `/api/exercises/:id`          | 409 while any set still references it             |
-| `GET`    | `/api/exercises/:id/progress` | `{ exercise, sessions[], best_set }`              |
+| `GET`    | `/api/exercises/:id`          |                                                                        |
+| `PATCH`  | `/api/exercises/:id`          | Only the fields you send are changed                                   |
+| `DELETE` | `/api/exercises/:id`          | 409 while any set still references it                                  |
+| `GET`    | `/api/exercises/:id/progress` | `{ exercise, sessions[], best_set }`                                   |
 
 ### Workouts
 
-| Method   | Path                       | Notes                                                     |
-| -------- | -------------------------- | --------------------------------------------------------- |
-| `GET`    | `/api/workouts`            | `?limit=&offset=` → `{ items, total, limit, offset }`      |
-| `POST`   | `/api/workouts`            | `{ performed_on?, title?, notes?, copy_from_workout_id? }` |
-| `GET`    | `/api/workouts/:id`        | Includes the session's `sets`                              |
-| `PATCH`  | `/api/workouts/:id`        |                                                            |
-| `DELETE` | `/api/workouts/:id`        | Cascades to its sets                                       |
-| `GET`    | `/api/workouts/:id/sets`   |                                                            |
-| `POST`   | `/api/workouts/:id/sets`   | `{ exercise_id, reps, weight, notes?, position? }`         |
+| Method   | Path                     | Notes                                                      |
+| -------- | ------------------------ | ---------------------------------------------------------- |
+| `GET`    | `/api/workouts`          | `?limit=&offset=` → `{ items, total, limit, offset }`      |
+| `POST`   | `/api/workouts`          | `{ performed_on?, title?, notes?, copy_from_workout_id? }` |
+| `GET`    | `/api/workouts/:id`      | Includes the session's `sets`                              |
+| `PATCH`  | `/api/workouts/:id`      |                                                            |
+| `DELETE` | `/api/workouts/:id`      | Cascades to its sets                                       |
+| `GET`    | `/api/workouts/:id/sets` |                                                            |
+| `POST`   | `/api/workouts/:id/sets` | `{ exercise_id, reps, weight, notes?, position? }`         |
 
 ### Sets and stats
 
-| Method   | Path                  |
-| -------- | --------------------- |
-| `GET`    | `/api/sets/:id`       |
-| `PATCH`  | `/api/sets/:id`       |
-| `DELETE` | `/api/sets/:id`       |
-| `GET`    | `/api/stats/summary`  |
-| `GET`    | `/api/health`         |
+| Method   | Path                 |
+| -------- | -------------------- |
+| `GET`    | `/api/sets/:id`      |
+| `PATCH`  | `/api/sets/:id`      |
+| `DELETE` | `/api/sets/:id`      |
+| `GET`    | `/api/stats/summary` |
+| `GET`    | `/api/health`        |
 
 `performed_on` is a `YYYY-MM-DD` calendar date and defaults to today.
 

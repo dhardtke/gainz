@@ -119,16 +119,10 @@ class GzExerciseList extends GzElement {
         <td>${exercise.muscle_group ?? html`<span class="muted">–</span>`}</td>
         <td class="num">${exercise.set_count}</td>
         <td class="num">${exercise.best_weight === null ? "–" : formatWeight(exercise.best_weight)}</td>
-        <td class="nowrap">
-          ${exercise.last_performed_on
-            ? relativeDay(exercise.last_performed_on)
-            : html`<span class="muted">never</span>`}
-        </td>
+        <td class="nowrap">${exercise.last_performed_on ? relativeDay(exercise.last_performed_on) : html`<span class="muted">never</span>`}</td>
         <td class="actions">
           <button class="secondary outline compact" data-action="edit" data-id="${exercise.id}">Edit</button>
-          <button class="danger compact" data-action="delete" data-id="${exercise.id}" data-name="${exercise.name}">
-            Delete
-          </button>
+          <button class="danger compact" data-action="delete" data-id="${exercise.id}" data-name="${exercise.name}">Delete</button>
         </td>
       </tr>
     `;
@@ -168,31 +162,31 @@ class GzExerciseList extends GzElement {
           </form>
         </article>
 
-        ${items.length === 0
-          ? html`<p class="empty">No exercises yet. Add the lifts you train above.</p>`
-          : html`
-              <article>
-                <div class="overflow-auto">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th scope="col">Exercise</th>
-                        <th scope="col">Muscle group</th>
-                        <th scope="col" class="num">Sets</th>
-                        <th scope="col" class="num">Best</th>
-                        <th scope="col">Last done</th>
-                        <th scope="col"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${items.map((exercise) =>
-                        this.#editingId === exercise.id ? this.#editRow(exercise) : this.#row(exercise),
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </article>
-            `}
+        ${
+          items.length === 0
+            ? html`<p class="empty">No exercises yet. Add the lifts you train above.</p>`
+            : html`
+                <article>
+                  <div class="overflow-auto">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th scope="col">Exercise</th>
+                          <th scope="col">Muscle group</th>
+                          <th scope="col" class="num">Sets</th>
+                          <th scope="col" class="num">Best</th>
+                          <th scope="col">Last done</th>
+                          <th scope="col"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${items.map((exercise) => (this.#editingId === exercise.id ? this.#editRow(exercise) : this.#row(exercise)))}
+                      </tbody>
+                    </table>
+                  </div>
+                </article>
+              `
+        }
       </div>
     `;
   }

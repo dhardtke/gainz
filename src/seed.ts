@@ -94,9 +94,7 @@ function main() {
   }
 
   const summary = repo.summary();
-  console.log(
-    `Seeded ${summary.workout_count} workouts, ${summary.set_count} sets across ${summary.exercise_count} exercises.`,
-  );
+  console.log(`Seeded ${summary.workout_count} workouts, ${summary.set_count} sets across ${summary.exercise_count} exercises.`);
   db.close();
 }
 

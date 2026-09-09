@@ -80,8 +80,7 @@ export interface SetInput {
 const EST_1RM_SQL = "s.weight * (1 + s.reps / 30.0)";
 
 const EXERCISE_COLUMNS = "e.id, e.name, e.muscle_group, e.notes, e.created_at";
-const SET_COLUMNS =
-  "s.id, s.workout_id, s.exercise_id, e.name AS exercise_name, s.reps, s.weight, s.notes, s.position, s.created_at";
+const SET_COLUMNS = "s.id, s.workout_id, s.exercise_id, e.name AS exercise_name, s.reps, s.weight, s.notes, s.position, s.created_at";
 
 function isUniqueViolation(err: unknown): boolean {
   return err instanceof Error && /UNIQUE constraint failed/i.test(err.message);
@@ -110,9 +109,7 @@ export class Repo {
   }
 
   getExercise(id: number): Exercise | null {
-    return this.db
-      .query<Exercise, [number]>(`SELECT ${EXERCISE_COLUMNS} FROM exercises e WHERE e.id = ?`)
-      .get(id);
+    return this.db.query<Exercise, [number]>(`SELECT ${EXERCISE_COLUMNS} FROM exercises e WHERE e.id = ?`).get(id);
   }
 
   requireExercise(id: number): Exercise {
@@ -161,13 +158,9 @@ export class Repo {
 
   deleteExercise(id: number): void {
     this.requireExercise(id);
-    const used = this.db
-      .query<{ n: number }, [number]>("SELECT COUNT(*) AS n FROM sets WHERE exercise_id = ?")
-      .get(id);
+    const used = this.db.query<{ n: number }, [number]>("SELECT COUNT(*) AS n FROM sets WHERE exercise_id = ?").get(id);
     if (used && used.n > 0) {
-      throw conflict(
-        `Exercise is used by ${used.n} logged set(s); delete those sets first to keep your history intact`,
-      );
+      throw conflict(`Exercise is used by ${used.n} logged set(s); delete those sets first to keep your history intact`);
     }
     this.db.query("DELETE FROM exercises WHERE id = ?").run(id);
   }
@@ -231,11 +224,7 @@ export class Repo {
   }
 
   getWorkout(id: number): Workout | null {
-    return this.db
-      .query<Workout, [number]>(
-        "SELECT id, performed_on, title, notes, created_at FROM workouts WHERE id = ?",
-      )
-      .get(id);
+    return this.db.query<Workout, [number]>("SELECT id, performed_on, title, notes, created_at FROM workouts WHERE id = ?").get(id);
   }
 
   requireWorkout(id: number): Workout {
@@ -292,11 +281,7 @@ export class Repo {
   }
 
   getSet(id: number): LiftSet | null {
-    return this.db
-      .query<LiftSet, [number]>(
-        `SELECT ${SET_COLUMNS} FROM sets s JOIN exercises e ON e.id = s.exercise_id WHERE s.id = ?`,
-      )
-      .get(id);
+    return this.db.query<LiftSet, [number]>(`SELECT ${SET_COLUMNS} FROM sets s JOIN exercises e ON e.id = s.exercise_id WHERE s.id = ?`).get(id);
   }
 
   requireSet(id: number): LiftSet {
@@ -311,11 +296,7 @@ export class Repo {
 
     const position =
       input.position ??
-      this.db
-        .query<{ next: number }, [number]>(
-          "SELECT COALESCE(MAX(position), 0) + 1 AS next FROM sets WHERE workout_id = ?",
-        )
-        .get(workoutId)?.next ??
+      this.db.query<{ next: number }, [number]>("SELECT COALESCE(MAX(position), 0) + 1 AS next FROM sets WHERE workout_id = ?").get(workoutId)?.next ??
       1;
 
     const inserted = this.db

@@ -92,11 +92,7 @@ class GzSetRow extends GzElement {
           <label>Exercise</label>
           <select name="exercise_id">
             ${this.#exercises.map(
-              (exercise) => html`
-                <option value="${exercise.id}" ${exercise.id === set.exercise_id ? "selected" : ""}>
-                  ${exercise.name}
-                </option>
-              `,
+              (exercise) => html` <option value="${exercise.id}" ${exercise.id === set.exercise_id ? "selected" : ""}>${exercise.name}</option> `,
             )}
           </select>
         </div>
@@ -132,13 +128,7 @@ class GzSetRow extends GzElement {
         <span class="actions">
           <span class="volume mono">${formatVolume(set.weight * set.reps)}</span>
           <button class="secondary outline compact" data-action="edit">Edit</button>
-          <button
-            class="secondary outline compact"
-            data-action="duplicate"
-            title="Log another set just like this one"
-          >
-            +1
-          </button>
+          <button class="secondary outline compact" data-action="duplicate" title="Log another set just like this one">+1</button>
           <button class="danger compact" data-action="delete" aria-label="Delete set">×</button>
         </span>
       </div>

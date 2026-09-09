@@ -228,15 +228,9 @@ class GzWorkoutDetail extends GzElement {
               <label for="exercise_id">Exercise</label>
               <select id="exercise_id" name="exercise_id">
                 ${this.#exercises.map(
-                  (exercise) => html`
-                    <option value="${exercise.id}" ${exercise.id === selected ? "selected" : ""}>
-                      ${exercise.name}
-                    </option>
-                  `,
+                  (exercise) => html` <option value="${exercise.id}" ${exercise.id === selected ? "selected" : ""}>${exercise.name}</option> `,
                 )}
-                <option value="${NEW_EXERCISE}" ${selected === NEW_EXERCISE ? "selected" : ""}>
-                  ＋ New exercise…
-                </option>
+                <option value="${NEW_EXERCISE}" ${selected === NEW_EXERCISE ? "selected" : ""}>＋ New exercise…</option>
               </select>
             </div>
             <div class="field field-exercise field-new-exercise" ${selected === NEW_EXERCISE ? "" : "hidden"}>
@@ -315,56 +309,52 @@ class GzWorkoutDetail extends GzElement {
 
         <section class="stack-sm">
           <h2>Sets</h2>
-          ${sets.length === 0
-            ? html`<p class="empty">No sets logged for this session yet.</p>`
-            : html`
-                <div class="sets">
-                  ${sets.map(
-                    (set, index) => html`<gz-set-row data-id="${set.id}" data-index="${index + 1}"></gz-set-row>`,
-                  )}
-                </div>
-              `}
+          ${
+            sets.length === 0
+              ? html`<p class="empty">No sets logged for this session yet.</p>`
+              : html` <div class="sets">${sets.map((set, index) => html`<gz-set-row data-id="${set.id}" data-index="${index + 1}"></gz-set-row>`)}</div> `
+          }
         </section>
 
-        ${breakdown.length === 0
-          ? ""
-          : html`
-              <article class="stack-sm">
-                <h2>By exercise</h2>
-                <div class="overflow-auto">
-                  <table class="breakdown">
-                    <thead>
-                      <tr>
-                        <th scope="col">Exercise</th>
-                        <th scope="col" class="num">Sets</th>
-                        <th scope="col" class="num">Reps</th>
-                        <th scope="col" class="num">Top set</th>
-                        <th scope="col" class="num">Volume</th>
-                        <th scope="col"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${breakdown.map(
-                        (entry) => html`
-                          <tr>
-                            <td class="name"><a href="#/exercises/${entry.id}">${entry.name}</a></td>
-                            <td class="num">${entry.sets}</td>
-                            <td class="num">${entry.reps}</td>
-                            <td class="num">${formatNumber(entry.top)} ${UNIT}</td>
-                            <td class="num">${formatVolume(entry.volume)}</td>
-                            <td class="num">
-                              <button class="secondary outline compact" data-action="repeat-exercise" data-id="${entry.id}">
-                                Another set
-                              </button>
-                            </td>
-                          </tr>
-                        `,
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </article>
-            `}
+        ${
+          breakdown.length === 0
+            ? ""
+            : html`
+                <article class="stack-sm">
+                  <h2>By exercise</h2>
+                  <div class="overflow-auto">
+                    <table class="breakdown">
+                      <thead>
+                        <tr>
+                          <th scope="col">Exercise</th>
+                          <th scope="col" class="num">Sets</th>
+                          <th scope="col" class="num">Reps</th>
+                          <th scope="col" class="num">Top set</th>
+                          <th scope="col" class="num">Volume</th>
+                          <th scope="col"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${breakdown.map(
+                          (entry) => html`
+                            <tr>
+                              <td class="name"><a href="#/exercises/${entry.id}">${entry.name}</a></td>
+                              <td class="num">${entry.sets}</td>
+                              <td class="num">${entry.reps}</td>
+                              <td class="num">${formatNumber(entry.top)} ${UNIT}</td>
+                              <td class="num">${formatVolume(entry.volume)}</td>
+                              <td class="num">
+                                <button class="secondary outline compact" data-action="repeat-exercise" data-id="${entry.id}">Another set</button>
+                              </td>
+                            </tr>
+                          `,
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </article>
+              `
+        }
       </div>
     `;
   }

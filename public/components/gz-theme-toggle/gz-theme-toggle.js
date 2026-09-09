@@ -41,12 +41,7 @@ class GzThemeToggle extends GzElement {
     // on a narrow header, and the switch still has to announce itself there.
     return html`
       <label>
-        <input
-          type="checkbox"
-          role="switch"
-          data-action="toggle-theme"
-          aria-label="Dark mode"
-        />
+        <input type="checkbox" role="switch" data-action="toggle-theme" aria-label="Dark mode" />
         <span class="label">Dark mode</span>
       </label>
     `;

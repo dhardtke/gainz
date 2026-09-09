@@ -20,11 +20,7 @@ export function requiredString(body: Record<string, unknown>, field: string, max
 }
 
 /** An optional string; empty strings and null both normalise to null. */
-export function optionalString(
-  body: Record<string, unknown>,
-  field: string,
-  maxLength = 2000,
-): string | null {
+export function optionalString(body: Record<string, unknown>, field: string, maxLength = 2000): string | null {
   const value = body[field];
   if (value === undefined || value === null) return null;
   if (typeof value !== "string") throw badRequest(`"${field}" must be a string`);
@@ -52,11 +48,7 @@ export function requiredInt(
   return num;
 }
 
-export function requiredNumber(
-  body: Record<string, unknown>,
-  field: string,
-  { min = 0, max = 100000 }: { min?: number; max?: number } = {},
-): number {
+export function requiredNumber(body: Record<string, unknown>, field: string, { min = 0, max = 100000 }: { min?: number; max?: number } = {}): number {
   const value = body[field];
   const num = typeof value === "string" && value.trim() !== "" ? Number(value) : value;
   if (typeof num !== "number" || !Number.isFinite(num)) {
@@ -85,12 +77,7 @@ export function pathId(raw: string | undefined, what: string): number {
   return id;
 }
 
-export function queryInt(
-  params: URLSearchParams,
-  key: string,
-  fallback: number,
-  { min = 0, max = 1000 }: { min?: number; max?: number } = {},
-): number {
+export function queryInt(params: URLSearchParams, key: string, fallback: number, { min = 0, max = 1000 }: { min?: number; max?: number } = {}): number {
   const raw = params.get(key);
   if (raw === null || raw === "") return fallback;
   const num = Number(raw);

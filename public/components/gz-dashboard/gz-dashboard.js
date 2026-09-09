@@ -47,9 +47,7 @@ class GzDashboard extends GzElement {
           <div>
             <h1>Dashboard</h1>
             <p class="muted">
-              ${summary.last_performed_on
-                ? html`Last session ${relativeDay(summary.last_performed_on)}.`
-                : html`Nothing logged yet — time for session one.`}
+              ${summary.last_performed_on ? html`Last session ${relativeDay(summary.last_performed_on)}.` : html`Nothing logged yet — time for session one.`}
             </p>
           </div>
           <button data-action="start-workout">Log today's workout</button>
@@ -67,19 +65,21 @@ class GzDashboard extends GzElement {
             <h2>Recent workouts</h2>
             <a href="#/workouts">See all</a>
           </div>
-          ${workouts.length === 0
-            ? html`<p class="empty">No workouts yet. Log one and it will show up here.</p>`
-            : workouts.map(
-                (workout) => html`
-                  <a class="workout-link" href="#/workouts/${workout.id}">
-                    <span class="grow">
-                      <span class="title">${workout.title ?? formatDate(workout.performed_on)}</span>
-                      <span class="muted"> · ${relativeDay(workout.performed_on)}</span>
-                    </span>
-                    <span class="badge">${plural(workout.set_count, "set")} · ${formatVolume(workout.total_volume)}</span>
-                  </a>
-                `,
-              )}
+          ${
+            workouts.length === 0
+              ? html`<p class="empty">No workouts yet. Log one and it will show up here.</p>`
+              : workouts.map(
+                  (workout) => html`
+                    <a class="workout-link" href="#/workouts/${workout.id}">
+                      <span class="grow">
+                        <span class="title">${workout.title ?? formatDate(workout.performed_on)}</span>
+                        <span class="muted"> · ${relativeDay(workout.performed_on)}</span>
+                      </span>
+                      <span class="badge">${plural(workout.set_count, "set")} · ${formatVolume(workout.total_volume)}</span>
+                    </a>
+                  `,
+                )
+          }
         </article>
       </div>
     `;
