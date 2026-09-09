@@ -61,7 +61,7 @@ class GzWorkoutDetail extends GzElement {
   attributeChangedCallback(_name, oldValue, value) {
     this.#workoutId = value;
     // The initial attribute arrives before connectedCallback, which loads anyway.
-    if (this.isConnected && oldValue !== null && oldValue !== value) this.#load();
+    if (this.isConnected && oldValue !== null && oldValue !== value) void this.#load();
   }
 
   async connectedCallback() {
