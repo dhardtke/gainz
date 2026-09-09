@@ -1,0 +1,19 @@
+{
+  "name": "gainz",
+  "version": "0.1.0",
+  "description": "Track weight-lifting progress: workouts, sets, reps, weight and notes.",
+  "private": true,
+  "type": "module",
+  "module": "src/server.ts",
+  "scripts": {
+    "start": "bun run src/server.ts",
+    "dev": "bun --watch src/server.ts",
+    "seed": "bun run src/seed.ts",
+    "test": "bun test",
+    "typecheck": "bunx tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  }
+}
