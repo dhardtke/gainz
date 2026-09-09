@@ -190,7 +190,7 @@ components. Concrete enough that the improvement can be checked later.
 
 **Diagnosis.** Two named causes. Not "the bundling was inefficient".
 
-**Mechanism, with the reasoning.** The middle sentence explains *why* awaiting a
+**Mechanism, with the reasoning.** The middle sentence explains _why_ awaiting a
 dynamic import is sufficient — because a top-level await blocks importers — which
 is the non-obvious property the whole design rests on.
 
