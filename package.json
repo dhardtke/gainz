@@ -7,7 +7,7 @@
   "module": "src/server.ts",
   "scripts": {
     "start": "bun run src/server.ts",
-    "dev": "bun --watch src/server.ts",
+    "start:dev": "bun --watch src/server.ts",
     "seed": "bun run src/seed.ts",
     "test": "bun test",
     "typecheck": "bunx tsc --noEmit",
