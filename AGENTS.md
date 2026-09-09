@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```sh
 bun install              # deps (Pico CSS + dev types/tooling)
 bun start                # serve API + frontend on PORT (default 3000)
-bun run dev              # same, with --watch
+bun run start:dev        # same, with --watch
 bun run seed             # fill an empty DB with sample workouts
 bun test                 # API suite against in-memory SQLite
 bun test test/api.test.ts # one file
