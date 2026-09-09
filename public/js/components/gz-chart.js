@@ -17,18 +17,6 @@ const PLOT_H = HEIGHT - PAD.top - PAD.bottom;
  * Usage: `chart.series = [{ label: "5 Jan", value: 82.5, hint: "3 sets" }]`
  */
 class GzChart extends GzElement {
-  static styles = `
-    :host { display: block; }
-    svg { display: block; width: 100%; height: auto; overflow: visible; }
-    .grid { stroke: var(--border); stroke-width: 1; }
-    .axis-label { fill: var(--text-muted); font-size: 11px; font-family: var(--font); }
-    .line { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
-    .area { fill: var(--accent); opacity: 0.1; }
-    .dot { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
-    .dot-hit { fill: transparent; cursor: pointer; }
-    .empty { color: var(--text-muted); text-align: center; padding: 32px 16px; }
-  `;
-
   #series = [];
   #unit = "";
 

@@ -4,13 +4,14 @@ A small, self-hosted log for weight-lifting progress: workouts, the sets you did
 and the reps, weight and notes for each one.
 
 - **Backend** — [Bun](https://bun.sh) serving a REST API over SQLite (`bun:sqlite`).
-- **Frontend** — custom elements and ES modules. No framework, no build step,
-  no third-party dependencies; the browser loads the files as they are on disk.
+- **Frontend** — custom elements and ES modules styled with
+  [Pico CSS](https://picocss.com). No framework and no build step; the browser
+  loads the files as they are on disk.
 
 ## Quick start
 
 ```sh
-bun install          # dev dependencies only (TypeScript types)
+bun install          # Pico CSS, plus TypeScript types for development
 bun run seed         # optional: a few weeks of sample history
 bun start            # http://localhost:3000
 ```
@@ -55,22 +56,48 @@ src/
   seed.ts      Sample data
 public/
   index.html   The only page
-  styles.css   Design tokens (light and dark) on :root
+  css/
+    app.css      Document-level styles
+    shared.css   Layout utilities adopted by every component
+    gz-*.css     One stylesheet per custom element, named after its tag
   js/
-    base.js          GzElement: shadow root, escaping `html` tag, event delegation
-    api.js           fetch wrapper for the REST API
-    router.js        Hash router
-    format.js        Dates, weights, volumes
-    shared-styles.js One stylesheet adopted by every component
-    components/      gz-app, gz-dashboard, gz-workout-list, gz-workout-detail,
-                     gz-set-row, gz-exercise-list, gz-exercise-detail,
-                     gz-chart, gz-stat-tile, gz-toast
+    base.js      GzElement: shadow root, escaping `html` tag, event delegation
+    styles.js    Fetches the CSS files into constructable stylesheets
+    api.js       fetch wrapper for the REST API
+    router.js    Hash router
+    format.js    Dates, weights, volumes
+    components/  gz-app, gz-dashboard, gz-workout-list, gz-workout-detail,
+                 gz-set-row, gz-exercise-list, gz-exercise-detail,
+                 gz-chart, gz-stat-tile, gz-toast
 test/
   api.test.ts  End-to-end tests over a real server on an in-memory database
 ```
 
 Every component renders through the `html` tagged template in `base.js`, which
 escapes interpolated values — notes and exercise names are safe to display.
+
+## Styling
+
+Pico CSS provides the typography, colours, form controls, tables and the
+light/dark themes; hand-written CSS is a thin layer on top of it, built from
+Pico's own `--pico-*` custom properties so it follows the active theme.
+
+No CSS lives in JavaScript. Each custom element is styled by the file named
+after its tag — `<gz-chart>` by `public/css/gz-chart.css` — which `js/styles.js`
+fetches once into a `CSSStyleSheet` and every instance adopts by reference.
+`base.js` resolves that file by convention, so adding a component means adding
+`public/css/<tag>.css` and listing the tag in the manifest at the top of
+`js/styles.js`.
+
+Shadow roots do not inherit document stylesheets, so Pico is adopted into each
+one as well as linked in `index.html`. Pico 2 ships `:host` selectors alongside
+its `:root` ones, so its variables and both themes work inside a shadow root
+unchanged.
+
+Pico is served from `node_modules` at `/vendor/pico.css` through an explicit
+one-file allowlist in `src/server.ts` — installing a package never publishes
+anything the app did not ask to serve. The build is the `pico.orange` theme;
+swapping themes is a one-line change to `VENDOR_FILES`.
 
 ## REST API
 

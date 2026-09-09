@@ -1,0 +1,104 @@
+/* One logged set: a dense read-only row that swaps into an edit form. */
+
+.row-view {
+  display: grid;
+  grid-template-columns: 2.2rem minmax(7rem, 1.4fr) auto minmax(0, 1.6fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: var(--pico-border-radius);
+}
+
+:host(:hover) .row-view {
+  background: var(--pico-card-sectioning-background-color);
+}
+
+.index {
+  color: var(--pico-muted-color);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.exercise {
+  font-weight: 600;
+  color: inherit;
+  text-decoration: none;
+}
+
+.exercise:hover {
+  color: var(--pico-primary);
+}
+
+.load {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.note {
+  color: var(--pico-muted-color);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  justify-content: flex-end;
+}
+
+.volume {
+  color: var(--pico-muted-color);
+  font-size: 0.8rem;
+  margin-right: 0.25rem;
+}
+
+form.edit {
+  padding: 0.65rem;
+  border: 1px solid var(--pico-primary);
+  border-radius: var(--pico-border-radius);
+  margin: 0;
+}
+
+form.edit .field-exercise {
+  flex: 2 1 11rem;
+}
+
+form.edit .field-num {
+  flex: 0 1 7rem;
+}
+
+form.edit .field-notes {
+  flex: 3 1 12rem;
+}
+
+@media (max-width: 720px) {
+  .row-view {
+    grid-template-columns: 2rem 1fr auto;
+    grid-template-areas:
+      "i e l"
+      ". n n"
+      ". a a";
+  }
+  .index {
+    grid-area: i;
+  }
+  .exercise {
+    grid-area: e;
+  }
+  .load {
+    grid-area: l;
+  }
+  .note {
+    grid-area: n;
+  }
+  .actions {
+    grid-area: a;
+    justify-content: flex-start;
+  }
+  .volume {
+    display: none;
+  }
+}

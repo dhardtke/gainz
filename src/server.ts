@@ -5,7 +5,28 @@ import { errorResponse } from "./http";
 import { Repo } from "./repo";
 import { apiRoutes } from "./routes";
 
-const PUBLIC_DIR = resolve(fileURLToPath(new URL("../public", import.meta.url)));
+const PROJECT_ROOT = resolve(fileURLToPath(new URL("..", import.meta.url)));
+const PUBLIC_DIR = resolve(PROJECT_ROOT, "public");
+
+/**
+ * Third-party stylesheets served straight out of node_modules.
+ *
+ * An explicit allowlist of single files rather than a served directory, so
+ * installing a package never exposes anything the app did not ask to publish.
+ */
+const VENDOR_FILES: Record<string, string> = {
+  "/vendor/pico.css": "@picocss/pico/css/pico.orange.min.css",
+};
+
+function resolveVendorPath(pathname: string): string | null {
+  const specifier = VENDOR_FILES[pathname];
+  if (!specifier) return null;
+  try {
+    return Bun.resolveSync(specifier, PROJECT_ROOT);
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Maps a URL path to a file inside public/, or null if it would escape it.
@@ -30,6 +51,19 @@ async function serveStatic(req: Request): Promise<Response> {
   }
 
   const { pathname } = new URL(req.url);
+
+  const vendor = resolveVendorPath(pathname);
+  if (vendor) {
+    const file = Bun.file(vendor);
+    if (!(await file.exists())) {
+      return new Response("Vendor stylesheet missing — run `bun install`", { status: 500 });
+    }
+    // Versioned by the lockfile rather than the URL, but it only changes on install.
+    return new Response(file, {
+      headers: { "Content-Type": "text/css;charset=utf-8", "Cache-Control": "public, max-age=3600" },
+    });
+  }
+
   const resolved = resolveStaticPath(pathname);
   if (!resolved) return new Response("Not found", { status: 404 });
 

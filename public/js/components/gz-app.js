@@ -20,69 +20,6 @@ const NAV = [
  * so the header and the toast stack survive navigation.
  */
 class GzApp extends GzElement {
-  static styles = `
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background: color-mix(in srgb, var(--bg) 88%, transparent);
-      backdrop-filter: blur(8px);
-      border-bottom: 1px solid var(--border);
-    }
-    .bar {
-      max-width: 1040px;
-      margin: 0 auto;
-      padding: 10px 20px;
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      flex-wrap: wrap;
-    }
-    .brand {
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-      font-size: 1.25rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      color: var(--text);
-    }
-    .brand:hover { text-decoration: none; }
-    .brand .dot { color: var(--accent); }
-    .brand .tag { font-size: 0.78rem; font-weight: 500; color: var(--text-muted); letter-spacing: 0; }
-
-    nav { display: flex; gap: 4px; }
-    nav a {
-      padding: 6px 12px;
-      border-radius: var(--radius-sm);
-      color: var(--text-muted);
-      font-weight: 550;
-      font-size: 0.95rem;
-    }
-    nav a:hover { background: var(--surface-2); color: var(--text); text-decoration: none; }
-    nav a.active { background: var(--accent-soft); color: var(--accent); }
-
-    main {
-      max-width: 1040px;
-      margin: 0 auto;
-      padding: 24px 20px 64px;
-    }
-
-    footer {
-      max-width: 1040px;
-      margin: 0 auto;
-      padding: 0 20px 32px;
-      color: var(--text-muted);
-      font-size: 0.82rem;
-    }
-
-    @media (max-width: 560px) {
-      .bar { padding: 10px 14px; gap: 10px; }
-      main { padding: 16px 14px 48px; }
-      .brand .tag { display: none; }
-    }
-  `;
-
   #unsubscribe = null;
 
   connectedCallback() {
@@ -123,7 +60,7 @@ class GzApp extends GzElement {
       }
 
       default: {
-        const view = document.createElement("div");
+        const view = document.createElement("p");
         view.className = "empty";
         view.textContent = `Nothing lives at ${route.path}.`;
         return view;
@@ -135,8 +72,11 @@ class GzApp extends GzElement {
     const route = currentRoute();
     this.$("main")?.replaceChildren(this.#viewElement(route));
 
-    for (const link of this.$$("nav a")) {
-      link.classList.toggle("active", isActive(link.dataset.path));
+    // aria-current marks the active page for assistive tech, and Pico's own
+    // nav styling keys off it — one attribute does both jobs.
+    for (const link of this.$$("nav a[data-path]")) {
+      if (isActive(link.dataset.path)) link.setAttribute("aria-current", "page");
+      else link.removeAttribute("aria-current");
     }
     window.scrollTo({ top: 0, behavior: "instant" });
   }
@@ -144,17 +84,28 @@ class GzApp extends GzElement {
   template() {
     return html`
       <header>
-        <div class="bar">
-          <a class="brand" href="#/">gainz<span class="dot">.</span><span class="tag">lifting log</span></a>
-          <nav>
+        <nav class="container">
+          <ul>
+            <li>
+              <a class="brand" href="#/"><strong>gainz</strong><small>lifting log</small></a>
+            </li>
+          </ul>
+          <ul>
             ${NAV.map(
-              (item) => html`<a href="#${item.path}" data-path="${item.path}">${item.label}</a>`,
+              (item) => html`
+                <li><a href="#${item.path}" data-path="${item.path}">${item.label}</a></li>
+              `,
             )}
-          </nav>
-        </div>
+          </ul>
+        </nav>
       </header>
-      <main></main>
-      <footer>Weights in kilograms · estimated 1RM uses the Epley formula.</footer>
+
+      <main class="container"></main>
+
+      <footer class="container">
+        <small>Weights in kilograms · estimated 1RM uses the Epley formula.</small>
+      </footer>
+
       <gz-toast></gz-toast>
     `;
   }

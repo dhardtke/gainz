@@ -76,6 +76,26 @@ describe("health and routing", () => {
     const res = await api("/../package.json");
     expect(res.status).toBe(404);
   });
+
+  test("serves the app stylesheets", async () => {
+    for (const path of ["/css/app.css", "/css/shared.css", "/css/gz-app.css"]) {
+      const res = await api(path);
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toContain("text/css");
+    }
+  });
+
+  test("serves Pico from node_modules at a fixed vendor path", async () => {
+    const res = await api("/vendor/pico.css");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("text/css");
+    expect(await res.text()).toContain("Pico CSS");
+  });
+
+  test("exposes only the allowlisted vendor file, not node_modules", async () => {
+    expect((await api("/vendor/pico.scss")).status).toBe(404);
+    expect((await api("/node_modules/@picocss/pico/package.json")).status).toBe(404);
+  });
 });
 
 describe("exercises", () => {

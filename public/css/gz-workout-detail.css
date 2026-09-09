@@ -1,0 +1,47 @@
+/* The logging screen for one session. */
+
+.totals {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* The add-set card is the working surface of this screen; the accent border
+   keeps it distinct from the read-only cards below it. */
+.add-form {
+  border: 1px solid var(--pico-primary);
+}
+
+.add-form .field-exercise {
+  flex: 2 1 12rem;
+}
+
+.add-form .field-num {
+  flex: 0 1 7.5rem;
+}
+
+.add-form .field-notes {
+  flex: 3 1 12rem;
+}
+
+.sets {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.header-notes {
+  white-space: pre-wrap;
+}
+
+.breakdown td.name {
+  font-weight: 600;
+}
+
+.breakdown a {
+  text-decoration: none;
+}
+
+.breakdown a:hover {
+  text-decoration: underline;
+}

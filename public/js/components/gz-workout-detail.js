@@ -9,18 +9,6 @@ const NEW_EXERCISE = "__new__";
 
 /** The logging screen for one session: edit the header, add sets, see totals. */
 class GzWorkoutDetail extends GzElement {
-  static styles = `
-    .add-form .fields > .field-exercise { flex: 2 1 200px; }
-    .add-form .fields > .field-num { flex: 0 1 120px; }
-    .add-form .fields > .field-notes { flex: 3 1 200px; }
-    .add-form { border-color: var(--accent); }
-
-    .sets { display: flex; flex-direction: column; gap: 6px; }
-    .breakdown td.name { font-weight: 600; }
-    .header-notes { white-space: pre-wrap; }
-    .totals { display: flex; gap: 8px; flex-wrap: wrap; }
-  `;
-
   #workoutId = null;
   #state = { status: "loading" };
   #exercises = [];
@@ -81,10 +69,9 @@ class GzWorkoutDetail extends GzElement {
     }
 
     if (action === "repeat-exercise") {
-      // Re-log the heaviest set of an exercise the user already did today.
+      // Re-log the last set of an exercise the user already did in this session.
       const exerciseId = Number(element.dataset.id);
-      const sets = this.#state.workout.sets.filter((set) => set.exercise_id === exerciseId);
-      const last = sets.at(-1);
+      const last = this.#state.workout.sets.filter((set) => set.exercise_id === exerciseId).at(-1);
       if (!last) return;
       try {
         await api.workouts.addSet(this.#workoutId, {
@@ -186,40 +173,42 @@ class GzWorkoutDetail extends GzElement {
     if (!this.#editingHeader) {
       return html`
         <div class="row-between">
-          <div>
+          <hgroup>
             <h1>${workout.title ?? formatDate(workout.performed_on)}</h1>
-            <p class="muted">${formatDate(workout.performed_on)} · ${relativeDay(workout.performed_on)}</p>
-            ${workout.notes ? html`<p class="header-notes muted small">${workout.notes}</p>` : ""}
-          </div>
+            <p>${formatDate(workout.performed_on)} · ${relativeDay(workout.performed_on)}</p>
+          </hgroup>
           <div class="row">
-            <button data-action="toggle-header">Edit</button>
+            <button class="secondary outline" data-action="toggle-header">Edit</button>
             <button class="danger" data-action="delete-workout">Delete</button>
           </div>
         </div>
+        ${workout.notes ? html`<p class="header-notes muted small">${workout.notes}</p>` : ""}
       `;
     }
 
     return html`
-      <form class="card stack-sm" data-action="save-workout">
-        <div class="fields">
+      <article>
+        <form class="stack-sm" data-action="save-workout">
+          <div class="fields">
+            <div class="field">
+              <label for="performed_on">Date</label>
+              <input id="performed_on" name="performed_on" type="date" value="${workout.performed_on}" required />
+            </div>
+            <div class="field grow">
+              <label for="title">Title</label>
+              <input id="title" name="title" type="text" maxlength="120" value="${workout.title ?? ""}" />
+            </div>
+          </div>
           <div class="field">
-            <label for="performed_on">Date</label>
-            <input id="performed_on" name="performed_on" type="date" value="${workout.performed_on}" required />
+            <label for="notes">Session notes</label>
+            <textarea id="notes" name="notes" maxlength="2000" placeholder="How did it feel?">${workout.notes ?? ""}</textarea>
           </div>
-          <div class="field grow">
-            <label for="title">Title</label>
-            <input id="title" name="title" type="text" maxlength="120" value="${workout.title ?? ""}" />
+          <div class="row">
+            <button type="submit">Save</button>
+            <button class="secondary outline" type="button" data-action="toggle-header">Cancel</button>
           </div>
-        </div>
-        <div class="field">
-          <label for="notes">Session notes</label>
-          <textarea id="notes" name="notes" maxlength="2000" placeholder="How did it feel?">${workout.notes ?? ""}</textarea>
-        </div>
-        <div class="row">
-          <button class="primary" type="submit">Save</button>
-          <button class="ghost" type="button" data-action="toggle-header">Cancel</button>
-        </div>
-      </form>
+        </form>
+      </article>
     `;
   }
 
@@ -231,39 +220,45 @@ class GzWorkoutDetail extends GzElement {
     const selected = this.#draft.exercise_id;
 
     return html`
-      <form class="card add-form stack-sm" data-action="add-set">
+      <article class="add-form stack-sm">
         <h2>Add a set</h2>
-        <div class="fields">
-          <div class="field field-exercise">
-            <label for="exercise_id">Exercise</label>
-            <select id="exercise_id" name="exercise_id">
-              ${this.#exercises.map(
-                (exercise) => html`
-                  <option value="${exercise.id}" ${exercise.id === selected ? "selected" : ""}>${exercise.name}</option>
-                `,
-              )}
-              <option value="${NEW_EXERCISE}" ${selected === NEW_EXERCISE ? "selected" : ""}>＋ New exercise…</option>
-            </select>
+        <form data-action="add-set">
+          <div class="fields">
+            <div class="field field-exercise">
+              <label for="exercise_id">Exercise</label>
+              <select id="exercise_id" name="exercise_id">
+                ${this.#exercises.map(
+                  (exercise) => html`
+                    <option value="${exercise.id}" ${exercise.id === selected ? "selected" : ""}>
+                      ${exercise.name}
+                    </option>
+                  `,
+                )}
+                <option value="${NEW_EXERCISE}" ${selected === NEW_EXERCISE ? "selected" : ""}>
+                  ＋ New exercise…
+                </option>
+              </select>
+            </div>
+            <div class="field field-exercise field-new-exercise" ${selected === NEW_EXERCISE ? "" : "hidden"}>
+              <label for="new_exercise">New exercise name</label>
+              <input id="new_exercise" name="new_exercise" type="text" maxlength="120" placeholder="Incline Press" />
+            </div>
+            <div class="field field-num">
+              <label for="weight">Weight (${UNIT})</label>
+              <input id="weight" name="weight" type="number" step="0.25" min="0" value="${this.#draft.weight}" required />
+            </div>
+            <div class="field field-num">
+              <label for="reps">Reps</label>
+              <input id="reps" name="reps" type="number" step="1" min="1" value="${this.#draft.reps}" required />
+            </div>
+            <div class="field field-notes">
+              <label for="set-notes">Notes</label>
+              <input id="set-notes" name="notes" type="text" maxlength="2000" placeholder="Paused, felt easy" />
+            </div>
+            <button type="submit">Log set</button>
           </div>
-          <div class="field field-exercise field-new-exercise" ${selected === NEW_EXERCISE ? "" : "hidden"}>
-            <label for="new_exercise">New exercise name</label>
-            <input id="new_exercise" name="new_exercise" type="text" maxlength="120" placeholder="Incline Dumbbell Press" />
-          </div>
-          <div class="field field-num">
-            <label for="weight">Weight (${UNIT})</label>
-            <input id="weight" name="weight" type="number" step="0.25" min="0" value="${this.#draft.weight}" required />
-          </div>
-          <div class="field field-num">
-            <label for="reps">Reps</label>
-            <input id="reps" name="reps" type="number" step="1" min="1" value="${this.#draft.reps}" required />
-          </div>
-          <div class="field field-notes">
-            <label for="set-notes">Notes</label>
-            <input id="set-notes" name="notes" type="text" maxlength="2000" placeholder="Paused, felt easy" />
-          </div>
-          <button class="primary" type="submit">Log set</button>
-        </div>
-      </form>
+        </form>
+      </article>
     `;
   }
 
@@ -289,7 +284,7 @@ class GzWorkoutDetail extends GzElement {
   }
 
   template() {
-    if (this.#state.status === "loading") return html`<p class="muted">Loading workout…</p>`;
+    if (this.#state.status === "loading") return html`<p aria-busy="true">Loading workout…</p>`;
     if (this.#state.status === "error") {
       return html`
         <div class="stack">
@@ -334,18 +329,18 @@ class GzWorkoutDetail extends GzElement {
         ${breakdown.length === 0
           ? ""
           : html`
-              <section class="card">
+              <article class="stack-sm">
                 <h2>By exercise</h2>
-                <div class="scroll-x">
+                <div class="overflow-auto">
                   <table class="breakdown">
                     <thead>
                       <tr>
-                        <th>Exercise</th>
-                        <th class="num">Sets</th>
-                        <th class="num">Reps</th>
-                        <th class="num">Top set</th>
-                        <th class="num">Volume</th>
-                        <th></th>
+                        <th scope="col">Exercise</th>
+                        <th scope="col" class="num">Sets</th>
+                        <th scope="col" class="num">Reps</th>
+                        <th scope="col" class="num">Top set</th>
+                        <th scope="col" class="num">Volume</th>
+                        <th scope="col"></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -358,7 +353,7 @@ class GzWorkoutDetail extends GzElement {
                             <td class="num">${formatNumber(entry.top)} ${UNIT}</td>
                             <td class="num">${formatVolume(entry.volume)}</td>
                             <td class="num">
-                              <button class="ghost small" data-action="repeat-exercise" data-id="${entry.id}">
+                              <button class="secondary outline compact" data-action="repeat-exercise" data-id="${entry.id}">
                                 Another set
                               </button>
                             </td>
@@ -368,7 +363,7 @@ class GzWorkoutDetail extends GzElement {
                     </tbody>
                   </table>
                 </div>
-              </section>
+              </article>
             `}
       </div>
     `;

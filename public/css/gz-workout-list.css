@@ -1,0 +1,44 @@
+/* The training log: one row per session. */
+
+.workout {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: var(--pico-border-radius);
+}
+
+.workout:hover {
+  background: var(--pico-card-sectioning-background-color);
+}
+
+.workout a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.workout a:hover {
+  color: var(--pico-primary);
+}
+
+.workout .date {
+  font-size: 0.85rem;
+  color: var(--pico-muted-color);
+}
+
+.workout .actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.new-form .field-notes {
+  flex: 2 1 16rem;
+}
+
+@media (max-width: 640px) {
+  .workout {
+    flex-wrap: wrap;
+  }
+}

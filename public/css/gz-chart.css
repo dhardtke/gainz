@@ -1,0 +1,44 @@
+/* Inline SVG line chart. Colours track Pico's active theme. */
+
+svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.grid {
+  stroke: var(--pico-muted-border-color);
+  stroke-width: 1;
+}
+
+.axis-label {
+  fill: var(--pico-muted-color);
+  font-size: 11px;
+  font-family: var(--pico-font-family);
+}
+
+.line {
+  fill: none;
+  stroke: var(--pico-primary);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.area {
+  fill: var(--pico-primary);
+  opacity: 0.1;
+}
+
+.dot {
+  fill: var(--pico-card-background-color);
+  stroke: var(--pico-primary);
+  stroke-width: 2;
+}
+
+/* An invisible, larger target so the native <title> tooltip is easy to hit. */
+.dot-hit {
+  fill: transparent;
+  cursor: pointer;
+}
