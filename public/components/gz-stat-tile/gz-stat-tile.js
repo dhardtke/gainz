@@ -5,7 +5,9 @@ class GzStatTile extends GzElement {
   static observedAttributes = ["label", "value", "hint"];
 
   attributeChangedCallback() {
-    if (this.isConnected) this.render();
+    if (this.isConnected) {
+      this.render();
+    }
   }
 
   template() {

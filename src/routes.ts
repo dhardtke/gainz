@@ -79,9 +79,15 @@ export function apiRoutes(repo: Repo) {
         const id = pathId(req.params.id, "exercise");
         const body = await readJsonObject(req);
         const patch: Partial<ExerciseInput> = {};
-        if (isPresent(body, "name")) patch.name = requiredString(body, "name", MAX_NAME);
-        if (isPresent(body, "muscle_group")) patch.muscle_group = optionalString(body, "muscle_group", 60);
-        if (isPresent(body, "notes")) patch.notes = optionalString(body, "notes", MAX_NOTES);
+        if (isPresent(body, "name")) {
+          patch.name = requiredString(body, "name", MAX_NAME);
+        }
+        if (isPresent(body, "muscle_group")) {
+          patch.muscle_group = optionalString(body, "muscle_group", 60);
+        }
+        if (isPresent(body, "notes")) {
+          patch.notes = optionalString(body, "notes", MAX_NOTES);
+        }
         return json(repo.updateExercise(id, patch));
       },
 
@@ -134,9 +140,15 @@ export function apiRoutes(repo: Repo) {
         const id = pathId(req.params.id, "workout");
         const body = await readJsonObject(req);
         const patch: Partial<WorkoutInput> = {};
-        if (isPresent(body, "performed_on")) patch.performed_on = requiredDate(body, "performed_on");
-        if (isPresent(body, "title")) patch.title = optionalString(body, "title", MAX_NAME);
-        if (isPresent(body, "notes")) patch.notes = optionalString(body, "notes", MAX_NOTES);
+        if (isPresent(body, "performed_on")) {
+          patch.performed_on = requiredDate(body, "performed_on");
+        }
+        if (isPresent(body, "title")) {
+          patch.title = optionalString(body, "title", MAX_NAME);
+        }
+        if (isPresent(body, "notes")) {
+          patch.notes = optionalString(body, "notes", MAX_NOTES);
+        }
         return json(repo.updateWorkout(id, patch));
       },
 
@@ -168,11 +180,21 @@ export function apiRoutes(repo: Repo) {
         const id = pathId(req.params.id, "set");
         const body = await readJsonObject(req);
         const patch: Partial<SetInput> = {};
-        if (isPresent(body, "exercise_id")) patch.exercise_id = requiredInt(body, "exercise_id", { min: 1 });
-        if (isPresent(body, "reps")) patch.reps = requiredInt(body, "reps", { min: 1, max: 1000 });
-        if (isPresent(body, "weight")) patch.weight = requiredNumber(body, "weight", { min: 0, max: 100000 });
-        if (isPresent(body, "notes")) patch.notes = optionalString(body, "notes", MAX_NOTES);
-        if (isPresent(body, "position")) patch.position = requiredInt(body, "position", { min: 0 });
+        if (isPresent(body, "exercise_id")) {
+          patch.exercise_id = requiredInt(body, "exercise_id", { min: 1 });
+        }
+        if (isPresent(body, "reps")) {
+          patch.reps = requiredInt(body, "reps", { min: 1, max: 1000 });
+        }
+        if (isPresent(body, "weight")) {
+          patch.weight = requiredNumber(body, "weight", { min: 0, max: 100000 });
+        }
+        if (isPresent(body, "notes")) {
+          patch.notes = optionalString(body, "notes", MAX_NOTES);
+        }
+        if (isPresent(body, "position")) {
+          patch.position = requiredInt(body, "position", { min: 0 });
+        }
         return json(repo.updateSet(id, patch));
       },
 

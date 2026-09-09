@@ -36,7 +36,9 @@ class GzDashboard extends GzElement {
 
   /** @param {string} action */
   async handleAction(action) {
-    if (action !== "start-workout") return;
+    if (action !== "start-workout") {
+      return;
+    }
     try {
       const workout = await api.workouts.create({ performed_on: todayIso() });
       navigate(`/workouts/${workout.id}`);
@@ -46,8 +48,12 @@ class GzDashboard extends GzElement {
   }
 
   template() {
-    if (this.#state.status === "loading") return html`<p aria-busy="true">Loading your log…</p>`;
-    if (this.#state.status === "error") return html`<p class="error-text">${this.#state.message}</p>`;
+    if (this.#state.status === "loading") {
+      return html`<p aria-busy="true">Loading your log…</p>`;
+    }
+    if (this.#state.status === "error") {
+      return html`<p class="error-text">${this.#state.message}</p>`;
+    }
 
     const { summary, workouts } = this.#state;
 

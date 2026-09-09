@@ -59,7 +59,9 @@ async function request(method, path, body) {
     throw new ApiError("Could not reach the gainz server", 0, cause);
   }
 
-  if (response.status === 204) return /** @type {T} */ (null);
+  if (response.status === 204) {
+    return /** @type {T} */ (null);
+  }
 
   const text = await response.text();
   /** @type {any} */

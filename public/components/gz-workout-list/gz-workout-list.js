@@ -47,7 +47,9 @@ class GzWorkoutList extends GzElement {
    * @param {HTMLFormElement} form
    */
   async handleSubmit(action, form) {
-    if (action !== "create") return;
+    if (action !== "create") {
+      return;
+    }
     const values = /** @type {{ performed_on: string, title: string, notes: string }} */ (this.formData(form));
     try {
       const workout = await api.workouts.create({
@@ -90,7 +92,9 @@ class GzWorkoutList extends GzElement {
 
     if (action === "delete") {
       const label = element.dataset.label ?? "this workout";
-      if (!confirm(`Delete ${label}? Its sets are deleted too — this cannot be undone.`)) return;
+      if (!confirm(`Delete ${label}? Its sets are deleted too — this cannot be undone.`)) {
+        return;
+      }
       try {
         await api.workouts.remove(id);
         toast("Workout deleted", "success");
@@ -127,7 +131,9 @@ class GzWorkoutList extends GzElement {
   }
 
   template() {
-    if (this.#state.status === "loading") return html`<p aria-busy="true">Loading workouts…</p>`;
+    if (this.#state.status === "loading") {
+      return html`<p aria-busy="true">Loading workouts…</p>`;
+    }
 
     const { items, total } = this.#state;
 

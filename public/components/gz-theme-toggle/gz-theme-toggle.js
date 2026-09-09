@@ -31,7 +31,9 @@ class GzThemeToggle extends GzElement {
   #syncSwitch() {
     /** @type {HTMLInputElement | null} */
     const input = this.$('input[role="switch"]');
-    if (input) input.checked = currentTheme() === "dark";
+    if (input) {
+      input.checked = currentTheme() === "dark";
+    }
   }
 
   /**

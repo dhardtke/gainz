@@ -5,4 +5,6 @@
 import "../components/gz-app/gz-app.js";
 
 // Land on the dashboard so the address bar always shows a real route.
-if (!location.hash) location.replace("#/");
+if (!location.hash) {
+  location.replace("#/");
+}

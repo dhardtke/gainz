@@ -64,7 +64,9 @@ class GzExerciseDetail extends GzElement {
    */
   attributeChangedCallback(_name, oldValue, value) {
     this.#exerciseId = value;
-    if (this.isConnected && oldValue !== null && oldValue !== value) void this.#load();
+    if (this.isConnected && oldValue !== null && oldValue !== value) {
+      void this.#load();
+    }
   }
 
   async connectedCallback() {
@@ -80,7 +82,9 @@ class GzExerciseDetail extends GzElement {
       this.#state = { status: "ready", ...(await api.exercises.progress(id)) };
     } catch (error) {
       this.#state = { status: "error", message: errorMessage(error) };
-      if (!(error instanceof ApiError) || error.status !== 404) toastError(error);
+      if (!(error instanceof ApiError) || error.status !== 404) {
+        toastError(error);
+      }
     }
     this.render();
   }
@@ -92,7 +96,9 @@ class GzExerciseDetail extends GzElement {
   handleAction(action, element) {
     if (action === "metric") {
       const chosen = METRICS.find((candidate) => candidate.key === element.dataset.metric);
-      if (!chosen) return;
+      if (!chosen) {
+        return;
+      }
       this.#metric = chosen.key;
       this.render();
     }
@@ -101,7 +107,9 @@ class GzExerciseDetail extends GzElement {
   afterRender() {
     /** @type {GzChart | null} */
     const chart = this.$("gz-chart");
-    if (!chart || this.#state.status !== "ready") return;
+    if (!chart || this.#state.status !== "ready") {
+      return;
+    }
 
     const metric = METRICS.find((candidate) => candidate.key === this.#metric) ?? METRICS[0];
     chart.unit = metric.unit;
@@ -186,7 +194,9 @@ class GzExerciseDetail extends GzElement {
   }
 
   template() {
-    if (this.#state.status === "loading") return html`<p aria-busy="true">Loading progress…</p>`;
+    if (this.#state.status === "loading") {
+      return html`<p aria-busy="true">Loading progress…</p>`;
+    }
     if (this.#state.status === "error") {
       return html`
         <div class="stack">

@@ -36,9 +36,15 @@ export function escapeHtml(value) {
  * @returns {string}
  */
 function interpolate(value) {
-  if (value === null || value === undefined || value === false) return "";
-  if (value instanceof RawHtml) return value.value;
-  if (Array.isArray(value)) return value.map(interpolate).join("");
+  if (value === null || value === undefined || value === false) {
+    return "";
+  }
+  if (value instanceof RawHtml) {
+    return value.value;
+  }
+  if (Array.isArray(value)) {
+    return value.map(interpolate).join("");
+  }
   return escapeHtml(value);
 }
 
@@ -52,7 +58,9 @@ function interpolate(value) {
  */
 export function html(strings, ...values) {
   let out = strings[0] ?? "";
-  for (let i = 0; i < values.length; i++) out += interpolate(values[i]) + (strings[i + 1] ?? "");
+  for (let i = 0; i < values.length; i++) {
+    out += interpolate(values[i]) + (strings[i + 1] ?? "");
+  }
   return raw(out);
 }
 
@@ -91,7 +99,9 @@ export class GzElement extends HTMLElement {
 
     this.#root.addEventListener("submit", (event) => {
       const form = event.target instanceof Element ? event.target.closest("form[data-action]") : null;
-      if (!(form instanceof HTMLFormElement) || !form.dataset.action) return;
+      if (!(form instanceof HTMLFormElement) || !form.dataset.action) {
+        return;
+      }
       event.preventDefault();
       void this.handleSubmit(form.dataset.action, form, event);
     });
@@ -194,7 +204,9 @@ export class GzElement extends HTMLElement {
     /** @type {Record<string, string>} */
     const values = {};
     for (const [key, value] of new FormData(form).entries()) {
-      if (typeof value === "string") values[key] = value.trim();
+      if (typeof value === "string") {
+        values[key] = value.trim();
+      }
     }
     return values;
   }
@@ -215,7 +227,11 @@ export class GzElement extends HTMLElement {
  * @returns {Promise<void>}
  */
 export async function define(name, ctor) {
-  if (customElements.get(name)) return;
+  if (customElements.get(name)) {
+    return;
+  }
   await loadStyles(name);
-  if (!customElements.get(name)) customElements.define(name, ctor);
+  if (!customElements.get(name)) {
+    customElements.define(name, ctor);
+  }
 }

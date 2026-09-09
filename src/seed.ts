@@ -67,7 +67,9 @@ function main() {
   for (let week = weeks - 1; week >= 0; week--) {
     TEMPLATES.forEach((template, dayIndex) => {
       const daysAgo = week * 7 - dayIndex * 2;
-      if (daysAgo < 0) return;
+      if (daysAgo < 0) {
+        return;
+      }
 
       const workout = repo.createWorkout({
         performed_on: isoDaysAgo(daysAgo),
@@ -77,7 +79,9 @@ function main() {
 
       for (const lift of template.lifts) {
         const exerciseId = idByName.get(lift.name);
-        if (exerciseId === undefined) continue;
+        if (exerciseId === undefined) {
+          continue;
+        }
         const weight = lift.start + (weeks - 1 - week) * lift.step;
 
         lift.reps.forEach((reps, setIndex) => {

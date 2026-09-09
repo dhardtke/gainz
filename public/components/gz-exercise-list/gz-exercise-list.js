@@ -94,7 +94,9 @@ class GzExerciseList extends GzElement {
 
     if (action === "delete") {
       const name = element.dataset.name;
-      if (!confirm(`Delete "${name}"? Only possible while no set uses it.`)) return;
+      if (!confirm(`Delete "${name}"? Only possible while no set uses it.`)) {
+        return;
+      }
       try {
         await api.exercises.remove(Number(element.dataset.id));
         toast(`Deleted ${name}`, "success");
@@ -152,8 +154,12 @@ class GzExerciseList extends GzElement {
   }
 
   template() {
-    if (this.#state.status === "loading") return html`<p aria-busy="true">Loading exercises…</p>`;
-    if (this.#state.status === "error") return html`<p class="error-text">${this.#state.message}</p>`;
+    if (this.#state.status === "loading") {
+      return html`<p aria-busy="true">Loading exercises…</p>`;
+    }
+    if (this.#state.status === "error") {
+      return html`<p class="error-text">${this.#state.message}</p>`;
+    }
 
     const { items } = this.#state;
 

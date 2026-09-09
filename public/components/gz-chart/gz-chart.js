@@ -46,7 +46,9 @@ export class GzChart extends GzElement {
   /** @param {ChartPoint[]} value */
   set series(value) {
     this.#series = Array.isArray(value) ? value.filter((point) => Number.isFinite(Number(point.value))) : [];
-    if (this.isConnected) this.render();
+    if (this.isConnected) {
+      this.render();
+    }
   }
 
   get series() {
@@ -56,7 +58,9 @@ export class GzChart extends GzElement {
   /** @param {string} value */
   set unit(value) {
     this.#unit = value ?? "";
-    if (this.isConnected) this.render();
+    if (this.isConnected) {
+      this.render();
+    }
   }
 
   /**

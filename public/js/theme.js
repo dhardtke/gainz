@@ -50,7 +50,9 @@ function systemTheme() {
 function readStoredTheme() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (isTheme(stored)) return stored;
+    if (isTheme(stored)) {
+      return stored;
+    }
     // Anything else — nothing stored, or the "system" an earlier version wrote
     // — means no choice has been made, so start where the system points.
   } catch {
@@ -77,7 +79,9 @@ export function applyThemeTo(element) {
 
 /** @param {Theme} theme */
 export function setTheme(theme) {
-  if (!THEMES.includes(theme) || theme === current) return;
+  if (!THEMES.includes(theme) || theme === current) {
+    return;
+  }
   current = theme;
 
   try {
