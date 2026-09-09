@@ -24,6 +24,7 @@ const COMPONENTS = [
   "gz-exercise-list",
   "gz-set-row",
   "gz-stat-tile",
+  "gz-theme-toggle",
   "gz-toast",
   "gz-workout-detail",
   "gz-workout-list",

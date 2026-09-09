@@ -10,6 +10,20 @@
       rel="icon"
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>&#127947;</text></svg>"
     />
+    <script>
+      // Applies a stored theme before the first paint, so choosing light on a
+      // dark system does not flash dark on every load. js/theme.js owns the
+      // preference from then on; the storage key is duplicated here on purpose,
+      // because this must run before any module has loaded.
+      try {
+        var storedTheme = localStorage.getItem("gainz:theme");
+        if (storedTheme === "light" || storedTheme === "dark") {
+          document.documentElement.setAttribute("data-theme", storedTheme);
+        }
+      } catch (error) {
+        /* Storage unavailable — fall through to following the system. */
+      }
+    </script>
     <!--
       Pico styles the document itself; the same file is also adopted into every
       component's shadow root by js/styles.js, which is why Pico 2 ships :host

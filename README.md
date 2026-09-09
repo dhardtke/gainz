@@ -49,6 +49,10 @@ the field on install: it documents the requirement rather than gating it.
 - **Exercises** — the catalogue. Each one has a progress page charting estimated
   1RM, top set, or session volume over time.
 
+- **Theme** — the header carries an Auto / Light / Dark switcher. Auto follows
+  the operating system; an explicit choice is remembered in `localStorage` and
+  applied before the first paint, so it never flashes the wrong theme on load.
+
 Weights are stored as plain numbers and displayed in kilograms; to switch the
 whole UI to pounds, change `UNIT` in `public/js/format.js`.
 
@@ -75,12 +79,13 @@ public/
   js/
     base.js      GzElement: shadow root, escaping `html` tag, event delegation
     styles.js    Fetches the CSS files into constructable stylesheets
+    theme.js     Auto/light/dark preference, stored and mirrored onto hosts
     api.js       fetch wrapper for the REST API
     router.js    Hash router
     format.js    Dates, weights, volumes
     components/  gz-app, gz-dashboard, gz-workout-list, gz-workout-detail,
                  gz-set-row, gz-exercise-list, gz-exercise-detail,
-                 gz-chart, gz-stat-tile, gz-toast
+                 gz-chart, gz-stat-tile, gz-toast, gz-theme-toggle
 test/
   api.test.ts  End-to-end tests over a real server on an in-memory database
 ```
@@ -105,6 +110,23 @@ Shadow roots do not inherit document stylesheets, so Pico is adopted into each
 one as well as linked in `index.html`. Pico 2 ships `:host` selectors alongside
 its `:root` ones, so its variables and both themes work inside a shadow root
 unchanged.
+
+### Theming
+
+`js/theme.js` holds the preference and mirrors it onto `<html>`; `base.js`
+mirrors it onto every component host too, because Pico can only reach a shadow
+root through `:host`. Exactly two Pico rules set colours on a host, which is
+what makes three-way switching work:
+
+| Host `data-theme` | Rule that matches            | Result             |
+| ----------------- | ---------------------------- | ------------------ |
+| absent            | `:host(:not([data-theme]))` inside the dark media query | follows the system |
+| `light`           | `:host(:not([data-theme=dark]))` | forced light   |
+| `dark`            | none — Pico only ships a bare `[data-theme=dark]`, which cannot match a host from inside its own shadow root | colours inherit from `<html data-theme="dark">` |
+
+The third row works because custom properties inherit and Pico's base
+`:host,:root` block sets no colours, only typography and spacing. Any component
+added later gets this for free from `GzElement`.
 
 Pico is served from `node_modules` at `/vendor/pico.css` through an explicit
 one-file allowlist in `src/server.ts` — installing a package never publishes
