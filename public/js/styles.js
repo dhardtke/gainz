@@ -18,11 +18,19 @@
 /** Adopted by every component, in this order, before its own sheet. */
 const BASE_HREFS = ["/vendor/pico.css", "/css/shared.css"];
 
+/** @param {string} tagName */
 const componentHref = (tagName) => `/components/${tagName}/${tagName}.css`;
 
+/** @type {Map<string, CSSStyleSheet>} */
 const sheets = new Map();
+
+/** @type {Map<string, Promise<void>>} */
 const pending = new Map();
 
+/**
+ * @param {string} href
+ * @returns {Promise<void>}
+ */
 async function load(href) {
   try {
     const response = await fetch(href);
@@ -46,21 +54,30 @@ await Promise.all(BASE_HREFS.map(load));
  * Fetches one component's stylesheet, at most once. Repeat and concurrent calls
  * share the first fetch, so a component that two routes have in common — a stat
  * tile, say — is still loaded a single time.
+ *
+ * @param {string} tagName
+ * @returns {Promise<void>}
  */
 export function loadStyles(tagName) {
   const href = componentHref(tagName);
   if (sheets.has(href)) return Promise.resolve();
   if (!pending.has(href)) pending.set(href, load(href));
-  return pending.get(href);
+  return pending.get(href) ?? Promise.resolve();
 }
 
 /**
  * The stylesheets a component should adopt: Pico, the shared utilities, and its
  * own file. Synchronous by design, because it is called from a constructor, and
  * safe because `define()` awaits `loadStyles` before registering the element.
+ *
+ * @param {string} tagName
+ * @returns {CSSStyleSheet[]}
  */
 export function stylesFor(tagName) {
   const own = sheets.get(componentHref(tagName));
-  const base = BASE_HREFS.map((href) => sheets.get(href));
+  const base = BASE_HREFS.flatMap((href) => {
+    const sheet = sheets.get(href);
+    return sheet ? [sheet] : [];
+  });
   return own ? [...base, own] : base;
 }

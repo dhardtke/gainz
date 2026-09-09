@@ -1,13 +1,27 @@
-import { api } from "../../js/api.js";
+import { api, errorMessage } from "../../js/api.js";
 import { define, GzElement, html } from "../../js/base.js";
 import { formatDate, formatVolume, plural, relativeDay, todayIso } from "../../js/format.js";
 import { navigate } from "../../js/router.js";
 import { toast, toastError } from "../gz-toast/gz-toast.js";
 
+/** @import { WorkoutWithStats } from "../../js/types.js" */
+
+/**
+ * The list keeps the pages it has already loaded, so `items` and `total` live
+ * on every variant — an error while paging must not blank what is on screen.
+ *
+ * @typedef {object} WorkoutListState
+ * @property {"loading" | "ready" | "error"} status
+ * @property {WorkoutWithStats[]} items
+ * @property {number} total
+ * @property {string} [message]
+ */
+
 const PAGE_SIZE = 25;
 
 /** The training log: every session, newest first. */
 class GzWorkoutList extends GzElement {
+  /** @type {WorkoutListState} */
   #state = { status: "loading", items: [], total: 0 };
 
   async connectedCallback() {
@@ -15,21 +29,26 @@ class GzWorkoutList extends GzElement {
     await this.#load(0);
   }
 
+  /** @param {number} offset */
   async #load(offset) {
     try {
       const page = await api.workouts.list({ limit: PAGE_SIZE, offset });
       const items = offset === 0 ? page.items : [...this.#state.items, ...page.items];
       this.#state = { status: "ready", items, total: page.total };
     } catch (error) {
-      this.#state = { ...this.#state, status: "error", message: error.message };
+      this.#state = { ...this.#state, status: "error", message: errorMessage(error) };
       toastError(error);
     }
     this.render();
   }
 
+  /**
+   * @param {string} action
+   * @param {HTMLFormElement} form
+   */
   async handleSubmit(action, form) {
     if (action !== "create") return;
-    const values = this.formData(form);
+    const values = /** @type {{ performed_on: string, title: string, notes: string }} */ (this.formData(form));
     try {
       const workout = await api.workouts.create({
         performed_on: values.performed_on || todayIso(),
@@ -42,6 +61,10 @@ class GzWorkoutList extends GzElement {
     }
   }
 
+  /**
+   * @param {string} action
+   * @param {HTMLElement} element
+   */
   async handleAction(action, element) {
     const id = Number(element.dataset.id);
 

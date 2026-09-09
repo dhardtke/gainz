@@ -3,6 +3,8 @@ import { currentRoute, isActive, onRouteChange } from "../../js/router.js";
 import { toastError } from "../gz-toast/gz-toast.js";
 import "../gz-theme-toggle/gz-theme-toggle.js";
 
+/** @import { Route, ViewName } from "../../js/router.js" */
+
 const NAV = [
   { path: "/", label: "Dashboard" },
   { path: "/workouts", label: "Workouts" },
@@ -18,6 +20,8 @@ const NAV = [
  * awaits its own stylesheet before defining itself, so awaiting one of these
  * means the whole page is ready, scripts and CSS alike, before it goes on
  * screen.
+ *
+ * @type {Record<ViewName, () => Promise<unknown>>}
  */
 const VIEWS = {
   dashboard: () => import("../gz-dashboard/gz-dashboard.js"),
@@ -34,6 +38,7 @@ const VIEWS = {
  * so the header and the toast stack survive navigation.
  */
 class GzApp extends GzElement {
+  /** @type {(() => void) | null} */
   #unsubscribe = null;
   #renderToken = 0;
 
@@ -51,9 +56,14 @@ class GzApp extends GzElement {
     this.#renderView();
   }
 
-  /** Builds the element for a route, fetching its module first if need be. */
+  /**
+   * Builds the element for a route, fetching its module first if need be.
+   *
+   * @param {Route} route
+   * @returns {Promise<Element>}
+   */
   async #viewElement(route) {
-    await VIEWS[route.name]?.();
+    if (route.name !== "notfound") await VIEWS[route.name]();
 
     switch (route.name) {
       case "dashboard":
@@ -64,7 +74,7 @@ class GzApp extends GzElement {
 
       case "workout": {
         const view = document.createElement("gz-workout-detail");
-        view.setAttribute("workout-id", route.params.id);
+        view.setAttribute("workout-id", route.params.id ?? "");
         return view;
       }
 
@@ -73,7 +83,7 @@ class GzApp extends GzElement {
 
       case "exercise": {
         const view = document.createElement("gz-exercise-detail");
-        view.setAttribute("exercise-id", route.params.id);
+        view.setAttribute("exercise-id", route.params.id ?? "");
         return view;
       }
 
@@ -104,8 +114,10 @@ class GzApp extends GzElement {
 
     // aria-current marks the active page for assistive tech, and gz-app.css
     // keys the solid button off it — one attribute does both jobs.
-    for (const link of this.$$("nav a[data-path]")) {
-      const active = isActive(link.dataset.path);
+    /** @type {HTMLAnchorElement[]} */
+    const links = this.$$("nav a[data-path]");
+    for (const link of links) {
+      const active = isActive(link.dataset.path ?? "");
       link.classList.toggle("outline", !active);
       if (active) link.setAttribute("aria-current", "page");
       else link.removeAttribute("aria-current");
@@ -115,8 +127,14 @@ class GzApp extends GzElement {
     this.#swapView(route, token);
   }
 
-  /** Nothing awaits this, so it has to own its failures. */
+  /**
+   * Nothing awaits this, so it has to own its failures.
+   *
+   * @param {Route} route
+   * @param {number} token
+   */
   async #swapView(route, token) {
+    /** @type {Element} */
     let view;
     try {
       view = await this.#viewElement(route);

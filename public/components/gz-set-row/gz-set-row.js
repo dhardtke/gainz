@@ -3,34 +3,47 @@ import { define, GzElement, html } from "../../js/base.js";
 import { formatNumber, formatVolume, UNIT } from "../../js/format.js";
 import { toast, toastError } from "../gz-toast/gz-toast.js";
 
+/** @import { Exercise, LiftSet } from "../../js/types.js" */
+
 /**
  * One logged set. Reads in place, edits in place, and tells its parent to
  * reload with a `sets-changed` event rather than trying to patch the list.
  */
-class GzSetRow extends GzElement {
+export class GzSetRow extends GzElement {
   #editing = false;
+
+  /** @type {LiftSet | null} */
   #set = null;
+
+  /** @type {Exercise[]} */
   #exercises = [];
+
   #index = 0;
 
+  /** @param {LiftSet | undefined} value */
   set set(value) {
-    this.#set = value;
+    this.#set = value ?? null;
     if (this.isConnected) this.render();
   }
 
+  /** @param {Exercise[] | null | undefined} value */
   set exercises(value) {
     this.#exercises = value ?? [];
   }
 
+  /** @param {number} value */
   set index(value) {
     this.#index = Number(value) || 0;
   }
 
+  /** @param {string} action */
   async handleAction(action) {
     if (action === "edit") {
       this.#editing = true;
       this.render();
-      this.$("[name='weight']")?.focus();
+      /** @type {HTMLInputElement | null} */
+      const weight = this.$("[name='weight']");
+      weight?.focus();
       return;
     }
 
@@ -40,13 +53,16 @@ class GzSetRow extends GzElement {
       return;
     }
 
+    const set = this.#set;
+    if (!set) return;
+
     if (action === "duplicate") {
       try {
-        await api.workouts.addSet(this.#set.workout_id, {
-          exercise_id: this.#set.exercise_id,
-          reps: this.#set.reps,
-          weight: this.#set.weight,
-          notes: this.#set.notes,
+        await api.workouts.addSet(set.workout_id, {
+          exercise_id: set.exercise_id,
+          reps: set.reps,
+          weight: set.weight,
+          notes: set.notes,
         });
         this.emit("sets-changed");
       } catch (error) {
@@ -56,9 +72,9 @@ class GzSetRow extends GzElement {
     }
 
     if (action === "delete") {
-      if (!confirm(`Delete this set (${formatNumber(this.#set.weight)} ${UNIT} × ${this.#set.reps})?`)) return;
+      if (!confirm(`Delete this set (${formatNumber(set.weight)} ${UNIT} × ${set.reps})?`)) return;
       try {
-        await api.sets.remove(this.#set.id);
+        await api.sets.remove(set.id);
         toast("Set deleted", "success");
         this.emit("sets-changed");
       } catch (error) {
@@ -67,9 +83,13 @@ class GzSetRow extends GzElement {
     }
   }
 
+  /**
+   * @param {string} action
+   * @param {HTMLFormElement} form
+   */
   async handleSubmit(action, form) {
-    if (action !== "save") return;
-    const values = this.formData(form);
+    if (action !== "save" || !this.#set) return;
+    const values = /** @type {{ exercise_id: string, reps: string, weight: string, notes: string }} */ (this.formData(form));
     try {
       await api.sets.update(this.#set.id, {
         exercise_id: Number(values.exercise_id),
@@ -84,8 +104,8 @@ class GzSetRow extends GzElement {
     }
   }
 
-  #editTemplate() {
-    const set = this.#set;
+  /** @param {LiftSet} set */
+  #editTemplate(set) {
     return html`
       <form class="edit fields" data-action="save">
         <div class="field field-exercise">
@@ -115,10 +135,10 @@ class GzSetRow extends GzElement {
   }
 
   template() {
-    if (!this.#set) return html``;
-    if (this.#editing) return this.#editTemplate();
-
     const set = this.#set;
+    if (!set) return html``;
+    if (this.#editing) return this.#editTemplate(set);
+
     return html`
       <div class="row-view">
         <span class="index">${this.#index}</span>

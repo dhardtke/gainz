@@ -1,12 +1,21 @@
-import { api } from "../../js/api.js";
+import { api, errorMessage } from "../../js/api.js";
 import { define, GzElement, html } from "../../js/base.js";
 import { formatDate, formatVolume, plural, relativeDay, todayIso } from "../../js/format.js";
 import { navigate } from "../../js/router.js";
 import { toastError } from "../gz-toast/gz-toast.js";
 import "../gz-stat-tile/gz-stat-tile.js";
 
+/** @import { Summary, WorkoutWithStats } from "../../js/types.js" */
+
+/**
+ * @typedef {{ status: "loading" }
+ *   | { status: "ready", summary: Summary, workouts: WorkoutWithStats[] }
+ *   | { status: "error", message: string }} DashboardState
+ */
+
 /** Landing view: the numbers that answer "am I actually progressing?". */
 class GzDashboard extends GzElement {
+  /** @type {DashboardState} */
   #state = { status: "loading" };
 
   async connectedCallback() {
@@ -19,12 +28,13 @@ class GzDashboard extends GzElement {
       const [summary, page] = await Promise.all([api.summary(), api.workouts.list({ limit: 5 })]);
       this.#state = { status: "ready", summary, workouts: page.items };
     } catch (error) {
-      this.#state = { status: "error", message: error.message };
+      this.#state = { status: "error", message: errorMessage(error) };
       toastError(error);
     }
     this.render();
   }
 
+  /** @param {string} action */
   async handleAction(action) {
     if (action !== "start-workout") return;
     try {

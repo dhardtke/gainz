@@ -17,3 +17,12 @@ leaving it blank with no error.
 
 All interpolation goes through the `html` template, which escapes; use `raw()` only for markup
 another `html` call produced.
+
+The frontend is typed in JSDoc and checked by `bun run typecheck` — `tsconfig.json` turns on
+`checkJs` and includes `public`. The shapes the API returns are declared in `js/types.js` and
+pulled into a module with `/** @import { … } from "../../js/types.js" */`; they mirror the
+interfaces in `src/repo.ts` **by hand**, because `public/` is served to the browser as-is and
+never reaches into the server's source — so a column renamed there has to be renamed here too.
+Shapes local to one module — a view's `#state` union, the chart's points — are declared in that
+module. `GzChart` and `GzSetRow` are exported so a view can type the element it drives; the
+other nine components stay private to their module.

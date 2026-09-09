@@ -7,7 +7,7 @@
     "moduleDetection": "force",
     "types": ["bun-types"],
     "allowJs": true,
-    "checkJs": false,
+    "checkJs": true,
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noFallthroughCasesInSwitch": true,
@@ -15,5 +15,5 @@
     "skipLibCheck": true,
     "verbatimModuleSyntax": true
   },
-  "include": ["src", "test"]
+  "include": ["src", "test", "public"]
 }

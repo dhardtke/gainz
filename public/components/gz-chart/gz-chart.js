@@ -7,6 +7,23 @@ const H = 220;
 const GRIDLINES = 4;
 
 /**
+ * One plotted session.
+ *
+ * @typedef {object} ChartPoint
+ * @property {string} label the x-axis tick, already formatted.
+ * @property {number} value
+ * @property {string} [hint] extra detail for the point's tooltip.
+ */
+
+/**
+ * @typedef {object} ChartScale
+ * @property {(index: number) => number} xFraction
+ * @property {(value: number) => number} yFraction
+ * @property {number} low
+ * @property {number} high
+ */
+
+/**
  * A minimal line chart drawn as inline SVG.
  *
  * Points are spaced evenly by index rather than by date: for lifting, the
@@ -21,10 +38,12 @@ const GRIDLINES = 4;
  *
  * Usage: `chart.series = [{ label: "5 Jan", value: 82.5, hint: "3 sets" }]`
  */
-class GzChart extends GzElement {
+export class GzChart extends GzElement {
+  /** @type {ChartPoint[]} */
   #series = [];
   #unit = "";
 
+  /** @param {ChartPoint[]} value */
   set series(value) {
     this.#series = Array.isArray(value) ? value.filter((point) => Number.isFinite(Number(point.value))) : [];
     if (this.isConnected) this.render();
@@ -34,6 +53,7 @@ class GzChart extends GzElement {
     return this.#series;
   }
 
+  /** @param {string} value */
   set unit(value) {
     this.#unit = value ?? "";
     if (this.isConnected) this.render();
@@ -43,6 +63,8 @@ class GzChart extends GzElement {
    * Positions as fractions of the plot box: 0 is left/top, 1 is right/bottom.
    * Fractions work for both the SVG (multiply by W/H) and the HTML labels
    * (multiply by 100%), so the two always line up.
+   *
+   * @returns {ChartScale}
    */
   #scale() {
     const values = this.#series.map((point) => Number(point.value));
@@ -62,6 +84,7 @@ class GzChart extends GzElement {
     };
   }
 
+  /** @param {ChartScale} scale */
   #gridValues(scale) {
     return Array.from({ length: GRIDLINES + 1 }, (_, step) => scale.low + ((scale.high - scale.low) * step) / GRIDLINES);
   }
@@ -86,7 +109,9 @@ class GzChart extends GzElement {
       y: scale.yFraction(point.value) * H,
     }));
     const line = points.map(({ x, y }) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
-    const area = `M ${points[0].x.toFixed(1)},${H} L ${line.replaceAll(" ", " L ")} L ${points.at(-1).x.toFixed(1)},${H} Z`;
+    const first = points[0];
+    const last = points.at(-1);
+    const area = first && last ? `M ${first.x.toFixed(1)},${H} L ${line.replaceAll(" ", " L ")} L ${last.x.toFixed(1)},${H} Z` : "";
 
     return html`
       <div class="chart">
@@ -127,7 +152,7 @@ class GzChart extends GzElement {
 
         <div class="x-axis">
           ${this.#xLabelIndexes().map(
-            (index) => html` <span class="tick" style="left: ${(scale.xFraction(index) * 100).toFixed(2)}%"> ${this.#series[index].label} </span> `,
+            (index) => html` <span class="tick" style="left: ${(scale.xFraction(index) * 100).toFixed(2)}%"> ${this.#series[index]?.label} </span> `,
           )}
         </div>
       </div>
