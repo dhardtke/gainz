@@ -34,7 +34,9 @@ const pending = new Map();
 async function load(href) {
   try {
     const response = await fetch(href);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
 
     const sheet = new CSSStyleSheet();
     // replace() rather than replaceSync(): it tolerates @import instead of throwing.
@@ -60,8 +62,12 @@ await Promise.all(BASE_HREFS.map(load));
  */
 export function loadStyles(tagName) {
   const href = componentHref(tagName);
-  if (sheets.has(href)) return Promise.resolve();
-  if (!pending.has(href)) pending.set(href, load(href));
+  if (sheets.has(href)) {
+    return Promise.resolve();
+  }
+  if (!pending.has(href)) {
+    pending.set(href, load(href));
+  }
   return pending.get(href) ?? Promise.resolve();
 }
 

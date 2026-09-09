@@ -36,7 +36,9 @@ class GzToast extends GzElement {
 
   connectedCallback() {
     this.#onToast = (event) => {
-      if (event instanceof CustomEvent) this.#add(event.detail);
+      if (event instanceof CustomEvent) {
+        this.#add(event.detail);
+      }
     };
     window.addEventListener(EVENT, this.#onToast);
     super.connectedCallback();
@@ -44,7 +46,9 @@ class GzToast extends GzElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    if (this.#onToast) window.removeEventListener(EVENT, this.#onToast);
+    if (this.#onToast) {
+      window.removeEventListener(EVENT, this.#onToast);
+    }
     this.#onToast = null;
   }
 
@@ -59,7 +63,9 @@ class GzToast extends GzElement {
   /** @param {number} id */
   #dismiss(id) {
     const remaining = this.#items.filter((item) => item.id !== id);
-    if (remaining.length === this.#items.length) return;
+    if (remaining.length === this.#items.length) {
+      return;
+    }
     this.#items = remaining;
     this.render();
   }
@@ -69,7 +75,9 @@ class GzToast extends GzElement {
    * @param {HTMLElement} element
    */
   handleAction(action, element) {
-    if (action === "dismiss") this.#dismiss(Number(element.dataset.id));
+    if (action === "dismiss") {
+      this.#dismiss(Number(element.dataset.id));
+    }
   }
 
   template() {

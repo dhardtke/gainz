@@ -45,7 +45,9 @@ export type DB = Database;
  * `:memory:` is supported and used by the test suite.
  */
 export function openDatabase(path: string): DB {
-  if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
+  if (path !== ":memory:") {
+    mkdirSync(dirname(path), { recursive: true });
+  }
 
   const db = new Database(path, { create: true });
   db.exec("PRAGMA journal_mode = WAL;");

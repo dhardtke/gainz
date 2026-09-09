@@ -22,10 +22,16 @@ export function requiredString(body: Record<string, unknown>, field: string, max
 /** An optional string; empty strings and null both normalise to null. */
 export function optionalString(body: Record<string, unknown>, field: string, maxLength = 2000): string | null {
   const value = body[field];
-  if (value === undefined || value === null) return null;
-  if (typeof value !== "string") throw badRequest(`"${field}" must be a string`);
+  if (value === undefined || value === null) {
+    return null;
+  }
+  if (typeof value !== "string") {
+    throw badRequest(`"${field}" must be a string`);
+  }
   const trimmed = value.trim();
-  if (trimmed === "") return null;
+  if (trimmed === "") {
+    return null;
+  }
   if (trimmed.length > maxLength) {
     throw badRequest(`"${field}" must be at most ${maxLength} characters`);
   }
@@ -73,13 +79,17 @@ export function requiredDate(body: Record<string, unknown>, field: string): stri
 /** Parses a path parameter as a positive integer id. */
 export function pathId(raw: string | undefined, what: string): number {
   const id = Number(raw);
-  if (!Number.isInteger(id) || id < 1) throw badRequest(`Invalid ${what} id`);
+  if (!Number.isInteger(id) || id < 1) {
+    throw badRequest(`Invalid ${what} id`);
+  }
   return id;
 }
 
 export function queryInt(params: URLSearchParams, key: string, fallback: number, { min = 0, max = 1000 }: { min?: number; max?: number } = {}): number {
   const raw = params.get(key);
-  if (raw === null || raw === "") return fallback;
+  if (raw === null || raw === "") {
+    return fallback;
+  }
   const num = Number(raw);
   if (!Number.isInteger(num) || num < min || num > max) {
     throw badRequest(`"${key}" must be a whole number between ${min} and ${max}`);

@@ -114,7 +114,9 @@ export class Repo {
 
   requireExercise(id: number): Exercise {
     const exercise = this.getExercise(id);
-    if (!exercise) throw notFound("Exercise");
+    if (!exercise) {
+      throw notFound("Exercise");
+    }
     return exercise;
   }
 
@@ -126,10 +128,14 @@ export class Repo {
            RETURNING id, name, muscle_group, notes, created_at`,
         )
         .get(input.name, input.muscle_group, input.notes);
-      if (!row) throw new Error("Insert of exercise returned no row");
+      if (!row) {
+        throw new Error("Insert of exercise returned no row");
+      }
       return row;
     } catch (err) {
-      if (isUniqueViolation(err)) throw conflict(`An exercise named "${input.name}" already exists`);
+      if (isUniqueViolation(err)) {
+        throw conflict(`An exercise named "${input.name}" already exists`);
+      }
       throw err;
     }
   }
@@ -145,12 +151,16 @@ export class Repo {
         values.push(patch[field] ?? null);
       }
     }
-    if (assignments.length === 0) return this.requireExercise(id);
+    if (assignments.length === 0) {
+      return this.requireExercise(id);
+    }
 
     try {
       this.db.query(`UPDATE exercises SET ${assignments.join(", ")} WHERE id = ?`).run(...values, id);
     } catch (err) {
-      if (isUniqueViolation(err)) throw conflict(`An exercise named "${patch.name}" already exists`);
+      if (isUniqueViolation(err)) {
+        throw conflict(`An exercise named "${patch.name}" already exists`);
+      }
       throw err;
     }
     return this.requireExercise(id);
@@ -229,7 +239,9 @@ export class Repo {
 
   requireWorkout(id: number): Workout {
     const workout = this.getWorkout(id);
-    if (!workout) throw notFound("Workout");
+    if (!workout) {
+      throw notFound("Workout");
+    }
     return workout;
   }
 
@@ -240,7 +252,9 @@ export class Repo {
          RETURNING id, performed_on, title, notes, created_at`,
       )
       .get(input.performed_on, input.title, input.notes);
-    if (!row) throw new Error("Insert of workout returned no row");
+    if (!row) {
+      throw new Error("Insert of workout returned no row");
+    }
     return row;
   }
 
@@ -286,7 +300,9 @@ export class Repo {
 
   requireSet(id: number): LiftSet {
     const set = this.getSet(id);
-    if (!set) throw notFound("Set");
+    if (!set) {
+      throw notFound("Set");
+    }
     return set;
   }
 
@@ -306,13 +322,17 @@ export class Repo {
          RETURNING id`,
       )
       .get(workoutId, input.exercise_id, input.reps, input.weight, input.notes, position);
-    if (!inserted) throw new Error("Insert of set returned no row");
+    if (!inserted) {
+      throw new Error("Insert of set returned no row");
+    }
     return this.requireSet(inserted.id);
   }
 
   updateSet(id: number, patch: Partial<SetInput>): LiftSet {
     this.requireSet(id);
-    if (patch.exercise_id !== undefined) this.requireExercise(patch.exercise_id);
+    if (patch.exercise_id !== undefined) {
+      this.requireExercise(patch.exercise_id);
+    }
 
     const assignments: string[] = [];
     const values: (string | number | null)[] = [];

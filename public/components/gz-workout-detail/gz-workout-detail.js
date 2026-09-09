@@ -61,7 +61,9 @@ class GzWorkoutDetail extends GzElement {
   attributeChangedCallback(_name, oldValue, value) {
     this.#workoutId = value;
     // The initial attribute arrives before connectedCallback, which loads anyway.
-    if (this.isConnected && oldValue !== null && oldValue !== value) void this.#load();
+    if (this.isConnected && oldValue !== null && oldValue !== value) {
+      void this.#load();
+    }
   }
 
   async connectedCallback() {
@@ -84,7 +86,9 @@ class GzWorkoutDetail extends GzElement {
       }
     } catch (error) {
       this.#state = { status: "error", message: errorMessage(error) };
-      if (!(error instanceof ApiError) || error.status !== 404) toastError(error);
+      if (!(error instanceof ApiError) || error.status !== 404) {
+        toastError(error);
+      }
     }
     this.render();
   }
@@ -103,7 +107,9 @@ class GzWorkoutDetail extends GzElement {
     }
 
     if (action === "delete-workout") {
-      if (!confirm("Delete this workout and all of its sets? This cannot be undone.")) return;
+      if (!confirm("Delete this workout and all of its sets? This cannot be undone.")) {
+        return;
+      }
       try {
         await api.workouts.remove(/** @type {string} */ (this.#workoutId));
         toast("Workout deleted", "success");
@@ -117,9 +123,13 @@ class GzWorkoutDetail extends GzElement {
     if (action === "repeat-exercise") {
       // Re-log the last set of an exercise the user already did in this session.
       const exerciseId = Number(element.dataset.id);
-      if (this.#state.status !== "ready") return;
+      if (this.#state.status !== "ready") {
+        return;
+      }
       const last = this.#state.workout.sets.filter((set) => set.exercise_id === exerciseId).at(-1);
-      if (!last) return;
+      if (!last) {
+        return;
+      }
       try {
         await api.workouts.addSet(/** @type {string} */ (this.#workoutId), {
           exercise_id: last.exercise_id,
@@ -190,7 +200,9 @@ class GzWorkoutDetail extends GzElement {
   // ------------------------------------------------------------------- render
 
   afterRender() {
-    if (this.#state.status !== "ready") return;
+    if (this.#state.status !== "ready") {
+      return;
+    }
     const workout = this.#state.workout;
 
     /** @type {GzSetRow[]} */
@@ -225,16 +237,24 @@ class GzWorkoutDetail extends GzElement {
    * @param {number} exerciseId
    */
   #prefillFrom(exerciseId) {
-    if (this.#state.status !== "ready") return;
+    if (this.#state.status !== "ready") {
+      return;
+    }
     const previous = this.#state.workout.sets.filter((set) => set.exercise_id === exerciseId).at(-1);
-    if (!previous) return;
+    if (!previous) {
+      return;
+    }
 
     /** @type {HTMLInputElement | null} */
     const weight = this.$(".add-form input[name='weight']");
     /** @type {HTMLInputElement | null} */
     const reps = this.$(".add-form input[name='reps']");
-    if (weight) weight.value = String(previous.weight);
-    if (reps) reps.value = String(previous.reps);
+    if (weight) {
+      weight.value = String(previous.weight);
+    }
+    if (reps) {
+      reps.value = String(previous.reps);
+    }
   }
 
   /** @param {WorkoutWithSets} workout */
@@ -353,7 +373,9 @@ class GzWorkoutDetail extends GzElement {
   }
 
   template() {
-    if (this.#state.status === "loading") return html`<p aria-busy="true">Loading workout…</p>`;
+    if (this.#state.status === "loading") {
+      return html`<p aria-busy="true">Loading workout…</p>`;
+    }
     if (this.#state.status === "error") {
       return html`
         <div class="stack">

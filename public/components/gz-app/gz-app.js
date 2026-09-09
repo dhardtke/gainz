@@ -63,7 +63,9 @@ class GzApp extends GzElement {
    * @returns {Promise<Element>}
    */
   async #viewElement(route) {
-    if (route.name !== "notfound") await VIEWS[route.name]();
+    if (route.name !== "notfound") {
+      await VIEWS[route.name]();
+    }
 
     switch (route.name) {
       case "dashboard":
@@ -119,8 +121,11 @@ class GzApp extends GzElement {
     for (const link of links) {
       const active = isActive(link.dataset.path ?? "");
       link.classList.toggle("outline", !active);
-      if (active) link.setAttribute("aria-current", "page");
-      else link.removeAttribute("aria-current");
+      if (active) {
+        link.setAttribute("aria-current", "page");
+      } else {
+        link.removeAttribute("aria-current");
+      }
     }
     window.scrollTo({ top: 0, behavior: "instant" });
 
@@ -146,11 +151,15 @@ class GzApp extends GzElement {
     }
 
     // A newer route change started while this one was loading; that one wins.
-    if (token !== this.#renderToken) return;
+    if (token !== this.#renderToken) {
+      return;
+    }
 
     // Re-queried after the await: replaceChildren on a stale node is silent.
     const main = this.$("main");
-    if (main?.isConnected) main.replaceChildren(view);
+    if (main?.isConnected) {
+      main.replaceChildren(view);
+    }
   }
 
   template() {

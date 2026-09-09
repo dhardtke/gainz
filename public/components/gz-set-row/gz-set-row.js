@@ -23,7 +23,9 @@ export class GzSetRow extends GzElement {
   /** @param {LiftSet | undefined} value */
   set set(value) {
     this.#set = value ?? null;
-    if (this.isConnected) this.render();
+    if (this.isConnected) {
+      this.render();
+    }
   }
 
   /** @param {Exercise[] | null | undefined} value */
@@ -54,7 +56,9 @@ export class GzSetRow extends GzElement {
     }
 
     const set = this.#set;
-    if (!set) return;
+    if (!set) {
+      return;
+    }
 
     if (action === "duplicate") {
       try {
@@ -72,7 +76,9 @@ export class GzSetRow extends GzElement {
     }
 
     if (action === "delete") {
-      if (!confirm(`Delete this set (${formatNumber(set.weight)} ${UNIT} × ${set.reps})?`)) return;
+      if (!confirm(`Delete this set (${formatNumber(set.weight)} ${UNIT} × ${set.reps})?`)) {
+        return;
+      }
       try {
         await api.sets.remove(set.id);
         toast("Set deleted", "success");
@@ -88,7 +94,9 @@ export class GzSetRow extends GzElement {
    * @param {HTMLFormElement} form
    */
   async handleSubmit(action, form) {
-    if (action !== "save" || !this.#set) return;
+    if (action !== "save" || !this.#set) {
+      return;
+    }
     const values = /** @type {{ exercise_id: string, reps: string, weight: string, notes: string }} */ (this.formData(form));
     try {
       await api.sets.update(this.#set.id, {
@@ -136,8 +144,12 @@ export class GzSetRow extends GzElement {
 
   template() {
     const set = this.#set;
-    if (!set) return html``;
-    if (this.#editing) return this.#editTemplate(set);
+    if (!set) {
+      return html``;
+    }
+    if (this.#editing) {
+      return this.#editTemplate(set);
+    }
 
     return html`
       <div class="row-view">

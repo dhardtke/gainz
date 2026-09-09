@@ -13,7 +13,8 @@
     "typecheck": "bunx tsc --noEmit",
     "fmt": "oxfmt .",
     "fmt:check": "oxfmt --check .",
-    "lint": "oxlint"
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix"
   },
   "dependencies": {
     "@picocss/pico": "2.1.1",

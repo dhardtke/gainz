@@ -20,7 +20,9 @@ const VENDOR_FILES: Record<string, string> = {
 
 function resolveVendorPath(pathname: string): string | null {
   const specifier = VENDOR_FILES[pathname];
-  if (!specifier) return null;
+  if (!specifier) {
+    return null;
+  }
   try {
     return Bun.resolveSync(specifier, PROJECT_ROOT);
   } catch {
@@ -38,10 +40,14 @@ function resolveStaticPath(pathname: string): string | null {
   } catch {
     return null;
   }
-  if (decoded.includes("\0")) return null;
+  if (decoded.includes("\0")) {
+    return null;
+  }
 
   const target = resolve(PUBLIC_DIR, `.${normalize(decoded)}`);
-  if (target !== PUBLIC_DIR && !target.startsWith(PUBLIC_DIR + sep)) return null;
+  if (target !== PUBLIC_DIR && !target.startsWith(PUBLIC_DIR + sep)) {
+    return null;
+  }
   return target;
 }
 
@@ -65,7 +71,9 @@ async function serveStatic(req: Request): Promise<Response> {
   }
 
   const resolved = resolveStaticPath(pathname);
-  if (!resolved) return new Response("Not found", { status: 404 });
+  if (!resolved) {
+    return new Response("Not found", { status: 404 });
+  }
 
   const isRoot = pathname === "/" || pathname.endsWith("/");
   const candidate = isRoot ? resolve(resolved, "index.html") : resolved;

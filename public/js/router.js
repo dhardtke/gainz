@@ -29,7 +29,9 @@ export function currentRoute() {
 
   for (const route of ROUTES) {
     const match = path.match(route.pattern);
-    if (!match) continue;
+    if (!match) {
+      continue;
+    }
     /** @type {Record<string, string>} */
     const params = {};
     route.keys.forEach((key, index) => {
