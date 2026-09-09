@@ -198,4 +198,4 @@ class GzExerciseList extends GzElement {
   }
 }
 
-define("gz-exercise-list", GzExerciseList);
+await define("gz-exercise-list", GzExerciseList);

@@ -86,4 +86,4 @@ class GzDashboard extends GzElement {
   }
 }
 
-define("gz-dashboard", GzDashboard);
+await define("gz-dashboard", GzDashboard);

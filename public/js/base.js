@@ -1,4 +1,4 @@
-import { stylesFor } from "./styles.js";
+import { loadStyles, stylesFor } from "./styles.js";
 import { applyThemeTo, onThemeChange } from "./theme.js";
 
 /** Marks a string as already-safe HTML so `html` will not escape it again. */
@@ -114,7 +114,18 @@ export class GzElement extends HTMLElement {
   }
 }
 
-/** Registers a custom element, tolerating a repeated module evaluation. */
-export function define(name, ctor) {
+/**
+ * Registers a custom element once its stylesheet is in hand, tolerating a
+ * repeated module evaluation.
+ *
+ * Components await this at module scope, which is what makes "this module has
+ * loaded" also mean "its CSS is ready" for everything that imports it — so a
+ * route can be fetched on demand and still be styled on its first paint.
+ * Registering only after the sheet is cached is also what lets `stylesFor` stay
+ * synchronous, as the constructor needs it to be.
+ */
+export async function define(name, ctor) {
+  if (customElements.get(name)) return;
+  await loadStyles(name);
   if (!customElements.get(name)) customElements.define(name, ctor);
 }
