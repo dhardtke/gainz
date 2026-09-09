@@ -23,9 +23,10 @@ body {
 gz-app {
   display: block;
   min-height: 100vh;
-}
 
-/* The app renders inside a shadow root; this only matters before it upgrades. */
-gz-app:not(:defined) {
-  min-height: 100vh;
+  /* The app renders inside a shadow root; this only matters before it
+     upgrades. */
+  &:not(:defined) {
+    min-height: 100vh;
+  }
 }

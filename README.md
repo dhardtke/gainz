@@ -102,6 +102,12 @@ Pico CSS provides the typography, colours, form controls, tables and the
 light/dark themes; hand-written CSS is a thin layer on top of it, built from
 Pico's own `--pico-*` custom properties so it follows the active theme.
 
+Selectors are written with native CSS nesting: a rule that would repeat a
+prefix — `.workout`, `.workout:hover`, `.workout a` — nests instead, so each
+block reads as one component and the media queries that only adjust it sit
+inside it. There is no preprocessor, so this is the browser's own nesting and
+`&` is always written explicitly.
+
 **No stylesheet here declares a font size.** Body text is one size everywhere
 and headings come from Pico's scale; emphasis is weight and colour. Two rules
 exist only to make that hold:

@@ -22,19 +22,19 @@
   grid-row: 1;
   position: relative;
   color: var(--pico-muted-color);
-}
 
-.y-axis .sizer {
-  display: block;
-  visibility: hidden;
-  white-space: nowrap;
-}
+  & .sizer {
+    display: block;
+    visibility: hidden;
+    white-space: nowrap;
+  }
 
-.y-axis .tick {
-  position: absolute;
-  right: 0;
-  transform: translateY(-50%);
-  white-space: nowrap;
+  & .tick {
+    position: absolute;
+    right: 0;
+    transform: translateY(-50%);
+    white-space: nowrap;
+  }
 }
 
 /* -------------------------------------------------------------------- plot */
@@ -100,20 +100,20 @@ svg {
   position: relative;
   height: 1.5em;
   color: var(--pico-muted-color);
-}
 
-.x-axis .tick {
-  position: absolute;
-  transform: translateX(-50%);
-  white-space: nowrap;
-}
+  & .tick {
+    position: absolute;
+    transform: translateX(-50%);
+    white-space: nowrap;
 
-/* Keep the outermost labels inside the plot instead of overhanging it. The
-   :not() guards leave a lone label centred. */
-.x-axis .tick:first-child:not(:last-child) {
-  transform: translateX(0);
-}
+    /* Keep the outermost labels inside the plot instead of overhanging it.
+       The :not() guards leave a lone label centred. */
+    &:first-child:not(:last-child) {
+      transform: translateX(0);
+    }
 
-.x-axis .tick:last-child:not(:first-child) {
-  transform: translateX(-100%);
+    &:last-child:not(:first-child) {
+      transform: translateX(-100%);
+    }
+  }
 }
