@@ -1,10 +1,38 @@
-import { api } from "../../js/api.js";
+import { api, ApiError, errorMessage } from "../../js/api.js";
 import { define, GzElement, html } from "../../js/base.js";
 import { formatDate, formatDelta, formatNumber, formatShortDate, formatVolume, plural, relativeDay, UNIT } from "../../js/format.js";
 import { toastError } from "../gz-toast/gz-toast.js";
 import "../gz-chart/gz-chart.js";
 import "../gz-stat-tile/gz-stat-tile.js";
 
+/** @import { ExerciseProgress, SessionPoint } from "../../js/types.js" */
+/** @import { GzChart } from "../gz-chart/gz-chart.js" */
+
+/** The `SessionPoint` fields that can be plotted. */
+/** @typedef {"est_one_rep_max" | "top_weight" | "total_volume"} MetricKey */
+
+/**
+ * @typedef {object} Metric
+ * @property {MetricKey} key
+ * @property {string} label
+ * @property {string} unit
+ * @property {string} hint
+ */
+
+/** @typedef {{ status: "ready" } & ExerciseProgress} ReadyState */
+
+/**
+ * @typedef {{ status: "loading" }
+ *   | ReadyState
+ *   | { status: "error", message: string }} ExerciseDetailState
+ */
+
+/**
+ * Written as a non-empty tuple so `METRICS[0]` is always a metric — it is the
+ * default, and the fallback when an unknown one is asked for.
+ *
+ * @type {[Metric, ...Metric[]]}
+ */
 const METRICS = [
   {
     key: "est_one_rep_max",
@@ -18,12 +46,22 @@ const METRICS = [
 
 /** Progress view for a single exercise. */
 class GzExerciseDetail extends GzElement {
+  /** @type {string | null} */
   #exerciseId = null;
+
+  /** @type {ExerciseDetailState} */
   #state = { status: "loading" };
+
+  /** @type {MetricKey} */
   #metric = METRICS[0].key;
 
   static observedAttributes = ["exercise-id"];
 
+  /**
+   * @param {string} _name
+   * @param {string | null} oldValue
+   * @param {string | null} value
+   */
   attributeChangedCallback(_name, oldValue, value) {
     this.#exerciseId = value;
     if (this.isConnected && oldValue !== null && oldValue !== value) this.#load();
@@ -36,22 +74,32 @@ class GzExerciseDetail extends GzElement {
 
   async #load() {
     try {
-      this.#state = { status: "ready", ...(await api.exercises.progress(this.#exerciseId)) };
+      // gz-app sets the attribute before the element is connected, so
+      // attributeChangedCallback has already run by the time this does.
+      const id = /** @type {string} */ (this.#exerciseId);
+      this.#state = { status: "ready", ...(await api.exercises.progress(id)) };
     } catch (error) {
-      this.#state = { status: "error", message: error.message };
-      if (error.status !== 404) toastError(error);
+      this.#state = { status: "error", message: errorMessage(error) };
+      if (!(error instanceof ApiError) || error.status !== 404) toastError(error);
     }
     this.render();
   }
 
+  /**
+   * @param {string} action
+   * @param {HTMLElement} element
+   */
   handleAction(action, element) {
     if (action === "metric") {
-      this.#metric = element.dataset.metric;
+      const chosen = METRICS.find((candidate) => candidate.key === element.dataset.metric);
+      if (!chosen) return;
+      this.#metric = chosen.key;
       this.render();
     }
   }
 
   afterRender() {
+    /** @type {GzChart | null} */
     const chart = this.$("gz-chart");
     if (!chart || this.#state.status !== "ready") return;
 
@@ -64,8 +112,9 @@ class GzExerciseDetail extends GzElement {
     }));
   }
 
-  #summaryTiles() {
-    const { sessions, best_set: bestSet } = this.#state;
+  /** @param {ReadyState} state */
+  #summaryTiles(state) {
+    const { sessions, best_set: bestSet } = state;
     const latest = sessions.at(-1);
     const previous = sessions.at(-2);
 
@@ -94,8 +143,8 @@ class GzExerciseDetail extends GzElement {
     `;
   }
 
-  #sessionsTable() {
-    const { sessions } = this.#state;
+  /** @param {SessionPoint[]} sessions */
+  #sessionsTable(sessions) {
     return html`
       <article class="stack-sm">
         <h2>Session history</h2>
@@ -147,7 +196,8 @@ class GzExerciseDetail extends GzElement {
       `;
     }
 
-    const { exercise, sessions } = this.#state;
+    const state = this.#state;
+    const { exercise, sessions } = state;
     const metric = METRICS.find((candidate) => candidate.key === this.#metric) ?? METRICS[0];
 
     return html`
@@ -160,7 +210,7 @@ class GzExerciseDetail extends GzElement {
           </hgroup>
         </div>
 
-        ${this.#summaryTiles()}
+        ${this.#summaryTiles(state)}
 
         <article class="stack-sm">
           <div class="row-between">
@@ -184,7 +234,7 @@ class GzExerciseDetail extends GzElement {
           <p class="muted">${metric.hint}</p>
         </article>
 
-        ${sessions.length === 0 ? html`<p class="empty">No sets logged for this exercise yet.</p>` : this.#sessionsTable()}
+        ${sessions.length === 0 ? html`<p class="empty">No sets logged for this exercise yet.</p>` : this.#sessionsTable(sessions)}
       </div>
     `;
   }

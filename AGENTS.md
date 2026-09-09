@@ -12,7 +12,7 @@ bun run seed             # fill an empty DB with sample workouts
 bun test                 # API suite against in-memory SQLite
 bun test test/api.test.ts # one file
 bun test -t "health"     # one test / describe block by name
-bun run typecheck        # typechecking (src + test)
+bun run typecheck        # typechecking (src + test + public)
 bun run lint             # linting
 bun run fmt              # format (fmt:check for CI)
 ```

@@ -1,11 +1,22 @@
-import { api } from "../../js/api.js";
+import { api, errorMessage } from "../../js/api.js";
 import { define, GzElement, html } from "../../js/base.js";
 import { formatWeight, plural, relativeDay } from "../../js/format.js";
 import { toast, toastError } from "../gz-toast/gz-toast.js";
 
+/** @import { ExerciseWithStats } from "../../js/types.js" */
+
+/**
+ * @typedef {{ status: "loading" }
+ *   | { status: "ready", items: ExerciseWithStats[] }
+ *   | { status: "error", message: string }} ExerciseListState
+ */
+
 /** The exercise catalogue — the vocabulary the rest of the log is written in. */
 class GzExerciseList extends GzElement {
-  #state = { status: "loading", items: [] };
+  /** @type {ExerciseListState} */
+  #state = { status: "loading" };
+
+  /** @type {number | null} */
   #editingId = null;
 
   async connectedCallback() {
@@ -17,14 +28,18 @@ class GzExerciseList extends GzElement {
     try {
       this.#state = { status: "ready", items: await api.exercises.list() };
     } catch (error) {
-      this.#state = { status: "error", message: error.message };
+      this.#state = { status: "error", message: errorMessage(error) };
       toastError(error);
     }
     this.render();
   }
 
+  /**
+   * @param {string} action
+   * @param {HTMLFormElement} form
+   */
   async handleSubmit(action, form) {
-    const values = this.formData(form);
+    const values = /** @type {{ name: string, muscle_group: string, notes: string }} */ (this.formData(form));
 
     if (action === "create") {
       try {
@@ -57,11 +72,17 @@ class GzExerciseList extends GzElement {
     }
   }
 
+  /**
+   * @param {string} action
+   * @param {HTMLElement} element
+   */
   async handleAction(action, element) {
     if (action === "edit") {
       this.#editingId = Number(element.dataset.id);
       this.render();
-      this.$(".edit-row input")?.focus();
+      /** @type {HTMLInputElement | null} */
+      const field = this.$(".edit-row input");
+      field?.focus();
       return;
     }
 
@@ -84,6 +105,7 @@ class GzExerciseList extends GzElement {
     }
   }
 
+  /** @param {ExerciseWithStats} exercise */
   #editRow(exercise) {
     return html`
       <tr class="edit-row">
@@ -109,6 +131,7 @@ class GzExerciseList extends GzElement {
     `;
   }
 
+  /** @param {ExerciseWithStats} exercise */
   #row(exercise) {
     return html`
       <tr>

@@ -24,7 +24,7 @@ bun start            # http://localhost:3000
 | `bun run dev`       | Same, restarting on file changes                 |
 | `bun run seed`      | Fills an empty database with sample workouts     |
 | `bun test`          | Runs the API test suite against in-memory SQLite |
-| `bun run typecheck` | Type-checks the backend                          |
+| `bun run typecheck` | Type-checks the backend and the frontend         |
 
 The database lives at `data/gainz.sqlite` (override with `GAINZ_DB`) and is
 created on first run. It is git-ignored — the log is your data, not source.
@@ -88,6 +88,7 @@ public/
     api.js       fetch wrapper for the REST API
     router.js    Hash router
     format.js    Dates, weights, volumes
+    types.js     JSDoc typedefs for the shapes the API returns
 test/
   api.test.ts  End-to-end tests over a real server on an in-memory database
 ```

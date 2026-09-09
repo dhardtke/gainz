@@ -3,6 +3,7 @@ import { currentTheme, onThemeChange, setTheme } from "../../js/theme.js";
 
 /** Switch for the colour theme: off is light, on is dark. */
 class GzThemeToggle extends GzElement {
+  /** @type {(() => void) | null} */
   #stopThemeSync = null;
 
   connectedCallback() {
@@ -28,12 +29,19 @@ class GzThemeToggle extends GzElement {
    * user is standing on and drop focus.
    */
   #syncSwitch() {
+    /** @type {HTMLInputElement | null} */
     const input = this.$('input[role="switch"]');
     if (input) input.checked = currentTheme() === "dark";
   }
 
+  /**
+   * @param {string} action
+   * @param {HTMLElement} element
+   */
   handleAction(action, element) {
-    if (action === "toggle-theme") setTheme(element.checked ? "dark" : "light");
+    if (action === "toggle-theme" && element instanceof HTMLInputElement) {
+      setTheme(element.checked ? "dark" : "light");
+    }
   }
 
   template() {
