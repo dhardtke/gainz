@@ -146,4 +146,4 @@ class GzSetRow extends GzElement {
   }
 }
 
-define("gz-set-row", GzSetRow);
+await define("gz-set-row", GzSetRow);

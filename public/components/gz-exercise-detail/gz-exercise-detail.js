@@ -204,4 +204,4 @@ class GzExerciseDetail extends GzElement {
   }
 }
 
-define("gz-exercise-detail", GzExerciseDetail);
+await define("gz-exercise-detail", GzExerciseDetail);

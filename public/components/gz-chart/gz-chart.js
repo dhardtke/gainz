@@ -148,4 +148,4 @@ class GzChart extends GzElement {
   }
 }
 
-define("gz-chart", GzChart);
+await define("gz-chart", GzChart);

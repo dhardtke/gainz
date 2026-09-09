@@ -59,4 +59,4 @@ class GzToast extends GzElement {
   }
 }
 
-define("gz-toast", GzToast);
+await define("gz-toast", GzToast);

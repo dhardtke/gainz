@@ -370,4 +370,4 @@ class GzWorkoutDetail extends GzElement {
   }
 }
 
-define("gz-workout-detail", GzWorkoutDetail);
+await define("gz-workout-detail", GzWorkoutDetail);

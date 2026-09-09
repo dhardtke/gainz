@@ -1,18 +1,31 @@
 import { define, GzElement, html } from "../../js/base.js";
 import { currentRoute, isActive, onRouteChange } from "../../js/router.js";
-import "../gz-toast/gz-toast.js";
+import { toastError } from "../gz-toast/gz-toast.js";
 import "../gz-theme-toggle/gz-theme-toggle.js";
-import "../gz-dashboard/gz-dashboard.js";
-import "../gz-workout-list/gz-workout-list.js";
-import "../gz-workout-detail/gz-workout-detail.js";
-import "../gz-exercise-list/gz-exercise-list.js";
-import "../gz-exercise-detail/gz-exercise-detail.js";
 
 const NAV = [
   { path: "/", label: "Dashboard" },
   { path: "/workouts", label: "Workouts" },
   { path: "/exercises", label: "Exercises" },
 ];
+
+/**
+ * The view for each route, fetched the first time that route is opened.
+ *
+ * The specifiers are written out in full so they stay statically analysable;
+ * only the call is deferred. A view statically imports whatever it renders
+ * inside itself — the set row, the chart, the stat tiles — and every component
+ * awaits its own stylesheet before defining itself, so awaiting one of these
+ * means the whole page is ready, scripts and CSS alike, before it goes on
+ * screen.
+ */
+const VIEWS = {
+  dashboard: () => import("../gz-dashboard/gz-dashboard.js"),
+  workouts: () => import("../gz-workout-list/gz-workout-list.js"),
+  workout: () => import("../gz-workout-detail/gz-workout-detail.js"),
+  exercises: () => import("../gz-exercise-list/gz-exercise-list.js"),
+  exercise: () => import("../gz-exercise-detail/gz-exercise-detail.js"),
+};
 
 /**
  * Application shell: a persistent header plus a view slot.
@@ -22,6 +35,7 @@ const NAV = [
  */
 class GzApp extends GzElement {
   #unsubscribe = null;
+  #renderToken = 0;
 
   connectedCallback() {
     super.connectedCallback();
@@ -37,8 +51,10 @@ class GzApp extends GzElement {
     this.#renderView();
   }
 
-  /** Builds the element for the active route. */
-  #viewElement(route) {
+  /** Builds the element for a route, fetching its module first if need be. */
+  async #viewElement(route) {
+    await VIEWS[route.name]?.();
+
     switch (route.name) {
       case "dashboard":
         return document.createElement("gz-dashboard");
@@ -70,13 +86,24 @@ class GzApp extends GzElement {
     }
   }
 
+  /**
+   * Points the shell at the active route.
+   *
+   * The header is updated synchronously so a click is answered at once, and the
+   * view follows when it is ready. On a route's first visit its script and
+   * stylesheet still have to arrive; until they do, the outgoing view stays put
+   * rather than the page going blank.
+   */
   #renderView() {
     const route = currentRoute();
-    this.$("main")?.replaceChildren(this.#viewElement(route));
 
-    // The active page is a solid Pico button and the rest are outlined ones,
-    // which is a change of variant rather than of colour: dropping .outline
-    // swaps one stock Pico button for another, so no stylesheet has to know.
+    // Bumped on every entry, not just on a genuine route change: navigate()
+    // re-dispatches hashchange for the current path on purpose, so this runs
+    // re-entrantly.
+    const token = ++this.#renderToken;
+
+    // aria-current marks the active page for assistive tech, and gz-app.css
+    // keys the solid button off it — one attribute does both jobs.
     for (const link of this.$$("nav a[data-path]")) {
       const active = isActive(link.dataset.path);
       link.classList.toggle("outline", !active);
@@ -84,6 +111,28 @@ class GzApp extends GzElement {
       else link.removeAttribute("aria-current");
     }
     window.scrollTo({ top: 0, behavior: "instant" });
+
+    this.#swapView(route, token);
+  }
+
+  /** Nothing awaits this, so it has to own its failures. */
+  async #swapView(route, token) {
+    let view;
+    try {
+      view = await this.#viewElement(route);
+    } catch (cause) {
+      // Offline, or a deploy moved the file: keep what is on screen and say so,
+      // rather than leaving a nav button that looks dead.
+      toastError(cause);
+      return;
+    }
+
+    // A newer route change started while this one was loading; that one wins.
+    if (token !== this.#renderToken) return;
+
+    // Re-queried after the await: replaceChildren on a stale node is silent.
+    const main = this.$("main");
+    if (main?.isConnected) main.replaceChildren(view);
   }
 
   template() {
@@ -119,4 +168,4 @@ class GzApp extends GzElement {
   }
 }
 
-define("gz-app", GzApp);
+await define("gz-app", GzApp);

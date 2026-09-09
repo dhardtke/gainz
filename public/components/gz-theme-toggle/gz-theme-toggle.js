@@ -53,4 +53,4 @@ class GzThemeToggle extends GzElement {
   }
 }
 
-define("gz-theme-toggle", GzThemeToggle);
+await define("gz-theme-toggle", GzThemeToggle);

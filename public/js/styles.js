@@ -1,38 +1,27 @@
 /**
- * Loads the app's stylesheets once and hands them to components as
- * constructable `CSSStyleSheet` objects.
+ * Loads the app's stylesheets and hands them to components as constructable
+ * `CSSStyleSheet` objects.
  *
  * Shadow roots do not inherit the document's stylesheets, so each component
  * adopts Pico plus the shared utilities plus its own file. Adopting is by
  * reference: the CSS is fetched and parsed a single time no matter how many
  * elements use it.
  *
- * The top-level await below means every module that imports this one — which
- * is every component, through base.js — waits for the CSS before any element
- * is defined. That is what keeps the first paint from flashing unstyled.
+ * Pico and the shared utilities are fetched up front, behind the top-level
+ * await below, because every component adopts both. A component's own sheet is
+ * fetched when its module loads: `define()` in base.js awaits `loadStyles`
+ * before registering the element, so by the time an instance can exist,
+ * `stylesFor` can answer synchronously. That is what lets a route be loaded on
+ * demand without ever painting it unstyled.
  */
 
 /** Adopted by every component, in this order, before its own sheet. */
 const BASE_HREFS = ["/vendor/pico.css", "/css/shared.css"];
 
-/** One stylesheet per custom element, named after its tag. */
-const COMPONENTS = [
-  "gz-app",
-  "gz-chart",
-  "gz-dashboard",
-  "gz-exercise-detail",
-  "gz-exercise-list",
-  "gz-set-row",
-  "gz-stat-tile",
-  "gz-theme-toggle",
-  "gz-toast",
-  "gz-workout-detail",
-  "gz-workout-list",
-];
-
 const componentHref = (tagName) => `/components/${tagName}/${tagName}.css`;
 
 const sheets = new Map();
+const pending = new Map();
 
 async function load(href) {
   try {
@@ -51,11 +40,24 @@ async function load(href) {
   }
 }
 
-await Promise.all([...BASE_HREFS, ...COMPONENTS.map(componentHref)].map(load));
+await Promise.all(BASE_HREFS.map(load));
 
 /**
- * The stylesheets a component should adopt: Pico, the shared utilities, and
- * its own file when it has one.
+ * Fetches one component's stylesheet, at most once. Repeat and concurrent calls
+ * share the first fetch, so a component that two routes have in common — a stat
+ * tile, say — is still loaded a single time.
+ */
+export function loadStyles(tagName) {
+  const href = componentHref(tagName);
+  if (sheets.has(href)) return Promise.resolve();
+  if (!pending.has(href)) pending.set(href, load(href));
+  return pending.get(href);
+}
+
+/**
+ * The stylesheets a component should adopt: Pico, the shared utilities, and its
+ * own file. Synchronous by design, because it is called from a constructor, and
+ * safe because `define()` awaits `loadStyles` before registering the element.
  */
 export function stylesFor(tagName) {
   const own = sheets.get(componentHref(tagName));

@@ -83,7 +83,7 @@ public/
                  gz-toast, gz-theme-toggle
   js/
     base.js      GzElement: shadow root, escaping `html` tag, event delegation
-    styles.js    Fetches the CSS files into constructable stylesheets
+    styles.js    Fetches CSS into constructable stylesheets, per component
     theme.js     Light/dark preference, stored and mirrored onto hosts
     api.js       fetch wrapper for the REST API
     router.js    Hash router
@@ -122,14 +122,42 @@ No CSS lives in JavaScript. Each custom element owns a directory holding its
 script and the stylesheet named after its tag — `<gz-chart>` is
 `public/components/gz-chart/gz-chart.js` beside `gz-chart.css` — which
 `js/styles.js` fetches once into a `CSSStyleSheet` and every instance adopts by
-reference. `base.js` resolves that file by convention, so adding a component
-means creating `public/components/<tag>/` with both files and listing the tag in
-the manifest at the top of `js/styles.js`.
+reference. Adding a component means creating `public/components/<tag>/` with
+both files and ending the module with `await define("<tag>", TheClass)`; there
+is no manifest to register it in.
+
+That `await` is load-bearing — see **Loading** below.
 
 Shadow roots do not inherit document stylesheets, so Pico is adopted into each
 one as well as linked in `index.html`. Pico 2 ships `:host` selectors alongside
 its `:root` ones, so its variables and both themes work inside a shadow root
 unchanged.
+
+### Loading
+
+A route's script and stylesheet arrive the first time that route is opened, and
+never otherwise. Opening the dashboard fetches five component scripts and five
+stylesheets; the chart is downloaded only once you open an exercise.
+
+Two pieces make that safe. `define()` in `base.js` awaits the component's
+stylesheet before registering the element, and every component module `await`s
+its own `define()` at the top level. Because a top-level await blocks the
+modules that import it, `await import("…/gz-exercise-detail.js")` in `gz-app`
+resolves only when that view *and* everything it renders — the chart, the stat
+tiles — have their scripts and their CSS. So a lazily loaded page is fully
+styled on its first paint; there is no flash to guard against.
+
+Only the shell (`gz-app`, `gz-toast`, `gz-theme-toggle`) and Pico plus
+`shared.css` load up front. `gz-app` keeps the outgoing view on screen while the
+next one loads, guards against two navigations resolving out of order, and
+reports a failed import through the toast.
+
+One rule this depends on: **a component that a view renders inside itself must
+stay a static import in that view's module.** `gz-workout-detail` writes
+`<gz-set-row>` elements and then assigns properties to them; if the row's class
+were not yet defined, those assignments would land on an un-upgraded element and
+permanently shadow the class accessors, leaving the row blank with no error.
+Only the five route views in `gz-app`'s `VIEWS` table are loaded dynamically.
 
 ### Theming
 

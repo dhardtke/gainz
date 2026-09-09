@@ -20,4 +20,4 @@ class GzStatTile extends GzElement {
   }
 }
 
-define("gz-stat-tile", GzStatTile);
+await define("gz-stat-tile", GzStatTile);

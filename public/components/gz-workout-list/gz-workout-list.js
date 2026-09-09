@@ -167,4 +167,4 @@ class GzWorkoutList extends GzElement {
   }
 }
 
-define("gz-workout-list", GzWorkoutList);
+await define("gz-workout-list", GzWorkoutList);
