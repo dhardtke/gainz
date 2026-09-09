@@ -1,4 +1,4 @@
-import { define, GzElement, html } from "../base.js";
+import { define, GzElement, html } from "../../js/base.js";
 
 /** A single headline number with a label and optional sub-line. */
 class GzStatTile extends GzElement {

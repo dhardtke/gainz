@@ -1,9 +1,9 @@
-import { api } from "../api.js";
-import { define, GzElement, html } from "../base.js";
-import { formatDate, formatNumber, formatVolume, plural, relativeDay, UNIT } from "../format.js";
-import { navigate } from "../router.js";
-import { toast, toastError } from "./gz-toast.js";
-import "./gz-set-row.js";
+import { api } from "../../js/api.js";
+import { define, GzElement, html } from "../../js/base.js";
+import { formatDate, formatNumber, formatVolume, plural, relativeDay, UNIT } from "../../js/format.js";
+import { navigate } from "../../js/router.js";
+import { toast, toastError } from "../gz-toast/gz-toast.js";
+import "../gz-set-row/gz-set-row.js";
 
 const NEW_EXERCISE = "__new__";
 

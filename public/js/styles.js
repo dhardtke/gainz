@@ -30,7 +30,7 @@ const COMPONENTS = [
   "gz-workout-list",
 ];
 
-const componentHref = (tagName) => `/css/${tagName}.css`;
+const componentHref = (tagName) => `/components/${tagName}/${tagName}.css`;
 
 const sheets = new Map();
 

@@ -1,7 +1,7 @@
-import { api } from "../api.js";
-import { define, GzElement, html } from "../base.js";
-import { formatWeight, plural, relativeDay } from "../format.js";
-import { toast, toastError } from "./gz-toast.js";
+import { api } from "../../js/api.js";
+import { define, GzElement, html } from "../../js/base.js";
+import { formatWeight, plural, relativeDay } from "../../js/format.js";
+import { toast, toastError } from "../gz-toast/gz-toast.js";
 
 /** The exercise catalogue — the vocabulary the rest of the log is written in. */
 class GzExerciseList extends GzElement {

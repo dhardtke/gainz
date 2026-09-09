@@ -1,9 +1,9 @@
-import { api } from "../api.js";
-import { define, GzElement, html } from "../base.js";
-import { formatDate, formatVolume, plural, relativeDay, todayIso } from "../format.js";
-import { navigate } from "../router.js";
-import { toastError } from "./gz-toast.js";
-import "./gz-stat-tile.js";
+import { api } from "../../js/api.js";
+import { define, GzElement, html } from "../../js/base.js";
+import { formatDate, formatVolume, plural, relativeDay, todayIso } from "../../js/format.js";
+import { navigate } from "../../js/router.js";
+import { toastError } from "../gz-toast/gz-toast.js";
+import "../gz-stat-tile/gz-stat-tile.js";
 
 /** Landing view: the numbers that answer "am I actually progressing?". */
 class GzDashboard extends GzElement {
