@@ -24,6 +24,8 @@ and is git-ignored. `:memory:` is supported and is what the tests use.
 
 Commits go directly on `main`; don't open a feature branch unless asked.
 
+Always put plans inside the project directory.
+
 ## Architecture
 
 `src/` -> Bun + SQLite REST backend (TypeScript)
