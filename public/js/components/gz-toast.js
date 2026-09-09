@@ -23,6 +23,7 @@ class GzToast extends GzElement {
   }
 
   disconnectedCallback() {
+    super.disconnectedCallback();
     window.removeEventListener(EVENT, this.onToast);
   }
 

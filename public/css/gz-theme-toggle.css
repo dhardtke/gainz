@@ -1,0 +1,27 @@
+/* Segmented control for the colour theme, sized to sit in the header bar. */
+
+[role="group"] {
+  margin-bottom: 0;
+  width: auto;
+}
+
+button {
+  width: auto;
+  margin-bottom: 0;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+/* The active theme reads as pressed rather than merely hovered. */
+button[aria-pressed="true"] {
+  --pico-background-color: var(--pico-primary-background);
+  --pico-border-color: var(--pico-primary-border);
+  --pico-color: var(--pico-primary-inverse);
+}
+
+@media (max-width: 420px) {
+  button {
+    padding: 0.3rem 0.45rem;
+  }
+}

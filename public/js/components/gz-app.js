@@ -1,6 +1,7 @@
 import { define, GzElement, html } from "../base.js";
 import { currentRoute, isActive, onRouteChange } from "../router.js";
 import "./gz-toast.js";
+import "./gz-theme-toggle.js";
 import "./gz-dashboard.js";
 import "./gz-workout-list.js";
 import "./gz-workout-detail.js";
@@ -28,6 +29,7 @@ class GzApp extends GzElement {
   }
 
   disconnectedCallback() {
+    super.disconnectedCallback();
     this.#unsubscribe?.();
   }
 
@@ -96,6 +98,7 @@ class GzApp extends GzElement {
                 <li><a href="#${item.path}" data-path="${item.path}">${item.label}</a></li>
               `,
             )}
+            <li><gz-theme-toggle></gz-theme-toggle></li>
           </ul>
         </nav>
       </header>

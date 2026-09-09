@@ -1,4 +1,5 @@
 import { stylesFor } from "./styles.js";
+import { applyThemeTo, onThemeChange } from "./theme.js";
 
 /** Marks a string as already-safe HTML so `html` will not escape it again. */
 class RawHtml {
@@ -45,6 +46,8 @@ export function html(strings, ...values) {
  * `public/css/gz-chart.css` — so a component never carries CSS in JavaScript.
  */
 export class GzElement extends HTMLElement {
+  #stopThemeSync = null;
+
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
@@ -64,7 +67,17 @@ export class GzElement extends HTMLElement {
   }
 
   connectedCallback() {
+    // Pico only themes a shadow root through :host, so the chosen theme has to
+    // be mirrored onto each host rather than set once on <html>.
+    applyThemeTo(this);
+    this.#stopThemeSync ??= onThemeChange(() => applyThemeTo(this));
     this.render();
+  }
+
+  /** Subclasses that override this must call super, or the theme sync leaks. */
+  disconnectedCallback() {
+    this.#stopThemeSync?.();
+    this.#stopThemeSync = null;
   }
 
   /** Subclasses return the shadow markup for the current state. */
