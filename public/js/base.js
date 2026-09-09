@@ -85,7 +85,7 @@ export class GzElement extends HTMLElement {
     this.#root.addEventListener("click", (event) => {
       const target = event.target instanceof Element ? event.target.closest("[data-action]") : null;
       if (target instanceof HTMLElement && target.dataset.action) {
-        this.handleAction(target.dataset.action, target, event);
+        void this.handleAction(target.dataset.action, target, event);
       }
     });
 
@@ -93,7 +93,7 @@ export class GzElement extends HTMLElement {
       const form = event.target instanceof Element ? event.target.closest("form[data-action]") : null;
       if (!(form instanceof HTMLFormElement) || !form.dataset.action) return;
       event.preventDefault();
-      this.handleSubmit(form.dataset.action, form, event);
+      void this.handleSubmit(form.dataset.action, form, event);
     });
   }
 

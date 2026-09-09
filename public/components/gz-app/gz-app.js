@@ -124,7 +124,7 @@ class GzApp extends GzElement {
     }
     window.scrollTo({ top: 0, behavior: "instant" });
 
-    this.#swapView(route, token);
+    void this.#swapView(route, token);
   }
 
   /**

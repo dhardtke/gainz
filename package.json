@@ -16,7 +16,8 @@
     "lint": "oxlint"
   },
   "dependencies": {
-    "@picocss/pico": "2.1.1"
+    "@picocss/pico": "2.1.1",
+    "oxlint-tsgolint": "7.0.2001"
   },
   "devDependencies": {
     "@types/bun": "1.4.2",

@@ -64,7 +64,7 @@ class GzExerciseDetail extends GzElement {
    */
   attributeChangedCallback(_name, oldValue, value) {
     this.#exerciseId = value;
-    if (this.isConnected && oldValue !== null && oldValue !== value) this.#load();
+    if (this.isConnected && oldValue !== null && oldValue !== value) void this.#load();
   }
 
   async connectedCallback() {
