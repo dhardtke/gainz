@@ -1,8 +1,8 @@
-import { api } from "../api.js";
-import { define, GzElement, html } from "../base.js";
-import { formatDate, formatVolume, plural, relativeDay, todayIso } from "../format.js";
-import { navigate } from "../router.js";
-import { toast, toastError } from "./gz-toast.js";
+import { api } from "../../js/api.js";
+import { define, GzElement, html } from "../../js/base.js";
+import { formatDate, formatVolume, plural, relativeDay, todayIso } from "../../js/format.js";
+import { navigate } from "../../js/router.js";
+import { toast, toastError } from "../gz-toast/gz-toast.js";
 
 const PAGE_SIZE = 25;
 

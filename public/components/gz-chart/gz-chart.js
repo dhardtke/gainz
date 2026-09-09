@@ -1,5 +1,5 @@
-import { define, GzElement, html, raw } from "../base.js";
-import { formatNumber } from "../format.js";
+import { define, GzElement, html, raw } from "../../js/base.js";
+import { formatNumber } from "../../js/format.js";
 
 /** Plot area in SVG user units. Only geometry lives in here — never text. */
 const W = 600;

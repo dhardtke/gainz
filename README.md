@@ -75,7 +75,12 @@ public/
   css/
     app.css      Document-level styles
     shared.css   Layout utilities adopted by every component
-    gz-*.css     One stylesheet per custom element, named after its tag
+  components/    One directory per custom element, holding its script and the
+                 stylesheet named after its tag — gz-app/gz-app.js beside
+                 gz-app/gz-app.css, and the same shape for gz-dashboard,
+                 gz-workout-list, gz-workout-detail, gz-set-row,
+                 gz-exercise-list, gz-exercise-detail, gz-chart, gz-stat-tile,
+                 gz-toast, gz-theme-toggle
   js/
     base.js      GzElement: shadow root, escaping `html` tag, event delegation
     styles.js    Fetches the CSS files into constructable stylesheets
@@ -83,9 +88,6 @@ public/
     api.js       fetch wrapper for the REST API
     router.js    Hash router
     format.js    Dates, weights, volumes
-    components/  gz-app, gz-dashboard, gz-workout-list, gz-workout-detail,
-                 gz-set-row, gz-exercise-list, gz-exercise-detail,
-                 gz-chart, gz-stat-tile, gz-toast, gz-theme-toggle
 test/
   api.test.ts  End-to-end tests over a real server on an in-memory database
 ```
@@ -116,12 +118,13 @@ axis labels as HTML over the plot: a font size inside a `viewBox` is measured
 in user units, so the browser scales the lettering with the chart instead of
 matching the page.
 
-No CSS lives in JavaScript. Each custom element is styled by the file named
-after its tag — `<gz-chart>` by `public/css/gz-chart.css` — which `js/styles.js`
-fetches once into a `CSSStyleSheet` and every instance adopts by reference.
-`base.js` resolves that file by convention, so adding a component means adding
-`public/css/<tag>.css` and listing the tag in the manifest at the top of
-`js/styles.js`.
+No CSS lives in JavaScript. Each custom element owns a directory holding its
+script and the stylesheet named after its tag — `<gz-chart>` is
+`public/components/gz-chart/gz-chart.js` beside `gz-chart.css` — which
+`js/styles.js` fetches once into a `CSSStyleSheet` and every instance adopts by
+reference. `base.js` resolves that file by convention, so adding a component
+means creating `public/components/<tag>/` with both files and listing the tag in
+the manifest at the top of `js/styles.js`.
 
 Shadow roots do not inherit document stylesheets, so Pico is adopted into each
 one as well as linked in `index.html`. Pico 2 ships `:host` selectors alongside

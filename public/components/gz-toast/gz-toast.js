@@ -1,4 +1,4 @@
-import { define, GzElement, html } from "../base.js";
+import { define, GzElement, html } from "../../js/base.js";
 
 const EVENT = "gz-toast";
 let nextId = 0;

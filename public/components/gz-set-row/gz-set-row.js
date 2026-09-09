@@ -1,7 +1,7 @@
-import { api } from "../api.js";
-import { define, GzElement, html } from "../base.js";
-import { formatNumber, formatVolume, UNIT } from "../format.js";
-import { toast, toastError } from "./gz-toast.js";
+import { api } from "../../js/api.js";
+import { define, GzElement, html } from "../../js/base.js";
+import { formatNumber, formatVolume, UNIT } from "../../js/format.js";
+import { toast, toastError } from "../gz-toast/gz-toast.js";
 
 /**
  * One logged set. Reads in place, edits in place, and tells its parent to

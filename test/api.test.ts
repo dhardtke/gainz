@@ -78,7 +78,7 @@ describe("health and routing", () => {
   });
 
   test("serves the app stylesheets", async () => {
-    for (const path of ["/css/app.css", "/css/shared.css", "/css/gz-app.css"]) {
+    for (const path of ["/css/app.css", "/css/shared.css", "/components/gz-app/gz-app.css"]) {
       const res = await api(path);
       expect(res.status).toBe(200);
       expect(res.headers.get("content-type")).toContain("text/css");

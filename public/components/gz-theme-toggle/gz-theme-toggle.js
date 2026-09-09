@@ -1,5 +1,5 @@
-import { define, GzElement, html } from "../base.js";
-import { currentTheme, onThemeChange, setTheme } from "../theme.js";
+import { define, GzElement, html } from "../../js/base.js";
+import { currentTheme, onThemeChange, setTheme } from "../../js/theme.js";
 
 /** Switch for the colour theme: off is light, on is dark. */
 class GzThemeToggle extends GzElement {

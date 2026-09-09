@@ -1,12 +1,12 @@
-import { define, GzElement, html } from "../base.js";
-import { currentRoute, isActive, onRouteChange } from "../router.js";
-import "./gz-toast.js";
-import "./gz-theme-toggle.js";
-import "./gz-dashboard.js";
-import "./gz-workout-list.js";
-import "./gz-workout-detail.js";
-import "./gz-exercise-list.js";
-import "./gz-exercise-detail.js";
+import { define, GzElement, html } from "../../js/base.js";
+import { currentRoute, isActive, onRouteChange } from "../../js/router.js";
+import "../gz-toast/gz-toast.js";
+import "../gz-theme-toggle/gz-theme-toggle.js";
+import "../gz-dashboard/gz-dashboard.js";
+import "../gz-workout-list/gz-workout-list.js";
+import "../gz-workout-detail/gz-workout-detail.js";
+import "../gz-exercise-list/gz-exercise-list.js";
+import "../gz-exercise-detail/gz-exercise-detail.js";
 
 const NAV = [
   { path: "/", label: "Dashboard" },

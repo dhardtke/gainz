@@ -42,8 +42,9 @@ export function html(strings, ...values) {
  * the shared utilities and the element's own stylesheet, a render hook, and
  * click/submit delegation driven by `data-action` attributes.
  *
- * The component's CSS file is found by convention — `<gz-chart>` is styled by
- * `public/css/gz-chart.css` — so a component never carries CSS in JavaScript.
+ * The component's CSS file sits next to its module and is found by convention —
+ * `<gz-chart>` is styled by `public/components/gz-chart/gz-chart.css` — so a
+ * component never carries CSS in JavaScript.
  */
 export class GzElement extends HTMLElement {
   #stopThemeSync = null;

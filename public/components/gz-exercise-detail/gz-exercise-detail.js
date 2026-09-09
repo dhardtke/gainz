@@ -1,5 +1,5 @@
-import { api } from "../api.js";
-import { define, GzElement, html } from "../base.js";
+import { api } from "../../js/api.js";
+import { define, GzElement, html } from "../../js/base.js";
 import {
   formatDate,
   formatDelta,
@@ -9,10 +9,10 @@ import {
   plural,
   relativeDay,
   UNIT,
-} from "../format.js";
-import { toastError } from "./gz-toast.js";
-import "./gz-chart.js";
-import "./gz-stat-tile.js";
+} from "../../js/format.js";
+import { toastError } from "../gz-toast/gz-toast.js";
+import "../gz-chart/gz-chart.js";
+import "../gz-stat-tile/gz-stat-tile.js";
 
 const METRICS = [
   {
