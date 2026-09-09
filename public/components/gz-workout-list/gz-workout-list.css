@@ -7,37 +7,35 @@
   padding: 0.7rem 0.85rem;
   border: 1px solid var(--pico-muted-border-color);
   border-radius: var(--pico-border-radius);
-}
 
-.workout:hover {
-  background: var(--pico-card-sectioning-background-color);
-}
+  &:hover {
+    background: var(--pico-card-sectioning-background-color);
+  }
 
-.workout a {
-  color: inherit;
-  font-weight: 600;
-  text-decoration: none;
-}
+  & a {
+    color: inherit;
+    font-weight: 600;
+    text-decoration: none;
 
-.workout a:hover {
-  color: var(--pico-primary);
-}
+    &:hover {
+      color: var(--pico-primary);
+    }
+  }
 
-.workout .date {
-  color: var(--pico-muted-color);
-}
+  & .date {
+    color: var(--pico-muted-color);
+  }
 
-.workout .actions {
-  display: flex;
-  gap: 0.25rem;
+  & .actions {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  @media (max-width: 640px) {
+    flex-wrap: wrap;
+  }
 }
 
 .new-form .field-notes {
   flex: 2 1 16rem;
-}
-
-@media (max-width: 640px) {
-  .workout {
-    flex-wrap: wrap;
-  }
 }

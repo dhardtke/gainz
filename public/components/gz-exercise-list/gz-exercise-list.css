@@ -6,23 +6,23 @@
 
 td.name {
   font-weight: 600;
-}
 
-td.name a {
-  text-decoration: none;
-}
+  & a {
+    text-decoration: none;
 
-td.name a:hover {
-  text-decoration: underline;
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 }
 
 td.actions {
   text-align: right;
   white-space: nowrap;
-}
 
-td.actions button {
-  margin-bottom: 0;
+  & button {
+    margin-bottom: 0;
+  }
 }
 
 .edit-row td {

@@ -23,10 +23,10 @@
   font-weight: 600;
   color: inherit;
   text-decoration: none;
-}
 
-.exercise:hover {
-  color: var(--pico-primary);
+  &:hover {
+    color: var(--pico-primary);
+  }
 }
 
 .load {
@@ -57,18 +57,18 @@ form.edit {
   border: 1px solid var(--pico-primary);
   border-radius: var(--pico-border-radius);
   margin: 0;
-}
 
-form.edit .field-exercise {
-  flex: 2 1 11rem;
-}
+  & .field-exercise {
+    flex: 2 1 11rem;
+  }
 
-form.edit .field-num {
-  flex: 0 1 7rem;
-}
+  & .field-num {
+    flex: 0 1 7rem;
+  }
 
-form.edit .field-notes {
-  flex: 3 1 12rem;
+  & .field-notes {
+    flex: 3 1 12rem;
+  }
 }
 
 @media (max-width: 720px) {

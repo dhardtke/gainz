@@ -16,13 +16,13 @@
   border-radius: var(--pico-border-radius);
   color: inherit;
   text-decoration: none;
-}
 
-.workout-link:hover {
-  border-color: var(--pico-primary);
-  background: var(--pico-card-sectioning-background-color);
-}
+  &:hover {
+    border-color: var(--pico-primary);
+    background: var(--pico-card-sectioning-background-color);
+  }
 
-.workout-link .title {
-  font-weight: 600;
+  & .title {
+    font-weight: 600;
+  }
 }

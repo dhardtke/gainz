@@ -71,22 +71,21 @@
   flex-wrap: wrap;
   gap: calc(var(--pico-spacing) * 0.5);
   align-items: flex-end;
-}
 
-.fields > .field {
-  flex: 1 1 10rem;
-  min-width: 0;
+  & > .field {
+    flex: 1 1 10rem;
+    min-width: 0;
+  }
+
+  /* Inputs carry a bottom margin in Pico so stacked forms breathe; in a
+     .fields row it misaligns them against the submit button. */
+  & :is(input, select, textarea) {
+    margin-bottom: 0;
+  }
 }
 
 .field > label {
   margin-bottom: calc(var(--pico-spacing) * 0.25);
-}
-
-/* Inputs carry a bottom margin in Pico so stacked forms breathe; in a .fields
-   row it misaligns them against the submit button. */
-.fields :is(input, select, textarea),
-.fields > button {
-  margin-bottom: 0;
 }
 
 /* Pico stretches submit buttons to full width, which is right for a stacked
@@ -151,12 +150,12 @@ button.danger {
   --pico-border-color: transparent;
   --pico-color: var(--pico-del-color, #c0392b);
   --pico-underline: transparent;
-}
 
-button.danger:is(:hover, :active, :focus) {
-  --pico-background-color: var(--pico-card-sectioning-background-color);
-  --pico-border-color: var(--pico-del-color, #c0392b);
-  --pico-color: var(--pico-del-color, #c0392b);
+  &:is(:hover, :active, :focus) {
+    --pico-background-color: var(--pico-card-sectioning-background-color);
+    --pico-border-color: var(--pico-del-color, #c0392b);
+    --pico-color: var(--pico-del-color, #c0392b);
+  }
 }
 
 /* ------------------------------------------------------------------ tables */

@@ -12,19 +12,29 @@ header {
   z-index: 10;
   background: var(--pico-background-color);
   border-bottom: 1px solid var(--pico-muted-border-color);
-}
 
-header nav {
-  padding-block: 0.35rem;
-}
+  & nav {
+    padding-block: 0.35rem;
 
-/* Pico pads nav items generously; the header is a single compact row. */
-header nav ul {
-  gap: 0.15rem;
-}
+    /* Pico pads nav items generously; the header is a single compact row. */
+    & ul {
+      gap: 0.15rem;
+    }
 
-header nav li {
-  padding-block: 0;
+    & li {
+      padding-block: 0;
+    }
+
+    /* The nav entries are Pico buttons. Every colour — resting, hover and the
+       solid fill on the active page — comes from Pico's own variants, so the
+       only thing left to say here is the sizing: Pico sizes buttons for touch,
+       and the header is a single compact row. */
+    & a[role="button"] {
+      padding: 0.35rem 0.75rem;
+      margin-bottom: 0;
+      white-space: nowrap;
+    }
+  }
 }
 
 .brand {
@@ -32,25 +42,19 @@ header nav li {
   align-items: baseline;
   gap: 0.5rem;
   text-decoration: none;
-}
 
-.brand strong {
-  letter-spacing: -0.02em;
-  color: var(--pico-primary);
-}
+  & strong {
+    letter-spacing: -0.02em;
+    color: var(--pico-primary);
+  }
 
-.brand .tag {
-  color: var(--pico-muted-color);
-}
+  & .tag {
+    color: var(--pico-muted-color);
 
-/* The nav entries are Pico buttons. Every colour — resting, hover and the
-   solid fill on the active page — comes from Pico's own variants, so the only
-   thing left to say here is the sizing: Pico sizes buttons for touch, and the
-   header is a single compact row. */
-header nav a[role="button"] {
-  padding: 0.35rem 0.75rem;
-  margin-bottom: 0;
-  white-space: nowrap;
+    @media (max-width: 560px) {
+      display: none;
+    }
+  }
 }
 
 main {
@@ -62,10 +66,4 @@ footer {
   flex: 0 0 auto;
   padding-bottom: 2rem;
   color: var(--pico-muted-color);
-}
-
-@media (max-width: 560px) {
-  .brand .tag {
-    display: none;
-  }
 }
