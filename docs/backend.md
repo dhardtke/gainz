@@ -18,4 +18,3 @@ in-memory DB. Tests are end-to-end over HTTP; there are no unit tests of `Repo`.
 Static serving is deliberately narrow: `public/` with a path-escape guard, plus `VENDOR_FILES`
 in `server.ts` — a one-file allowlist into `node_modules` (`/vendor/pico.css`). Serving anything
 else from a package means adding it to that map.
-

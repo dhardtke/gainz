@@ -118,50 +118,49 @@ class GzWorkoutList extends GzElement {
         ${this.#newWorkoutForm()}
 
         <div class="stack-sm">
-          ${items.length === 0
-            ? html`<p class="empty">No sessions logged yet. Start one above.</p>`
-            : items.map(
-                (workout) => html`
-                  <div class="workout">
-                    <div class="grow">
-                      <a href="#/workouts/${workout.id}">${workout.title ?? formatDate(workout.performed_on)}</a>
-                      <div class="date">${formatDate(workout.performed_on)} · ${relativeDay(workout.performed_on)}</div>
+          ${
+            items.length === 0
+              ? html`<p class="empty">No sessions logged yet. Start one above.</p>`
+              : items.map(
+                  (workout) => html`
+                    <div class="workout">
+                      <div class="grow">
+                        <a href="#/workouts/${workout.id}">${workout.title ?? formatDate(workout.performed_on)}</a>
+                        <div class="date">${formatDate(workout.performed_on)} · ${relativeDay(workout.performed_on)}</div>
+                      </div>
+                      <span class="badge">
+                        ${plural(workout.set_count, "set")} · ${plural(workout.exercise_count, "exercise")} · ${formatVolume(workout.total_volume)}
+                      </span>
+                      <div class="actions">
+                        <button
+                          class="secondary outline compact"
+                          data-action="repeat"
+                          data-id="${workout.id}"
+                          data-title="${workout.title ?? ""}"
+                          title="Copy these sets into a new session dated today"
+                        >
+                          Repeat
+                        </button>
+                        <button
+                          class="danger compact"
+                          data-action="delete"
+                          data-id="${workout.id}"
+                          data-label="${workout.title ?? formatDate(workout.performed_on)}"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
-                    <span class="badge">
-                      ${plural(workout.set_count, "set")} · ${plural(workout.exercise_count, "exercise")} ·
-                      ${formatVolume(workout.total_volume)}
-                    </span>
-                    <div class="actions">
-                      <button
-                        class="secondary outline compact"
-                        data-action="repeat"
-                        data-id="${workout.id}"
-                        data-title="${workout.title ?? ""}"
-                        title="Copy these sets into a new session dated today"
-                      >
-                        Repeat
-                      </button>
-                      <button
-                        class="danger compact"
-                        data-action="delete"
-                        data-id="${workout.id}"
-                        data-label="${workout.title ?? formatDate(workout.performed_on)}"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                `,
-              )}
+                  `,
+                )
+          }
         </div>
 
-        ${items.length < total
-          ? html`
-              <button class="secondary outline" data-action="load-more">
-                Load ${Math.min(PAGE_SIZE, total - items.length)} more
-              </button>
-            `
-          : ""}
+        ${
+          items.length < total
+            ? html` <button class="secondary outline" data-action="load-more">Load ${Math.min(PAGE_SIZE, total - items.length)} more</button> `
+            : ""
+        }
       </div>
     `;
   }

@@ -63,19 +63,14 @@ class GzChart extends GzElement {
   }
 
   #gridValues(scale) {
-    return Array.from(
-      { length: GRIDLINES + 1 },
-      (_, step) => scale.low + ((scale.high - scale.low) * step) / GRIDLINES,
-    );
+    return Array.from({ length: GRIDLINES + 1 }, (_, step) => scale.low + ((scale.high - scale.low) * step) / GRIDLINES);
   }
 
   /** At most six labels along the x axis, so they never collide. */
   #xLabelIndexes() {
     const total = this.#series.length;
     const stride = Math.max(1, Math.ceil(total / 6));
-    return this.#series
-      .map((_, index) => index)
-      .filter((index) => index % stride === 0 || index === total - 1);
+    return this.#series.map((_, index) => index).filter((index) => index % stride === 0 || index === total - 1);
   }
 
   template() {
@@ -104,11 +99,7 @@ class GzChart extends GzElement {
           -->
           <span class="sizer">${gridLabels.reduce((a, b) => (b.length > a.length ? b : a), "")}</span>
           ${gridValues.map(
-            (value, index) => html`
-              <span class="tick" style="top: ${(scale.yFraction(value) * 100).toFixed(2)}%">
-                ${gridLabels[index]}
-              </span>
-            `,
+            (value, index) => html` <span class="tick" style="top: ${(scale.yFraction(value) * 100).toFixed(2)}%"> ${gridLabels[index]} </span> `,
           )}
         </div>
 
@@ -136,11 +127,7 @@ class GzChart extends GzElement {
 
         <div class="x-axis">
           ${this.#xLabelIndexes().map(
-            (index) => html`
-              <span class="tick" style="left: ${(scale.xFraction(index) * 100).toFixed(2)}%">
-                ${this.#series[index].label}
-              </span>
-            `,
+            (index) => html` <span class="tick" style="left: ${(scale.xFraction(index) * 100).toFixed(2)}%"> ${this.#series[index].label} </span> `,
           )}
         </div>
       </div>

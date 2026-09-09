@@ -1,16 +1,6 @@
 import { errorResponse, json, noContent, notFound, readJsonObject } from "./http";
 import type { ExerciseInput, Repo, SetInput, WorkoutInput } from "./repo";
-import {
-  isPresent,
-  optionalString,
-  pathId,
-  queryInt,
-  requiredDate,
-  requiredInt,
-  requiredNumber,
-  requiredString,
-  today,
-} from "./validate";
+import { isPresent, optionalString, pathId, queryInt, requiredDate, requiredInt, requiredNumber, requiredString, today } from "./validate";
 
 /** A request as Bun hands it to a parameterised route handler. */
 type ParamRequest = Request & { params: Record<string, string | undefined> };
@@ -29,9 +19,7 @@ function guard(handler: Handler): Handler {
 }
 
 function guardAll<T extends Record<string, Handler>>(handlers: T): T {
-  return Object.fromEntries(
-    Object.entries(handlers).map(([method, handler]) => [method, guard(handler)]),
-  ) as T;
+  return Object.fromEntries(Object.entries(handlers).map(([method, handler]) => [method, guard(handler)])) as T;
 }
 
 const MAX_NAME = 120;

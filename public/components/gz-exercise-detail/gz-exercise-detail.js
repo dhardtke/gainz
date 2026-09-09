@@ -1,15 +1,6 @@
 import { api } from "../../js/api.js";
 import { define, GzElement, html } from "../../js/base.js";
-import {
-  formatDate,
-  formatDelta,
-  formatNumber,
-  formatShortDate,
-  formatVolume,
-  plural,
-  relativeDay,
-  UNIT,
-} from "../../js/format.js";
+import { formatDate, formatDelta, formatNumber, formatShortDate, formatVolume, plural, relativeDay, UNIT } from "../../js/format.js";
 import { toastError } from "../gz-toast/gz-toast.js";
 import "../gz-chart/gz-chart.js";
 import "../gz-stat-tile/gz-stat-tile.js";
@@ -133,10 +124,7 @@ class GzExerciseDetail extends GzElement {
                     <td class="num">${session.set_count}</td>
                     <td class="num">${session.total_reps}</td>
                     <td class="num">${formatNumber(session.top_weight)} ${UNIT}</td>
-                    <td class="num">
-                      ${formatNumber(session.est_one_rep_max, 1)}
-                      ${change ? html`<span class="${direction}"> ${change}</span>` : ""}
-                    </td>
+                    <td class="num">${formatNumber(session.est_one_rep_max, 1)} ${change ? html`<span class="${direction}"> ${change}</span>` : ""}</td>
                     <td class="num">${formatVolume(session.total_volume)}</td>
                   </tr>
                 `;
@@ -196,9 +184,7 @@ class GzExerciseDetail extends GzElement {
           <p class="muted">${metric.hint}</p>
         </article>
 
-        ${sessions.length === 0
-          ? html`<p class="empty">No sets logged for this exercise yet.</p>`
-          : this.#sessionsTable()}
+        ${sessions.length === 0 ? html`<p class="empty">No sets logged for this exercise yet.</p>` : this.#sessionsTable()}
       </div>
     `;
   }

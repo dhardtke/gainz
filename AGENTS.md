@@ -14,7 +14,7 @@ bun test test/api.test.ts # one file
 bun test -t "health"     # one test / describe block by name
 bun run typecheck        # bunx tsc --noEmit (src + test)
 bun run lint             # oxlint
-bun run format           # oxfmt .   (format:check for CI)
+bun run fmt              # oxfmt .   (fmt:check for CI)
 ```
 
 Dependencies are pinned to exact versions.

@@ -1,8 +1,8 @@
 {
   "name": "gainz",
   "version": "0.1.0",
-  "description": "Track weight-lifting progress: workouts, sets, reps, weight and notes.",
   "private": true,
+  "description": "Track weight-lifting progress: workouts, sets, reps, weight and notes.",
   "type": "module",
   "module": "src/server.ts",
   "scripts": {
@@ -11,12 +11,12 @@
     "seed": "bun run src/seed.ts",
     "test": "bun test",
     "typecheck": "bunx tsc --noEmit",
-    "format": "oxfmt .",
-    "format:check": "oxfmt --check .",
+    "fmt": "oxfmt .",
+    "fmt:check": "oxfmt --check .",
     "lint": "oxlint"
   },
-  "engines": {
-    "bun": ">=1.4.0"
+  "dependencies": {
+    "@picocss/pico": "2.1.1"
   },
   "devDependencies": {
     "@types/bun": "1.4.2",
@@ -24,7 +24,7 @@
     "oxlint": "1.82.0",
     "typescript": "5.9.3"
   },
-  "dependencies": {
-    "@picocss/pico": "2.1.1"
+  "engines": {
+    "bun": ">=1.4.0"
   }
 }
