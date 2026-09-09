@@ -10,13 +10,18 @@
     "dev": "bun --watch src/server.ts",
     "seed": "bun run src/seed.ts",
     "test": "bun test",
-    "typecheck": "bunx tsc --noEmit"
+    "typecheck": "bunx tsc --noEmit",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "lint": "oxlint"
   },
   "engines": {
     "bun": ">=1.4.0"
   },
   "devDependencies": {
     "@types/bun": "1.4.2",
+    "oxfmt": "0.67.0",
+    "oxlint": "1.82.0",
     "typescript": "5.9.3"
   },
   "dependencies": {
