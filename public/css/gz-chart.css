@@ -1,21 +1,70 @@
-/* Inline SVG line chart. Colours track Pico's active theme. */
+/*
+ * Line chart. The SVG holds geometry only — line, area and gridlines — while
+ * the axis labels are HTML positioned over it, so they inherit the page font
+ * instead of being scaled by the viewBox.
+ *
+ * Positions come from the component as percentages, which address the SVG box
+ * and the HTML overlay identically, so labels and points always agree.
+ */
+
+.chart {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 0.5rem;
+  row-gap: 0.25rem;
+}
+
+/* ------------------------------------------------------------------ y axis */
+
+.y-axis {
+  grid-column: 1;
+  grid-row: 1;
+  position: relative;
+  color: var(--pico-muted-color);
+}
+
+.y-axis .sizer {
+  display: block;
+  visibility: hidden;
+  white-space: nowrap;
+}
+
+.y-axis .tick {
+  position: absolute;
+  right: 0;
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+
+/* -------------------------------------------------------------------- plot */
+
+.plot {
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+  aspect-ratio: 60 / 22;
+  min-height: 9rem;
+}
 
 svg {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
   overflow: visible;
+}
+
+/* preserveAspectRatio="none" stretches the viewBox to the box exactly, which
+   is what keeps the percentage overlay honest — but it would stretch stroke
+   widths with it, hence non-scaling-stroke. */
+.grid,
+.line {
+  vector-effect: non-scaling-stroke;
 }
 
 .grid {
   stroke: var(--pico-muted-border-color);
   stroke-width: 1;
-}
-
-.axis-label {
-  fill: var(--pico-muted-color);
-  font-size: 11px;
-  font-family: var(--pico-font-family);
 }
 
 .line {
@@ -31,14 +80,40 @@ svg {
   opacity: 0.1;
 }
 
+/* Points are HTML too, so they stay circular however the plot is stretched. */
 .dot {
-  fill: var(--pico-card-background-color);
-  stroke: var(--pico-primary);
-  stroke-width: 2;
+  position: absolute;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin: -0.275rem 0 0 -0.275rem;
+  border: 2px solid var(--pico-primary);
+  border-radius: 50%;
+  background: var(--pico-card-background-color);
+  cursor: pointer;
 }
 
-/* An invisible, larger target so the native <title> tooltip is easy to hit. */
-.dot-hit {
-  fill: transparent;
-  cursor: pointer;
+/* ------------------------------------------------------------------ x axis */
+
+.x-axis {
+  grid-column: 2;
+  grid-row: 2;
+  position: relative;
+  height: 1.5em;
+  color: var(--pico-muted-color);
+}
+
+.x-axis .tick {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+/* Keep the outermost labels inside the plot instead of overhanging it. The
+   :not() guards leave a lone label centred. */
+.x-axis .tick:first-child:not(:last-child) {
+  transform: translateX(0);
+}
+
+.x-axis .tick:last-child:not(:first-child) {
+  transform: translateX(-100%);
 }

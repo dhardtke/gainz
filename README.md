@@ -99,6 +99,23 @@ Pico CSS provides the typography, colours, form controls, tables and the
 light/dark themes; hand-written CSS is a thin layer on top of it, built from
 Pico's own `--pico-*` custom properties so it follows the active theme.
 
+**No stylesheet here declares a font size.** Body text is one size everywhere
+and headings come from Pico's scale; emphasis is weight and colour. Two rules
+exist only to make that hold:
+
+- `app.css` pins `--pico-font-size` to `100%`. Pico otherwise grows the root
+  font with the viewport, up to `131.25%` on a wide screen.
+- `shared.css` sets `font-size: inherit` on `:host`. Pico applies
+  `font-size: var(--pico-font-size)` to `:host, :root`, which is written to
+  land once at the document root — but every component adopts Pico, so the
+  percentage re-applied at each shadow host and *multiplied* with nesting.
+  `gz-app > gz-dashboard > gz-stat-tile` reached 39px from a 20px root.
+
+For the same reason `gz-chart` draws only geometry in SVG and positions its
+axis labels as HTML over the plot: a font size inside a `viewBox` is measured
+in user units, so the browser scales the lettering with the chart instead of
+matching the page.
+
 No CSS lives in JavaScript. Each custom element is styled by the file named
 after its tag — `<gz-chart>` by `public/css/gz-chart.css` — which `js/styles.js`
 fetches once into a `CSSStyleSheet` and every instance adopts by reference.

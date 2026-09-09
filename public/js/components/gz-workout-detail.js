@@ -182,7 +182,7 @@ class GzWorkoutDetail extends GzElement {
             <button class="danger" data-action="delete-workout">Delete</button>
           </div>
         </div>
-        ${workout.notes ? html`<p class="header-notes muted small">${workout.notes}</p>` : ""}
+        ${workout.notes ? html`<p class="header-notes muted">${workout.notes}</p>` : ""}
       `;
     }
 

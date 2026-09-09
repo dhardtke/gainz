@@ -7,6 +7,15 @@
  * js/styles.js adopts into that component's shadow root.
  */
 
+/*
+ * Pico grows the root font size with the viewport, from 100% up to 131.25% on
+ * a wide screen. Pin it so the app is one size everywhere instead of getting
+ * larger as the window does; everything else then inherits from here.
+ */
+:root {
+  --pico-font-size: 100%;
+}
+
 body {
   margin: 0;
 }

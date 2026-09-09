@@ -74,7 +74,7 @@ class GzDashboard extends GzElement {
                   <a class="workout-link" href="#/workouts/${workout.id}">
                     <span class="grow">
                       <span class="title">${workout.title ?? formatDate(workout.performed_on)}</span>
-                      <span class="muted small"> · ${relativeDay(workout.performed_on)}</span>
+                      <span class="muted"> · ${relativeDay(workout.performed_on)}</span>
                     </span>
                     <span class="badge">${plural(workout.set_count, "set")} · ${formatVolume(workout.total_volume)}</span>
                   </a>

@@ -35,12 +35,11 @@ header nav li {
 }
 
 .brand strong {
-  font-size: 1.25rem;
   letter-spacing: -0.02em;
   color: var(--pico-primary);
 }
 
-.brand small {
+.brand .tag {
   color: var(--pico-muted-color);
 }
 
@@ -75,7 +74,7 @@ footer {
 }
 
 @media (max-width: 560px) {
-  .brand small {
+  .brand .tag {
     display: none;
   }
 }

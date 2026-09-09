@@ -9,6 +9,16 @@
 
 :host {
   display: block;
+
+  /*
+   * Pico sets `font-size: var(--pico-font-size)` on `:host, :root`, where that
+   * value is a percentage. It is written to apply once, at the document root —
+   * but every component adopts Pico, so the percentage re-applies at each
+   * shadow host and multiplies with nesting: gz-app > gz-dashboard >
+   * gz-stat-tile turned a 20px root into 39px text. Inheriting instead means
+   * the root sets the size and every component simply keeps it.
+   */
+  font-size: inherit;
 }
 
 /* ------------------------------------------------------------------ layout */
@@ -94,10 +104,6 @@
   color: var(--pico-muted-color);
 }
 
-.small {
-  font-size: 0.85em;
-}
-
 .mono {
   font-family: var(--pico-font-family-monospace);
   font-variant-numeric: tabular-nums;
@@ -120,7 +126,6 @@
   border-radius: 1rem;
   background: var(--pico-card-sectioning-background-color);
   color: var(--pico-muted-color);
-  font-size: 0.78rem;
   line-height: 1.5;
   white-space: nowrap;
 }
@@ -138,7 +143,6 @@
 button.compact {
   width: auto;
   padding: 0.25rem 0.6rem;
-  font-size: 0.8rem;
   margin-bottom: 0;
 }
 

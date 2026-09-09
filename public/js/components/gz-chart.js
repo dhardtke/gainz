@@ -1,11 +1,10 @@
 import { define, GzElement, html, raw } from "../base.js";
 import { formatNumber } from "../format.js";
 
-const WIDTH = 640;
-const HEIGHT = 240;
-const PAD = { top: 16, right: 16, bottom: 34, left: 54 };
-const PLOT_W = WIDTH - PAD.left - PAD.right;
-const PLOT_H = HEIGHT - PAD.top - PAD.bottom;
+/** Plot area in SVG user units. Only geometry lives in here — never text. */
+const W = 600;
+const H = 220;
+const GRIDLINES = 4;
 
 /**
  * A minimal line chart drawn as inline SVG.
@@ -13,6 +12,12 @@ const PLOT_H = HEIGHT - PAD.top - PAD.bottom;
  * Points are spaced evenly by index rather than by date: for lifting, the
  * question is "how did this session compare to the last one", not how many
  * days sat between them.
+ *
+ * The axis labels are HTML positioned over the plot, not SVG <text>. Inside a
+ * viewBox a font size is measured in user units, so the browser scales the
+ * lettering with the chart — tiny on a phone, oversized on a desktop, and
+ * never the same size as the surrounding page. Keeping them in HTML lets them
+ * inherit the body font like everything else.
  *
  * Usage: `chart.series = [{ label: "5 Jan", value: 82.5, hint: "3 sets" }]`
  */
@@ -34,7 +39,11 @@ class GzChart extends GzElement {
     if (this.isConnected) this.render();
   }
 
-  /** Maps values to a padded y-range so the line never touches the frame. */
+  /**
+   * Positions as fractions of the plot box: 0 is left/top, 1 is right/bottom.
+   * Fractions work for both the SVG (multiply by W/H) and the HTML labels
+   * (multiply by 100%), so the two always line up.
+   */
   #scale() {
     const values = this.#series.map((point) => Number(point.value));
     const min = Math.min(...values);
@@ -43,43 +52,30 @@ class GzChart extends GzElement {
     const padding = span === 0 ? Math.max(Math.abs(max) * 0.1, 1) : span * 0.15;
     const low = min - padding;
     const high = max + padding;
+    const last = this.#series.length - 1;
 
     return {
-      x: (index) =>
-        PAD.left + (this.#series.length === 1 ? PLOT_W / 2 : (index / (this.#series.length - 1)) * PLOT_W),
-      y: (value) => PAD.top + PLOT_H - ((Number(value) - low) / (high - low)) * PLOT_H,
+      xFraction: (index) => (last === 0 ? 0.5 : index / last),
+      yFraction: (value) => 1 - (Number(value) - low) / (high - low),
       low,
       high,
     };
   }
 
-  #gridlines(scale) {
-    const count = 4;
-    return Array.from({ length: count + 1 }, (_, step) => {
-      const value = scale.low + ((scale.high - scale.low) * step) / count;
-      const y = scale.y(value);
-      return html`
-        <line class="grid" x1="${PAD.left}" y1="${y.toFixed(1)}" x2="${WIDTH - PAD.right}" y2="${y.toFixed(1)}" />
-        <text class="axis-label" x="${PAD.left - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end">
-          ${formatNumber(value, 1)}
-        </text>
-      `;
-    });
+  #gridValues(scale) {
+    return Array.from(
+      { length: GRIDLINES + 1 },
+      (_, step) => scale.low + ((scale.high - scale.low) * step) / GRIDLINES,
+    );
   }
 
-  /** Shows at most six x labels so they never collide. */
-  #xLabels(scale) {
+  /** At most six labels along the x axis, so they never collide. */
+  #xLabelIndexes() {
     const total = this.#series.length;
     const stride = Math.max(1, Math.ceil(total / 6));
-    return this.#series.map((point, index) => {
-      const isLast = index === total - 1;
-      if (index % stride !== 0 && !isLast) return "";
-      return html`
-        <text class="axis-label" x="${scale.x(index).toFixed(1)}" y="${HEIGHT - PAD.bottom + 18}" text-anchor="middle">
-          ${point.label}
-        </text>
-      `;
-    });
+    return this.#series
+      .map((_, index) => index)
+      .filter((index) => index % stride === 0 || index === total - 1);
   }
 
   template() {
@@ -88,31 +84,66 @@ class GzChart extends GzElement {
     }
 
     const scale = this.#scale();
-    const coords = this.#series.map((point, index) => [scale.x(index), scale.y(point.value)]);
-    const line = coords.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
-    const baseline = PAD.top + PLOT_H;
-    const first = coords[0];
-    const last = coords[coords.length - 1];
-    const area = `M ${first[0].toFixed(1)},${baseline} L ${line.replaceAll(" ", " L ")} L ${last[0].toFixed(1)},${baseline} Z`;
+    const gridValues = this.#gridValues(scale);
+    const gridLabels = gridValues.map((value) => formatNumber(value, 1));
+    const points = this.#series.map((point, index) => ({
+      x: scale.xFraction(index) * W,
+      y: scale.yFraction(point.value) * H,
+    }));
+    const line = points.map(({ x, y }) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+    const area = `M ${points[0].x.toFixed(1)},${H} L ${line.replaceAll(" ", " L ")} L ${points.at(-1).x.toFixed(1)},${H} Z`;
 
     return html`
-      <svg viewBox="0 0 ${WIDTH} ${HEIGHT}" role="img" aria-label="Progress over the logged sessions">
-        ${this.#gridlines(scale)} ${this.#xLabels(scale)}
-        <path class="area" d="${area}" />
-        ${raw(this.#series.length > 1 ? `<polyline class="line" points="${line}" />` : "")}
-        ${this.#series.map((point, index) => {
-          const [x, y] = coords[index];
-          const title = `${point.label}: ${formatNumber(point.value)} ${this.#unit}${point.hint ? ` · ${point.hint}` : ""}`;
-          return html`
-            <g>
-              <circle class="dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" />
-              <circle class="dot-hit" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="12">
-                <title>${title}</title>
-              </circle>
-            </g>
-          `;
-        })}
-      </svg>
+      <div class="chart">
+        <div class="y-axis">
+          <!--
+            Every tick is absolutely positioned and so contributes no width.
+            This copy of the longest one stays in flow, hidden, to size the
+            gutter exactly — no guessed column width to keep in step with the
+            font.
+          -->
+          <span class="sizer">${gridLabels.reduce((a, b) => (b.length > a.length ? b : a), "")}</span>
+          ${gridValues.map(
+            (value, index) => html`
+              <span class="tick" style="top: ${(scale.yFraction(value) * 100).toFixed(2)}%">
+                ${gridLabels[index]}
+              </span>
+            `,
+          )}
+        </div>
+
+        <div class="plot">
+          <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Progress over the logged sessions">
+            ${gridValues.map((value) => {
+              const y = (scale.yFraction(value) * H).toFixed(1);
+              return html`<line class="grid" x1="0" y1="${y}" x2="${W}" y2="${y}" />`;
+            })}
+            <path class="area" d="${area}" />
+            ${raw(this.#series.length > 1 ? `<polyline class="line" points="${line}" />` : "")}
+          </svg>
+
+          ${this.#series.map((point, index) => {
+            const title = `${point.label}: ${formatNumber(point.value)} ${this.#unit}${point.hint ? ` · ${point.hint}` : ""}`;
+            return html`
+              <span
+                class="dot"
+                style="left: ${(scale.xFraction(index) * 100).toFixed(2)}%; top: ${(scale.yFraction(point.value) * 100).toFixed(2)}%"
+                title="${title}"
+              ></span>
+            `;
+          })}
+        </div>
+
+        <div class="x-axis">
+          ${this.#xLabelIndexes().map(
+            (index) => html`
+              <span class="tick" style="left: ${(scale.xFraction(index) * 100).toFixed(2)}%">
+                ${this.#series[index].label}
+              </span>
+            `,
+          )}
+        </div>
+      </div>
     `;
   }
 }
