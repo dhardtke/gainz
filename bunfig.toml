@@ -1,0 +1,4 @@
+# Dependencies are pinned to exact versions in package.json. Without this,
+# `bun add` would write a caret range again and quietly undo that.
+[install]
+exact = true

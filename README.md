@@ -10,6 +10,8 @@ and the reps, weight and notes for each one.
 
 ## Quick start
 
+Requires [Bun](https://bun.sh) 1.4 or newer.
+
 ```sh
 bun install          # Pico CSS, plus TypeScript types for development
 bun run seed         # optional: a few weeks of sample history
@@ -26,6 +28,16 @@ bun start            # http://localhost:3000
 
 The database lives at `data/gainz.sqlite` (override with `GAINZ_DB`) and is
 created on first run. It is git-ignored — the log is your data, not source.
+
+### Dependencies
+
+Every dependency is pinned to an exact version in `package.json` — no `^` or
+`~` ranges — so an install resolves the same tree on any machine and upgrades
+only ever happen deliberately. `bunfig.toml` sets `install.exact`, which keeps
+a later `bun add` from writing a caret range and undoing that.
+
+`engines.bun` records the required runtime, but note that Bun does not enforce
+the field on install: it documents the requirement rather than gating it.
 
 ## Using it
 
