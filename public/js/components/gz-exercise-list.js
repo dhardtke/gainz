@@ -114,7 +114,7 @@ class GzExerciseList extends GzElement {
       <tr>
         <td class="name">
           <a href="#/exercises/${exercise.id}">${exercise.name}</a>
-          ${exercise.notes ? html`<div class="muted small">${exercise.notes}</div>` : ""}
+          ${exercise.notes ? html`<div class="muted">${exercise.notes}</div>` : ""}
         </td>
         <td>${exercise.muscle_group ?? html`<span class="muted">–</span>`}</td>
         <td class="num">${exercise.set_count}</td>

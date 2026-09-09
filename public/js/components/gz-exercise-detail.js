@@ -135,7 +135,7 @@ class GzExerciseDetail extends GzElement {
                     <td class="num">${formatNumber(session.top_weight)} ${UNIT}</td>
                     <td class="num">
                       ${formatNumber(session.est_one_rep_max, 1)}
-                      ${change ? html`<span class="small ${direction}"> ${change}</span>` : ""}
+                      ${change ? html`<span class="${direction}"> ${change}</span>` : ""}
                     </td>
                     <td class="num">${formatVolume(session.total_volume)}</td>
                   </tr>
@@ -165,7 +165,7 @@ class GzExerciseDetail extends GzElement {
     return html`
       <div class="stack">
         <div>
-          <p class="small"><a href="#/exercises">← Exercises</a></p>
+          <p><a href="#/exercises">← Exercises</a></p>
           <hgroup>
             <h1>${exercise.name}</h1>
             <p>${exercise.muscle_group ?? "No muscle group set"}${exercise.notes ? html` · ${exercise.notes}` : ""}</p>
@@ -193,7 +193,7 @@ class GzExerciseDetail extends GzElement {
             </div>
           </div>
           <gz-chart></gz-chart>
-          <p class="muted small">${metric.hint}</p>
+          <p class="muted">${metric.hint}</p>
         </article>
 
         ${sessions.length === 0

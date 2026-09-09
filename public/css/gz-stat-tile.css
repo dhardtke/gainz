@@ -10,7 +10,6 @@ article {
 }
 
 .label {
-  font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--pico-muted-color);
@@ -18,14 +17,11 @@ article {
 }
 
 .value {
-  font-size: 1.5rem;
   font-weight: 650;
   line-height: 1.2;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
 }
 
 .hint {
-  font-size: 0.82rem;
   color: var(--pico-muted-color);
 }

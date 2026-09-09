@@ -89,7 +89,7 @@ class GzApp extends GzElement {
         <nav class="container">
           <ul>
             <li>
-              <a class="brand" href="#/"><strong>gainz</strong><small>lifting log</small></a>
+              <a class="brand" href="#/"><strong>gainz</strong><span class="tag">lifting log</span></a>
             </li>
           </ul>
           <ul>
@@ -106,7 +106,7 @@ class GzApp extends GzElement {
       <main class="container"></main>
 
       <footer class="container">
-        <small>Weights in kilograms · estimated 1RM uses the Epley formula.</small>
+        Weights in kilograms · estimated 1RM uses the Epley formula.
       </footer>
 
       <gz-toast></gz-toast>

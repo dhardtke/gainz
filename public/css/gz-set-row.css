@@ -16,7 +16,6 @@
 
 .index {
   color: var(--pico-muted-color);
-  font-size: 0.85rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -38,7 +37,6 @@
 
 .note {
   color: var(--pico-muted-color);
-  font-size: 0.85rem;
   overflow-wrap: anywhere;
 }
 
@@ -51,7 +49,6 @@
 
 .volume {
   color: var(--pico-muted-color);
-  font-size: 0.8rem;
   margin-right: 0.25rem;
 }
 
