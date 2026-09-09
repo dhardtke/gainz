@@ -1,14 +1,12 @@
 /**
- * Colour theme preference: follow the system, or force light or dark.
+ * Colour theme preference: light or dark.
  *
  * Pico themes an element through a `data-theme` attribute, and its rules only
  * reach a shadow root through `:host`. So the choice is mirrored onto the
  * document element *and* onto every component host — base.js does the latter
  * for all of them.
  *
- * The three cases inside a shadow root resolve like this:
- *   no attribute    → `:host(:not([data-theme]))` under the dark media query,
- *                     so the component follows the operating system;
+ * The two cases inside a shadow root resolve like this:
  *   data-theme=light → `:host(:not([data-theme=dark]))` matches, forcing light;
  *   data-theme=dark  → Pico only ships a bare `[data-theme=dark]`, which cannot
  *                     match a host from inside its own shadow root. No rule
@@ -22,16 +20,27 @@
 const STORAGE_KEY = "gainz:theme";
 const EVENT = "gz-theme-change";
 
-export const THEMES = ["system", "light", "dark"];
+export const THEMES = ["light", "dark"];
+
+/** The system's setting, consulted once to seed a visitor who has never chosen. */
+function systemTheme() {
+  try {
+    return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  } catch {
+    return "light";
+  }
+}
 
 function readStoredTheme() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return THEMES.includes(stored) ? stored : "system";
+    if (THEMES.includes(stored)) return stored;
+    // Anything else — nothing stored, or the "system" an earlier version wrote
+    // — means no choice has been made, so start where the system points.
   } catch {
-    // Private mode or blocked site data: fall back to following the system.
-    return "system";
+    // Private mode or blocked site data: nothing was remembered.
   }
+  return systemTheme();
 }
 
 let current = readStoredTheme();
@@ -42,8 +51,7 @@ export function currentTheme() {
 
 /** Mirrors the current choice onto one element (a shadow host, or <html>). */
 export function applyThemeTo(element) {
-  if (current === "system") element.removeAttribute("data-theme");
-  else element.setAttribute("data-theme", current);
+  element.setAttribute("data-theme", current);
 }
 
 export function setTheme(theme) {
@@ -65,6 +73,7 @@ export function onThemeChange(listener) {
   return () => window.removeEventListener(EVENT, listener);
 }
 
-// The inline script has already done this for the first paint; repeat it so the
-// document is correct even if that script was skipped or storage was unreadable.
+// The inline script has already covered the first paint for a stored choice;
+// this pins the attribute down for the unstored case too, where that script
+// deliberately leaves it off and lets Pico's media query paint the first frame.
 applyThemeTo(document.documentElement);
