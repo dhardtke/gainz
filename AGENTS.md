@@ -13,7 +13,7 @@ bun run migrate          # apply pending schema migrations, then exit
 bun test                 # API suite against in-memory SQLite
 bun test test/workout.api.test.ts # one file
 bun test -t "health"     # one test / describe block by name
-bun run typecheck        # typechecking (src + test + public)
+bun run typecheck        # typechecking (src + test + frontend)
 bun run lint             # linting
 bun run fmt              # format (fmt:check for CI)
 ```
@@ -31,7 +31,7 @@ Always put plans inside the project directory.
 
 `migrations/` -> numbered `.sql` schema migrations, applied on startup
 `src/` -> Bun + SQLite REST backend (TypeScript)
-`public/` -> a **no-build-step** frontend: TypeScript ES modules and custom elements,
+`frontend/` -> a **no-build-step** frontend: TypeScript ES modules and custom elements,
 transpiled on request by `src/transpile.ts` — no bundler, no output directory
 `docs/` -> design and API documentation
 

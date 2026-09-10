@@ -1,10 +1,10 @@
-### Frontend (`public/`)
+### Frontend (`frontend/`)
 
 `js/base.ts` holds `GzElement` (open shadow root, `data-action` click/submit delegation,
 `template()`/`render()`), the escaping `html` tagged template, and `define()`. `js/styles.ts`,
 `theme.ts`, `router.ts` (hash router), `api.ts`, `format.ts` are the rest of the shared layer.
 
-Each component is a directory `public/components/<tag>/` holding `<tag>.ts` and `<tag>.css`, found
+Each component is a directory `frontend/components/<tag>/` holding `<tag>.ts` and `<tag>.css`, found
 by convention. A component module ends with `await define("<tag>", TheClass)` — there is no
 manifest. **That top-level `await` is load-bearing**: it makes "module loaded" also mean
 "stylesheet loaded", which is what lets `gz-app` lazily `import()` a route view and still paint it

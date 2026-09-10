@@ -47,6 +47,6 @@ group by subject where routes group by URL: the sets that are logged through
 one exception: `test/migrate.test.ts` unit-tests the migration runner against throwaway fixture
 directories. There are no unit tests of `Repo`.
 
-Static serving is deliberately narrow: `public/` with a path-escape guard, plus `VENDOR_FILES`
+Static serving is deliberately narrow: `frontend/` with a path-escape guard, plus `VENDOR_FILES`
 in `server.ts` — a one-file allowlist into `node_modules` (`/vendor/pico.css`). Serving anything
 else from a package means adding it to that map.

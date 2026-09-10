@@ -50,7 +50,7 @@ export function html(strings: TemplateStringsArray, ...values: unknown[]): RawHt
  * click/submit delegation driven by `data-action` attributes.
  *
  * The component's CSS file sits next to its module and is found by convention —
- * `<gz-chart>` is styled by `public/components/gz-chart/gz-chart.css` — so a
+ * `<gz-chart>` is styled by `frontend/components/gz-chart/gz-chart.css` — so a
  * component never carries CSS in JavaScript.
  */
 export class GzElement extends HTMLElement {

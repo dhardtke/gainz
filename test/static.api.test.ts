@@ -13,7 +13,7 @@ describe("static files", () => {
     expect(await res.text()).toContain("gainz");
   });
 
-  test("rejects directory traversal below public/", async () => {
+  test("rejects directory traversal below frontend/", async () => {
     const res = await api("/../package.json");
     expect(res.status).toBe(404);
   });
@@ -95,7 +95,7 @@ describe("typescript modules", () => {
     expect((await api("/js/nope.ts")).status).toBe(404);
   });
 
-  test("refuses to transpile anything outside public/", async () => {
+  test("refuses to transpile anything outside frontend/", async () => {
     // Encoded, so the URL parser cannot normalise the traversal away before
     // resolveStaticPath sees it.
     expect((await api("/%2e%2e/src/server.ts")).status).toBe(404);
@@ -103,7 +103,7 @@ describe("typescript modules", () => {
   });
 
   test("reports a module that will not parse", async () => {
-    const broken = resolve(import.meta.dir, "..", "public", "js", "__broken.ts");
+    const broken = resolve(import.meta.dir, "..", "frontend", "js", "__broken.ts");
     await Bun.write(broken, "export const oops: = ;\n");
     try {
       const res = await api("/js/__broken.ts");

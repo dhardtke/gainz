@@ -223,45 +223,45 @@ everything works.
 
 **Tasks**:
 
-- [ ] `git mv public frontend`
-- [ ] `src/server.ts:10` — rename the constant and its value:
+- [x] `git mv public frontend`
+- [x] `src/server.ts:10` — rename the constant and its value:
       `const FRONTEND_DIR = resolve(PROJECT_ROOT, "frontend");`
       (`PROJECT_ROOT` keeps its name in this phase; it is renamed in phase 2)
-- [ ] `src/server.ts` — update the three remaining uses of the constant, at lines 48, 49 and 94.
+- [x] `src/server.ts` — update the three remaining uses of the constant, at lines 48, 49 and 94.
       Leave `"Cache-Control": "public, max-age=3600"` at line 70 exactly as it is: that `public`
       is an HTTP cache directive, not a directory.
-- [ ] `src/server.ts:35` — doc comment on `resolveStaticPath`:
+- [x] `src/server.ts:35` — doc comment on `resolveStaticPath`:
       "Maps a URL path to a file inside `frontend/`, or null if it would escape it."
-- [ ] `src/transpile.ts:18` — doc comment on `transpileModule`: `path` has been resolved inside
+- [x] `src/transpile.ts:18` — doc comment on `transpileModule`: `path` has been resolved inside
       `frontend/`
-- [ ] `frontend/js/base.ts:53` — comment naming
+- [x] `frontend/js/base.ts:53` — comment naming
       `frontend/components/gz-chart/gz-chart.css`
-- [ ] `test/static.api.test.ts:16` — test name: `"rejects directory traversal below frontend/"`
-- [ ] `test/static.api.test.ts:98` — test name:
+- [x] `test/static.api.test.ts:16` — test name: `"rejects directory traversal below frontend/"`
+- [x] `test/static.api.test.ts:98` — test name:
       `"refuses to transpile anything outside frontend/"`
-- [ ] `test/static.api.test.ts:106` — fixture path:
+- [x] `test/static.api.test.ts:106` — fixture path:
       `resolve(import.meta.dir, "..", "frontend", "js", "__broken.ts")`
-- [ ] `tsconfig.json:17` — `"include": ["src", "test", "frontend"]`
-- [ ] `docs/frontend.md` — heading `### Frontend (\`frontend/\`)` (line 1) and the component
+- [x] `tsconfig.json:17` — `"include": ["src", "test", "frontend"]`
+- [x] `docs/frontend.md` — heading `### Frontend (\`frontend/\`)` (line 1) and the component
       directory convention at line 7
-- [ ] `docs/backend.md:50` — static serving is "`frontend/` with a path-escape guard"
-- [ ] `README.md` — line 61 (`frontend/js/format.ts`), the `public/` node in the layout tree at
+- [x] `docs/backend.md:50` — static serving is "`frontend/` with a path-escape guard"
+- [x] `README.md` — line 61 (`frontend/js/format.ts`), the `public/` node in the layout tree at
       line 95, and lines 158 and 160 in the Styling section
-- [ ] `AGENTS.md` — line 16 (`typechecking (src + test + frontend)`) and the `public/` entry in
+- [x] `AGENTS.md` — line 16 (`typechecking (src + test + frontend)`) and the `public/` entry in
       the Architecture list at line 34. `CLAUDE.md` is a symlink to this file and needs no
       separate edit.
 
 **Automated Verification**:
 
-- [ ] `bun test` passes — in particular `static.api.test.ts`, which is the file that proves the
+- [x] `bun test` passes — in particular `static.api.test.ts`, which is the file that proves the
       frontend is still found: it fetches `/`, `/css/app.css`, `/components/gz-app/gz-app.css`,
       `/js/format.ts`, `/js/main.ts` and `/vendor/pico.css`
-- [ ] `bun run typecheck` is clean — this also proves the new `include` glob actually matches the
+- [x] `bun run typecheck` is clean — this also proves the new `include` glob actually matches the
       renamed directory rather than silently covering nothing
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
-- [ ] `git status` shows the move as renames (`R`), not as deletions plus additions
-- [ ] The word `public` survives in exactly one place — the `Cache-Control` header in
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
+- [x] `git status` shows the move as renames (`R`), not as deletions plus additions
+- [x] The word `public` survives in exactly one place — the `Cache-Control` header in
       `server.ts` — confirming nothing else still names the old directory and that the header
       was not swept away with it. `Select-String` reads files, not directories, and has no
       `-Recurse`, so it must be fed by `Get-ChildItem`:

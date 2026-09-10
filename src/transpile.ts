@@ -15,7 +15,7 @@ import { basename } from "node:path";
 const transpiler = new Bun.Transpiler({ loader: "ts", target: "browser" });
 
 /**
- * Transpiles one module. `path` has already been resolved inside `public/` by
+ * Transpiles one module. `path` has already been resolved inside `frontend/` by
  * the caller, which is where the traversal guard lives.
  */
 export async function transpileModule(path: string): Promise<Response> {
