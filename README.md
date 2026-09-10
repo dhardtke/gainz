@@ -4,9 +4,10 @@ A small, self-hosted log for weight-lifting progress: workouts, the sets you did
 and the reps, weight and notes for each one.
 
 - **Backend** — [Bun](https://bun.sh) serving a REST API over SQLite (`bun:sqlite`).
-- **Frontend** — custom elements and ES modules styled with
-  [Pico CSS](https://picocss.com). No framework and no build step; the browser
-  loads the files as they are on disk.
+- **Frontend** — TypeScript custom elements and ES modules styled with
+  [Pico CSS](https://picocss.com). No framework and no build step: there is no
+  bundler, no output directory and nothing to keep in sync — the server erases
+  the types as it hands each file over, one module per request.
 
 ## Quick start
 
@@ -57,7 +58,7 @@ the field on install: it documents the requirement rather than gating it.
   before the first paint, so it never flashes the wrong theme on load.
 
 Weights are stored as plain numbers and displayed in kilograms; to switch the
-whole UI to pounds, change `UNIT` in `public/js/format.js`.
+whole UI to pounds, change `UNIT` in `public/js/format.ts`.
 
 Estimated 1RM uses the Epley formula (`weight × (1 + reps / 30)`), which puts
 sets of different rep counts on one comparable scale.
@@ -81,6 +82,7 @@ src/
   routes.ts    The REST route table
   validate.ts  Request-field parsing and limits
   http.ts      JSON responses and HttpError
+  transpile.ts Erases types from a frontend module on its way to the browser
   server.ts    Bun.serve, static files, entry point
   seed.ts      Sample data
 public/
@@ -89,25 +91,25 @@ public/
     app.css      Document-level styles
     shared.css   Layout utilities adopted by every component
   components/    One directory per custom element, holding its script and the
-                 stylesheet named after its tag — gz-app/gz-app.js beside
+                 stylesheet named after its tag — gz-app/gz-app.ts beside
                  gz-app/gz-app.css, and the same shape for gz-dashboard,
                  gz-workout-list, gz-workout-detail, gz-set-row,
                  gz-exercise-list, gz-exercise-detail, gz-chart, gz-stat-tile,
                  gz-toast, gz-theme-toggle
   js/
-    base.js      GzElement: shadow root, escaping `html` tag, event delegation
-    styles.js    Fetches CSS into constructable stylesheets, per component
-    theme.js     Light/dark preference, stored and mirrored onto hosts
-    api.js       fetch wrapper for the REST API
-    router.js    Hash router
-    format.js    Dates, weights, volumes
-    types.js     JSDoc typedefs for the shapes the API returns
+    base.ts      GzElement: shadow root, escaping `html` tag, event delegation
+    styles.ts    Fetches CSS into constructable stylesheets, per component
+    theme.ts     Light/dark preference, stored and mirrored onto hosts
+    api.ts       fetch wrapper for the REST API
+    router.ts    Hash router
+    format.ts    Dates, weights, volumes
+    types.ts     The shapes the API returns; erased before the browser sees it
 test/
   api.test.ts      End-to-end tests over a real server on an in-memory database
   migrate.test.ts  Unit tests for the migration runner
 ```
 
-Every component renders through the `html` tagged template in `base.js`, which
+Every component renders through the `html` tagged template in `base.ts`, which
 escapes interpolated values — notes and exercise names are safe to display.
 
 ## Styling
@@ -141,8 +143,8 @@ matching the page.
 
 No CSS lives in JavaScript. Each custom element owns a directory holding its
 script and the stylesheet named after its tag — `<gz-chart>` is
-`public/components/gz-chart/gz-chart.js` beside `gz-chart.css` — which
-`js/styles.js` fetches once into a `CSSStyleSheet` and every instance adopts by
+`public/components/gz-chart/gz-chart.ts` beside `gz-chart.css` — which
+`js/styles.ts` fetches once into a `CSSStyleSheet` and every instance adopts by
 reference. Adding a component means creating `public/components/<tag>/` with
 both files and ending the module with `await define("<tag>", TheClass)`; there
 is no manifest to register it in.
@@ -156,14 +158,26 @@ unchanged.
 
 ### Loading
 
+The frontend is TypeScript on disk and JavaScript on the wire. `src/transpile.ts`
+runs each module through `Bun.Transpiler` as it is requested — around 76 µs per
+file, the whole frontend in under two milliseconds — and `serveStatic` hands the
+result back as `text/javascript`. Nothing is written to disk and nothing is
+bundled: a URL still names one file, `import "./format.ts"` still asks for the
+file of that name, and editing a module and reloading is the whole edit loop.
+
+The transpiler **erases types without checking them**, and throws only when a
+file will not parse. A type error transpiles happily and ships;
+`bun run typecheck` is the gate that catches it. A file that does not parse
+comes back as a 500 naming it, which the toast then reports.
+
 A route's script and stylesheet arrive the first time that route is opened, and
 never otherwise. Opening the dashboard fetches five component scripts and five
 stylesheets; the chart is downloaded only once you open an exercise.
 
-Two pieces make that safe. `define()` in `base.js` awaits the component's
+Two pieces make that safe. `define()` in `base.ts` awaits the component's
 stylesheet before registering the element, and every component module `await`s
 its own `define()` at the top level. Because a top-level await blocks the
-modules that import it, `await import("…/gz-exercise-detail.js")` in `gz-app`
+modules that import it, `await import("…/gz-exercise-detail.ts")` in `gz-app`
 resolves only when that view _and_ everything it renders — the chart, the stat
 tiles — have their scripts and their CSS. So a lazily loaded page is fully
 styled on its first paint; there is no flash to guard against.
@@ -182,7 +196,7 @@ Only the five route views in `gz-app`'s `VIEWS` table are loaded dynamically.
 
 ### Theming
 
-`js/theme.js` holds the preference and mirrors it onto `<html>`; `base.js`
+`js/theme.ts` holds the preference and mirrors it onto `<html>`; `base.ts`
 mirrors it onto every component host too, because Pico can only reach a shadow
 root through `:host`. There are two states, and one Pico rule covers each:
 

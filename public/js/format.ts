@@ -13,14 +13,8 @@ const DATE_FORMAT = new Intl.DateTimeFormat(undefined, {
 
 const SHORT_DATE_FORMAT = new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short" });
 
-/**
- * Drops trailing zeros: 62.50 -> "62.5", 60.00 -> "60".
- *
- * @param {number | null | undefined} value
- * @param {number} [maxDecimals]
- * @returns {string}
- */
-export function formatNumber(value, maxDecimals = 2) {
+/** Drops trailing zeros: 62.50 -> "62.5", 60.00 -> "60". */
+export function formatNumber(value: number | null | undefined, maxDecimals = 2): string {
   const num = Number(value);
   if (!Number.isFinite(num)) {
     return "–";
@@ -28,11 +22,7 @@ export function formatNumber(value, maxDecimals = 2) {
   return num.toLocaleString(undefined, { maximumFractionDigits: maxDecimals });
 }
 
-/**
- * @param {number | null | undefined} value
- * @returns {string}
- */
-export function formatWeight(value) {
+export function formatWeight(value: number | null | undefined): string {
   if (value === null || value === undefined) {
     return "–";
   }
@@ -43,13 +33,8 @@ export function formatWeight(value) {
   return `${formatNumber(num)} ${UNIT}`;
 }
 
-/**
- * Total load moved; tonnes once the number stops being readable in kg.
- *
- * @param {number | null | undefined} value
- * @returns {string}
- */
-export function formatVolume(value) {
+/** Total load moved; tonnes once the number stops being readable in kg. */
+export function formatVolume(value: number | null | undefined): string {
   const num = Number(value ?? 0);
   if (num >= 10000) {
     return `${formatNumber(num / 1000, 1)} t`;
@@ -57,11 +42,8 @@ export function formatVolume(value) {
   return `${formatNumber(num, 0)} ${UNIT}`;
 }
 
-/**
- * @param {string | null | undefined} iso a `YYYY-MM-DD` date.
- * @returns {string}
- */
-export function formatDate(iso) {
+/** @param iso a `YYYY-MM-DD` date. */
+export function formatDate(iso: string | null | undefined): string {
   if (!iso) {
     return "–";
   }
@@ -69,11 +51,8 @@ export function formatDate(iso) {
   return Number.isNaN(date.getTime()) ? iso : DATE_FORMAT.format(date);
 }
 
-/**
- * @param {string | null | undefined} iso a `YYYY-MM-DD` date.
- * @returns {string}
- */
-export function formatShortDate(iso) {
+/** @param iso a `YYYY-MM-DD` date. */
+export function formatShortDate(iso: string | null | undefined): string {
   if (!iso) {
     return "–";
   }
@@ -84,10 +63,10 @@ export function formatShortDate(iso) {
 /**
  * "today" / "yesterday" / "5 days ago" — a quick sense of recency.
  *
- * @param {string | null | undefined} iso a `YYYY-MM-DD` date.
- * @returns {string} empty when there is no usable date.
+ * @param iso a `YYYY-MM-DD` date.
+ * @returns empty when there is no usable date.
  */
-export function relativeDay(iso) {
+export function relativeDay(iso: string | null | undefined): string {
   if (!iso) {
     return "";
   }
@@ -117,18 +96,13 @@ export function relativeDay(iso) {
   return `${plural(Math.round(days / 365), "year")} ago`;
 }
 
-/**
- * @param {number} count
- * @param {string} singular
- * @param {string} [pluralForm] defaults to the singular plus an "s".
- * @returns {string}
- */
-export function plural(count, singular, pluralForm = `${singular}s`) {
+/** @param pluralForm defaults to the singular plus an "s". */
+export function plural(count: number, singular: string, pluralForm = `${singular}s`): string {
   return `${count} ${count === 1 ? singular : pluralForm}`;
 }
 
-/** @returns {string} today as `YYYY-MM-DD`, in the visitor's own timezone. */
-export function todayIso() {
+/** @returns today as `YYYY-MM-DD`, in the visitor's own timezone. */
+export function todayIso(): string {
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   return now.toISOString().slice(0, 10);
@@ -137,11 +111,9 @@ export function todayIso() {
 /**
  * Signed change between two numbers, for progress deltas.
  *
- * @param {number} current
- * @param {number | null | undefined} previous
- * @returns {string} empty when there is nothing to compare against.
+ * @returns empty when there is nothing to compare against.
  */
-export function formatDelta(current, previous) {
+export function formatDelta(current: number, previous: number | null | undefined): string {
   if (previous === null || previous === undefined) {
     return "";
   }

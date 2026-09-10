@@ -1,42 +1,34 @@
-import { api, ApiError, errorMessage } from "../../js/api.js";
-import { define, GzElement, html } from "../../js/base.js";
-import { formatDate, formatNumber, formatVolume, plural, relativeDay, UNIT } from "../../js/format.js";
-import { navigate } from "../../js/router.js";
-import { toast, toastError } from "../gz-toast/gz-toast.js";
-import "../gz-set-row/gz-set-row.js";
+import { api, ApiError, errorMessage } from "../../js/api.ts";
+import { define, GzElement, html } from "../../js/base.ts";
+import { formatDate, formatNumber, formatVolume, plural, relativeDay, UNIT } from "../../js/format.ts";
+import { navigate } from "../../js/router.ts";
+import type { Exercise, LiftSet, WorkoutWithSets } from "../../js/types.ts";
+import type { GzSetRow } from "../gz-set-row/gz-set-row.ts";
+import { toast, toastError } from "../gz-toast/gz-toast.ts";
+import "../gz-set-row/gz-set-row.ts";
 
-/** @import { Exercise, LiftSet, WorkoutWithSets } from "../../js/types.js" */
-/** @import { GzSetRow } from "../gz-set-row/gz-set-row.js" */
-
-/**
- * @typedef {{ status: "loading" }
- *   | { status: "ready", workout: WorkoutWithSets }
- *   | { status: "error", message: string }} WorkoutDetailState
- */
+type WorkoutDetailState = { status: "loading" } | { status: "ready"; workout: WorkoutWithSets } | { status: "error"; message: string };
 
 /** One exercise's totals within the session. */
-/**
- * @typedef {object} ExerciseTotals
- * @property {number} id
- * @property {string} name
- * @property {number} sets
- * @property {number} reps
- * @property {number} volume
- * @property {number} top the heaviest weight moved.
- */
+interface ExerciseTotals {
+  id: number;
+  name: string;
+  sets: number;
+  reps: number;
+  volume: number;
+  /** The heaviest weight moved. */
+  top: number;
+}
 
 const NEW_EXERCISE = "__new__";
 
 /** The logging screen for one session: edit the header, add sets, see totals. */
 class GzWorkoutDetail extends GzElement {
-  /** @type {string | null} */
-  #workoutId = null;
+  #workoutId: string | null = null;
 
-  /** @type {WorkoutDetailState} */
-  #state = { status: "loading" };
+  #state: WorkoutDetailState = { status: "loading" };
 
-  /** @type {Exercise[]} */
-  #exercises = [];
+  #exercises: Exercise[] = [];
 
   #editingHeader = false;
 
@@ -45,20 +37,17 @@ class GzWorkoutDetail extends GzElement {
    *
    * `exercise_id` also holds the "new exercise" sentinel, which is what the
    * select shows on a cold start with no exercises defined yet.
-   *
-   * @type {{ exercise_id: number | typeof NEW_EXERCISE | null, weight: string, reps: string }}
    */
-  #draft = { exercise_id: null, weight: "", reps: "" };
+  #draft: { exercise_id: number | typeof NEW_EXERCISE | null; weight: string; reps: string } = {
+    exercise_id: null,
+    weight: "",
+    reps: "",
+  };
   #focusAfterRender = false;
 
   static observedAttributes = ["workout-id"];
 
-  /**
-   * @param {string} _name
-   * @param {string | null} oldValue
-   * @param {string | null} value
-   */
-  attributeChangedCallback(_name, oldValue, value) {
+  attributeChangedCallback(_name: string, oldValue: string | null, value: string | null): void {
     this.#workoutId = value;
     // The initial attribute arrives before connectedCallback, which loads anyway.
     if (this.isConnected && oldValue !== null && oldValue !== value) {
@@ -66,17 +55,17 @@ class GzWorkoutDetail extends GzElement {
     }
   }
 
-  async connectedCallback() {
+  async connectedCallback(): Promise<void> {
     super.connectedCallback();
     this.root.addEventListener("sets-changed", () => this.#load());
     await this.#load();
   }
 
-  async #load() {
+  async #load(): Promise<void> {
     try {
       // gz-app sets the attribute before the element is connected, so
       // attributeChangedCallback has already run by the time this does.
-      const id = /** @type {string} */ (this.#workoutId);
+      const id = this.#workoutId as string;
       const [workout, exercises] = await Promise.all([api.workouts.get(id), api.exercises.list()]);
       this.#exercises = exercises;
       this.#state = { status: "ready", workout };
@@ -95,11 +84,7 @@ class GzWorkoutDetail extends GzElement {
 
   // ------------------------------------------------------------------ actions
 
-  /**
-   * @param {string} action
-   * @param {HTMLElement} element
-   */
-  async handleAction(action, element) {
+  async handleAction(action: string, element: HTMLElement): Promise<void> {
     if (action === "toggle-header") {
       this.#editingHeader = !this.#editingHeader;
       this.render();
@@ -111,7 +96,7 @@ class GzWorkoutDetail extends GzElement {
         return;
       }
       try {
-        await api.workouts.remove(/** @type {string} */ (this.#workoutId));
+        await api.workouts.remove(this.#workoutId as string);
         toast("Workout deleted", "success");
         navigate("/workouts");
       } catch (error) {
@@ -131,7 +116,7 @@ class GzWorkoutDetail extends GzElement {
         return;
       }
       try {
-        await api.workouts.addSet(/** @type {string} */ (this.#workoutId), {
+        await api.workouts.addSet(this.#workoutId as string, {
           exercise_id: last.exercise_id,
           reps: last.reps,
           weight: last.weight,
@@ -144,16 +129,12 @@ class GzWorkoutDetail extends GzElement {
     }
   }
 
-  /**
-   * @param {string} action
-   * @param {HTMLFormElement} form
-   */
-  async handleSubmit(action, form) {
-    const values = /** @type {Record<"performed_on" | "title" | "notes" | "exercise_id" | "new_exercise" | "reps" | "weight", string>} */ (this.formData(form));
+  async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
+    const values = this.formData(form) as Record<"performed_on" | "title" | "notes" | "exercise_id" | "new_exercise" | "reps" | "weight", string>;
 
     if (action === "save-workout") {
       try {
-        await api.workouts.update(/** @type {string} */ (this.#workoutId), {
+        await api.workouts.update(this.#workoutId as string, {
           performed_on: values.performed_on,
           title: values.title || null,
           notes: values.notes || null,
@@ -169,8 +150,7 @@ class GzWorkoutDetail extends GzElement {
 
     if (action === "add-set") {
       try {
-        /** @type {string | number} */
-        let exerciseId = values.exercise_id;
+        let exerciseId: string | number = values.exercise_id;
 
         if (exerciseId === NEW_EXERCISE) {
           if (!values.new_exercise) {
@@ -181,7 +161,7 @@ class GzWorkoutDetail extends GzElement {
           exerciseId = created.id;
         }
 
-        await api.workouts.addSet(/** @type {string} */ (this.#workoutId), {
+        await api.workouts.addSet(this.#workoutId as string, {
           exercise_id: Number(exerciseId),
           reps: Number(values.reps),
           weight: Number(values.weight),
@@ -199,14 +179,13 @@ class GzWorkoutDetail extends GzElement {
 
   // ------------------------------------------------------------------- render
 
-  afterRender() {
+  afterRender(): void {
     if (this.#state.status !== "ready") {
       return;
     }
     const workout = this.#state.workout;
 
-    /** @type {GzSetRow[]} */
-    const rows = this.$$("gz-set-row");
+    const rows = this.$$<GzSetRow>("gz-set-row");
     for (const row of rows) {
       const set = workout.sets.find((candidate) => candidate.id === Number(row.dataset.id));
       row.exercises = this.#exercises;
@@ -214,8 +193,7 @@ class GzWorkoutDetail extends GzElement {
       row.set = set;
     }
 
-    /** @type {HTMLSelectElement | null} */
-    const select = this.$("select[name='exercise_id']");
+    const select = this.$<HTMLSelectElement>("select[name='exercise_id']");
     if (select) {
       select.addEventListener("change", () => {
         this.$(".field-new-exercise")?.toggleAttribute("hidden", select.value !== NEW_EXERCISE);
@@ -225,18 +203,13 @@ class GzWorkoutDetail extends GzElement {
 
     if (this.#focusAfterRender) {
       this.#focusAfterRender = false;
-      /** @type {HTMLInputElement | null} */
-      const field = this.$(".add-form input[name='weight']");
+      const field = this.$<HTMLInputElement>(".add-form input[name='weight']");
       field?.focus();
     }
   }
 
-  /**
-   * Copies the last set of an exercise into the add-set form.
-   *
-   * @param {number} exerciseId
-   */
-  #prefillFrom(exerciseId) {
+  /** Copies the last set of an exercise into the add-set form. */
+  #prefillFrom(exerciseId: number): void {
     if (this.#state.status !== "ready") {
       return;
     }
@@ -245,10 +218,8 @@ class GzWorkoutDetail extends GzElement {
       return;
     }
 
-    /** @type {HTMLInputElement | null} */
-    const weight = this.$(".add-form input[name='weight']");
-    /** @type {HTMLInputElement | null} */
-    const reps = this.$(".add-form input[name='reps']");
+    const weight = this.$<HTMLInputElement>(".add-form input[name='weight']");
+    const reps = this.$<HTMLInputElement>(".add-form input[name='reps']");
     if (weight) {
       weight.value = String(previous.weight);
     }
@@ -257,8 +228,7 @@ class GzWorkoutDetail extends GzElement {
     }
   }
 
-  /** @param {WorkoutWithSets} workout */
-  #headerTemplate(workout) {
+  #headerTemplate(workout: WorkoutWithSets) {
     if (!this.#editingHeader) {
       return html`
         <div class="row-between">
@@ -345,15 +315,9 @@ class GzWorkoutDetail extends GzElement {
     `;
   }
 
-  /**
-   * Per-exercise totals for the session.
-   *
-   * @param {LiftSet[]} sets
-   * @returns {ExerciseTotals[]}
-   */
-  #breakdown(sets) {
-    /** @type {Map<number, ExerciseTotals>} */
-    const byExercise = new Map();
+  /** Per-exercise totals for the session. */
+  #breakdown(sets: LiftSet[]): ExerciseTotals[] {
+    const byExercise = new Map<number, ExerciseTotals>();
     for (const set of sets) {
       const entry = byExercise.get(set.exercise_id) ?? {
         id: set.exercise_id,

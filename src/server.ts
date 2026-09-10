@@ -4,6 +4,7 @@ import { DEFAULT_DB_PATH, openDatabase } from "./db";
 import { errorResponse } from "./http";
 import { Repo } from "./repo";
 import { apiRoutes } from "./routes";
+import { transpileModule } from "./transpile";
 
 const PROJECT_ROOT = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const PUBLIC_DIR = resolve(PROJECT_ROOT, "public");
@@ -80,6 +81,10 @@ async function serveStatic(req: Request): Promise<Response> {
 
   const file = Bun.file(candidate);
   if (await file.exists()) {
+    // The frontend is TypeScript on disk and JavaScript on the wire.
+    if (extname(candidate) === ".ts") {
+      return transpileModule(candidate);
+    }
     // The app is a single page; assets carry a hash-free URL, so revalidate.
     return new Response(file, { headers: { "Cache-Control": "no-cache" } });
   }

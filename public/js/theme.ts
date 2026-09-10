@@ -3,7 +3,7 @@
  *
  * Pico themes an element through a `data-theme` attribute, and its rules only
  * reach a shadow root through `:host`. So the choice is mirrored onto the
- * document element *and* onto every component host — base.js does the latter
+ * document element *and* onto every component host — base.ts does the latter
  * for all of them.
  *
  * The two cases inside a shadow root resolve like this:
@@ -16,29 +16,20 @@
  *                     overrides that inheritance.
  */
 
-/** @typedef {"light" | "dark"} Theme */
+export type Theme = "light" | "dark";
 
 /** Also read by the inline no-flash script in index.html — keep them in step. */
 const STORAGE_KEY = "gainz:theme";
 const EVENT = "gz-theme-change";
 
-/** @type {readonly Theme[]} */
-export const THEMES = ["light", "dark"];
+export const THEMES: readonly Theme[] = ["light", "dark"];
 
-/**
- * @param {string | null} value
- * @returns {value is Theme}
- */
-function isTheme(value) {
+function isTheme(value: string | null): value is Theme {
   return value === "light" || value === "dark";
 }
 
-/**
- * The system's setting, consulted once to seed a visitor who has never chosen.
- *
- * @returns {Theme}
- */
-function systemTheme() {
+/** The system's setting, consulted once to seed a visitor who has never chosen. */
+function systemTheme(): Theme {
   try {
     return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   } catch {
@@ -46,8 +37,7 @@ function systemTheme() {
   }
 }
 
-/** @returns {Theme} */
-function readStoredTheme() {
+function readStoredTheme(): Theme {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (isTheme(stored)) {
@@ -63,22 +53,16 @@ function readStoredTheme() {
 
 let current = readStoredTheme();
 
-/** @returns {Theme} */
-export function currentTheme() {
+export function currentTheme(): Theme {
   return current;
 }
 
-/**
- * Mirrors the current choice onto one element (a shadow host, or <html>).
- *
- * @param {Element} element
- */
-export function applyThemeTo(element) {
+/** Mirrors the current choice onto one element (a shadow host, or <html>). */
+export function applyThemeTo(element: Element): void {
   element.setAttribute("data-theme", current);
 }
 
-/** @param {Theme} theme */
-export function setTheme(theme) {
+export function setTheme(theme: Theme): void {
   if (!THEMES.includes(theme) || theme === current) {
     return;
   }
@@ -94,11 +78,8 @@ export function setTheme(theme) {
   window.dispatchEvent(new CustomEvent(EVENT, { detail: { theme } }));
 }
 
-/**
- * @param {() => void} listener
- * @returns {() => void} call it to stop listening.
- */
-export function onThemeChange(listener) {
+/** @returns call it to stop listening. */
+export function onThemeChange(listener: () => void): () => void {
   window.addEventListener(EVENT, listener);
   return () => window.removeEventListener(EVENT, listener);
 }

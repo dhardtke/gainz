@@ -1,27 +1,26 @@
-import { define, GzElement, html, raw } from "../../js/base.js";
-import { formatNumber } from "../../js/format.js";
+import { define, GzElement, html, raw } from "../../js/base.ts";
+import { formatNumber } from "../../js/format.ts";
 
 /** Plot area in SVG user units. Only geometry lives in here — never text. */
 const W = 600;
 const H = 220;
 const GRIDLINES = 4;
 
-/**
- * One plotted session.
- *
- * @typedef {object} ChartPoint
- * @property {string} label the x-axis tick, already formatted.
- * @property {number} value
- * @property {string} [hint] extra detail for the point's tooltip.
- */
+/** One plotted session. */
+export interface ChartPoint {
+  /** The x-axis tick, already formatted. */
+  label: string;
+  value: number;
+  /** Extra detail for the point's tooltip. */
+  hint?: string;
+}
 
-/**
- * @typedef {object} ChartScale
- * @property {(index: number) => number} xFraction
- * @property {(value: number) => number} yFraction
- * @property {number} low
- * @property {number} high
- */
+interface ChartScale {
+  xFraction: (index: number) => number;
+  yFraction: (value: number) => number;
+  low: number;
+  high: number;
+}
 
 /**
  * A minimal line chart drawn as inline SVG.
@@ -39,24 +38,21 @@ const GRIDLINES = 4;
  * Usage: `chart.series = [{ label: "5 Jan", value: 82.5, hint: "3 sets" }]`
  */
 export class GzChart extends GzElement {
-  /** @type {ChartPoint[]} */
-  #series = [];
+  #series: ChartPoint[] = [];
   #unit = "";
 
-  /** @param {ChartPoint[]} value */
-  set series(value) {
+  set series(value: ChartPoint[]) {
     this.#series = Array.isArray(value) ? value.filter((point) => Number.isFinite(Number(point.value))) : [];
     if (this.isConnected) {
       this.render();
     }
   }
 
-  get series() {
+  get series(): ChartPoint[] {
     return this.#series;
   }
 
-  /** @param {string} value */
-  set unit(value) {
+  set unit(value: string) {
     this.#unit = value ?? "";
     if (this.isConnected) {
       this.render();
@@ -67,10 +63,8 @@ export class GzChart extends GzElement {
    * Positions as fractions of the plot box: 0 is left/top, 1 is right/bottom.
    * Fractions work for both the SVG (multiply by W/H) and the HTML labels
    * (multiply by 100%), so the two always line up.
-   *
-   * @returns {ChartScale}
    */
-  #scale() {
+  #scale(): ChartScale {
     const values = this.#series.map((point) => Number(point.value));
     const min = Math.min(...values);
     const max = Math.max(...values);
@@ -88,13 +82,12 @@ export class GzChart extends GzElement {
     };
   }
 
-  /** @param {ChartScale} scale */
-  #gridValues(scale) {
+  #gridValues(scale: ChartScale): number[] {
     return Array.from({ length: GRIDLINES + 1 }, (_, step) => scale.low + ((scale.high - scale.low) * step) / GRIDLINES);
   }
 
   /** At most six labels along the x axis, so they never collide. */
-  #xLabelIndexes() {
+  #xLabelIndexes(): number[] {
     const total = this.#series.length;
     const stride = Math.max(1, Math.ceil(total / 6));
     return this.#series.map((_, index) => index).filter((index) => index % stride === 0 || index === total - 1);

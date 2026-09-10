@@ -1,29 +1,23 @@
-import { api, errorMessage } from "../../js/api.js";
-import { define, GzElement, html } from "../../js/base.js";
-import { formatDate, formatVolume, plural, relativeDay, todayIso } from "../../js/format.js";
-import { navigate } from "../../js/router.js";
-import { toastError } from "../gz-toast/gz-toast.js";
-import "../gz-stat-tile/gz-stat-tile.js";
+import { api, errorMessage } from "../../js/api.ts";
+import { define, GzElement, html } from "../../js/base.ts";
+import { formatDate, formatVolume, plural, relativeDay, todayIso } from "../../js/format.ts";
+import { navigate } from "../../js/router.ts";
+import type { Summary, WorkoutWithStats } from "../../js/types.ts";
+import { toastError } from "../gz-toast/gz-toast.ts";
+import "../gz-stat-tile/gz-stat-tile.ts";
 
-/** @import { Summary, WorkoutWithStats } from "../../js/types.js" */
-
-/**
- * @typedef {{ status: "loading" }
- *   | { status: "ready", summary: Summary, workouts: WorkoutWithStats[] }
- *   | { status: "error", message: string }} DashboardState
- */
+type DashboardState = { status: "loading" } | { status: "ready"; summary: Summary; workouts: WorkoutWithStats[] } | { status: "error"; message: string };
 
 /** Landing view: the numbers that answer "am I actually progressing?". */
 class GzDashboard extends GzElement {
-  /** @type {DashboardState} */
-  #state = { status: "loading" };
+  #state: DashboardState = { status: "loading" };
 
-  async connectedCallback() {
+  async connectedCallback(): Promise<void> {
     super.connectedCallback();
     await this.#load();
   }
 
-  async #load() {
+  async #load(): Promise<void> {
     try {
       const [summary, page] = await Promise.all([api.summary(), api.workouts.list({ limit: 5 })]);
       this.#state = { status: "ready", summary, workouts: page.items };
@@ -34,8 +28,7 @@ class GzDashboard extends GzElement {
     this.render();
   }
 
-  /** @param {string} action */
-  async handleAction(action) {
+  async handleAction(action: string): Promise<void> {
     if (action !== "start-workout") {
       return;
     }

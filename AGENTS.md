@@ -31,7 +31,8 @@ Always put plans inside the project directory.
 
 `migrations/` -> numbered `.sql` schema migrations, applied on startup
 `src/` -> Bun + SQLite REST backend (TypeScript)
-`public/` -> a **no-build-step** frontend (plain ES modules and custom elements)
+`public/` -> a **no-build-step** frontend: TypeScript ES modules and custom elements,
+transpiled on request by `src/transpile.ts` — no bundler, no output directory
 `docs/` -> design and API documentation
 
 `README.md` documents the full REST surface, the data model, and the reasoning behind the

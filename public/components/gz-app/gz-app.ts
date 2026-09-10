@@ -1,9 +1,8 @@
-import { define, GzElement, html } from "../../js/base.js";
-import { currentRoute, isActive, onRouteChange } from "../../js/router.js";
-import { toastError } from "../gz-toast/gz-toast.js";
-import "../gz-theme-toggle/gz-theme-toggle.js";
-
-/** @import { Route, ViewName } from "../../js/router.js" */
+import { define, GzElement, html } from "../../js/base.ts";
+import type { Route, ViewName } from "../../js/router.ts";
+import { currentRoute, isActive, onRouteChange } from "../../js/router.ts";
+import { toastError } from "../gz-toast/gz-toast.ts";
+import "../gz-theme-toggle/gz-theme-toggle.ts";
 
 const NAV = [
   { path: "/", label: "Dashboard" },
@@ -20,15 +19,13 @@ const NAV = [
  * awaits its own stylesheet before defining itself, so awaiting one of these
  * means the whole page is ready, scripts and CSS alike, before it goes on
  * screen.
- *
- * @type {Record<ViewName, () => Promise<unknown>>}
  */
-const VIEWS = {
-  dashboard: () => import("../gz-dashboard/gz-dashboard.js"),
-  workouts: () => import("../gz-workout-list/gz-workout-list.js"),
-  workout: () => import("../gz-workout-detail/gz-workout-detail.js"),
-  exercises: () => import("../gz-exercise-list/gz-exercise-list.js"),
-  exercise: () => import("../gz-exercise-detail/gz-exercise-detail.js"),
+const VIEWS: Record<ViewName, () => Promise<unknown>> = {
+  dashboard: () => import("../gz-dashboard/gz-dashboard.ts"),
+  workouts: () => import("../gz-workout-list/gz-workout-list.ts"),
+  workout: () => import("../gz-workout-detail/gz-workout-detail.ts"),
+  exercises: () => import("../gz-exercise-list/gz-exercise-list.ts"),
+  exercise: () => import("../gz-exercise-detail/gz-exercise-detail.ts"),
 };
 
 /**
@@ -38,31 +35,25 @@ const VIEWS = {
  * so the header and the toast stack survive navigation.
  */
 class GzApp extends GzElement {
-  /** @type {(() => void) | null} */
-  #unsubscribe = null;
+  #unsubscribe: (() => void) | null = null;
   #renderToken = 0;
 
-  connectedCallback() {
+  connectedCallback(): void {
     super.connectedCallback();
     this.#unsubscribe = onRouteChange(() => this.#renderView());
   }
 
-  disconnectedCallback() {
+  disconnectedCallback(): void {
     super.disconnectedCallback();
     this.#unsubscribe?.();
   }
 
-  afterRender() {
+  afterRender(): void {
     this.#renderView();
   }
 
-  /**
-   * Builds the element for a route, fetching its module first if need be.
-   *
-   * @param {Route} route
-   * @returns {Promise<Element>}
-   */
-  async #viewElement(route) {
+  /** Builds the element for a route, fetching its module first if need be. */
+  async #viewElement(route: Route): Promise<Element> {
     if (route.name !== "notfound") {
       await VIEWS[route.name]();
     }
@@ -106,7 +97,7 @@ class GzApp extends GzElement {
    * stylesheet still have to arrive; until they do, the outgoing view stays put
    * rather than the page going blank.
    */
-  #renderView() {
+  #renderView(): void {
     const route = currentRoute();
 
     // Bumped on every entry, not just on a genuine route change: navigate()
@@ -116,8 +107,7 @@ class GzApp extends GzElement {
 
     // aria-current marks the active page for assistive tech, and gz-app.css
     // keys the solid button off it — one attribute does both jobs.
-    /** @type {HTMLAnchorElement[]} */
-    const links = this.$$("nav a[data-path]");
+    const links = this.$$<HTMLAnchorElement>("nav a[data-path]");
     for (const link of links) {
       const active = isActive(link.dataset.path ?? "");
       link.classList.toggle("outline", !active);
@@ -132,15 +122,9 @@ class GzApp extends GzElement {
     void this.#swapView(route, token);
   }
 
-  /**
-   * Nothing awaits this, so it has to own its failures.
-   *
-   * @param {Route} route
-   * @param {number} token
-   */
-  async #swapView(route, token) {
-    /** @type {Element} */
-    let view;
+  /** Nothing awaits this, so it has to own its failures. */
+  async #swapView(route: Route, token: number): Promise<void> {
+    let view: Element;
     try {
       view = await this.#viewElement(route);
     } catch (cause) {

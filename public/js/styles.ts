@@ -9,7 +9,7 @@
  *
  * Pico and the shared utilities are fetched up front, behind the top-level
  * await below, because every component adopts both. A component's own sheet is
- * fetched when its module loads: `define()` in base.js awaits `loadStyles`
+ * fetched when its module loads: `define()` in base.ts awaits `loadStyles`
  * before registering the element, so by the time an instance can exist,
  * `stylesFor` can answer synchronously. That is what lets a route be loaded on
  * demand without ever painting it unstyled.
@@ -18,20 +18,13 @@
 /** Adopted by every component, in this order, before its own sheet. */
 const BASE_HREFS = ["/vendor/pico.css", "/css/shared.css"];
 
-/** @param {string} tagName */
-const componentHref = (tagName) => `/components/${tagName}/${tagName}.css`;
+const componentHref = (tagName: string) => `/components/${tagName}/${tagName}.css`;
 
-/** @type {Map<string, CSSStyleSheet>} */
-const sheets = new Map();
+const sheets = new Map<string, CSSStyleSheet>();
 
-/** @type {Map<string, Promise<void>>} */
-const pending = new Map();
+const pending = new Map<string, Promise<void>>();
 
-/**
- * @param {string} href
- * @returns {Promise<void>}
- */
-async function load(href) {
+async function load(href: string): Promise<void> {
   try {
     const response = await fetch(href);
     if (!response.ok) {
@@ -56,11 +49,8 @@ await Promise.all(BASE_HREFS.map(load));
  * Fetches one component's stylesheet, at most once. Repeat and concurrent calls
  * share the first fetch, so a component that two routes have in common — a stat
  * tile, say — is still loaded a single time.
- *
- * @param {string} tagName
- * @returns {Promise<void>}
  */
-export function loadStyles(tagName) {
+export function loadStyles(tagName: string): Promise<void> {
   const href = componentHref(tagName);
   if (sheets.has(href)) {
     return Promise.resolve();
@@ -75,11 +65,8 @@ export function loadStyles(tagName) {
  * The stylesheets a component should adopt: Pico, the shared utilities, and its
  * own file. Synchronous by design, because it is called from a constructor, and
  * safe because `define()` awaits `loadStyles` before registering the element.
- *
- * @param {string} tagName
- * @returns {CSSStyleSheet[]}
  */
-export function stylesFor(tagName) {
+export function stylesFor(tagName: string): CSSStyleSheet[] {
   const own = sheets.get(componentHref(tagName));
   const base = BASE_HREFS.flatMap((href) => {
     const sheet = sheets.get(href);

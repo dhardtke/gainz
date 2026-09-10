@@ -1,36 +1,33 @@
-import { api, errorMessage } from "../../js/api.js";
-import { define, GzElement, html } from "../../js/base.js";
-import { formatDate, formatVolume, plural, relativeDay, todayIso } from "../../js/format.js";
-import { navigate } from "../../js/router.js";
-import { toast, toastError } from "../gz-toast/gz-toast.js";
-
-/** @import { WorkoutWithStats } from "../../js/types.js" */
+import { api, errorMessage } from "../../js/api.ts";
+import { define, GzElement, html } from "../../js/base.ts";
+import { formatDate, formatVolume, plural, relativeDay, todayIso } from "../../js/format.ts";
+import { navigate } from "../../js/router.ts";
+import type { WorkoutWithStats } from "../../js/types.ts";
+import { toast, toastError } from "../gz-toast/gz-toast.ts";
 
 /**
  * The list keeps the pages it has already loaded, so `items` and `total` live
  * on every variant — an error while paging must not blank what is on screen.
- *
- * @typedef {object} WorkoutListState
- * @property {"loading" | "ready" | "error"} status
- * @property {WorkoutWithStats[]} items
- * @property {number} total
- * @property {string} [message]
  */
+interface WorkoutListState {
+  status: "loading" | "ready" | "error";
+  items: WorkoutWithStats[];
+  total: number;
+  message?: string;
+}
 
 const PAGE_SIZE = 25;
 
 /** The training log: every session, newest first. */
 class GzWorkoutList extends GzElement {
-  /** @type {WorkoutListState} */
-  #state = { status: "loading", items: [], total: 0 };
+  #state: WorkoutListState = { status: "loading", items: [], total: 0 };
 
-  async connectedCallback() {
+  async connectedCallback(): Promise<void> {
     super.connectedCallback();
     await this.#load(0);
   }
 
-  /** @param {number} offset */
-  async #load(offset) {
+  async #load(offset: number): Promise<void> {
     try {
       const page = await api.workouts.list({ limit: PAGE_SIZE, offset });
       const items = offset === 0 ? page.items : [...this.#state.items, ...page.items];
@@ -42,15 +39,11 @@ class GzWorkoutList extends GzElement {
     this.render();
   }
 
-  /**
-   * @param {string} action
-   * @param {HTMLFormElement} form
-   */
-  async handleSubmit(action, form) {
+  async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
     if (action !== "create") {
       return;
     }
-    const values = /** @type {{ performed_on: string, title: string, notes: string }} */ (this.formData(form));
+    const values = this.formData(form) as { performed_on: string; title: string; notes: string };
     try {
       const workout = await api.workouts.create({
         performed_on: values.performed_on || todayIso(),
@@ -63,11 +56,7 @@ class GzWorkoutList extends GzElement {
     }
   }
 
-  /**
-   * @param {string} action
-   * @param {HTMLElement} element
-   */
-  async handleAction(action, element) {
+  async handleAction(action: string, element: HTMLElement): Promise<void> {
     const id = Number(element.dataset.id);
 
     if (action === "load-more") {

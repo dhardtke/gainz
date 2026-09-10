@@ -3,19 +3,19 @@
  * server can hand out, and survives a manual reload of a deep link.
  */
 
-/** @typedef {"dashboard" | "workouts" | "workout" | "exercises" | "exercise"} ViewName */
+export type ViewName = "dashboard" | "workouts" | "workout" | "exercises" | "exercise";
 
-/** @typedef {ViewName | "notfound"} RouteName */
+export type RouteName = ViewName | "notfound";
 
-/**
- * @typedef {object} Route
- * @property {RouteName} name
- * @property {Record<string, string>} params captured from the path, e.g. `{ id: "12" }`.
- * @property {string} path the hash without its leading `#`.
- */
+export interface Route {
+  name: RouteName;
+  /** Captured from the path, e.g. `{ id: "12" }`. */
+  params: Record<string, string>;
+  /** The hash without its leading `#`. */
+  path: string;
+}
 
-/** @type {{ pattern: RegExp, name: RouteName, keys: string[] }[]} */
-const ROUTES = [
+const ROUTES: { pattern: RegExp; name: RouteName; keys: string[] }[] = [
   { pattern: /^\/?$/, name: "dashboard", keys: [] },
   { pattern: /^\/workouts\/?$/, name: "workouts", keys: [] },
   { pattern: /^\/workouts\/(\d+)\/?$/, name: "workout", keys: ["id"] },
@@ -23,8 +23,7 @@ const ROUTES = [
   { pattern: /^\/exercises\/(\d+)\/?$/, name: "exercise", keys: ["id"] },
 ];
 
-/** @returns {Route} */
-export function currentRoute() {
+export function currentRoute(): Route {
   const path = location.hash.replace(/^#/, "") || "/";
 
   for (const route of ROUTES) {
@@ -32,8 +31,7 @@ export function currentRoute() {
     if (!match) {
       continue;
     }
-    /** @type {Record<string, string>} */
-    const params = {};
+    const params: Record<string, string> = {};
     route.keys.forEach((key, index) => {
       params[key] = match[index + 1] ?? "";
     });
@@ -42,8 +40,7 @@ export function currentRoute() {
   return { name: "notfound", params: {}, path };
 }
 
-/** @param {string} path */
-export function navigate(path) {
+export function navigate(path: string): void {
   const target = `#${path}`;
   if (location.hash === target) {
     // Same route: force the listeners to run so the view refreshes.
@@ -53,22 +50,14 @@ export function navigate(path) {
   }
 }
 
-/**
- * @param {() => void} listener
- * @returns {() => void} call it to stop listening.
- */
-export function onRouteChange(listener) {
+/** @returns call it to stop listening. */
+export function onRouteChange(listener: () => void): () => void {
   window.addEventListener("hashchange", listener);
   return () => window.removeEventListener("hashchange", listener);
 }
 
-/**
- * True when `path` is the active route or one of its children.
- *
- * @param {string} path
- * @returns {boolean}
- */
-export function isActive(path) {
+/** True when `path` is the active route or one of its children. */
+export function isActive(path: string): boolean {
   const current = currentRoute().path;
   return path === "/" ? current === "/" : current.startsWith(path);
 }
