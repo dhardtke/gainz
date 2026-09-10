@@ -4,7 +4,7 @@ git_commit: 175a478d6e6c41b4b5ade482943fe5a0a5b1000c
 branch: main
 topic: "Move the test suite next to the source it exercises"
 tags: [plan, testing, backend, refactor, bun-test]
-status: ready
+status: complete
 ---
 
 # PLAN: Move the test suite next to the source it exercises
