@@ -18,8 +18,8 @@ function guard(handler: Handler): Handler {
   };
 }
 
-function guardAll<T extends Record<string, Handler>>(handlers: T): T {
-  return Object.fromEntries(Object.entries(handlers).map(([method, handler]) => [method, guard(handler)])) as T;
+function guardAll(handlers: Record<string, Handler>): Record<string, Handler> {
+  return Object.fromEntries(Object.entries(handlers).map(([method, handler]) => [method, guard(handler)]));
 }
 
 const MAX_NAME = 120;
@@ -55,7 +55,7 @@ function readSetBody(body: Record<string, unknown>): SetInput {
  * Builds the Bun.serve route table. Everything lives under /api; the frontend
  * is served as static files by the server module.
  */
-export function apiRoutes(repo: Repo) {
+export function apiRoutes(repo: Repo): Bun.Serve.Routes<undefined, string> {
   return {
     "/api/health": guardAll({
       GET: () => json({ status: "ok", app: "gainz" }),

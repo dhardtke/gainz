@@ -6,7 +6,7 @@ import { basename } from "node:path";
 import { DEFAULT_DB_PATH, openDatabase } from "./db";
 import { schemaVersion } from "./migrations";
 
-function main() {
+function main(): void {
   console.log(`database: ${DEFAULT_DB_PATH}`);
 
   let applied = 0;

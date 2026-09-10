@@ -1,3 +1,4 @@
+import type { RawHtml } from "../../js/base.ts";
 import { define, GzElement, html } from "../../js/base.ts";
 import type { Route, ViewName } from "../../js/router.ts";
 import { currentRoute, isActive, onRouteChange } from "../../js/router.ts";
@@ -40,7 +41,9 @@ class GzApp extends GzElement {
 
   connectedCallback(): void {
     super.connectedCallback();
-    this.#unsubscribe = onRouteChange(() => this.#renderView());
+    this.#unsubscribe = onRouteChange(() => {
+      this.#renderView();
+    });
   }
 
   disconnectedCallback(): void {
@@ -80,13 +83,20 @@ class GzApp extends GzElement {
         return view;
       }
 
-      default: {
+      // Listed rather than left to a default, so adding a route to the union is
+      // a compile error here until this method knows how to build its view.
+      case "notfound": {
         const view = document.createElement("p");
         view.className = "empty";
         view.textContent = `Nothing lives at ${route.path}.`;
         return view;
       }
     }
+
+    // Unreachable: every ViewName is handled above, which is the point of
+    // listing them. Spelled out because flow analysis stops at the switch and
+    // asks what happens if none of the cases matched.
+    throw new Error("Unhandled route");
   }
 
   /**
@@ -141,12 +151,12 @@ class GzApp extends GzElement {
 
     // Re-queried after the await: replaceChildren on a stale node is silent.
     const main = this.$("main");
-    if (main?.isConnected) {
+    if (main?.isConnected === true) {
       main.replaceChildren(view);
     }
   }
 
-  template() {
+  template(): RawHtml {
     return html`
       <header>
         <nav class="container">

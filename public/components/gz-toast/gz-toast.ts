@@ -1,4 +1,5 @@
 import { errorMessage } from "../../js/api.ts";
+import type { RawHtml } from "../../js/base.ts";
 import { define, GzElement, html } from "../../js/base.ts";
 
 export type ToastKind = "info" | "success" | "error";
@@ -10,6 +11,18 @@ export interface ToastDetail {
 
 const EVENT = "gz-toast";
 let nextId = 0;
+
+/**
+ * Teaches the DOM types about this module's own event, so a listener's
+ * `event.detail` arrives as a `ToastDetail` rather than as `any`. The
+ * declaration is erased at transpile time; nothing about it reaches the
+ * browser.
+ */
+declare global {
+  interface WindowEventMap {
+    "gz-toast": CustomEvent<ToastDetail>;
+  }
+}
 
 /** Shows a transient message. Any module can call this without a DOM reference. */
 export function toast(message: string, kind: ToastKind = "info"): void {
@@ -24,13 +37,11 @@ export function toastError(error: unknown): void {
 class GzToast extends GzElement {
   #items: { id: number; message: string; kind: ToastKind }[] = [];
 
-  #onToast: ((event: Event) => void) | null = null;
+  #onToast: ((event: WindowEventMap[typeof EVENT]) => void) | null = null;
 
   connectedCallback(): void {
-    this.#onToast = (event) => {
-      if (event instanceof CustomEvent) {
-        this.#add(event.detail);
-      }
+    this.#onToast = (event): void => {
+      this.#add(event.detail);
     };
     window.addEventListener(EVENT, this.#onToast);
     super.connectedCallback();
@@ -38,7 +49,7 @@ class GzToast extends GzElement {
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
-    if (this.#onToast) {
+    if (this.#onToast !== null) {
       window.removeEventListener(EVENT, this.#onToast);
     }
     this.#onToast = null;
@@ -48,7 +59,12 @@ class GzToast extends GzElement {
     const id = ++nextId;
     this.#items = [...this.#items, { id, message, kind }];
     this.render();
-    setTimeout(() => this.#dismiss(id), kind === "error" ? 6000 : 3000);
+    setTimeout(
+      () => {
+        this.#dismiss(id);
+      },
+      kind === "error" ? 6000 : 3000,
+    );
   }
 
   #dismiss(id: number): void {
@@ -66,7 +82,7 @@ class GzToast extends GzElement {
     }
   }
 
-  template() {
+  template(): RawHtml {
     return html`
       ${this.#items.map(
         (item) => html`

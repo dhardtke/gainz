@@ -36,7 +36,7 @@ export function errorMessage(error: unknown): string {
  * declares the shape its own endpoint returns, and those declarations are the
  * single place the frontend states what it expects.
  *
- * @returns the parsed body, or `null` for a 204.
+ * @returns the parsed body, or `null` when there is no body — a 204, say.
  * @throws {ApiError} on a transport failure or a non-2xx response.
  */
 async function request<T>(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, body?: unknown): Promise<T> {
@@ -52,22 +52,27 @@ async function request<T>(method: "GET" | "POST" | "PATCH" | "DELETE", path: str
     throw new ApiError("Could not reach the gainz server", 0, cause);
   }
 
-  if (response.status === 204) {
-    return null as T;
-  }
-
   const text = await response.text();
-  let data: any = null;
+  let data: unknown = null;
   try {
-    data = text ? JSON.parse(text) : null;
+    data = text === "" ? null : JSON.parse(text);
   } catch {
     data = null;
   }
 
   if (!response.ok) {
-    throw new ApiError(data?.error ?? `Request failed (${response.status})`, response.status, data?.details);
+    // Narrowed rather than reached into: an error body is whatever the server
+    // felt like sending, including nothing at all.
+    const errorBody = typeof data === "object" && data !== null ? data : {};
+    const message = "error" in errorBody && typeof errorBody.error === "string" ? errorBody.error : `Request failed (${response.status})`;
+    throw new ApiError(message, response.status, "details" in errorBody ? errorBody.details : undefined);
   }
-  return data;
+
+  // The methods on `api` below declare what each endpoint returns. This is the
+  // one place that declaration is asserted rather than proven — validating it
+  // would mean a schema library, and this app deliberately has none.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the server contract boundary
+  return data as T;
 }
 
 const get = <T>(path: string): Promise<T> => request<T>("GET", path);

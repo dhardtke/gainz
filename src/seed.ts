@@ -46,7 +46,7 @@ function isoDaysAgo(days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-function main() {
+function main(): void {
   const db = openDatabase(DEFAULT_DB_PATH);
   const repo = new Repo(db);
 

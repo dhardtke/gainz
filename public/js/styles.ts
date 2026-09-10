@@ -18,7 +18,7 @@
 /** Adopted by every component, in this order, before its own sheet. */
 const BASE_HREFS = ["/vendor/pico.css", "/css/shared.css"];
 
-const componentHref = (tagName: string) => `/components/${tagName}/${tagName}.css`;
+const componentHref = (tagName: string): string => `/components/${tagName}/${tagName}.css`;
 
 const sheets = new Map<string, CSSStyleSheet>();
 

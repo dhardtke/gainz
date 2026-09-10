@@ -1,4 +1,5 @@
 import { api, ApiError, errorMessage } from "../../js/api.ts";
+import type { RawHtml } from "../../js/base.ts";
 import { define, GzElement, html } from "../../js/base.ts";
 import { formatDate, formatDelta, formatNumber, formatShortDate, formatVolume, plural, relativeDay, UNIT } from "../../js/format.ts";
 import type { ExerciseProgress, SessionPoint } from "../../js/types.ts";
@@ -53,17 +54,30 @@ class GzExerciseDetail extends GzElement {
     }
   }
 
-  async connectedCallback(): Promise<void> {
+  /**
+   * The id this view is showing.
+   *
+   * gz-app sets the attribute before the element is connected, so
+   * attributeChangedCallback has always run by the time anything asks for it.
+   * Reading it through here states that invariant once, in the one place that
+   * would notice it being broken, instead of at every call site.
+   */
+  get #id(): string {
+    const id = this.#exerciseId;
+    if (id === null) {
+      throw new Error("gz-exercise-detail needs an exercise-id attribute");
+    }
+    return id;
+  }
+
+  connectedCallback(): void {
     super.connectedCallback();
-    await this.#load();
+    void this.#load();
   }
 
   async #load(): Promise<void> {
     try {
-      // gz-app sets the attribute before the element is connected, so
-      // attributeChangedCallback has already run by the time this does.
-      const id = this.#exerciseId as string;
-      this.#state = { status: "ready", ...(await api.exercises.progress(id)) };
+      this.#state = { status: "ready", ...(await api.exercises.progress(this.#id)) };
     } catch (error) {
       this.#state = { status: "error", message: errorMessage(error) };
       if (!(error instanceof ApiError) || error.status !== 404) {
@@ -99,7 +113,7 @@ class GzExerciseDetail extends GzElement {
     }));
   }
 
-  #summaryTiles(state: ReadyState) {
+  #summaryTiles(state: ReadyState): RawHtml {
     const { sessions, best_set: bestSet } = state;
     const latest = sessions.at(-1);
     const previous = sessions.at(-2);
@@ -129,7 +143,7 @@ class GzExerciseDetail extends GzElement {
     `;
   }
 
-  #sessionsTable(sessions: SessionPoint[]) {
+  #sessionsTable(sessions: SessionPoint[]): RawHtml {
     return html`
       <article class="stack-sm">
         <h2>Session history</h2>
@@ -170,7 +184,7 @@ class GzExerciseDetail extends GzElement {
     `;
   }
 
-  template() {
+  template(): RawHtml {
     if (this.#state.status === "loading") {
       return html`<p aria-busy="true">Loading progress…</p>`;
     }

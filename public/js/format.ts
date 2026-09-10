@@ -26,16 +26,15 @@ export function formatWeight(value: number | null | undefined): string {
   if (value === null || value === undefined) {
     return "–";
   }
-  const num = Number(value);
-  if (num === 0) {
+  if (value === 0) {
     return `bodyweight`;
   }
-  return `${formatNumber(num)} ${UNIT}`;
+  return `${formatNumber(value)} ${UNIT}`;
 }
 
 /** Total load moved; tonnes once the number stops being readable in kg. */
 export function formatVolume(value: number | null | undefined): string {
-  const num = Number(value ?? 0);
+  const num = value ?? 0;
   if (num >= 10000) {
     return `${formatNumber(num / 1000, 1)} t`;
   }
@@ -117,7 +116,7 @@ export function formatDelta(current: number, previous: number | null | undefined
   if (previous === null || previous === undefined) {
     return "";
   }
-  const diff = Number(current) - Number(previous);
+  const diff = current - previous;
   if (Math.abs(diff) < 0.01) {
     return "±0";
   }

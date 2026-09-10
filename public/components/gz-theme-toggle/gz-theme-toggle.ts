@@ -1,3 +1,4 @@
+import type { RawHtml } from "../../js/base.ts";
 import { define, GzElement, html } from "../../js/base.ts";
 import { currentTheme, onThemeChange, setTheme } from "../../js/theme.ts";
 
@@ -9,7 +10,9 @@ class GzThemeToggle extends GzElement {
     super.connectedCallback();
     // The base class keeps this element's own colours in step; this keeps the
     // switch position in step, so it agrees with a change made anywhere.
-    this.#stopThemeSync = onThemeChange(() => this.#syncSwitch());
+    this.#stopThemeSync = onThemeChange(() => {
+      this.#syncSwitch();
+    });
   }
 
   disconnectedCallback(): void {
@@ -40,7 +43,7 @@ class GzThemeToggle extends GzElement {
     }
   }
 
-  template() {
+  template(): RawHtml {
     // The aria-label duplicates the visible text on purpose: the text is hidden
     // on a narrow header, and the switch still has to announce itself there.
     return html`

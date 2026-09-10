@@ -1,4 +1,5 @@
 import { api, errorMessage } from "../../js/api.ts";
+import type { RawHtml } from "../../js/base.ts";
 import { define, GzElement, html } from "../../js/base.ts";
 import { formatDate, formatVolume, plural, relativeDay, todayIso } from "../../js/format.ts";
 import { navigate } from "../../js/router.ts";
@@ -22,9 +23,9 @@ const PAGE_SIZE = 25;
 class GzWorkoutList extends GzElement {
   #state: WorkoutListState = { status: "loading", items: [], total: 0 };
 
-  async connectedCallback(): Promise<void> {
+  connectedCallback(): void {
     super.connectedCallback();
-    await this.#load(0);
+    void this.#load(0);
   }
 
   async #load(offset: number): Promise<void> {
@@ -43,12 +44,14 @@ class GzWorkoutList extends GzElement {
     if (action !== "create") {
       return;
     }
-    const values = this.formData(form) as { performed_on: string; title: string; notes: string };
+    const values = this.formData(form);
     try {
       const workout = await api.workouts.create({
-        performed_on: values.performed_on || todayIso(),
-        title: values.title || null,
-        notes: values.notes || null,
+        // The date field is pre-filled and `required`, so an empty value means it
+        // was cleared. The API defaults a missing date but rejects an empty one.
+        performed_on: values.performed_on === "" ? todayIso() : values.performed_on,
+        title: values.title,
+        notes: values.notes,
       });
       navigate(`/workouts/${workout.id}`);
     } catch (error) {
@@ -68,7 +71,7 @@ class GzWorkoutList extends GzElement {
       try {
         const workout = await api.workouts.create({
           performed_on: todayIso(),
-          title: element.dataset.title || null,
+          title: element.dataset.title,
           copy_from_workout_id: id,
         });
         toast(`Copied ${plural(workout.sets.length, "set")} into a new session`, "success");
@@ -94,7 +97,7 @@ class GzWorkoutList extends GzElement {
     }
   }
 
-  #newWorkoutForm() {
+  #newWorkoutForm(): RawHtml {
     return html`
       <article class="stack-sm">
         <h2>New workout</h2>
@@ -119,7 +122,7 @@ class GzWorkoutList extends GzElement {
     `;
   }
 
-  template() {
+  template(): RawHtml {
     if (this.#state.status === "loading") {
       return html`<p aria-busy="true">Loading workouts…</p>`;
     }

@@ -1,4 +1,5 @@
 import { api } from "../../js/api.ts";
+import type { RawHtml } from "../../js/base.ts";
 import { define, GzElement, html } from "../../js/base.ts";
 import { formatNumber, formatVolume, UNIT } from "../../js/format.ts";
 import type { Exercise, LiftSet } from "../../js/types.ts";
@@ -29,7 +30,8 @@ export class GzSetRow extends GzElement {
   }
 
   set index(value: number) {
-    this.#index = Number(value) || 0;
+    // The parent reads this off a data attribute, so a NaN is a real possibility.
+    this.#index = Number.isFinite(value) ? value : 0;
   }
 
   async handleAction(action: string): Promise<void> {
@@ -85,13 +87,13 @@ export class GzSetRow extends GzElement {
     if (action !== "save" || !this.#set) {
       return;
     }
-    const values = this.formData(form) as { exercise_id: string; reps: string; weight: string; notes: string };
+    const values = this.formData(form);
     try {
       await api.sets.update(this.#set.id, {
         exercise_id: Number(values.exercise_id),
         reps: Number(values.reps),
         weight: Number(values.weight),
-        notes: values.notes || null,
+        notes: values.notes,
       });
       this.#editing = false;
       this.emit("sets-changed");
@@ -100,7 +102,7 @@ export class GzSetRow extends GzElement {
     }
   }
 
-  #editTemplate(set: LiftSet) {
+  #editTemplate(set: LiftSet): RawHtml {
     return html`
       <form class="edit fields" data-action="save">
         <div class="field field-exercise">
@@ -129,7 +131,7 @@ export class GzSetRow extends GzElement {
     `;
   }
 
-  template() {
+  template(): RawHtml {
     const set = this.#set;
     if (!set) {
       return html``;
