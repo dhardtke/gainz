@@ -220,6 +220,25 @@ describe("workouts and sets", () => {
     expect(copy.sets.map((s: { weight: number }) => s.weight)).toEqual([60, 65]);
   });
 
+  test("copying from a missing workout creates nothing", async () => {
+    await createWorkout("2026-01-05");
+    const before = (await (await api("/api/workouts")).json()).total;
+
+    const res = await post("/api/workouts", { performed_on: "2026-01-12", copy_from_workout_id: 9999 });
+
+    expect(res.status).toBe(404);
+    expect((await (await api("/api/workouts")).json()).total).toBe(before);
+  });
+
+  test("rejects a malformed copy_from_workout_id before writing anything", async () => {
+    const before = (await (await api("/api/workouts")).json()).total;
+
+    const res = await post("/api/workouts", { performed_on: "2026-01-12", copy_from_workout_id: "nope" });
+
+    expect(res.status).toBe(400);
+    expect((await (await api("/api/workouts")).json()).total).toBe(before);
+  });
+
   test("lists workouts with roll-up statistics", async () => {
     const exercise = await createExercise();
     const workout = await createWorkout();

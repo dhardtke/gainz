@@ -244,6 +244,10 @@ All endpoints live under `/api` and speak JSON. Errors come back as
 
 `performed_on` is a `YYYY-MM-DD` calendar date and defaults to today.
 
+`copy_from_workout_id` copies that session's sets into the new workout as one
+atomic step: if the id does not exist the request is a 404 and no workout is
+created at all.
+
 ## Data model
 
 ```

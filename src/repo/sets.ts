@@ -102,16 +102,4 @@ export class SetRepo {
     this.require(id);
     this.db.query("DELETE FROM sets WHERE id = ?").run(id);
   }
-
-  /** Copies every set of an earlier workout into another one — "repeat this session". */
-  copyInto(fromWorkoutId: number, toWorkoutId: number): number {
-    const result = this.db
-      .query(
-        `INSERT INTO sets (workout_id, exercise_id, reps, weight, notes, position)
-         SELECT ?, exercise_id, reps, weight, notes, position
-           FROM sets WHERE workout_id = ?`,
-      )
-      .run(toWorkoutId, fromWorkoutId);
-    return Number(result.changes);
-  }
 }

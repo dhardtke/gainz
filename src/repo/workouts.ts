@@ -61,17 +61,40 @@ export class WorkoutRepo {
     return workout;
   }
 
-  create(input: WorkoutInput): Workout {
-    const row = this.db
-      .query<Workout, [string, string | null, string | null]>(
-        `INSERT INTO workouts (performed_on, title, notes) VALUES (?, ?, ?)
-         RETURNING id, performed_on, title, notes, created_at`,
-      )
-      .get(input.performed_on, input.title, input.notes);
-    if (!row) {
-      throw new Error("Insert of workout returned no row");
-    }
-    return row;
+  /**
+   * Creates a workout, optionally copying every set of an earlier session into it — "repeat this
+   * session". The insert and the copy commit together, so an unknown `copyFrom` fails without
+   * leaving an empty workout behind.
+   */
+  create(input: WorkoutInput, options: { copyFrom?: number } = {}): Workout {
+    return this.db.transaction(() => {
+      const { copyFrom } = options;
+      if (copyFrom !== undefined) {
+        this.require(copyFrom);
+      }
+
+      const row = this.db
+        .query<Workout, [string, string | null, string | null]>(
+          `INSERT INTO workouts (performed_on, title, notes) VALUES (?, ?, ?)
+           RETURNING id, performed_on, title, notes, created_at`,
+        )
+        .get(input.performed_on, input.title, input.notes);
+      if (!row) {
+        throw new Error("Insert of workout returned no row");
+      }
+
+      if (copyFrom !== undefined) {
+        this.db
+          .query<unknown, [number, number]>(
+            `INSERT INTO sets (workout_id, exercise_id, reps, weight, notes, position)
+             SELECT ?, exercise_id, reps, weight, notes, position
+               FROM sets WHERE workout_id = ?`,
+          )
+          .run(row.id, copyFrom);
+      }
+
+      return row;
+    })();
   }
 
   update(id: number, patch: Partial<WorkoutInput>): Workout {

@@ -76,8 +76,8 @@ export class Repo {
     return this.workouts.require(id);
   }
 
-  createWorkout(input: WorkoutInput): Workout {
-    return this.workouts.create(input);
+  createWorkout(input: WorkoutInput, options?: { copyFrom?: number }): Workout {
+    return this.workouts.create(input, options);
   }
 
   updateWorkout(id: number, patch: Partial<WorkoutInput>): Workout {
@@ -112,10 +112,6 @@ export class Repo {
 
   deleteSet(id: number): void {
     this.sets.delete(id);
-  }
-
-  copySets(fromWorkoutId: number, toWorkoutId: number): number {
-    return this.sets.copyInto(fromWorkoutId, toWorkoutId);
   }
 
   // -------------------------------------------------------------------- stats

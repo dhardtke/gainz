@@ -120,12 +120,9 @@ export function apiRoutes(repo: Repo) {
 
       POST: async (req) => {
         const body = await readJsonObject(req);
-        const workout = repo.createWorkout(readWorkoutBody(body));
-        if (isPresent(body, "copy_from_workout_id")) {
-          const sourceId = requiredInt(body, "copy_from_workout_id", { min: 1 });
-          repo.requireWorkout(sourceId);
-          repo.copySets(sourceId, workout.id);
-        }
+        const workout = repo.createWorkout(readWorkoutBody(body), {
+          copyFrom: isPresent(body, "copy_from_workout_id") ? requiredInt(body, "copy_from_workout_id", { min: 1 }) : undefined,
+        });
         return json({ ...workout, sets: repo.listSets(workout.id) }, 201);
       },
     }),
