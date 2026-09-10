@@ -159,9 +159,9 @@ nothing but quotes moved.
 
 **Tasks**:
 
-- [ ] Confirm the working tree is clean, so the reformat diff is unambiguous. `git status --porcelain`
+- [x] Confirm the working tree is clean, so the reformat diff is unambiguous. `git status --porcelain`
       should print nothing — or at most this plan file, if it has not been committed yet.
-- [ ] Add `singleQuote` and `overrides` to `.oxfmtrc.json`, keeping `$schema`, `printWidth` and
+- [x] Add `singleQuote` and `overrides` to `.oxfmtrc.json`, keeping `$schema`, `printWidth` and
       `ignorePatterns` as they are:
       ```json
       {
@@ -172,44 +172,44 @@ nothing but quotes moved.
         "overrides": [{ "files": ["**/*.css"], "options": { "singleQuote": false } }]
       }
       ```
-- [ ] Run `bun run fmt` to rewrite the project. Expect **51 files** reformatted: 31 under `backend/`
+- [x] Run `bun run fmt` to rewrite the project. Expect **51 files** reformatted: 31 under `backend/`
       (24 in `src/`, 7 in `test/`), 18 under `frontend/src/`, `frontend/index.html`, and
       `.agents/skills/rpi-plan/references/plan-template.md`. Do not hand-edit any of them. The config
       above needs no reformatting — oxfmt leaves it exactly as written, `overrides` on one line.
-- [ ] Confirm no CSS file was touched: `git diff --name-only -- "*.css"` must print nothing.
-- [ ] Confirm `frontend/index.html`'s HTML attributes are untouched — its diff is 3 lines, all inside
+- [x] Confirm no CSS file was touched: `git diff --name-only -- "*.css"` must print nothing.
+- [x] Confirm `frontend/index.html`'s HTML attributes are untouched — its diff is 3 lines, all inside
       the inline `<script>`. The `data:image/svg+xml` favicon on line 12 (which relies on single quotes
       nested inside a double-quoted attribute) must be unchanged.
-- [ ] Confirm the formatter introduced no escapes: no added line in the diff may contain `\'` or `\"`.
+- [x] Confirm the formatter introduced no escapes: no added line in the diff may contain `\'` or `\"`.
       Strings containing an apostrophe must still be **double**-quoted. Spot-check
       `backend/src/migrations.ts:56` — the line does change, because `.get("schema_migrations")` at its
       end flips to `.get('schema_migrations')`, but the SQL literal
       `"SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?"` keeps its double quotes.
       Also check `frontend/src/base.ts:16`, which exercises both directions in one line: `"&"` becomes
       `'&'`, while `'"'` and `"'"` are both already optimal and must not move.
-- [ ] **Run the whole Automated Verification block below before committing** — every `git diff` check
+- [x] **Run the whole Automated Verification block below before committing** — every `git diff` check
       in it is written against the working tree. Only then commit.
-- [ ] Commit as a `style:` commit covering `.oxfmtrc.json` and all 51 reformatted files together (52
+- [x] Commit as a `style:` commit covering `.oxfmtrc.json` and all 51 reformatted files together (52
       paths in total), so `fmt:check` is green at this commit. Follow the repository's commit
       conventions; the body should say why CSS is excluded rather than restate the diff.
-- [ ] After committing, re-run the two structural checks in their post-commit form to confirm what
+- [x] After committing, re-run the two structural checks in their post-commit form to confirm what
       actually landed: `git diff --name-only HEAD~1 HEAD -- "*.css"` is empty, and
       `git diff --shortstat HEAD~1 HEAD -- . ":(exclude).oxfmtrc.json"` reports 51 files / 800 / 800.
 
 **Automated Verification** (run against the working tree, before the commit task above — a `git diff`
 check run after committing compares against an empty diff and passes for the wrong reason):
 
-- [ ] `bun run fmt:check` reports all matched files correctly formatted, over 82 files.
-- [ ] `git diff --name-only -- "*.css"` is empty.
-- [ ] No newly escaped quotes: `git diff -U0 | Select-String -Pattern '^\+.*\\[\x27"]'` returns
+- [x] `bun run fmt:check` reports all matched files correctly formatted, over 82 files.
+- [x] `git diff --name-only -- "*.css"` is empty.
+- [x] No newly escaped quotes: `git diff -U0 | Select-String -Pattern '^\+.*\\[\x27"]'` returns
       nothing (`\x27` is the apostrophe, spelled this way to stay inside PowerShell's single quotes).
-- [ ] `git diff --shortstat -- . ":(exclude).oxfmtrc.json"` reports **51 files changed, 800
+- [x] `git diff --shortstat -- . ":(exclude).oxfmtrc.json"` reports **51 files changed, 800
       insertions(+), 800 deletions(-)** — equal counts are what a pure quote flip looks like, with no
       reflowed lines. Including the config, the whole commit is 52 files, 803 insertions, 801
       deletions.
-- [ ] `bun test` passes: 53 tests across 6 files, 0 failures.
-- [ ] `bun run typecheck` exits 0.
-- [ ] `bun run lint` exits 0.
+- [x] `bun test` passes: 53 tests across 6 files, 0 failures.
+- [x] `bun run typecheck` exits 0.
+- [x] `bun run lint` exits 0.
 
 ### Phase 2: Document the convention
 
@@ -220,48 +220,48 @@ these go stale the moment Phase 1 lands — and record the convention and its on
 
 **Tasks**:
 
-- [ ] `README.md:166` — `await define("<tag>", TheClass)` → `await define('<tag>', TheClass)`
-- [ ] `README.md:183` — `import "./format.ts"` → `import './format.ts'`
-- [ ] `README.md:198` — `await import("…/gz-exercise-detail.ts")` →
+- [x] `README.md:166` — `await define("<tag>", TheClass)` → `await define('<tag>', TheClass)`
+- [x] `README.md:183` — `import "./format.ts"` → `import './format.ts'`
+- [x] `README.md:198` — `await import("…/gz-exercise-detail.ts")` →
       `await import('…/gz-exercise-detail.ts')`
-- [ ] `docs/frontend.md:8` — `await define("<tag>", TheClass)` → `await define('<tag>', TheClass)`
-- [ ] `docs/frontend.md:23` — `"./format.ts"` → `'./format.ts'`
-- [ ] `docs/frontend.md:27` — `import type { … } from "../../types.ts"` →
+- [x] `docs/frontend.md:8` — `await define("<tag>", TheClass)` → `await define('<tag>', TheClass)`
+- [x] `docs/frontend.md:23` — `"./format.ts"` → `'./format.ts'`
+- [x] `docs/frontend.md:27` — `import type { … } from "../../types.ts"` →
       `import type { … } from '../../types.ts'`
-- [ ] Leave every non-TypeScript quote in those files alone. Specifically: `README.md:224`
+- [x] Leave every non-TypeScript quote in those files alone. Specifically: `README.md:224`
       (`<html data-theme="dark">`, HTML), `README.md:242` (`{ "error": "..." }`, JSON — JSON has no
       single-quoted form), `AGENTS.md:15` (`bun test -t "health"`, shell), `docs/frontend.md:9-10`
       (English quotation marks around "module loaded" and "stylesheet loaded"), and everything under
       `.agents/skills/**` and `.claude/skills/**`, which is vendored prose.
-- [ ] Add a line to `AGENTS.md` recording the convention — single quotes in TypeScript and JavaScript,
+- [x] Add a line to `AGENTS.md` recording the convention — single quotes in TypeScript and JavaScript,
       double quotes in CSS, enforced by `bun run fmt`. Place it near the existing
       "Dependencies are pinned to exact versions." note under the Commands block, matching that
       section's terse single-sentence style.
-- [ ] Do **not** edit `CLAUDE.md`. It is a committed symlink to `AGENTS.md`; writing to it through a
+- [x] Do **not** edit `CLAUDE.md`. It is a committed symlink to `AGENTS.md`; writing to it through a
       tool that replaces rather than appends would turn it into a regular file. Verify afterwards that
       `git diff --name-only` lists `AGENTS.md` and not `CLAUDE.md`.
-- [ ] Add a bullet to `docs/styling-guidelines.md` stating that CSS keeps double quotes deliberately —
+- [x] Add a bullet to `docs/styling-guidelines.md` stating that CSS keeps double quotes deliberately —
       it is the prevailing CSS convention, and `.oxfmtrc.json` cannot carry a comment saying so. Match
       the file's existing bold-lead bullet style.
-- [ ] Run `bun run fmt` after the Markdown edits and before committing. oxfmt formats Markdown, so a
+- [x] Run `bun run fmt` after the Markdown edits and before committing. oxfmt formats Markdown, so a
       newly added line could be reflowed; letting the formatter settle it first keeps the commit from
       needing a follow-up. Re-read any line it rewraps to confirm the wording still reads well.
-- [ ] Commit as a `docs:` commit.
+- [x] Commit as a `docs:` commit.
 
 **Automated Verification**:
 
-- [ ] `bun run fmt:check` passes.
-- [ ] No double-quoted TypeScript snippets remain:
+- [x] `bun run fmt:check` passes.
+- [x] No double-quoted TypeScript snippets remain:
       `Select-String -Path README.md,docs/frontend.md -Pattern 'define\("|import\("|"\./format\.ts"|"\.\./\.\./types\.ts"'`
       returns nothing.
-- [ ] The non-TypeScript examples survived:
+- [x] The non-TypeScript examples survived:
       `Select-String -Path README.md -Pattern 'data-theme="dark"|\{ "error"'` returns two matches
       (lines 224 and 242), and `Select-String -Path AGENTS.md -Pattern 'bun test -t "health"'` returns
       one.
-- [ ] `git ls-files -s CLAUDE.md` still reports mode `120000` — the symlink is intact.
-- [ ] `git diff --name-only HEAD~1` lists exactly `README.md`, `docs/frontend.md`, `AGENTS.md` and
+- [x] `git ls-files -s CLAUDE.md` still reports mode `120000` — the symlink is intact.
+- [x] `git diff --name-only HEAD~1` lists exactly `README.md`, `docs/frontend.md`, `AGENTS.md` and
       `docs/styling-guidelines.md`.
-- [ ] `bun test`, `bun run typecheck` and `bun run lint` all still pass.
+- [x] `bun test`, `bun run typecheck` and `bun run lint` all still pass.
 
 ## Implementation Notes
 
