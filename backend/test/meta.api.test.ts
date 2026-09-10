@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
+import { openDatabase } from "../src/db";
+import { HttpError } from "../src/http";
 import type { Summary } from "../src/repo";
+import { Repo } from "../src/repo";
+import { serveOptions } from "../src/server";
 import type { ErrorBody } from "./helpers/server";
 import { body, useServer } from "./helpers/server";
 
@@ -16,6 +20,22 @@ describe("health and routing", () => {
     const res = await api("/api/nope");
     expect(res.status).toBe(404);
     expect((await body<ErrorBody>(res)).error).toContain("not found");
+  });
+
+  // Called directly rather than over HTTP: `guardAll` wraps the method maps and `guard` the
+  // `/api/*` catch-all, so no request can reach the hook through the route table. What is
+  // under test is our wiring in `serveOptions`, not Bun's dispatch. The 500 branch logs one
+  // `Unhandled error: Error: boom` line to stderr on the way past.
+  test("renders errors through Bun.serve's error hook", () => {
+    const db = openDatabase(":memory:");
+    try {
+      const { error } = serveOptions(new Repo(db));
+
+      expect(error(new HttpError(418, "teapot")).status).toBe(418);
+      expect(error(new Error("boom")).status).toBe(500);
+    } finally {
+      db.close();
+    }
   });
 });
 
