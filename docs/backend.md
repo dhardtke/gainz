@@ -1,9 +1,17 @@
 ### Backend (`src/`)
 
 A strict layering, one concern per file: `db.ts` (connection + PRAGMAs) → `migrations.ts` (schema) →
-`repo/` (**all** SQL, one method per operation, returns typed rows) → `routes.ts` (the `Bun.serve`
-route table) → `server.ts` (entry point, static files). `validate.ts` parses and bounds every request
-field; `http.ts` defines `HttpError` plus `badRequest`/`notFound`/`conflict`.
+`repo/` (**all** SQL, one method per operation, returns typed rows) → `routes.ts` (the registry that
+spreads the route files into one `Bun.serve` table) and `routes/` (one file per URL group:
+`meta.routes.ts`, `stats.routes.ts`, `exercise.routes.ts`, `workout.routes.ts`, `set.routes.ts`,
+over the shared plumbing in `routes/shared.ts`) → `server.ts` (entry point, static files).
+`validate.ts` parses and bounds every request field; `http.ts` defines `HttpError` plus
+`badRequest`/`notFound`/`conflict`.
+
+A route belongs to the file its URL prefix names, with no exceptions to remember — so
+`/api/workouts/:id/sets` is a workout route, and `workout.routes.ts` imports `readSetBody` from
+`set.routes.ts` rather than the other way round. `routes.ts` holds no handler code at all; the
+`/api/*` catch-all is spread last so every named pattern is matched before it.
 
 `repo/index.ts` is a facade: it owns no SQL, and delegates each method to one repository per entity
 (`exercises.ts`, `workouts.ts`, `sets.ts`, `stats.ts`), which share their fragments and the single
@@ -12,13 +20,14 @@ dynamic-`UPDATE` builder through `repo/sql.ts`. The flat surface is deliberate �
 The entity modules reference each other only with `import type`; `SetRepo` takes the siblings it
 needs through its constructor, so there is no runtime cycle to trip over.
 
-Error handling is by throwing: handlers throw `HttpError` and `guardAll()` in `routes.ts` turns
-it into a JSON `{ error }` body with the right status. New routes must be wrapped in `guardAll`.
+Error handling is by throwing: handlers throw `HttpError` and `guardAll()` in `routes/shared.ts`
+turns it into a JSON `{ error }` body with the right status. New routes must be wrapped in
+`guardAll` in whichever route file owns them.
 
 A write that needs more than one statement belongs in a single `Repo` method wrapped in
 `db.transaction()` — `createWorkout(input, { copyFrom })` is the example, where the workout and its
-copied sets commit together or not at all. `routes.ts` never opens a transaction; if a handler finds
-itself sequencing two writes, the sequence belongs in the repository instead.
+copied sets commit together or not at all. The route files never open a transaction; if a handler
+finds itself sequencing two writes, the sequence belongs in the repository instead.
 
 The schema lives in `migrations/`, one numbered `.sql` file per change. `openDatabase()` applies
 whatever is pending on every start: each file runs in its own transaction and is recorded in
@@ -29,8 +38,14 @@ it commits. Changing the schema means adding a file numbered above the current v
 else. The runner refuses to start rather than guess when the files and the database disagree.
 
 `serveOptions(repo)` is exported so the test suite can start a real server on port 0 against an
-in-memory DB. Tests are end-to-end over HTTP, with one exception: `test/migrate.test.ts` unit-tests
-the migration runner against throwaway fixture directories. There are no unit tests of `Repo`.
+in-memory DB. `test/helpers/server.ts` wraps that in `useServer()`, which registers the
+`beforeEach`/`afterEach` pair from inside the function — so each of the five API test files
+(`meta`, `static`, `exercise`, `workout`, `set`) gets its own hooks and its own database rather
+than sharing one through the module cache. The API files mirror the route files, except that tests
+group by subject where routes group by URL: the sets that are logged through
+`POST /api/workouts/:id/sets` are tested in `set.api.test.ts`. Tests are end-to-end over HTTP, with
+one exception: `test/migrate.test.ts` unit-tests the migration runner against throwaway fixture
+directories. There are no unit tests of `Repo`.
 
 Static serving is deliberately narrow: `public/` with a path-escape guard, plus `VENDOR_FILES`
 in `server.ts` — a one-file allowlist into `node_modules` (`/vendor/pico.css`). Serving anything

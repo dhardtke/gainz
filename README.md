@@ -79,7 +79,14 @@ src/
     workouts.ts  Workout queries
     sets.ts      Set queries
     stats.ts     The dashboard summary
-  routes.ts    The REST route table
+  routes.ts    The registry — spreads the route files into one table
+  routes/
+    shared.ts    RouteTable, guardAll and the shared field limits
+    meta.routes.ts     /api/health and the /api catch-all
+    stats.routes.ts    The dashboard summary endpoint
+    exercise.routes.ts Exercise endpoints, including progress
+    workout.routes.ts  Workout endpoints, including a workout's sets
+    set.routes.ts      Set endpoints
   validate.ts  Request-field parsing and limits
   http.ts      JSON responses and HttpError
   transpile.ts Erases types from a frontend module on its way to the browser
@@ -105,7 +112,12 @@ public/
     format.ts    Dates, weights, volumes
     types.ts     The shapes the API returns; erased before the browser sees it
 test/
-  api.test.ts      End-to-end tests over a real server on an in-memory database
+  helpers/server.ts  useServer(): a real server on an in-memory database, per file
+  meta.api.test.ts     Health, unknown endpoints, stats, request bodies
+  static.api.test.ts   Static files, the vendor allowlist, TypeScript modules
+  exercise.api.test.ts Exercises and progress
+  workout.api.test.ts  Workouts
+  set.api.test.ts      Sets
   migrate.test.ts  Unit tests for the migration runner
 ```
 

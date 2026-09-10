@@ -4,7 +4,7 @@ git_commit: 3d079f404f68f3113b824e8d30b73a1444e6cfd0
 branch: main
 topic: "Split routes.ts into per-entity route files under src/routes/"
 tags: [plan, routes, http, tests, refactor]
-status: ready
+status: complete
 ---
 
 # PLAN: Split `routes.ts` into per-entity route files
@@ -286,7 +286,7 @@ three entity groups inline at the end of this phase, now importing `guard`/`guar
 
 **Tasks**:
 
-- [ ] Create `src/routes/shared.ts` with `RouteTable`, `ParamRequest`, `Handler`, `guard`,
+- [x] Create `src/routes/shared.ts` with `RouteTable`, `ParamRequest`, `Handler`, `guard`,
       `guardAll`, `MAX_NAME` and `MAX_NOTES`, moved verbatim from `src/routes.ts:6-26`.
       Keep the existing doc comments on `ParamRequest` and `guard`.
 
@@ -300,12 +300,12 @@ three entity groups inline at the end of this phase, now importing `guard`/`guar
       export const MAX_NOTES = 2000;
       ```
 
-- [ ] Create `src/routes/meta.routes.ts` exporting `metaRoutes(): RouteTable` (the
+- [x] Create `src/routes/meta.routes.ts` exporting `metaRoutes(): RouteTable` (the
       `/api/health` entry from `src/routes.ts:60`) and `notFoundRoute(): RouteTable` (the
       `/api/*` entry from `src/routes.ts:204`). Neither takes `repo`.
-- [ ] Create `src/routes/stats.routes.ts` exporting `statsRoutes(repo: Repo): RouteTable` with
+- [x] Create `src/routes/stats.routes.ts` exporting `statsRoutes(repo: Repo): RouteTable` with
       the `/api/stats/summary` entry from `src/routes.ts:64`.
-- [ ] Update `src/routes.ts`: delete the moved declarations, import `guardAll`, `MAX_NAME`,
+- [x] Update `src/routes.ts`: delete the moved declarations, import `guardAll`, `MAX_NAME`,
       `MAX_NOTES` and `RouteTable` from `./routes/shared`, spread `metaRoutes()` first and
       `notFoundRoute()` last, and keep the exercise, workout and set groups inline between
       them. Return type becomes `RouteTable`.
@@ -315,7 +315,7 @@ three entity groups inline at the end of this phase, now importing `guard`/`guar
       and `notFound` were used only by that entry. A leftover import raises
       `eslint(no-unused-vars)` as a *warning*, so `bun run lint` still exits 0 — verified —
       which is why the phase checks for silent output rather than a zero exit code.
-- [ ] Create `test/helpers/server.ts`: export `useServer()` returning
+- [x] Create `test/helpers/server.ts`: export `useServer()` returning
       `{ api, post, patch, createExercise, createWorkout }`, with `beforeEach`/`afterEach`
       registered inside the function; export `body` and `at` as standalone functions; export
       the `WorkoutDetail`, `WorkoutPage`, `Progress` and `ErrorBody` interfaces from
@@ -334,28 +334,28 @@ three entity groups inline at the end of this phase, now importing `guard`/`guar
       }
       ```
 
-- [ ] Create `test/meta.api.test.ts` with `describe("health and routing")` holding the two API
+- [x] Create `test/meta.api.test.ts` with `describe("health and routing")` holding the two API
       tests from `api.test.ts:106-116`, plus `describe("stats")` (`:408-424`) and
       `describe("request bodies")` (`:426-440`) moved intact. 5 tests.
-- [ ] Create `test/static.api.test.ts` with a new `describe("static files")` holding the five
+- [x] Create `test/static.api.test.ts` with a new `describe("static files")` holding the five
       static-serving tests from `api.test.ts:118-148`, plus `describe("typescript modules")`
       (`:151-225`) moved intact. 15 tests. Do not import the `body` helper here — these tests
       declare a local `const body = await res.text()`.
-- [ ] Delete the moved blocks, the harness, the helpers and the interfaces from
+- [x] Delete the moved blocks, the harness, the helpers and the interfaces from
       `test/api.test.ts`, and have what remains (`exercises`, `workouts and sets`, `progress`)
       use `useServer()` from the helper.
 
 **Automated Verification**:
 
-- [ ] `bun test` reports 52 pass, 0 fail, 139 expect() calls.
-- [ ] `bun test test/meta.api.test.ts` reports 5 pass.
-- [ ] `bun test test/static.api.test.ts` reports 15 pass.
-- [ ] `bun test -t "health"` still selects the health block (the command documented in
+- [x] `bun test` reports 52 pass, 0 fail, 139 expect() calls.
+- [x] `bun test test/meta.api.test.ts` reports 5 pass.
+- [x] `bun test test/static.api.test.ts` reports 15 pass.
+- [x] `bun test -t "health"` still selects the health block (the command documented in
       `AGENTS.md`).
-- [ ] `bun run typecheck` is clean.
-- [ ] `bun run lint` prints nothing at all (it does today; warnings such as `no-unused-vars`
+- [x] `bun run typecheck` is clean.
+- [x] `bun run lint` prints nothing at all (it does today; warnings such as `no-unused-vars`
       do not change the exit code, so output is the check, not the status).
-- [ ] `bun run fmt` then `bun run fmt:check` is clean.
+- [x] `bun run fmt` then `bun run fmt:check` is clean.
 
 ### Phase 2: Exercises
 
@@ -366,25 +366,25 @@ test file.
 
 **Tasks**:
 
-- [ ] Create `src/routes/exercise.routes.ts` with `readExerciseBody` (from
+- [x] Create `src/routes/exercise.routes.ts` with `readExerciseBody` (from
       `src/routes.ts:28-34`) and `exerciseRoutes(repo: Repo): RouteTable` covering
       `/api/exercises`, `/api/exercises/:id` (including the inline PATCH builder at
       `:78-92`) and `/api/exercises/:id/progress`. `readExerciseBody` stays module-private.
-- [ ] Update `src/routes.ts` to import `exerciseRoutes` and spread it in place of the three
+- [x] Update `src/routes.ts` to import `exerciseRoutes` and spread it in place of the three
       inline entries, dropping the now-unused imports (`readExerciseBody`'s validators,
       `ExerciseInput`).
-- [ ] Create `test/exercise.api.test.ts` with `describe("exercises")` (`api.test.ts:227-274`)
+- [x] Create `test/exercise.api.test.ts` with `describe("exercises")` (`api.test.ts:227-274`)
       and `describe("progress")` (`:384-406`) moved intact, over `useServer()`. 8 tests.
-- [ ] Delete those two blocks from `test/api.test.ts`.
+- [x] Delete those two blocks from `test/api.test.ts`.
 
 **Automated Verification**:
 
-- [ ] `bun test test/exercise.api.test.ts` reports 8 pass.
-- [ ] `bun test` reports 52 pass, 0 fail, 139 expect() calls.
-- [ ] `bun run typecheck` is clean.
-- [ ] `bun run lint` prints nothing at all (it does today; warnings such as `no-unused-vars`
+- [x] `bun test test/exercise.api.test.ts` reports 8 pass.
+- [x] `bun test` reports 52 pass, 0 fail, 139 expect() calls.
+- [x] `bun run typecheck` is clean.
+- [x] `bun run lint` prints nothing at all (it does today; warnings such as `no-unused-vars`
       do not change the exit code, so output is the check, not the status).
-- [ ] `bun run fmt` then `bun run fmt:check` is clean.
+- [x] `bun run fmt` then `bun run fmt:check` is clean.
 
 ### Phase 3: Workouts, sets, and the finish
 
@@ -395,65 +395,84 @@ bring `docs/backend.md` in line with the new layout.
 
 **Tasks**:
 
-- [ ] Create `src/routes/set.routes.ts` with an **exported** `readSetBody` (from
+- [x] Create `src/routes/set.routes.ts` with an **exported** `readSetBody` (from
       `src/routes.ts:44-52`) and `setRoutes(repo: Repo): RouteTable` covering `/api/sets/:id`
       including the PATCH builder at `:176-196`.
-- [ ] Create `src/routes/workout.routes.ts` with `readWorkoutBody` (from `src/routes.ts:36-42`)
+- [x] Create `src/routes/workout.routes.ts` with `readWorkoutBody` (from `src/routes.ts:36-42`)
       and `workoutRoutes(repo: Repo): RouteTable` covering `/api/workouts`,
       `/api/workouts/:id` (PATCH builder at `:136-150`) and `/api/workouts/:id/sets`,
       importing `readSetBody` from `./set.routes`.
-- [ ] Reduce `src/routes.ts` to imports plus `apiRoutes(repo: Repo): RouteTable` returning the
+- [x] Reduce `src/routes.ts` to imports plus `apiRoutes(repo: Repo): RouteTable` returning the
       six spreads in order: `metaRoutes()`, `statsRoutes(repo)`, `exerciseRoutes(repo)`,
       `workoutRoutes(repo)`, `setRoutes(repo)`, `notFoundRoute()`. Keep the existing
       file-level doc comment (`src/routes.ts:54-57`), updated to describe the registry.
-- [ ] Create `test/workout.api.test.ts` with `describe("workouts")` holding the eight
+- [x] Create `test/workout.api.test.ts` with `describe("workouts")` holding the eight
       workout-subject tests from `api.test.ts:276-382`: defaults the date to today
       (`:295`), rejects an invalid date (`:301`), deleting a workout removes its sets
       (`:327`), copies sets from a previous workout (`:336`), copying from a missing workout
       creates nothing (`:349`), rejects a malformed `copy_from_workout_id` (`:359`), lists
       workouts with roll-up statistics (`:368`), rejects an out-of-range limit (`:379`).
-- [ ] Create `test/set.api.test.ts` with `describe("sets")` holding the three set-subject
+- [x] Create `test/set.api.test.ts` with `describe("sets")` holding the three set-subject
       tests: logs sets and returns them with the workout (`api.test.ts:277`), rejects
       non-positive reps and unknown exercises (`:306`), updates and deletes a set (`:314`).
-- [ ] Delete `test/api.test.ts`.
-- [ ] Update `docs/backend.md`: the layering line (`:3-6`) to name `routes.ts` as the registry
+- [x] Delete `test/api.test.ts`.
+- [x] Update `docs/backend.md`: the layering line (`:3-6`) to name `routes.ts` as the registry
       and `routes/` as one file per URL group; the error-handling rule (`:15-16`) so
       `guardAll()` is located in `routes/shared.ts` and the rule reads "new routes must be
       wrapped in `guardAll`" in whichever route file owns them; the transaction paragraph
       (`:18-21`) so it refers to the route files rather than `routes.ts`; and the testing
       paragraph (`:31-33`) to describe the five API test files over `test/helpers/server.ts`.
-- [ ] Update the project tree in `README.md`: replace the `routes.ts    The REST route table`
+- [x] Update the project tree in `README.md`: replace the `routes.ts    The REST route table`
       line (`:82`) with the registry plus a `routes/` entry mirroring how `repo/` is listed
       just above it (`:76-81`), and replace the `api.test.ts` line (`:108`) with the five API
       test files and `helpers/server.ts`.
-- [ ] Update `AGENTS.md:14`, `bun test test/api.test.ts # one file`, to name a file that still
+- [x] Update `AGENTS.md:14`, `bun test test/api.test.ts # one file`, to name a file that still
       exists — for example `bun test test/workout.api.test.ts`.
 
 **Automated Verification**:
 
-- [ ] `bun test test/workout.api.test.ts` reports 8 pass.
-- [ ] `bun test test/set.api.test.ts` reports 3 pass.
-- [ ] `bun test` reports 52 pass, 0 fail, 139 expect() calls.
-- [ ] `test/api.test.ts` no longer exists, and `git grep -n "api\.test\.ts"` returns nothing
+- [x] `bun test test/workout.api.test.ts` reports 8 pass.
+- [x] `bun test test/set.api.test.ts` reports 3 pass.
+- [x] `bun test` reports 52 pass, 0 fail, 139 expect() calls.
+- [x] `test/api.test.ts` no longer exists, and `git grep -n "api\.test\.ts"` returns nothing
       outside `docs/agents/` (where the dated research and plan documents keep their record of
       the old layout).
-- [ ] Every command in the `AGENTS.md` Commands block still runs.
-- [ ] `src/routes.ts` contains no `guardAll(` or `json(` call — a registry only.
-- [ ] `src/routes/` contains exactly `shared.ts`, `meta.routes.ts`, `stats.routes.ts`,
+- [x] Every command in the `AGENTS.md` Commands block still runs.
+- [x] `src/routes.ts` contains no `guardAll(` or `json(` call — a registry only.
+- [x] `src/routes/` contains exactly `shared.ts`, `meta.routes.ts`, `stats.routes.ts`,
       `exercise.routes.ts`, `workout.routes.ts`, `set.routes.ts`.
-- [ ] `git diff --stat` shows no change to `src/server.ts`, `src/http.ts`, `src/validate.ts` or
+- [x] `git diff --stat` shows no change to `src/server.ts`, `src/http.ts`, `src/validate.ts` or
       `src/repo/**` across all three phases.
-- [ ] `bun run typecheck` is clean.
-- [ ] `bun run lint` prints nothing at all (it does today; warnings such as `no-unused-vars`
+- [x] `bun run typecheck` is clean.
+- [x] `bun run lint` prints nothing at all (it does today; warnings such as `no-unused-vars`
       do not change the exit code, so output is the check, not the status).
-- [ ] `bun run fmt` then `bun run fmt:check` is clean.
-- [ ] With `bun start` running,
+- [x] `bun run fmt` then `bun run fmt:check` is clean.
+- [x] With `bun start` running,
       `bun -e "for (const p of ['/api/health', '/api/nope']) { const r = await fetch('http://localhost:3000' + p); console.log(p, r.status, await r.text()); }"`
       prints `200 {"status":"ok","app":"gainz"}` for the first path and `404` for the second.
 
 ## Implementation Notes
 
-During implementation, document user feedback, problems, and decisions here.
+Implemented as written; no deviations from the plan were needed.
+
+Two details worth recording:
+
+- The plan's own acceptance check, `git grep -n "api\.test\.ts"`, matches the *new* filenames as
+  substrings (`workout.api.test.ts` contains `api.test.ts`), so it reports hits even once the old
+  file is gone. The check that actually answers the question is
+  `git grep -nE '(^|[^a-z.])api\.test\.ts' -- . ':!docs/agents'`, which returns nothing.
+- `git rm test/api.test.ts` refuses while the file has uncommitted modifications from the earlier
+  phases; the file was removed from the working tree instead and git records the deletion at
+  commit time.
+- `bun run fmt` runs `oxfmt .` over the whole repository, so it also corrected pre-existing
+  formatting drift in `TODO.md` (blank lines after headings). That file failed `fmt:check` at
+  `3d079f4` already and is unrelated to this refactor, but leaving it unformatted is what would
+  make `fmt:check` red, so the correction stays.
+
+Verified at the end: 52 pass / 0 fail / 139 expect() calls across 6 files, matching the
+pre-refactor counts; typecheck, lint and `fmt:check` all clean; `git diff --stat` shows no change
+to `src/server.ts`, `src/http.ts`, `src/validate.ts` or `src/repo/**`; and a running server answers
+`/api/health` with 200 and `/api/nope` with a JSON 404.
 
 ## References
 
