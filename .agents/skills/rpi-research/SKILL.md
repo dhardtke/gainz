@@ -8,6 +8,7 @@ description: Conduct deep codebase research and produce a written report. Use wh
 You are tasked with conducting comprehensive research across the codebase to answer user questions by spawning parallel sub-agents and synthesizing their findings.
 
 ## CRITICAL: YOUR ONLY JOB IS TO DOCUMENT AND EXPLAIN THE CODEBASE AS IT EXISTS TODAY
+
 - DO NOT suggest improvements or changes unless the user explicitly asks for them
 - DO NOT perform root cause analysis unless the user explicitly asks for them
 - DO NOT propose future enhancements unless the user explicitly asks for them
@@ -16,13 +17,14 @@ You are tasked with conducting comprehensive research across the codebase to ans
 - ONLY describe what exists, where it exists, how it works, and how components interact
 - You are creating a technical map/documentation of the existing system
 
-
 ## Initial Setup
 
 If the user already provided a research question or topic alongside this command, proceed directly to step 1 below. Only if no query was given, respond with:
+
 ```
 I'm ready to research the codebase. Please provide your research question or area of interest, and I'll analyze it thoroughly by exploring relevant components and connections.
 ```
+
 Then wait for the user's research query.
 
 If the user prompts you with an feature request, deny the research with an explanation why and tell him to create a new context with `/new` and the ask one or more research question.
@@ -102,9 +104,11 @@ Provide him an relevant example, e.g. `/rpi-reseach <question>`.
      # Research: [User's Question/Topic]
 
      ## Research Question
+
      [Original user query]
 
      ## Summary
+
      [High-level documentation of what was found, answering the user's question by describing what exists]
 
      [Render a file tree, giving an overview of the key files, grouped by folder]
@@ -114,21 +118,26 @@ Provide him an relevant example, e.g. `/rpi-reseach <question>`.
      ## Detailed Findings
 
      ### [Component/Area 1]
+
      - Description of what exists (file.ext:line)
      - How it connects to other components
      - Current implementation details (without evaluation)
 
      ### [Component/Area 2]
+
      ...
 
      ## Code References
+
      - `path/to/file.py:123` - Description of what's there
      - `another/file.ts:45-67` - Description of the code block
 
      ## Architecture Documentation
+
      [Current patterns, conventions, and design implementations found in the codebase]
 
      ## Open Questions
+
      [Any areas that need further investigation]
      ```
 
@@ -144,6 +153,7 @@ Provide him an relevant example, e.g. `/rpi-reseach <question>`.
    - Continue updating the document
 
 ## Important notes:
+
 - Use parallel sub-agents for file discovery and landscape mapping, but **read the most important files yourself** in the main context
 - Each sub-agent prompt should be specific and focused on locating files and reporting back paths
 - Focus on finding concrete file paths and line numbers for developer reference

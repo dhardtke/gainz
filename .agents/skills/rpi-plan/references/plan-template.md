@@ -61,11 +61,13 @@ Dependencies: [Mention earlier phases or tasks that must be completed first. Wri
 [Short summary of the phase goals]
 
 **Tasks**:
+
 - [ ] [Single actionable change in one file or symbol]
-  [High-level code snippet if helpful]
+      [High-level code snippet if helpful]
 - [ ] [Next task]
 
 **Automated Verification**:
+
 - [ ] [Explicit test case passes]
 - [ ] [General check command passes]
 
