@@ -19,10 +19,10 @@ export function openDatabase(path: string, onMigration?: (migration: Migration) 
   const db = new Database(path, { create: true });
   if (onDisk) {
     // SQLite ignores the journal mode of an in-memory database, so asking for WAL there is noise.
-    db.exec("PRAGMA journal_mode = WAL;");
+    db.run("PRAGMA journal_mode = WAL;");
   }
-  db.exec("PRAGMA foreign_keys = ON;");
-  db.exec("PRAGMA busy_timeout = 5000;");
+  db.run("PRAGMA foreign_keys = ON;");
+  db.run("PRAGMA busy_timeout = 5000;");
   migrate(db, { onMigration });
   return db;
 }

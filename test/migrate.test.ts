@@ -12,7 +12,7 @@ let db: Database;
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "gainz-migrations-"));
   db = new Database(":memory:", { create: true });
-  db.exec("PRAGMA foreign_keys = ON;");
+  db.run("PRAGMA foreign_keys = ON;");
 });
 
 afterEach(() => {
@@ -172,7 +172,7 @@ describe("the real migrations", () => {
   test("adopt a database that already has the schema but no ledger", () => {
     // How an existing data/gainz.sqlite, created before migrations existed, is taken over.
     const legacy = new Database(":memory:", { create: true });
-    legacy.exec(readFileSync(join(MIGRATIONS_DIR, "001-initial-schema.sql"), "utf8"));
+    legacy.run(readFileSync(join(MIGRATIONS_DIR, "001-initial-schema.sql"), "utf8"));
     legacy.query("INSERT INTO exercises (name) VALUES (?)").run("Back Squat");
     expect(schemaVersion(legacy)).toBe(0);
 
