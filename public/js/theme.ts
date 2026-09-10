@@ -81,7 +81,9 @@ export function setTheme(theme: Theme): void {
 /** @returns call it to stop listening. */
 export function onThemeChange(listener: () => void): () => void {
   window.addEventListener(EVENT, listener);
-  return () => window.removeEventListener(EVENT, listener);
+  return () => {
+    window.removeEventListener(EVENT, listener);
+  };
 }
 
 // The inline script has already covered the first paint for a stored choice;

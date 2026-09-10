@@ -1,4 +1,5 @@
 import { api, errorMessage } from "../../js/api.ts";
+import type { RawHtml } from "../../js/base.ts";
 import { define, GzElement, html } from "../../js/base.ts";
 import { formatDate, formatVolume, plural, relativeDay, todayIso } from "../../js/format.ts";
 import { navigate } from "../../js/router.ts";
@@ -12,9 +13,9 @@ type DashboardState = { status: "loading" } | { status: "ready"; summary: Summar
 class GzDashboard extends GzElement {
   #state: DashboardState = { status: "loading" };
 
-  async connectedCallback(): Promise<void> {
+  connectedCallback(): void {
     super.connectedCallback();
-    await this.#load();
+    void this.#load();
   }
 
   async #load(): Promise<void> {
@@ -40,7 +41,7 @@ class GzDashboard extends GzElement {
     }
   }
 
-  template() {
+  template(): RawHtml {
     if (this.#state.status === "loading") {
       return html`<p aria-busy="true">Loading your log…</p>`;
     }

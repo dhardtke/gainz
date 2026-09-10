@@ -1,4 +1,5 @@
 import { api, errorMessage } from "../../js/api.ts";
+import type { RawHtml } from "../../js/base.ts";
 import { define, GzElement, html } from "../../js/base.ts";
 import { formatWeight, plural, relativeDay } from "../../js/format.ts";
 import type { ExerciseWithStats } from "../../js/types.ts";
@@ -12,9 +13,9 @@ class GzExerciseList extends GzElement {
 
   #editingId: number | null = null;
 
-  async connectedCallback(): Promise<void> {
+  connectedCallback(): void {
     super.connectedCallback();
-    await this.#load();
+    void this.#load();
   }
 
   async #load(): Promise<void> {
@@ -28,16 +29,19 @@ class GzExerciseList extends GzElement {
   }
 
   async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
-    const values = this.formData(form) as { name: string; muscle_group: string; notes: string };
+    const values = this.formData(form);
+    // The name input is `required`, so an empty one only reaches here if the
+    // browser's own validation was bypassed; the API rejects it either way.
+    const name = values.name ?? "";
 
     if (action === "create") {
       try {
         await api.exercises.create({
-          name: values.name,
-          muscle_group: values.muscle_group || null,
-          notes: values.notes || null,
+          name,
+          muscle_group: values.muscle_group,
+          notes: values.notes,
         });
-        toast(`Added ${values.name}`, "success");
+        toast(`Added ${name}`, "success");
         form.reset();
         await this.#load();
       } catch (error) {
@@ -49,9 +53,9 @@ class GzExerciseList extends GzElement {
     if (action === "save") {
       try {
         await api.exercises.update(Number(form.dataset.id), {
-          name: values.name,
-          muscle_group: values.muscle_group || null,
-          notes: values.notes || null,
+          name,
+          muscle_group: values.muscle_group,
+          notes: values.notes,
         });
         this.#editingId = null;
         await this.#load();
@@ -91,7 +95,7 @@ class GzExerciseList extends GzElement {
     }
   }
 
-  #editRow(exercise: ExerciseWithStats) {
+  #editRow(exercise: ExerciseWithStats): RawHtml {
     return html`
       <tr class="edit-row">
         <td colspan="6">
@@ -116,7 +120,7 @@ class GzExerciseList extends GzElement {
     `;
   }
 
-  #row(exercise: ExerciseWithStats) {
+  #row(exercise: ExerciseWithStats): RawHtml {
     return html`
       <tr>
         <td class="name">
@@ -135,7 +139,7 @@ class GzExerciseList extends GzElement {
     `;
   }
 
-  template() {
+  template(): RawHtml {
     if (this.#state.status === "loading") {
       return html`<p aria-busy="true">Loading exercises…</p>`;
     }

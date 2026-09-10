@@ -6,10 +6,10 @@
 import type { DB } from "../db";
 import { type Exercise, ExerciseRepo, type ExerciseInput, type ExerciseWithStats, type SessionPoint } from "./exercises";
 import { type LiftSet, SetRepo, type SetInput } from "./sets";
-import { StatsRepo } from "./stats";
+import { StatsRepo, type Summary } from "./stats";
 import { type Workout, WorkoutRepo, type WorkoutInput, type WorkoutWithStats } from "./workouts";
 
-export type { Exercise, ExerciseInput, ExerciseWithStats, LiftSet, SessionPoint, SetInput, Workout, WorkoutInput, WorkoutWithStats };
+export type { Exercise, ExerciseInput, ExerciseWithStats, LiftSet, SessionPoint, SetInput, Summary, Workout, WorkoutInput, WorkoutWithStats };
 
 export class Repo {
   private readonly exercises: ExerciseRepo;
@@ -116,7 +116,7 @@ export class Repo {
 
   // -------------------------------------------------------------------- stats
 
-  summary() {
+  summary(): Summary {
     return this.stats.summary();
   }
 }

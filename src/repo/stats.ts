@@ -1,21 +1,29 @@
 import type { DB } from "../db";
 
+/** The whole-log totals half of a summary. */
+interface SummaryTotals {
+  workout_count: number;
+  set_count: number;
+  total_reps: number;
+  total_volume: number;
+  exercise_count: number;
+  last_performed_on: string | null;
+}
+
+/** The rolling-window half of a summary. */
+interface SummaryRecentActivity {
+  workouts_last_30_days: number;
+  volume_last_30_days: number;
+}
+
+export type Summary = SummaryTotals & SummaryRecentActivity;
+
 export class StatsRepo {
   constructor(private readonly db: DB) {}
 
-  summary() {
+  summary(): Summary {
     const totals = this.db
-      .query<
-        {
-          workout_count: number;
-          set_count: number;
-          total_reps: number;
-          total_volume: number;
-          exercise_count: number;
-          last_performed_on: string | null;
-        },
-        []
-      >(
+      .query<SummaryTotals, []>(
         `SELECT (SELECT COUNT(*) FROM workouts)                    AS workout_count,
                 (SELECT COUNT(*) FROM sets)                        AS set_count,
                 (SELECT COALESCE(SUM(reps), 0) FROM sets)          AS total_reps,
@@ -26,7 +34,7 @@ export class StatsRepo {
       .get();
 
     const recent = this.db
-      .query<{ workouts_last_30_days: number; volume_last_30_days: number }, []>(
+      .query<SummaryRecentActivity, []>(
         `SELECT COUNT(DISTINCT w.id)                AS workouts_last_30_days,
                 COALESCE(SUM(s.reps * s.weight), 0) AS volume_last_30_days
            FROM workouts w
@@ -35,6 +43,11 @@ export class StatsRepo {
       )
       .get();
 
+    // Both queries aggregate, so SQLite always answers with a row. Spreading a
+    // null would quietly hand the endpoint an empty object, so refuse instead.
+    if (totals === null || recent === null) {
+      throw new Error("Summary query returned no row");
+    }
     return { ...totals, ...recent };
   }
 }

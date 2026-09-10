@@ -99,12 +99,23 @@ async function serveStatic(req: Request): Promise<Response> {
   return new Response("Not found", { status: 404 });
 }
 
+/**
+ * The subset of Bun.serve's options this app supplies. Spelled out rather than
+ * taken from `Bun.Serve.Options`, whose port/unix union stops being spreadable
+ * into `Bun.serve` once it is named.
+ */
+interface GainzServeOptions {
+  routes: Bun.Serve.Routes<undefined, string>;
+  fetch: (req: Request) => Promise<Response>;
+  error: (err: Error) => Response;
+}
+
 /** Options for Bun.serve, shared by the CLI entry point and the test suite. */
-export function serveOptions(repo: Repo) {
+export function serveOptions(repo: Repo): GainzServeOptions {
   return {
     routes: apiRoutes(repo),
     fetch: serveStatic,
-    error: (err: Error) => errorResponse(err),
+    error: (err: Error): Response => errorResponse(err),
   };
 }
 
@@ -120,11 +131,15 @@ if (import.meta.main) {
   console.log(`gainz is lifting on ${server.url}`);
   console.log(`  database: ${DEFAULT_DB_PATH}`);
 
-  const shutdown = async () => {
+  const shutdown = async (): Promise<void> => {
     await server.stop();
     db.close();
     process.exit(0);
   };
-  process.on("SIGINT", shutdown);
-  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", () => {
+    void shutdown();
+  });
+  process.on("SIGTERM", () => {
+    void shutdown();
+  });
 }

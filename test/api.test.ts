@@ -4,8 +4,34 @@ import type { Database } from "bun:sqlite";
 import { unlink } from "node:fs/promises";
 import { resolve } from "node:path";
 import { openDatabase } from "../src/db";
+import type { Exercise, ExerciseWithStats, LiftSet, SessionPoint, Summary, Workout, WorkoutWithStats } from "../src/repo";
 import { Repo } from "../src/repo";
 import { serveOptions } from "../src/server";
+
+/** `GET /api/workouts/:id` and `POST /api/workouts`: a workout with its sets. */
+interface WorkoutDetail extends Workout {
+  sets: LiftSet[];
+}
+
+/** One page of `GET /api/workouts`. */
+interface WorkoutPage {
+  items: WorkoutWithStats[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+/** `GET /api/exercises/:id/progress`. */
+interface Progress {
+  exercise: Exercise;
+  sessions: SessionPoint[];
+  best_set: (LiftSet & { performed_on: string }) | null;
+}
+
+/** What the server puts in a 4xx body. */
+interface ErrorBody {
+  error: string;
+}
 
 let db: Database;
 let server: Server<undefined>;
@@ -42,16 +68,38 @@ function patch(path: string, body: unknown): Promise<Response> {
   });
 }
 
-async function createExercise(name = "Bench Press") {
-  const res = await post("/api/exercises", { name });
-  expect(res.status).toBe(201);
-  return (await res.json()) as { id: number; name: string };
+/**
+ * Reads a response body as the shape the endpoint documents.
+ *
+ * Bun types `json()` as `Promise<any>` and offers no generic overload, so the
+ * claim has to be asserted somewhere. Here it is asserted once, and each call
+ * site names the shape it is claiming.
+ */
+async function body<T>(res: Response): Promise<T> {
+  const parsed: unknown = await res.json();
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- see above
+  return parsed as T;
 }
 
-async function createWorkout(performed_on = "2026-01-05") {
+/** The element at `index`, failing the test rather than typing as possibly-absent. */
+function at<T>(items: T[], index: number): T {
+  const item = items[index];
+  if (item === undefined) {
+    throw new Error(`expected an element at index ${index}, but the array holds ${items.length}`);
+  }
+  return item;
+}
+
+async function createExercise(name = "Bench Press"): Promise<Exercise> {
+  const res = await post("/api/exercises", { name });
+  expect(res.status).toBe(201);
+  return body<Exercise>(res);
+}
+
+async function createWorkout(performed_on = "2026-01-05"): Promise<WorkoutDetail> {
   const res = await post("/api/workouts", { performed_on, title: "Push day" });
   expect(res.status).toBe(201);
-  return (await res.json()) as { id: number };
+  return body<WorkoutDetail>(res);
 }
 
 describe("health and routing", () => {
@@ -64,7 +112,7 @@ describe("health and routing", () => {
   test("unknown api endpoint returns a JSON 404", async () => {
     const res = await api("/api/nope");
     expect(res.status).toBe(404);
-    expect((await res.json()).error).toContain("not found");
+    expect((await body<ErrorBody>(res)).error).toContain("not found");
   });
 
   test("serves the frontend at the root", async () => {
@@ -181,7 +229,7 @@ describe("exercises", () => {
     const created = await createExercise("Back Squat");
     expect(created).toMatchObject({ name: "Back Squat" });
 
-    const list = await (await api("/api/exercises")).json();
+    const list = await body<ExerciseWithStats[]>(await api("/api/exercises"));
     expect(list).toHaveLength(1);
     expect(list[0]).toMatchObject({ name: "Back Squat", set_count: 0, workout_count: 0 });
   });
@@ -189,7 +237,7 @@ describe("exercises", () => {
   test("rejects a blank name", async () => {
     const res = await post("/api/exercises", { name: "   " });
     expect(res.status).toBe(400);
-    expect((await res.json()).error).toContain("name");
+    expect((await body<ErrorBody>(res)).error).toContain("name");
   });
 
   test("rejects a duplicate name regardless of case", async () => {
@@ -238,16 +286,16 @@ describe("workouts and sets", () => {
     });
     await post(`/api/workouts/${workout.id}/sets`, { exercise_id: exercise.id, reps: 6, weight: 70 });
 
-    const detail = await (await api(`/api/workouts/${workout.id}`)).json();
+    const detail = await body<WorkoutDetail>(await api(`/api/workouts/${workout.id}`));
     expect(detail.sets).toHaveLength(2);
     expect(detail.sets[0]).toMatchObject({ reps: 8, weight: 60, notes: "warm-up", exercise_name: "Bench Press" });
-    expect(detail.sets[1].position).toBeGreaterThan(detail.sets[0].position);
+    expect(at(detail.sets, 1).position).toBeGreaterThan(at(detail.sets, 0).position);
   });
 
   test("defaults the workout date to today", async () => {
     const res = await post("/api/workouts", {});
     expect(res.status).toBe(201);
-    expect((await res.json()).performed_on).toBe(new Date().toISOString().slice(0, 10));
+    expect((await body<Workout>(res)).performed_on).toBe(new Date().toISOString().slice(0, 10));
   });
 
   test("rejects an invalid date", async () => {
@@ -266,20 +314,20 @@ describe("workouts and sets", () => {
   test("updates and deletes a set", async () => {
     const exercise = await createExercise();
     const workout = await createWorkout();
-    const set = await (await post(`/api/workouts/${workout.id}/sets`, { exercise_id: exercise.id, reps: 5, weight: 60 })).json();
+    const set = await body<LiftSet>(await post(`/api/workouts/${workout.id}/sets`, { exercise_id: exercise.id, reps: 5, weight: 60 }));
 
-    const updated = await (await patch(`/api/sets/${set.id}`, { reps: 6, weight: 62.5 })).json();
+    const updated = await body<LiftSet>(await patch(`/api/sets/${set.id}`, { reps: 6, weight: 62.5 }));
     expect(updated).toMatchObject({ reps: 6, weight: 62.5 });
 
     expect((await api(`/api/sets/${set.id}`, { method: "DELETE" })).status).toBe(204);
     expect((await api(`/api/workouts/${workout.id}`)).status).toBe(200);
-    expect((await (await api(`/api/workouts/${workout.id}`)).json()).sets).toHaveLength(0);
+    expect((await body<WorkoutDetail>(await api(`/api/workouts/${workout.id}`))).sets).toHaveLength(0);
   });
 
   test("deleting a workout removes its sets", async () => {
     const exercise = await createExercise();
     const workout = await createWorkout();
-    const set = await (await post(`/api/workouts/${workout.id}/sets`, { exercise_id: exercise.id, reps: 5, weight: 60 })).json();
+    const set = await body<LiftSet>(await post(`/api/workouts/${workout.id}/sets`, { exercise_id: exercise.id, reps: 5, weight: 60 }));
 
     expect((await api(`/api/workouts/${workout.id}`, { method: "DELETE" })).status).toBe(204);
     expect((await api(`/api/sets/${set.id}`)).status).toBe(404);
@@ -293,28 +341,28 @@ describe("workouts and sets", () => {
 
     const res = await post("/api/workouts", { performed_on: "2026-01-12", copy_from_workout_id: source.id });
     expect(res.status).toBe(201);
-    const copy = await res.json();
+    const copy = await body<WorkoutDetail>(res);
     expect(copy.sets).toHaveLength(2);
-    expect(copy.sets.map((s: { weight: number }) => s.weight)).toEqual([60, 65]);
+    expect(copy.sets.map((s) => s.weight)).toEqual([60, 65]);
   });
 
   test("copying from a missing workout creates nothing", async () => {
     await createWorkout("2026-01-05");
-    const before = (await (await api("/api/workouts")).json()).total;
+    const before = (await body<WorkoutPage>(await api("/api/workouts"))).total;
 
     const res = await post("/api/workouts", { performed_on: "2026-01-12", copy_from_workout_id: 9999 });
 
     expect(res.status).toBe(404);
-    expect((await (await api("/api/workouts")).json()).total).toBe(before);
+    expect((await body<WorkoutPage>(await api("/api/workouts"))).total).toBe(before);
   });
 
   test("rejects a malformed copy_from_workout_id before writing anything", async () => {
-    const before = (await (await api("/api/workouts")).json()).total;
+    const before = (await body<WorkoutPage>(await api("/api/workouts"))).total;
 
     const res = await post("/api/workouts", { performed_on: "2026-01-12", copy_from_workout_id: "nope" });
 
     expect(res.status).toBe(400);
-    expect((await (await api("/api/workouts")).json()).total).toBe(before);
+    expect((await body<WorkoutPage>(await api("/api/workouts"))).total).toBe(before);
   });
 
   test("lists workouts with roll-up statistics", async () => {
@@ -323,7 +371,7 @@ describe("workouts and sets", () => {
     await post(`/api/workouts/${workout.id}/sets`, { exercise_id: exercise.id, reps: 10, weight: 50 });
     await post(`/api/workouts/${workout.id}/sets`, { exercise_id: exercise.id, reps: 5, weight: 60 });
 
-    const page = await (await api("/api/workouts")).json();
+    const page = await body<WorkoutPage>(await api("/api/workouts"));
     expect(page).toMatchObject({ total: 1, limit: 50, offset: 0 });
     expect(page.items[0]).toMatchObject({ set_count: 2, exercise_count: 1, total_reps: 15, total_volume: 800 });
   });
@@ -341,19 +389,19 @@ describe("progress", () => {
       ["2026-01-05", 60],
       ["2026-01-12", 65],
     ] as const) {
-      const workout = await (await post("/api/workouts", { performed_on: date })).json();
+      const workout = await body<WorkoutDetail>(await post("/api/workouts", { performed_on: date }));
       await post(`/api/workouts/${workout.id}/sets`, { exercise_id: exercise.id, reps: 5, weight });
       await post(`/api/workouts/${workout.id}/sets`, { exercise_id: exercise.id, reps: 5, weight: weight - 5 });
     }
 
-    const progress = await (await api(`/api/exercises/${exercise.id}/progress`)).json();
+    const progress = await body<Progress>(await api(`/api/exercises/${exercise.id}/progress`));
     expect(progress.exercise).toMatchObject({ name: "Bench Press" });
     expect(progress.sessions).toHaveLength(2);
     expect(progress.sessions[0]).toMatchObject({ performed_on: "2026-01-05", set_count: 2, top_weight: 60 });
-    expect(progress.sessions[1].top_weight).toBe(65);
+    expect(at(progress.sessions, 1).top_weight).toBe(65);
     // Epley: 65 * (1 + 5/30) ~= 75.83
-    expect(progress.best_set.weight).toBe(65);
-    expect(progress.sessions[1].est_one_rep_max).toBeCloseTo(75.83, 1);
+    expect(progress.best_set?.weight).toBe(65);
+    expect(at(progress.sessions, 1).est_one_rep_max).toBeCloseTo(75.83, 1);
   });
 });
 
@@ -363,7 +411,7 @@ describe("stats", () => {
     const workout = await createWorkout();
     await post(`/api/workouts/${workout.id}/sets`, { exercise_id: exercise.id, reps: 10, weight: 40 });
 
-    const summary = await (await api("/api/stats/summary")).json();
+    const summary = await body<Summary>(await api("/api/stats/summary"));
     expect(summary).toMatchObject({
       workout_count: 1,
       set_count: 1,

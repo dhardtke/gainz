@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openDatabase } from "../src/db";
-import { MIGRATIONS_DIR, migrate, schemaVersion } from "../src/migrations";
+import { MIGRATIONS_DIR, migrate, schemaVersion, type MigrateResult } from "../src/migrations";
 
 let dir: string;
 let db: Database;
@@ -27,7 +27,7 @@ function write(filename: string, sql: string): void {
   writeFileSync(join(dir, filename), sql);
 }
 
-function run() {
+function run(): MigrateResult {
   return migrate(db, { dir });
 }
 
@@ -153,7 +153,11 @@ describe("the real migrations", () => {
   test("openDatabase applies them to an in-memory database", () => {
     const real = openDatabase(":memory:");
 
-    expect(tables(real)).toEqual(expect.arrayContaining(["exercises", "workouts", "sets", "schema_migrations"]));
+    // Asserted one at a time: expect.arrayContaining is typed `any`, and a
+    // failure names the missing table rather than dumping both arrays.
+    for (const table of ["exercises", "workouts", "sets", "schema_migrations"]) {
+      expect(tables(real)).toContain(table);
+    }
     expect(schemaVersion(real)).toBe(1);
 
     real.close();

@@ -1,3 +1,4 @@
+import type { RawHtml } from "../../js/base.ts";
 import { define, GzElement, html } from "../../js/base.ts";
 
 /** A single headline number with a label and optional sub-line. */
@@ -10,7 +11,7 @@ class GzStatTile extends GzElement {
     }
   }
 
-  template() {
+  template(): RawHtml {
     const hint = this.getAttribute("hint");
     return html`
       <article>

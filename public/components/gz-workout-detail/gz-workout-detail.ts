@@ -1,4 +1,5 @@
 import { api, ApiError, errorMessage } from "../../js/api.ts";
+import type { RawHtml } from "../../js/base.ts";
 import { define, GzElement, html } from "../../js/base.ts";
 import { formatDate, formatNumber, formatVolume, plural, relativeDay, UNIT } from "../../js/format.ts";
 import { navigate } from "../../js/router.ts";
@@ -55,18 +56,33 @@ class GzWorkoutDetail extends GzElement {
     }
   }
 
-  async connectedCallback(): Promise<void> {
+  /**
+   * The id this view is showing.
+   *
+   * gz-app sets the attribute before the element is connected, so
+   * attributeChangedCallback has always run by the time anything asks for it.
+   * Reading it through here states that invariant once, in the one place that
+   * would notice it being broken, instead of at every call site.
+   */
+  get #id(): string {
+    const id = this.#workoutId;
+    if (id === null) {
+      throw new Error("gz-workout-detail needs a workout-id attribute");
+    }
+    return id;
+  }
+
+  connectedCallback(): void {
     super.connectedCallback();
-    this.root.addEventListener("sets-changed", () => this.#load());
-    await this.#load();
+    this.root.addEventListener("sets-changed", () => {
+      void this.#load();
+    });
+    void this.#load();
   }
 
   async #load(): Promise<void> {
     try {
-      // gz-app sets the attribute before the element is connected, so
-      // attributeChangedCallback has already run by the time this does.
-      const id = this.#workoutId as string;
-      const [workout, exercises] = await Promise.all([api.workouts.get(id), api.exercises.list()]);
+      const [workout, exercises] = await Promise.all([api.workouts.get(this.#id), api.exercises.list()]);
       this.#exercises = exercises;
       this.#state = { status: "ready", workout };
       if (this.#draft.exercise_id === null) {
@@ -96,7 +112,7 @@ class GzWorkoutDetail extends GzElement {
         return;
       }
       try {
-        await api.workouts.remove(this.#workoutId as string);
+        await api.workouts.remove(this.#id);
         toast("Workout deleted", "success");
         navigate("/workouts");
       } catch (error) {
@@ -116,7 +132,7 @@ class GzWorkoutDetail extends GzElement {
         return;
       }
       try {
-        await api.workouts.addSet(this.#workoutId as string, {
+        await api.workouts.addSet(this.#id, {
           exercise_id: last.exercise_id,
           reps: last.reps,
           weight: last.weight,
@@ -130,14 +146,14 @@ class GzWorkoutDetail extends GzElement {
   }
 
   async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
-    const values = this.formData(form) as Record<"performed_on" | "title" | "notes" | "exercise_id" | "new_exercise" | "reps" | "weight", string>;
+    const values = this.formData(form);
 
     if (action === "save-workout") {
       try {
-        await api.workouts.update(this.#workoutId as string, {
+        await api.workouts.update(this.#id, {
           performed_on: values.performed_on,
-          title: values.title || null,
-          notes: values.notes || null,
+          title: values.title,
+          notes: values.notes,
         });
         this.#editingHeader = false;
         toast("Workout updated", "success");
@@ -150,7 +166,7 @@ class GzWorkoutDetail extends GzElement {
 
     if (action === "add-set") {
       try {
-        let exerciseId: string | number = values.exercise_id;
+        let exerciseId: string | number = values.exercise_id ?? "";
 
         if (exerciseId === NEW_EXERCISE) {
           if (!values.new_exercise) {
@@ -161,14 +177,14 @@ class GzWorkoutDetail extends GzElement {
           exerciseId = created.id;
         }
 
-        await api.workouts.addSet(this.#workoutId as string, {
+        await api.workouts.addSet(this.#id, {
           exercise_id: Number(exerciseId),
           reps: Number(values.reps),
           weight: Number(values.weight),
-          notes: values.notes || null,
+          notes: values.notes,
         });
 
-        this.#draft = { exercise_id: Number(exerciseId), weight: values.weight, reps: values.reps };
+        this.#draft = { exercise_id: Number(exerciseId), weight: values.weight ?? "", reps: values.reps ?? "" };
         this.#focusAfterRender = true;
         await this.#load();
       } catch (error) {
@@ -228,7 +244,7 @@ class GzWorkoutDetail extends GzElement {
     }
   }
 
-  #headerTemplate(workout: WorkoutWithSets) {
+  #headerTemplate(workout: WorkoutWithSets): RawHtml {
     if (!this.#editingHeader) {
       return html`
         <div class="row-between">
@@ -271,7 +287,7 @@ class GzWorkoutDetail extends GzElement {
     `;
   }
 
-  #addSetTemplate() {
+  #addSetTemplate(): RawHtml {
     if (this.#exercises.length === 0 && this.#draft.exercise_id === null) {
       // Still offer the form: the inline "new exercise" field covers a cold start.
       this.#draft.exercise_id = NEW_EXERCISE;
@@ -336,7 +352,7 @@ class GzWorkoutDetail extends GzElement {
     return [...byExercise.values()];
   }
 
-  template() {
+  template(): RawHtml {
     if (this.#state.status === "loading") {
       return html`<p aria-busy="true">Loading workout…</p>`;
     }

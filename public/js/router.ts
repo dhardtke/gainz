@@ -53,7 +53,9 @@ export function navigate(path: string): void {
 /** @returns call it to stop listening. */
 export function onRouteChange(listener: () => void): () => void {
   window.addEventListener("hashchange", listener);
-  return () => window.removeEventListener("hashchange", listener);
+  return () => {
+    window.removeEventListener("hashchange", listener);
+  };
 }
 
 /** True when `path` is the active route or one of its children. */

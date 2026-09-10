@@ -1,3 +1,4 @@
+import type { RawHtml } from "../../js/base.ts";
 import { define, GzElement, html, raw } from "../../js/base.ts";
 import { formatNumber } from "../../js/format.ts";
 
@@ -42,7 +43,7 @@ export class GzChart extends GzElement {
   #unit = "";
 
   set series(value: ChartPoint[]) {
-    this.#series = Array.isArray(value) ? value.filter((point) => Number.isFinite(Number(point.value))) : [];
+    this.#series = Array.isArray(value) ? value.filter((point) => Number.isFinite(point.value)) : [];
     if (this.isConnected) {
       this.render();
     }
@@ -53,7 +54,7 @@ export class GzChart extends GzElement {
   }
 
   set unit(value: string) {
-    this.#unit = value ?? "";
+    this.#unit = value;
     if (this.isConnected) {
       this.render();
     }
@@ -65,7 +66,7 @@ export class GzChart extends GzElement {
    * (multiply by 100%), so the two always line up.
    */
   #scale(): ChartScale {
-    const values = this.#series.map((point) => Number(point.value));
+    const values = this.#series.map((point) => point.value);
     const min = Math.min(...values);
     const max = Math.max(...values);
     const span = max - min;
@@ -76,7 +77,7 @@ export class GzChart extends GzElement {
 
     return {
       xFraction: (index) => (last === 0 ? 0.5 : index / last),
-      yFraction: (value) => 1 - (Number(value) - low) / (high - low),
+      yFraction: (value) => 1 - (value - low) / (high - low),
       low,
       high,
     };
@@ -93,7 +94,7 @@ export class GzChart extends GzElement {
     return this.#series.map((_, index) => index).filter((index) => index % stride === 0 || index === total - 1);
   }
 
-  template() {
+  template(): RawHtml {
     if (this.#series.length === 0) {
       return html`<p class="empty">No sessions logged yet — add a set to start the curve.</p>`;
     }

@@ -2,12 +2,9 @@ import { loadStyles, stylesFor } from "./styles.ts";
 import { applyThemeTo, onThemeChange } from "./theme.ts";
 
 /** Marks a string as already-safe HTML so `html` will not escape it again. */
-class RawHtml {
-  value: string;
+export class RawHtml {
+  constructor(readonly value: string) {}
 
-  constructor(value: string) {
-    this.value = value;
-  }
   toString(): string {
     return this.value;
   }
@@ -63,7 +60,7 @@ export class GzElement extends HTMLElement {
    * The shadow root, kept here rather than read back from `this.shadowRoot`,
    * which the DOM types leave nullable for the life of the element.
    */
-  #root: ShadowRoot;
+  readonly #root: ShadowRoot;
 
   constructor() {
     super();
@@ -96,7 +93,9 @@ export class GzElement extends HTMLElement {
     // Pico only themes a shadow root through :host, so the chosen theme has to
     // be mirrored onto each host rather than set once on <html>.
     applyThemeTo(this);
-    this.#stopThemeSync ??= onThemeChange(() => applyThemeTo(this));
+    this.#stopThemeSync ??= onThemeChange(() => {
+      applyThemeTo(this);
+    });
     this.render();
   }
 
@@ -136,6 +135,12 @@ export class GzElement extends HTMLElement {
    */
   handleSubmit(_action: string, _form: HTMLFormElement, _event: Event): void | Promise<void> {}
 
+  // The type parameter appears once on purpose: it is the same convenience
+  // querySelector itself offers, letting a caller name the element type it
+  // knows its own markup produces. Proving it instead would mean an instanceof
+  // check at every call site, two of them against custom element classes that
+  // would have to be imported for the check alone.
+  // oxlint-disable-next-line typescript/no-unnecessary-type-parameters
   $<T extends Element = Element>(selector: string): T | null {
     return this.#root.querySelector<T>(selector);
   }
