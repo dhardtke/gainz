@@ -4,7 +4,7 @@ git_commit: 152f0201d750c8d11707f39e6dcaf7341a5ac520
 branch: main
 topic: "Adopt oxfmt's singleQuote option across the project"
 tags: [plan, tooling, oxfmt, formatting, docs]
-status: ready
+status: complete
 ---
 
 # PLAN: Adopt oxfmt's `singleQuote` option
