@@ -7,7 +7,7 @@ import { apiRoutes } from "./routes";
 import { transpileModule } from "./transpile";
 
 const PROJECT_ROOT = resolve(fileURLToPath(new URL("..", import.meta.url)));
-const PUBLIC_DIR = resolve(PROJECT_ROOT, "public");
+const FRONTEND_DIR = resolve(PROJECT_ROOT, "frontend");
 
 /**
  * Third-party stylesheets served straight out of node_modules.
@@ -32,7 +32,7 @@ function resolveVendorPath(pathname: string): string | null {
 }
 
 /**
- * Maps a URL path to a file inside public/, or null if it would escape it.
+ * Maps a URL path to a file inside `frontend/`, or null if it would escape it.
  */
 function resolveStaticPath(pathname: string): string | null {
   let decoded: string;
@@ -45,8 +45,8 @@ function resolveStaticPath(pathname: string): string | null {
     return null;
   }
 
-  const target = resolve(PUBLIC_DIR, `.${normalize(decoded)}`);
-  if (target !== PUBLIC_DIR && !target.startsWith(PUBLIC_DIR + sep)) {
+  const target = resolve(FRONTEND_DIR, `.${normalize(decoded)}`);
+  if (target !== FRONTEND_DIR && !target.startsWith(FRONTEND_DIR + sep)) {
     return null;
   }
   return target;
@@ -91,7 +91,7 @@ async function serveStatic(req: Request): Promise<Response> {
 
   // Unknown path without a file extension: let the single-page app route it.
   if (extname(pathname) === "") {
-    const index = Bun.file(resolve(PUBLIC_DIR, "index.html"));
+    const index = Bun.file(resolve(FRONTEND_DIR, "index.html"));
     if (await index.exists()) {
       return new Response(index, { headers: { "Cache-Control": "no-cache" } });
     }

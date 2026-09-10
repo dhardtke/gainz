@@ -58,7 +58,7 @@ the field on install: it documents the requirement rather than gating it.
   before the first paint, so it never flashes the wrong theme on load.
 
 Weights are stored as plain numbers and displayed in kilograms; to switch the
-whole UI to pounds, change `UNIT` in `public/js/format.ts`.
+whole UI to pounds, change `UNIT` in `frontend/js/format.ts`.
 
 Estimated 1RM uses the Epley formula (`weight × (1 + reps / 30)`), which puts
 sets of different rep counts on one comparable scale.
@@ -92,7 +92,7 @@ src/
   transpile.ts Erases types from a frontend module on its way to the browser
   server.ts    Bun.serve, static files, entry point
   seed.ts      Sample data
-public/
+frontend/
   index.html   The only page
   css/
     app.css      Document-level styles
@@ -155,9 +155,9 @@ matching the page.
 
 No CSS lives in JavaScript. Each custom element owns a directory holding its
 script and the stylesheet named after its tag — `<gz-chart>` is
-`public/components/gz-chart/gz-chart.ts` beside `gz-chart.css` — which
+`frontend/components/gz-chart/gz-chart.ts` beside `gz-chart.css` — which
 `js/styles.ts` fetches once into a `CSSStyleSheet` and every instance adopts by
-reference. Adding a component means creating `public/components/<tag>/` with
+reference. Adding a component means creating `frontend/components/<tag>/` with
 both files and ending the module with `await define("<tag>", TheClass)`; there
 is no manifest to register it in.
 
