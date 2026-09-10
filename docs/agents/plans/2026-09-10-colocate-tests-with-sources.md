@@ -24,8 +24,8 @@ every describe block to the module it drives. This plan takes that mapping as gi
   module it exercises.
 - 53 tests still pass. No test is renamed, deleted, or added, and no new coverage is written.
 - `bun run typecheck`, `bun run lint` and `bun run fmt:check` are clean.
-- `backend/src/testing.ts` is the only module under `backend/src/` that ships no production code,
-  and nothing in the production import graph reaches it.
+- `backend/src/testing.ts` is the only module under `backend/src/` that is neither a `*.test.ts`
+  file nor production code, and nothing in the production import graph reaches it.
 - `README.md`, `docs/backend.md` and `AGENTS.md` describe the new layout, and `tsconfig.json` no
   longer names a directory that is gone.
 
@@ -38,8 +38,9 @@ every describe block to the module it drives. This plan takes that mapping as gi
      blocks change home; test bodies and test names do not.
 
 2. **The harness moves to `backend/src/testing.ts`.**
-   - Why: nine of the eleven files import it, and a single module keeps the specifier short at
-     both depths (`./testing` from `src/`, `../testing` from `src/routes/`).
+   - Why: ten of the eleven files import it — every one except `server.test.ts`, which builds its
+     own options — and a single module keeps the specifier short at both depths (`./testing` from
+     `src/`, `../testing` from `src/routes/`).
    - Impact: one module under `src/` ships no production code. A doc comment on line 1 says so,
      since nothing else marks it.
 
@@ -221,15 +222,23 @@ suite does not move in this phase, so a failure here is unambiguously about the 
       `node:path`. Move the Windows `EBUSY` comment across from `migrate.test.ts:20-21` — this is
       the copy that survives.
 - [ ] Re-point the five API test files from `./helpers/server` to `../src/testing`:
-      `meta.api.test.ts:8`, `exercise.api.test.ts:3-4`, `workout.api.test.ts:3-4`,
+      `meta.api.test.ts:7-8`, `exercise.api.test.ts:3-4`, `workout.api.test.ts:3-4`,
       `set.api.test.ts:3-4`, `static.api.test.ts:4`. Both the `import type` and the value import
-      change in the four files that have both.
-- [ ] Switch `backend/test/migrate.test.ts` to `useTempDir()`: drop its `mkdtempSync`/`rmSync`
-      lines and the `dir` binding from `migrate.test.ts:9-23`, add
-      `const tempDir = useTempDir();`, and replace the four `dir` reads (`write()` at `:27`,
-      `run()` at `:31`, and the WAL path at `:167`) with `tempDir()`. Its `beforeEach` keeps the
-      bare `new Database(":memory:")` and `PRAGMA foreign_keys = ON`, which `useTempDir` does not
-      cover.
+      change in the four files that have both; `static.api.test.ts` has only the value import.
+- [ ] Switch `backend/test/migrate.test.ts` to `useTempDir()`. Precisely: delete the `let dir:
+      string;` binding (`migrate.test.ts:9`), the `mkdtempSync` assignment inside `beforeEach`
+      (`:13`), and the `rmSync` call plus its two comment lines inside `afterEach` (`:20-22`).
+      Keep everything else in those hooks — `let db`, the `new Database(":memory:")` and
+      `PRAGMA foreign_keys = ON` at `:14-15`, and `db.close()` at `:19` — since `useTempDir`
+      covers only the directory.
+- [ ] Add `import { useTempDir } from "../src/testing";` to `migrate.test.ts` and
+      `const tempDir = useTempDir();` beside the surviving `let db: Database;`, then replace the
+      three remaining `dir` reads with `tempDir()`: `write()` at `:27`, `run()` at `:31`, and the
+      WAL path at `:167`.
+- [ ] Remove the three imports `migrate.test.ts` no longer uses once the hooks shrink:
+      `mkdtempSync` and `rmSync` from the `node:fs` import at `:3` (`readFileSync` and
+      `writeFileSync` stay), and the whole `tmpdir` import from `node:os` at `:4`. `bun run lint`
+      fails on these if they are left behind.
 
 **Automated Verification**:
 
@@ -239,9 +248,10 @@ suite does not move in this phase, so a failure here is unambiguously about the 
 - [ ] `bun run typecheck` is clean.
 - [ ] `bun run lint` is clean.
 - [ ] `bun run fmt:check` is clean.
-- [ ] `bun start` serves the app and `curl http://localhost:3000/api/health` returns
+- [ ] `bun start` serves the app and `curl.exe http://localhost:3000/api/health` returns
       `{"status":"ok","app":"gainz"}` — confirms `testing.ts` under `src/` did not disturb the
-      production import graph.
+      production import graph. Spell it `curl.exe`, not `curl`, so it cannot resolve to
+      PowerShell's `Invoke-WebRequest` alias.
 
 ### Phase 2: Entity route tests move under `backend/src/routes/`
 
@@ -257,6 +267,12 @@ decision 3 as they land.
       describes (`"exercises"`, `"progress"`) stay, unchanged, in this file.
 - [ ] `git mv backend/test/workout.api.test.ts backend/src/routes/workout.routes.test.ts`, with
       the same two import rewrites. `describe("workouts")` keeps its eight tests.
+- [ ] Widen the harness import in `workout.routes.test.ts` from `{ body, useServer }`
+      (`workout.api.test.ts:4`) to `{ at, body, useServer }`. The incoming first test calls
+      `at(detail.sets, 1).position` (`set.api.test.ts:24`) and the file does not import `at`
+      today. This is the mirror of the prune below and the easier half to forget. Its type
+      imports already cover the arrivals: `LiftSet` at `workout.api.test.ts:2` and
+      `WorkoutDetail` at `:3`.
 - [ ] Add a second describe to `workout.routes.test.ts`, after `describe("workouts")`, holding the
       two tests moved out of `set.api.test.ts:9-33` verbatim — `"logs sets and returns them with
       the workout"` and `"rejects non-positive reps and unknown exercises"`. Name it for the route
@@ -309,8 +325,9 @@ the file disappears.
       options, so it imports `openDatabase` from `./db`, `HttpError` from `./http`, `Repo` from
       `./repo` and `serveOptions` from `./server`, and nothing from `./testing`.
 - [ ] Create `backend/src/http.test.ts` with `describe("request bodies")` holding the two tests
-      from `meta.api.test.ts:61-73`, which exercise `readJsonObject` (`http.ts:43`). Imports:
-      `api`, `post` and `useServer` from `./testing`.
+      from `meta.api.test.ts:61-73`, which exercise `readJsonObject` (`http.ts:43`). It imports
+      only `useServer` from `./testing`; `api` and `post` are destructured from the call
+      (`meta.api.test.ts:10`), not imported.
 - [ ] `git rm backend/test/meta.api.test.ts`.
 
 **Automated Verification**:
@@ -378,18 +395,28 @@ every file has landed.
       `readFileSync`/`writeFileSync` from `node:fs`, `join` from `node:path`, `MIGRATIONS_DIR`,
       `migrate`, `schemaVersion` and `MigrateResult` from `./migrations`, and `useTempDir` from
       `./testing`.
-- [ ] Create `backend/src/db.test.ts` with `describe("openDatabase")` holding two tests:
+- [ ] Create `backend/src/db.test.ts` holding two tests:
       `"openDatabase applies them to an in-memory database"` (`migrate.test.ts:153-164`) and
       `"openDatabase enables WAL for a file-backed database"` (`:166-174`). Keep the comment about
       `expect.arrayContaining` on the first and the `close(true)` comment on the second. Give the
       file its own five-line `tables()` helper and `const tempDir = useTempDir();`. Imports:
-      `join` from `node:path`, `openDatabase` from `./db`, `schemaVersion` from `./migrations`,
-      `useTempDir` from `./testing`.
+      `Database` from `bun:sqlite` as a **type** import — `tables(database: Database)` needs it,
+      and `verbatimModuleSyntax` with `typescript/consistent-type-imports` makes a value import an
+      error — plus `join` from `node:path`, `openDatabase` from `./db`, `schemaVersion` from
+      `./migrations` and `useTempDir` from `./testing`.
+- [ ] Keep the describe in `db.test.ts` named `"the real migrations"`, as it is today. The first
+      test reads `"openDatabase applies them to an in-memory database"` and takes its *them* from
+      that describe; renaming the block to `"openDatabase"` would leave the pronoun with no
+      antecedent, and this plan does not rename tests. Both `db.test.ts` and `migrations.test.ts`
+      end up with a describe of that name, in different files.
 - [ ] Drop `openDatabase` from the imports of `migrations.test.ts` — after the split only
       `db.test.ts` calls it.
 - [ ] `git rm backend/test/migrate.test.ts` and confirm `backend/test/` is now empty and gone.
 - [ ] `tsconfig.json:17` — `"include": ["backend/src", "backend/test", "frontend"]` becomes
       `"include": ["backend/src", "frontend"]`.
+- [ ] `AGENTS.md:13` — the `bun test` line is annotated `# API suite against in-memory SQLite`.
+      "API suite" is the phrasing Phase 5 removes from `:35`, so reword it here too; the suite is
+      no longer only API tests.
 - [ ] `AGENTS.md:14` — the one-file example becomes
       `bun test backend/src/routes/workout.routes.test.ts`. Edit `AGENTS.md`, not `CLAUDE.md`,
       which is a symbolic link to it.
@@ -416,11 +443,12 @@ every file has landed.
 - [ ] `bun test backend/src/db.test.ts` reports 2 pass.
 - [ ] `bun test` reports 53 pass, 0 fail across 11 files.
 - [ ] `bun run typecheck`, `bun run lint` and `bun run fmt:check` are clean.
-- [ ] `test ! -d backend/test` — the directory is gone.
-- [ ] `grep -rn "backend/test\|\.api\.test\|helpers/server" README.md AGENTS.md docs/backend.md
-      tsconfig.json` returns nothing.
-- [ ] `bun start` serves the app, `curl http://localhost:3000/api/health` returns
-      `{"status":"ok","app":"gainz"}`, and `curl http://localhost:3000/src/format.ts` returns
+- [ ] `Test-Path backend/test` returns `False` — the directory is gone.
+- [ ] `Select-String -Path README.md,AGENTS.md,docs/backend.md,tsconfig.json -Pattern
+      'backend[/\\]test|\.api\.test|helpers[/\\]server'` returns nothing. PowerShell, not `grep`:
+      this project is Windows-only and `AGENTS.md` says so.
+- [ ] `bun start` serves the app, `curl.exe http://localhost:3000/api/health` returns
+      `{"status":"ok","app":"gainz"}`, and `curl.exe http://localhost:3000/src/format.ts` returns
       transpiled JavaScript.
 
 ## Implementation Notes
@@ -438,7 +466,8 @@ Two things to leave alone, both of which look like omissions:
 ## References
 
 - `docs/agents/research/2026-09-10-test-suite-structure.md` — the mapping this plan is built on
-- `backend/test/helpers/server.ts:51-122` — `useServer()`, `body<T>()`, `at<T>()`, the envelopes
+- `backend/test/helpers/server.ts:9-32` — the four envelope interfaces the tests assert against
+- `backend/test/helpers/server.ts:51-122` — `useServer()`, `body<T>()` and `at<T>()`
 - `backend/test/migrate.test.ts:12-23` — the temp-directory hooks that become `useTempDir()`
 - `backend/test/meta.api.test.ts:25-39` — the error-hook test and the comment that must travel
 - `backend/test/static.api.test.ts:105-115` — the `__broken.ts` fixture and its `finally`
