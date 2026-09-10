@@ -3,6 +3,7 @@
     "typeAware": true
   },
   "rules": {
-    "curly": "error"
+    "curly": "error",
+    "typescript/no-deprecated": "error"
   }
 }

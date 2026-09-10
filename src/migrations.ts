@@ -121,7 +121,7 @@ function assertConsistent(files: Migration[], applied: AppliedRow[], dir: string
 export function migrate(db: DB, options: MigrateOptions = {}): MigrateResult {
   const dir = options.dir ?? MIGRATIONS_DIR;
 
-  db.exec(LEDGER);
+  db.run(LEDGER);
   const files = discover(dir);
   const previous = db.query<AppliedRow, []>("SELECT version, name FROM schema_migrations ORDER BY version").all();
   assertConsistent(files, previous, dir);
@@ -137,12 +137,12 @@ export function migrate(db: DB, options: MigrateOptions = {}): MigrateResult {
   // Changing an existing column means SQLite's 12-step table rebuild, which requires foreign keys
   // off — and `PRAGMA foreign_keys` is a silent no-op inside a transaction, so it has to be toggled
   // out here. `foreign_key_check` below is what keeps that from hiding a broken migration.
-  db.exec("PRAGMA foreign_keys = OFF;");
+  db.run("PRAGMA foreign_keys = OFF;");
   try {
     for (const migration of pending) {
       try {
         db.transaction(() => {
-          db.exec(readFileSync(migration.file, "utf8"));
+          db.run(readFileSync(migration.file, "utf8"));
 
           // prepare() rather than query(): the schema just changed under us, so this must not come
           // from the statement cache.
@@ -162,7 +162,7 @@ export function migrate(db: DB, options: MigrateOptions = {}): MigrateResult {
       options.onMigration?.(migration);
     }
   } finally {
-    db.exec("PRAGMA foreign_keys = ON;");
+    db.run("PRAGMA foreign_keys = ON;");
   }
 
   return { version: schemaVersion(db), applied };
