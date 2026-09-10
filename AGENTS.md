@@ -20,6 +20,8 @@ bun run fmt              # format (fmt:check for CI)
 
 Dependencies are pinned to exact versions.
 
+TypeScript and JavaScript use single quotes, CSS double; `bun run fmt` enforces both.
+
 The database lives at `data/gainz.sqlite` (override with `GAINZ_DB`), is created on first run,
 and is git-ignored. `:memory:` is supported and is what the tests use.
 

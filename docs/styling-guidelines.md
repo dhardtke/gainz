@@ -12,3 +12,7 @@
 - Shadow roots don't inherit document styles, so Pico is adopted into each one _and_ linked in
   `index.html`. Theme is mirrored onto every host as `data-theme` because Pico reaches a shadow
   root only via `:host`.
+- **CSS keeps double quotes**, while the TypeScript around it uses single ones. Double quotes are
+  the prevailing CSS convention, so `.oxfmtrc.json` overrides `singleQuote` back off for
+  `**/*.css`; that file is plain JSON and cannot carry a comment saying why, so the reason lives
+  here.

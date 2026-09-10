@@ -163,7 +163,7 @@ script and the stylesheet named after its tag — `<gz-chart>` is
 `frontend/src/components/gz-chart/gz-chart.ts` beside `gz-chart.css` — which
 `src/styles.ts` fetches once into a `CSSStyleSheet` and every instance adopts by
 reference. Adding a component means creating `frontend/src/components/<tag>/` with
-both files and ending the module with `await define("<tag>", TheClass)`; there
+both files and ending the module with `await define('<tag>', TheClass)`; there
 is no manifest to register it in.
 
 That `await` is load-bearing — see **Loading** below.
@@ -180,7 +180,7 @@ The frontend is TypeScript on disk and JavaScript on the wire.
 requested — around 76 µs per
 file, the whole frontend in under two milliseconds — and `serveStatic` hands the
 result back as `text/javascript`. Nothing is written to disk and nothing is
-bundled: a URL still names one file, `import "./format.ts"` still asks for the
+bundled: a URL still names one file, `import './format.ts'` still asks for the
 file of that name, and editing a module and reloading is the whole edit loop.
 
 The transpiler **erases types without checking them**, and throws only when a
@@ -195,7 +195,7 @@ stylesheets; the chart is downloaded only once you open an exercise.
 Two pieces make that safe. `define()` in `base.ts` awaits the component's
 stylesheet before registering the element, and every component module `await`s
 its own `define()` at the top level. Because a top-level await blocks the
-modules that import it, `await import("…/gz-exercise-detail.ts")` in `gz-app`
+modules that import it, `await import('…/gz-exercise-detail.ts')` in `gz-app`
 resolves only when that view _and_ everything it renders — the chart, the stat
 tiles — have their scripts and their CSS. So a lazily loaded page is fully
 styled on its first paint; there is no flash to guard against.
