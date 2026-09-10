@@ -5,7 +5,7 @@
 `theme.ts`, `router.ts` (hash router), `api.ts`, `format.ts` are the rest of the shared layer.
 
 Each component is a directory `frontend/src/components/<tag>/` holding `<tag>.ts` and `<tag>.css`, found
-by convention. A component module ends with `await define("<tag>", TheClass)` — there is no
+by convention. A component module ends with `await define('<tag>', TheClass)` — there is no
 manifest. **That top-level `await` is load-bearing**: it makes "module loaded" also mean
 "stylesheet loaded", which is what lets `gz-app` lazily `import()` a route view and still paint it
 styled on the first frame.
@@ -20,11 +20,11 @@ another `html` call produced.
 
 The frontend is TypeScript, served as JavaScript. `backend/src/transpile.ts` runs each module
 through `Bun.Transpiler` on request; specifiers are left untouched, so a module imports
-`"./format.ts"` and the browser fetches the file of that name. Types are **erased, not checked** — `bun run typecheck`
+`'./format.ts'` and the browser fetches the file of that name. Types are **erased, not checked** — `bun run typecheck`
 is the only gate, and a type error will transpile and ship.
 
 The shapes the API returns are declared in `src/types.ts` and pulled in with
-`import type { … } from "../../types.ts"`, which the transpiler strips whole, so that module is
+`import type { … } from '../../types.ts'`, which the transpiler strips whole, so that module is
 never fetched at runtime. They are written out **by hand** rather than imported from
 `backend/src/repo/`, even though a type-only import would be erased too: the frontend is a client
 of an HTTP API, so what it should be pinned to is the wire format it expects, not the server's
