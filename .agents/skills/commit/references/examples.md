@@ -8,6 +8,12 @@ Read them in order. They run from the shortest correct message to the longest,
 and the point of the sequence is that the length tracks how much reasoning there
 was to record — not how much code moved.
 
+Two of them are longer than the current standard asks for. Several subject lines
+here would now be trimmed — "Load each route's script and stylesheet only when
+that route is opened" would read "Load route scripts and styles on demand" — and
+the six-paragraph message at the end is the ceiling for an unusually deep change,
+not a model to match. Copy how each paragraph works, not how many there are.
+
 ## Contents
 
 1. [No body at all](#1-no-body-at-all)
