@@ -23,11 +23,14 @@ bun start            # http://localhost:3000
 | `bun start`         | Serves the API and the frontend on `PORT`(3000)  |
 | `bun run dev`       | Same, restarting on file changes                 |
 | `bun run seed`      | Fills an empty database with sample workouts     |
+| `bun run migrate`   | Applies pending schema migrations, then exits    |
 | `bun test`          | Runs the API test suite against in-memory SQLite |
 | `bun run typecheck` | Type-checks the backend and the frontend         |
 
 The database lives at `data/gainz.sqlite` (override with `GAINZ_DB`) and is
-created on first run. It is git-ignored — the log is your data, not source.
+created on first run. It is git-ignored — the log is your data, not source. Its
+schema comes from the numbered `.sql` files in `migrations/`, which the server
+applies on startup; `bun run migrate` does the same without booting the server.
 
 ### Dependencies
 
@@ -62,8 +65,12 @@ sets of different rep counts on one comparable scale.
 ## Layout
 
 ```
+migrations/
+  001-initial-schema.sql  Numbered DDL, applied in order on startup
 src/
-  db.ts        SQLite connection and schema
+  db.ts        SQLite connection and PRAGMAs
+  migrations.ts  The migration runner
+  migrate.ts   `bun run migrate` entry point
   repo.ts      All SQL, one method per operation
   routes.ts    The REST route table
   validate.ts  Request-field parsing and limits
@@ -90,7 +97,8 @@ public/
     format.js    Dates, weights, volumes
     types.js     JSDoc typedefs for the shapes the API returns
 test/
-  api.test.ts  End-to-end tests over a real server on an in-memory database
+  api.test.ts      End-to-end tests over a real server on an in-memory database
+  migrate.test.ts  Unit tests for the migration runner
 ```
 
 Every component renders through the `html` tagged template in `base.js`, which
@@ -240,6 +248,11 @@ exercises ──< sets >── workouts
 free-text `notes`, and a `position` that preserves the order within a session.
 Deleting a workout deletes its sets; deleting an exercise is refused while any
 set still points at it, so history cannot silently lose its meaning.
+
+To change the schema, add `migrations/<next number>-<short-name>.sql` and
+restart. The runner applies it in its own transaction, records it in
+`schema_migrations`, and refuses to start if the number is not above the version
+the database already carries.
 
 ## Notes
 

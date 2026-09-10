@@ -9,6 +9,7 @@ bun install              # deps (Pico CSS + dev types/tooling)
 bun start                # serve API + frontend on PORT (default 3000)
 bun run start:dev        # same, with --watch
 bun run seed             # fill an empty DB with sample workouts
+bun run migrate          # apply pending schema migrations, then exit
 bun test                 # API suite against in-memory SQLite
 bun test test/api.test.ts # one file
 bun test -t "health"     # one test / describe block by name
@@ -28,6 +29,7 @@ Always put plans inside the project directory.
 
 ## Architecture
 
+`migrations/` -> numbered `.sql` schema migrations, applied on startup
 `src/` -> Bun + SQLite REST backend (TypeScript)
 `public/` -> a **no-build-step** frontend (plain ES modules and custom elements)
 `docs/` -> design and API documentation
