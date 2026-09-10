@@ -1,10 +1,10 @@
 ### Frontend (`frontend/`)
 
-`js/base.ts` holds `GzElement` (open shadow root, `data-action` click/submit delegation,
-`template()`/`render()`), the escaping `html` tagged template, and `define()`. `js/styles.ts`,
+`src/base.ts` holds `GzElement` (open shadow root, `data-action` click/submit delegation,
+`template()`/`render()`), the escaping `html` tagged template, and `define()`. `src/styles.ts`,
 `theme.ts`, `router.ts` (hash router), `api.ts`, `format.ts` are the rest of the shared layer.
 
-Each component is a directory `frontend/components/<tag>/` holding `<tag>.ts` and `<tag>.css`, found
+Each component is a directory `frontend/src/components/<tag>/` holding `<tag>.ts` and `<tag>.css`, found
 by convention. A component module ends with `await define("<tag>", TheClass)` — there is no
 manifest. **That top-level `await` is load-bearing**: it makes "module loaded" also mean
 "stylesheet loaded", which is what lets `gz-app` lazily `import()` a route view and still paint it
@@ -23,8 +23,8 @@ through `Bun.Transpiler` on request; specifiers are left untouched, so a module 
 `"./format.ts"` and the browser fetches the file of that name. Types are **erased, not checked** — `bun run typecheck`
 is the only gate, and a type error will transpile and ship.
 
-The shapes the API returns are declared in `js/types.ts` and pulled in with
-`import type { … } from "../../js/types.ts"`, which the transpiler strips whole, so that module is
+The shapes the API returns are declared in `src/types.ts` and pulled in with
+`import type { … } from "../../types.ts"`, which the transpiler strips whole, so that module is
 never fetched at runtime. They are written out **by hand** rather than imported from
 `backend/src/repo/`, even though a type-only import would be erased too: the frontend is a client
 of an HTTP API, so what it should be pinned to is the wire format it expects, not the server's

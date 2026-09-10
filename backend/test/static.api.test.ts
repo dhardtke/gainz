@@ -19,7 +19,7 @@ describe("static files", () => {
   });
 
   test("serves the app stylesheets", async () => {
-    for (const path of ["/css/app.css", "/css/shared.css", "/components/gz-app/gz-app.css"]) {
+    for (const path of ["/src/css/app.css", "/src/css/shared.css", "/src/components/gz-app/gz-app.css"]) {
       const res = await api(path);
       expect(res.status).toBe(200);
       expect(res.headers.get("content-type")).toContain("text/css");
@@ -41,7 +41,7 @@ describe("static files", () => {
 
 describe("typescript modules", () => {
   test("serves a .ts module as JavaScript with its types erased", async () => {
-    const res = await api("/js/format.ts");
+    const res = await api("/src/format.ts");
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/javascript");
 
@@ -53,46 +53,46 @@ describe("typescript modules", () => {
   });
 
   test("leaves import specifiers alone, so a URL names a real file", async () => {
-    const body = await (await api("/components/gz-chart/gz-chart.ts")).text();
-    expect(body).toContain('from "../../js/format.ts"');
+    const body = await (await api("/src/components/gz-chart/gz-chart.ts")).text();
+    expect(body).toContain('from "../../format.ts"');
   });
 
   test("serves the entry point index.html names", async () => {
     const page = await (await api("/")).text();
-    expect(page).toContain('src="/js/main.ts"');
+    expect(page).toContain('src="/src/main.ts"');
 
-    const res = await api("/js/main.ts");
+    const res = await api("/src/main.ts");
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/javascript");
-    expect(await res.text()).toContain("../components/gz-app/gz-app.ts");
+    expect(await res.text()).toContain("./components/gz-app/gz-app.ts");
   });
 
   test("erases a types-only module to nothing the browser runs", async () => {
-    const body = await (await api("/js/types.ts")).text();
+    const body = await (await api("/src/types.ts")).text();
     // Every declaration in types.ts is a type, so nothing survives erasure. The
     // browser never asks for it either — see the type-only import test below.
     expect(body.trim()).toBe("");
   });
 
   test("strips type-only imports, so types.ts is never fetched at runtime", async () => {
-    const body = await (await api("/components/gz-set-row/gz-set-row.ts")).text();
+    const body = await (await api("/src/components/gz-set-row/gz-set-row.ts")).text();
     expect(body).not.toContain("js/types.ts");
   });
 
   test("keeps the load-bearing top-level await that pairs a module with its CSS", async () => {
-    const body = await (await api("/components/gz-chart/gz-chart.ts")).text();
+    const body = await (await api("/src/components/gz-chart/gz-chart.ts")).text();
     expect(body).toContain('await define("gz-chart"');
   });
 
   test("answers HEAD with the headers and no body", async () => {
-    const res = await api("/js/format.ts", { method: "HEAD" });
+    const res = await api("/src/format.ts", { method: "HEAD" });
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/javascript");
     expect(await res.text()).toBe("");
   });
 
   test("returns 404 for a .ts file that does not exist", async () => {
-    expect((await api("/js/nope.ts")).status).toBe(404);
+    expect((await api("/src/nope.ts")).status).toBe(404);
   });
 
   test("refuses to transpile anything outside frontend/", async () => {
@@ -103,10 +103,10 @@ describe("typescript modules", () => {
   });
 
   test("reports a module that will not parse", async () => {
-    const broken = resolve(import.meta.dir, "..", "..", "frontend", "js", "__broken.ts");
+    const broken = resolve(import.meta.dir, "..", "..", "frontend", "src", "__broken.ts");
     await Bun.write(broken, "export const oops: = ;\n");
     try {
-      const res = await api("/js/__broken.ts");
+      const res = await api("/src/__broken.ts");
       expect(res.status).toBe(500);
       expect(await res.text()).toContain("__broken.ts");
     } finally {

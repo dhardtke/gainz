@@ -235,7 +235,7 @@ everything works.
 - [x] `src/transpile.ts:18` — doc comment on `transpileModule`: `path` has been resolved inside
       `frontend/`
 - [x] `frontend/js/base.ts:53` — comment naming
-      `frontend/components/gz-chart/gz-chart.css`
+      `../../../frontend/src/components`
 - [x] `test/static.api.test.ts:16` — test name: `"rejects directory traversal below frontend/"`
 - [x] `test/static.api.test.ts:98` — test name:
       `"refuses to transpile anything outside frontend/"`
@@ -245,8 +245,8 @@ everything works.
 - [x] `docs/frontend.md` — heading `### Frontend (\`frontend/\`)` (line 1) and the component
       directory convention at line 7
 - [x] `docs/backend.md:50` — static serving is "`frontend/` with a path-escape guard"
-- [x] `README.md` — line 61 (`frontend/js/format.ts`), the `public/` node in the layout tree at
-      line 95, and lines 158 and 160 in the Styling section
+- [x] `README.md` — line 61 (`../../../frontend/src/format.ts`), the `public/` node in the layout tree at
+  line 95, and lines 158 and 160 in the Styling section
 - [x] `AGENTS.md` — line 16 (`typechecking (src + test + frontend)`) and the `public/` entry in
       the Architecture list at line 34. `CLAUDE.md` is a symlink to this file and needs no
       separate edit.

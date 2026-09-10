@@ -1,6 +1,6 @@
-import type { RawHtml } from "../../js/base.ts";
-import { define, GzElement, html, raw } from "../../js/base.ts";
-import { formatNumber } from "../../js/format.ts";
+import type { RawHtml } from "../../base.ts";
+import { define, GzElement, html, raw } from "../../base.ts";
+import { formatNumber } from "../../format.ts";
 
 /** Plot area in SVG user units. Only geometry lives in here — never text. */
 const W = 600;
