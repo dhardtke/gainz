@@ -4,9 +4,11 @@ A strict layering, one concern per file: `db.ts` (connection + PRAGMAs) → `mig
 `repo/` (**all** SQL, one method per operation, returns typed rows) → `routes.ts` (the registry that
 spreads the route files into one `Bun.serve` table) and `routes/` (one file per URL group:
 `meta.routes.ts`, `stats.routes.ts`, `exercise.routes.ts`, `workout.routes.ts`, `set.routes.ts`,
-over the shared plumbing in `routes/shared.ts`) → `server.ts` (entry point, static files).
-`validate.ts` parses and bounds every request field; `http.ts` defines `HttpError` plus
-`badRequest`/`notFound`/`conflict`.
+over the shared plumbing in `routes/shared.ts`) → `server.ts` (the `Bun.serve` options) →
+`main.ts` (entry point). The static half hangs off `server.ts` as its `fetch` fallback:
+`static.ts` (serves `frontend/` and the vendor allowlist) over `paths.ts` (the only place a URL
+becomes a filesystem path). `validate.ts` parses and bounds every request field; `http.ts`
+defines `HttpError` plus `badRequest`/`notFound`/`conflict`.
 
 A route belongs to the file its URL prefix names, with no exceptions to remember — so
 `/api/workouts/:id/sets` is a workout route, and `workout.routes.ts` imports `readSetBody` from
@@ -48,5 +50,13 @@ one exception: `backend/test/migrate.test.ts` unit-tests the migration runner ag
 fixture directories. There are no unit tests of `Repo`.
 
 Static serving is deliberately narrow: `frontend/` with a path-escape guard, plus `VENDOR_FILES`
-in `server.ts` — a one-file allowlist into `node_modules` (`/vendor/pico.css`). Serving anything
+in `paths.ts` — a one-file allowlist into `node_modules` (`/vendor/pico.css`). Serving anything
 else from a package means adding it to that map.
+
+Two things `static.ts` deliberately does not do. It sets no `Content-Type` except on the vendor
+stylesheet: `new Response(Bun.file(x))` already carries the type Bun infers from the extension,
+off a complete MIME database (`.svg` → `image/svg+xml`, `.woff2` → `font/woff2`, `.png` →
+`image/png`, `.webp` → `image/webp`, no extension → `application/octet-stream`, all measured on
+Bun 1.4.2), so a hand-written map would be a subset that drifts. And it does not special-case
+HEAD beyond letting it past the method check — Bun strips the body itself and leaves the headers
+alone, which `backend/test/static.api.test.ts:87` holds in place.

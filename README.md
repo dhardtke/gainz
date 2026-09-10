@@ -92,7 +92,10 @@ backend/
     validate.ts  Request-field parsing and limits
     http.ts      JSON responses and HttpError
     transpile.ts Erases types from a frontend module on its way to the browser
-    server.ts    Bun.serve, static files, entry point
+    static.ts    Serves frontend/ and the vendor allowlist
+    paths.ts     URL-to-file resolution, escape guard, VENDOR_FILES
+    server.ts    The Bun.serve options, shared by main.ts and the tests
+    main.ts      Entry point — open the database, serve, shut down
     seed.ts      Sample data
   test/
     helpers/server.ts  useServer(): a real server on an in-memory database, per file
@@ -229,7 +232,7 @@ once, at load. The first flip stores an explicit choice that wins from then on,
 so the page does not follow the operating system around afterwards.
 
 Pico is served from `node_modules` at `/vendor/pico.css` through an explicit
-one-file allowlist in `backend/src/server.ts` — installing a package never
+one-file allowlist in `backend/src/paths.ts` — installing a package never
 publishes anything the app did not ask to serve. The build is the `pico.orange`
 theme; swapping themes is a one-line change to `VENDOR_FILES`.
 
