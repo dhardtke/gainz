@@ -1,4 +1,4 @@
-### Coding guidelines
+# Coding guidelines
 
 Dependencies are pinned to exact versions.
 

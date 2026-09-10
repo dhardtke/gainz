@@ -1,4 +1,4 @@
-### Frontend (`frontend/`)
+# Frontend (`frontend/`)
 
 `src/base.ts` holds `GzElement` (open shadow root, `data-action` click/submit delegation,
 `template()`/`render()`), the escaping `html` tagged template, and `define()`. `src/styles.ts`,
