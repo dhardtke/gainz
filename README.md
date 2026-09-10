@@ -71,7 +71,13 @@ src/
   db.ts        SQLite connection and PRAGMAs
   migrations.ts  The migration runner
   migrate.ts   `bun run migrate` entry point
-  repo.ts      All SQL, one method per operation
+  repo/
+    index.ts     The Repo facade — one flat surface, no SQL
+    sql.ts       Shared fragments and the dynamic UPDATE builder
+    exercises.ts Exercise queries
+    workouts.ts  Workout queries
+    sets.ts      Set queries
+    stats.ts     The dashboard summary
   routes.ts    The REST route table
   validate.ts  Request-field parsing and limits
   http.ts      JSON responses and HttpError

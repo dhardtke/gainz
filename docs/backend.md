@@ -1,9 +1,16 @@
 ### Backend (`src/`)
 
-A strict layering, one concern per file: `db.ts` (connection + PRAGMAs) → `migrations.ts` (schema) → `repo.ts`
-(**all** SQL, one method per operation, returns typed rows) → `routes.ts` (the `Bun.serve` route
-table) → `server.ts` (entry point, static files). `validate.ts` parses and bounds every request
+A strict layering, one concern per file: `db.ts` (connection + PRAGMAs) → `migrations.ts` (schema) →
+`repo/` (**all** SQL, one method per operation, returns typed rows) → `routes.ts` (the `Bun.serve`
+route table) → `server.ts` (entry point, static files). `validate.ts` parses and bounds every request
 field; `http.ts` defines `HttpError` plus `badRequest`/`notFound`/`conflict`.
+
+`repo/index.ts` is a facade: it owns no SQL, and delegates each method to one repository per entity
+(`exercises.ts`, `workouts.ts`, `sets.ts`, `stats.ts`), which share their fragments and the single
+dynamic-`UPDATE` builder through `repo/sql.ts`. The flat surface is deliberate — callers say
+`repo.listSets(id)` and never reach a sub-repository. SQL lives under `repo/` and nowhere else.
+The entity modules reference each other only with `import type`; `SetRepo` takes the siblings it
+needs through its constructor, so there is no runtime cycle to trip over.
 
 Error handling is by throwing: handlers throw `HttpError` and `guardAll()` in `routes.ts` turns
 it into a JSON `{ error }` body with the right status. New routes must be wrapped in `guardAll`.
