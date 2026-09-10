@@ -9,6 +9,7 @@
     "start": "bun run src/server.ts",
     "start:dev": "bun --watch src/server.ts",
     "seed": "bun run src/seed.ts",
+    "migrate": "bun run src/migrate.ts",
     "test": "bun test",
     "typecheck": "bunx tsc --noEmit",
     "fmt": "oxfmt .",
