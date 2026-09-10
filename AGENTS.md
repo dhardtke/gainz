@@ -27,6 +27,8 @@ Commits go directly on `main`; don't open a feature branch unless asked.
 
 Always put plans inside the project directory.
 
+Never edit existing plans or research docs in `docs/agents/` — only add new ones.
+
 ## Architecture
 
 `backend/` -> the Bun + SQLite REST backend (TypeScript), holding
