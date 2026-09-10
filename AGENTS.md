@@ -10,8 +10,8 @@ bun start                # serve API + frontend on PORT (default 3000)
 bun run start:dev        # same, with --watch
 bun run seed             # fill an empty DB with sample workouts
 bun run migrate          # apply pending schema migrations, then exit
-bun test                 # API suite against in-memory SQLite
-bun test backend/test/workout.api.test.ts # one file
+bun test                 # the test suite against in-memory SQLite
+bun test backend/src/routes/workout.routes.test.ts # one file
 bun test -t "health"     # one test / describe block by name
 bun run typecheck        # typechecking (backend + frontend)
 bun run lint             # linting
@@ -28,8 +28,9 @@ Never edit existing plans or research docs in `docs/agents/` — only add new on
 ## Architecture
 
 `backend/` -> the Bun + SQLite REST backend (TypeScript), holding
-`backend/src/` (the server), `backend/test/` (the API suite) and
-`backend/migrations/` (numbered `.sql` schema migrations, applied on startup)
+`backend/src/` (the server and its tests side by side — every `*.test.ts` sits beside the
+module it exercises) and `backend/migrations/` (numbered `.sql` schema migrations, applied
+on startup)
 `frontend/` -> a **no-build-step** frontend: TypeScript ES modules and custom elements,
 transpiled on request by `backend/src/transpile.ts` — no bundler, no output directory
 `docs/` -> design and API documentation

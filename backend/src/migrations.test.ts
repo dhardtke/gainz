@@ -1,34 +1,29 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { Database } from 'bun:sqlite';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { openDatabase } from '../src/db';
-import { MIGRATIONS_DIR, migrate, schemaVersion, type MigrateResult } from '../src/migrations';
+import { MIGRATIONS_DIR, migrate, schemaVersion, type MigrateResult } from './migrations';
+import { useTempDir } from './testing';
 
-let dir: string;
+const tempDir = useTempDir();
 let db: Database;
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'gainz-migrations-'));
   db = new Database(':memory:', { create: true });
   db.run('PRAGMA foreign_keys = ON;');
 });
 
 afterEach(() => {
   db.close();
-  // Recursive, so the WAL/SHM sidecars of any file database written here go too. Windows releases
-  // the handle a moment after close(), so retry rather than fail the test on EBUSY.
-  rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
 });
 
 /** Writes a fixture migration into the temp directory. */
 function write(filename: string, sql: string): void {
-  writeFileSync(join(dir, filename), sql);
+  writeFileSync(join(tempDir(), filename), sql);
 }
 
 function run(): MigrateResult {
-  return migrate(db, { dir });
+  return migrate(db, { dir: tempDir() });
 }
 
 function tables(database: Database): string[] {
@@ -150,29 +145,6 @@ describe('migration runner', () => {
 });
 
 describe('the real migrations', () => {
-  test('openDatabase applies them to an in-memory database', () => {
-    const real = openDatabase(':memory:');
-
-    // Asserted one at a time: expect.arrayContaining is typed `any`, and a
-    // failure names the missing table rather than dumping both arrays.
-    for (const table of ['exercises', 'workouts', 'sets', 'schema_migrations']) {
-      expect(tables(real)).toContain(table);
-    }
-    expect(schemaVersion(real)).toBe(1);
-
-    real.close();
-  });
-
-  test('openDatabase enables WAL for a file-backed database', () => {
-    const file = openDatabase(join(dir, 'wal-check.sqlite'));
-
-    expect(file.query<{ journal_mode: string }, []>('PRAGMA journal_mode').get()?.journal_mode).toBe('wal');
-
-    // close(true) finalizes outstanding statements and releases the connection immediately;
-    // a plain close() leaves the file locked on Windows until they are collected.
-    file.close(true);
-  });
-
   test('adopt a database that already has the schema but no ledger', () => {
     // How an existing data/gainz.sqlite, created before migrations existed, is taken over.
     const legacy = new Database(':memory:', { create: true });

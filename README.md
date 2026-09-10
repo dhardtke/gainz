@@ -72,7 +72,9 @@ backend/
     001-initial-schema.sql  Numbered DDL, applied in order on startup
   src/
     db.ts        SQLite connection and PRAGMAs
+    db.test.ts     openDatabase: the schema it applies, and WAL
     migrations.ts  The migration runner
+    migrations.test.ts  Unit tests for the runner, against fixture directories
     migrate.ts   `bun run migrate` entry point
     repo/
       index.ts     The Repo facade — one flat surface, no SQL
@@ -85,26 +87,28 @@ backend/
     routes/
       shared.ts    RouteTable, guardAll and the shared field limits
       meta.routes.ts     /api/health and the /api catch-all
+      meta.routes.test.ts
       stats.routes.ts    The dashboard summary endpoint
+      stats.routes.test.ts
       exercise.routes.ts Exercise endpoints, including progress
+      exercise.routes.test.ts
       workout.routes.ts  Workout endpoints, including a workout's sets
+      workout.routes.test.ts
       set.routes.ts      Set endpoints
+      set.routes.test.ts
     validate.ts  Request-field parsing and limits
     http.ts      JSON responses and HttpError
+    http.test.ts   readJsonObject: malformed and non-object bodies
     transpile.ts Erases types from a frontend module on its way to the browser
+    transpile.test.ts   What the transpiler outputs
     static.ts    Serves frontend/ and the vendor allowlist
+    static.test.ts      What the server serves and refuses
     paths.ts     URL-to-file resolution, escape guard, VENDOR_FILES
     server.ts    The Bun.serve options, shared by main.ts and the tests
+    server.test.ts      The Bun.serve error hook
+    testing.ts   Test-only: useServer(), useTempDir() and the response helpers
     main.ts      Entry point — open the database, serve, shut down
     seed.ts      Sample data
-  test/
-    helpers/server.ts  useServer(): a real server on an in-memory database, per file
-    meta.api.test.ts     Health, unknown endpoints, stats, request bodies
-    static.api.test.ts   Static files, the vendor allowlist, TypeScript modules
-    exercise.api.test.ts Exercises and progress
-    workout.api.test.ts  Workouts
-    set.api.test.ts      Sets
-    migrate.test.ts  Unit tests for the migration runner
 frontend/
   index.html   The only page
   src/

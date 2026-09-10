@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
-import type { ExerciseWithStats } from '../src/repo';
-import type { ErrorBody, Progress, WorkoutDetail } from './helpers/server';
-import { at, body, useServer } from './helpers/server';
+import type { ExerciseWithStats } from '../repo';
+import type { ErrorBody, Progress, WorkoutDetail } from '../testing';
+import { at, body, useServer } from '../testing';
 
 const { api, post, patch, createExercise, createWorkout } = useServer();
 
