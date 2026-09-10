@@ -30,8 +30,9 @@ bun start            # http://localhost:3000
 
 The database lives at `data/gainz.sqlite` (override with `GAINZ_DB`) and is
 created on first run. It is git-ignored — the log is your data, not source. Its
-schema comes from the numbered `.sql` files in `migrations/`, which the server
-applies on startup; `bun run migrate` does the same without booting the server.
+schema comes from the numbered `.sql` files in `backend/migrations/`, which the
+server applies on startup; `bun run migrate` does the same without booting the
+server.
 
 ### Dependencies
 
@@ -66,32 +67,41 @@ sets of different rep counts on one comparable scale.
 ## Layout
 
 ```
-migrations/
-  001-initial-schema.sql  Numbered DDL, applied in order on startup
-src/
-  db.ts        SQLite connection and PRAGMAs
-  migrations.ts  The migration runner
-  migrate.ts   `bun run migrate` entry point
-  repo/
-    index.ts     The Repo facade — one flat surface, no SQL
-    sql.ts       Shared fragments and the dynamic UPDATE builder
-    exercises.ts Exercise queries
-    workouts.ts  Workout queries
-    sets.ts      Set queries
-    stats.ts     The dashboard summary
-  routes.ts    The registry — spreads the route files into one table
-  routes/
-    shared.ts    RouteTable, guardAll and the shared field limits
-    meta.routes.ts     /api/health and the /api catch-all
-    stats.routes.ts    The dashboard summary endpoint
-    exercise.routes.ts Exercise endpoints, including progress
-    workout.routes.ts  Workout endpoints, including a workout's sets
-    set.routes.ts      Set endpoints
-  validate.ts  Request-field parsing and limits
-  http.ts      JSON responses and HttpError
-  transpile.ts Erases types from a frontend module on its way to the browser
-  server.ts    Bun.serve, static files, entry point
-  seed.ts      Sample data
+backend/
+  migrations/
+    001-initial-schema.sql  Numbered DDL, applied in order on startup
+  src/
+    db.ts        SQLite connection and PRAGMAs
+    migrations.ts  The migration runner
+    migrate.ts   `bun run migrate` entry point
+    repo/
+      index.ts     The Repo facade — one flat surface, no SQL
+      sql.ts       Shared fragments and the dynamic UPDATE builder
+      exercises.ts Exercise queries
+      workouts.ts  Workout queries
+      sets.ts      Set queries
+      stats.ts     The dashboard summary
+    routes.ts    The registry — spreads the route files into one table
+    routes/
+      shared.ts    RouteTable, guardAll and the shared field limits
+      meta.routes.ts     /api/health and the /api catch-all
+      stats.routes.ts    The dashboard summary endpoint
+      exercise.routes.ts Exercise endpoints, including progress
+      workout.routes.ts  Workout endpoints, including a workout's sets
+      set.routes.ts      Set endpoints
+    validate.ts  Request-field parsing and limits
+    http.ts      JSON responses and HttpError
+    transpile.ts Erases types from a frontend module on its way to the browser
+    server.ts    Bun.serve, static files, entry point
+    seed.ts      Sample data
+  test/
+    helpers/server.ts  useServer(): a real server on an in-memory database, per file
+    meta.api.test.ts     Health, unknown endpoints, stats, request bodies
+    static.api.test.ts   Static files, the vendor allowlist, TypeScript modules
+    exercise.api.test.ts Exercises and progress
+    workout.api.test.ts  Workouts
+    set.api.test.ts      Sets
+    migrate.test.ts  Unit tests for the migration runner
 frontend/
   index.html   The only page
   css/
@@ -111,14 +121,6 @@ frontend/
     router.ts    Hash router
     format.ts    Dates, weights, volumes
     types.ts     The shapes the API returns; erased before the browser sees it
-test/
-  helpers/server.ts  useServer(): a real server on an in-memory database, per file
-  meta.api.test.ts     Health, unknown endpoints, stats, request bodies
-  static.api.test.ts   Static files, the vendor allowlist, TypeScript modules
-  exercise.api.test.ts Exercises and progress
-  workout.api.test.ts  Workouts
-  set.api.test.ts      Sets
-  migrate.test.ts  Unit tests for the migration runner
 ```
 
 Every component renders through the `html` tagged template in `base.ts`, which
@@ -170,8 +172,9 @@ unchanged.
 
 ### Loading
 
-The frontend is TypeScript on disk and JavaScript on the wire. `src/transpile.ts`
-runs each module through `Bun.Transpiler` as it is requested — around 76 µs per
+The frontend is TypeScript on disk and JavaScript on the wire.
+`backend/src/transpile.ts` runs each module through `Bun.Transpiler` as it is
+requested — around 76 µs per
 file, the whole frontend in under two milliseconds — and `serveStatic` hands the
 result back as `text/javascript`. Nothing is written to disk and nothing is
 bundled: a URL still names one file, `import "./format.ts"` still asks for the
@@ -226,9 +229,9 @@ once, at load. The first flip stores an explicit choice that wins from then on,
 so the page does not follow the operating system around afterwards.
 
 Pico is served from `node_modules` at `/vendor/pico.css` through an explicit
-one-file allowlist in `src/server.ts` — installing a package never publishes
-anything the app did not ask to serve. The build is the `pico.orange` theme;
-swapping themes is a one-line change to `VENDOR_FILES`.
+one-file allowlist in `backend/src/server.ts` — installing a package never
+publishes anything the app did not ask to serve. The build is the `pico.orange`
+theme; swapping themes is a one-line change to `VENDOR_FILES`.
 
 ## REST API
 
@@ -285,8 +288,8 @@ free-text `notes`, and a `position` that preserves the order within a session.
 Deleting a workout deletes its sets; deleting an exercise is refused while any
 set still points at it, so history cannot silently lose its meaning.
 
-To change the schema, add `migrations/<next number>-<short-name>.sql` and
-restart. The runner applies it in its own transaction, records it in
+To change the schema, add `backend/migrations/<next number>-<short-name>.sql`
+and restart. The runner applies it in its own transaction, records it in
 `schema_migrations`, and refuses to start if the number is not above the version
 the database already carries.
 

@@ -1,7 +1,7 @@
 /**
  * The shapes the gainz REST API returns, written out for the frontend.
  *
- * These are declared here rather than imported from `src/repo/`, even though a
+ * These are declared here rather than imported from `backend/src/repo/`, even though a
  * type-only import would be erased before the browser ever saw it. The frontend
  * is a client of an HTTP API, so what it should be pinned to is the wire format
  * it expects — not the server's internal row types. Sharing them would quietly
