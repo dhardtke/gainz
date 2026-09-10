@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
-import type { LiftSet, Workout } from '../src/repo';
-import type { WorkoutDetail, WorkoutPage } from './helpers/server';
-import { body, useServer } from './helpers/server';
+import type { LiftSet, Workout } from '../repo';
+import type { WorkoutDetail, WorkoutPage } from '../testing';
+import { at, body, useServer } from '../testing';
 
 const { api, post, createExercise, createWorkout } = useServer();
 
@@ -71,5 +71,35 @@ describe('workouts', () => {
 
   test('rejects an out-of-range limit', async () => {
     expect((await api('/api/workouts?limit=9999')).status).toBe(400);
+  });
+});
+
+describe("a workout's sets", () => {
+  // POST /api/workouts/:id/sets, declared in workout.routes.ts, validated by
+  // readSetBody from set.routes.ts.
+  test('logs sets and returns them with the workout', async () => {
+    const exercise = await createExercise();
+    const workout = await createWorkout();
+
+    await post(`/api/workouts/${workout.id}/sets`, {
+      exercise_id: exercise.id,
+      reps: 8,
+      weight: 60,
+      notes: 'warm-up',
+    });
+    await post(`/api/workouts/${workout.id}/sets`, { exercise_id: exercise.id, reps: 6, weight: 70 });
+
+    const detail = await body<WorkoutDetail>(await api(`/api/workouts/${workout.id}`));
+    expect(detail.sets).toHaveLength(2);
+    expect(detail.sets[0]).toMatchObject({ reps: 8, weight: 60, notes: 'warm-up', exercise_name: 'Bench Press' });
+    expect(at(detail.sets, 1).position).toBeGreaterThan(at(detail.sets, 0).position);
+  });
+
+  test('rejects non-positive reps and unknown exercises', async () => {
+    const exercise = await createExercise();
+    const workout = await createWorkout();
+
+    expect((await post(`/api/workouts/${workout.id}/sets`, { exercise_id: exercise.id, reps: 0, weight: 60 })).status).toBe(400);
+    expect((await post(`/api/workouts/${workout.id}/sets`, { exercise_id: 4242, reps: 5, weight: 60 })).status).toBe(404);
   });
 });

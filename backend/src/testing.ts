@@ -1,10 +1,17 @@
+/**
+ * Test-only. The harness every *.test.ts under backend/src/ builds its fixtures from;
+ * no production module imports it.
+ */
 import { afterEach, beforeEach, expect } from 'bun:test';
 import type { Server } from 'bun';
 import type { Database } from 'bun:sqlite';
-import { openDatabase } from '../../src/db';
-import type { Exercise, LiftSet, SessionPoint, Workout, WorkoutWithStats } from '../../src/repo';
-import { Repo } from '../../src/repo';
-import { serveOptions } from '../../src/server';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { openDatabase } from './db';
+import type { Exercise, LiftSet, SessionPoint, Workout, WorkoutWithStats } from './repo';
+import { Repo } from './repo';
+import { serveOptions } from './server';
 
 /** `GET /api/workouts/:id` and `POST /api/workouts`: a workout with its sets. */
 export interface WorkoutDetail extends Workout {
@@ -97,6 +104,23 @@ export function useServer(): TestServer {
   }
 
   return { api, post, patch, createExercise, createWorkout };
+}
+
+/** A throwaway directory, made before each test and removed after it. */
+export function useTempDir(): () => string {
+  let dir = '';
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'gainz-'));
+  });
+
+  afterEach(() => {
+    // Recursive, so the WAL/SHM sidecars of any file database written here go too. Windows releases
+    // the handle a moment after close(), so retry rather than fail the test on EBUSY.
+    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+  });
+
+  return () => dir;
 }
 
 /**
