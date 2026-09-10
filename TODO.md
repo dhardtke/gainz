@@ -19,3 +19,5 @@
 
 ## Misc
 - Change the commit skill to write much shorter commit subject lines and bodies
+- Cleanup AGENTS.md to be very condensed (<300 lines)
+- Move README.md stuff into dedicated files (if needed)
