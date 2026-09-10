@@ -35,7 +35,9 @@ Research: `docs/agents/research/2026-09-10-api-route-construction.md`.
 - `bun test` reports **52 pass, 0 fail, 139 expect() calls** — the same counts as before the
   refactor.
 - `bun run typecheck`, `bun run lint` and `bun run fmt:check` are clean.
-- `docs/backend.md` describes the new layout.
+- `docs/backend.md` describes the new layout, and no file outside `docs/agents/` still names
+  `test/api.test.ts` — including the project tree in `README.md` and the Commands block in
+  `AGENTS.md`.
 
 ## Technical Key Decisions and Tradeoffs
 
@@ -75,8 +77,9 @@ Research: `docs/agents/research/2026-09-10-api-route-construction.md`.
 6. **The return type is a named alias:** `shared.ts` exports
    `type RouteTable = Bun.Serve.Routes<undefined, string>`.
    - Why: `typescript/explicit-function-return-type` and
-     `typescript/explicit-module-boundary-types` are both `"error"`, so all seven exported
-     functions must spell a return type out; the alias states the Bun generics once.
+     `typescript/explicit-module-boundary-types` are both `"error"`, so the six route-table
+     factories and `apiRoutes` must each spell a return type out; the alias states the Bun
+     generics once.
    - Impact: `Routes<WebSocketData, R>` is a mapped type (`bun-types/serve.d.ts:637-642`), so
      with `R = string` it becomes an index signature. Partial tables and the spread in
      `apiRoutes` therefore type-check with no casts.
@@ -88,8 +91,9 @@ Research: `docs/agents/research/2026-09-10-api-route-construction.md`.
      test file its own independent hooks and state (a second file's counter restarted at 1).
      Bare top-level hooks in a helper module would depend on import-time side effects and
      module-cache behaviour across files.
-   - Impact: the three set-behaviour tests move to `set.api.test.ts` even though two of them
-     POST to `/api/workouts/:id/sets` — tests group by subject, routes group by URL.
+   - Impact: the three set-behaviour tests move to `set.api.test.ts` even though each of them
+     POSTs to `/api/workouts/:id/sets` and only one touches `/api/sets/:id` — tests group by
+     subject, routes group by URL.
 
 8. **`describe` block names are preserved** wherever a block moves intact.
    - Why: `AGENTS.md` documents `bun test -t "health"` as the way to run one block by name.
@@ -237,6 +241,11 @@ new abstractions are the `RouteTable` alias, the six route-table factory functio
     `set.api.test.ts` — **new**, together replacing `api.test.ts`
 - `docs/`
   - `backend.md` — the layering paragraph, the `guardAll` rule and the testing paragraph
+- `README.md` — two lines of the project tree: `routes.ts    The REST route table` (`:82`) and
+  `api.test.ts      End-to-end tests over a real server on an in-memory database` (`:108`),
+  which names a file this plan deletes
+- `AGENTS.md` — the Commands block at `:14`, `bun test test/api.test.ts # one file`, which
+  becomes a broken command once that file is gone
 
 Lint rules that shape the new code, all `"error"` in `.oxlintrc.json`:
 
@@ -247,12 +256,16 @@ Lint rules that shape the new code, all `"error"` in `.oxlintrc.json`:
 - `typescript/method-signature-style` — interfaces must use property signatures, so the
   `useServer()` return type is written `api: (path: string, init?: RequestInit) => Promise<Response>`,
   not `api(path: string): Promise<Response>`.
+- `typescript/consistent-type-definitions` — an object type must be declared as an `interface`,
+  not a `type` alias, so that return type is `interface TestServer { … }`. (`RouteTable`,
+  `ParamRequest` and `Handler` are unaffected: an alias for a generic instantiation, an
+  intersection and a function type are all outside this rule.)
 
 Unchanged and deliberately so: `src/server.ts` (its `GainzServeOptions.routes` keeps the
 literal `Bun.Serve.Routes<undefined, string>` spelling), `src/http.ts`, `src/validate.ts`,
-`src/repo/**`, `README.md` (it documents the REST surface, which does not change), `AGENTS.md`
-(its architecture section describes `src/` at folder level only), and
-`docs/agents/research/2026-09-10-api-route-construction.md` (a dated snapshot of the state
+`src/repo/**`, the REST API tables in `README.md:221-263` (the endpoint surface does not
+change), the architecture section of `AGENTS.md` (it describes `src/` at folder level only),
+and `docs/agents/research/2026-09-10-api-route-construction.md` (a dated snapshot of the state
 before this refactor).
 
 ## Logging & Observability
@@ -292,10 +305,16 @@ three entity groups inline at the end of this phase, now importing `guard`/`guar
       `/api/*` entry from `src/routes.ts:204`). Neither takes `repo`.
 - [ ] Create `src/routes/stats.routes.ts` exporting `statsRoutes(repo: Repo): RouteTable` with
       the `/api/stats/summary` entry from `src/routes.ts:64`.
-- [ ] Update `src/routes.ts`: delete the moved declarations, import `guard`, `guardAll`,
-      `MAX_NAME`, `MAX_NOTES` and `RouteTable` from `./routes/shared`, spread `metaRoutes()`
-      first and `notFoundRoute()` last, and keep the exercise, workout and set groups inline
-      between them. Return type becomes `RouteTable`.
+- [ ] Update `src/routes.ts`: delete the moved declarations, import `guardAll`, `MAX_NAME`,
+      `MAX_NOTES` and `RouteTable` from `./routes/shared`, spread `metaRoutes()` first and
+      `notFoundRoute()` last, and keep the exercise, workout and set groups inline between
+      them. Return type becomes `RouteTable`.
+      Do **not** import `guard` — its only use in this module was the `/api/*` entry, which
+      moves to `meta.routes.ts` in this same phase. For the same reason, narrow the `./http`
+      import (`src/routes.ts:1`) to `json`, `noContent` and `readJsonObject`: `errorResponse`
+      and `notFound` were used only by that entry. A leftover import raises
+      `eslint(no-unused-vars)` as a *warning*, so `bun run lint` still exits 0 — verified —
+      which is why the phase checks for silent output rather than a zero exit code.
 - [ ] Create `test/helpers/server.ts`: export `useServer()` returning
       `{ api, post, patch, createExercise, createWorkout }`, with `beforeEach`/`afterEach`
       registered inside the function; export `body` and `at` as standalone functions; export
@@ -334,7 +353,8 @@ three entity groups inline at the end of this phase, now importing `guard`/`guar
 - [ ] `bun test -t "health"` still selects the health block (the command documented in
       `AGENTS.md`).
 - [ ] `bun run typecheck` is clean.
-- [ ] `bun run lint` is clean.
+- [ ] `bun run lint` prints nothing at all (it does today; warnings such as `no-unused-vars`
+      do not change the exit code, so output is the check, not the status).
 - [ ] `bun run fmt` then `bun run fmt:check` is clean.
 
 ### Phase 2: Exercises
@@ -362,7 +382,8 @@ test file.
 - [ ] `bun test test/exercise.api.test.ts` reports 8 pass.
 - [ ] `bun test` reports 52 pass, 0 fail, 139 expect() calls.
 - [ ] `bun run typecheck` is clean.
-- [ ] `bun run lint` is clean.
+- [ ] `bun run lint` prints nothing at all (it does today; warnings such as `no-unused-vars`
+      do not change the exit code, so output is the check, not the status).
 - [ ] `bun run fmt` then `bun run fmt:check` is clean.
 
 ### Phase 3: Workouts, sets, and the finish
@@ -401,20 +422,30 @@ bring `docs/backend.md` in line with the new layout.
       wrapped in `guardAll`" in whichever route file owns them; the transaction paragraph
       (`:18-21`) so it refers to the route files rather than `routes.ts`; and the testing
       paragraph (`:31-33`) to describe the five API test files over `test/helpers/server.ts`.
+- [ ] Update the project tree in `README.md`: replace the `routes.ts    The REST route table`
+      line (`:82`) with the registry plus a `routes/` entry mirroring how `repo/` is listed
+      just above it (`:76-81`), and replace the `api.test.ts` line (`:108`) with the five API
+      test files and `helpers/server.ts`.
+- [ ] Update `AGENTS.md:14`, `bun test test/api.test.ts # one file`, to name a file that still
+      exists — for example `bun test test/workout.api.test.ts`.
 
 **Automated Verification**:
 
 - [ ] `bun test test/workout.api.test.ts` reports 8 pass.
 - [ ] `bun test test/set.api.test.ts` reports 3 pass.
 - [ ] `bun test` reports 52 pass, 0 fail, 139 expect() calls.
-- [ ] `test/api.test.ts` no longer exists.
+- [ ] `test/api.test.ts` no longer exists, and `git grep -n "api\.test\.ts"` returns nothing
+      outside `docs/agents/` (where the dated research and plan documents keep their record of
+      the old layout).
+- [ ] Every command in the `AGENTS.md` Commands block still runs.
 - [ ] `src/routes.ts` contains no `guardAll(` or `json(` call — a registry only.
 - [ ] `src/routes/` contains exactly `shared.ts`, `meta.routes.ts`, `stats.routes.ts`,
       `exercise.routes.ts`, `workout.routes.ts`, `set.routes.ts`.
 - [ ] `git diff --stat` shows no change to `src/server.ts`, `src/http.ts`, `src/validate.ts` or
       `src/repo/**` across all three phases.
 - [ ] `bun run typecheck` is clean.
-- [ ] `bun run lint` is clean.
+- [ ] `bun run lint` prints nothing at all (it does today; warnings such as `no-unused-vars`
+      do not change the exit code, so output is the check, not the status).
 - [ ] `bun run fmt` then `bun run fmt:check` is clean.
 - [ ] With `bun start` running,
       `bun -e "for (const p of ['/api/health', '/api/nope']) { const r = await fetch('http://localhost:3000' + p); console.log(p, r.status, await r.text()); }"`
