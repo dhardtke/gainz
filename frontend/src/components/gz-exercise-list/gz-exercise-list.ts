@@ -1,8 +1,8 @@
-import { api, errorMessage } from "../../js/api.ts";
-import type { RawHtml } from "../../js/base.ts";
-import { define, GzElement, html } from "../../js/base.ts";
-import { formatWeight, plural, relativeDay } from "../../js/format.ts";
-import type { ExerciseWithStats } from "../../js/types.ts";
+import { api, errorMessage } from "../../api.ts";
+import type { RawHtml } from "../../base.ts";
+import { define, GzElement, html } from "../../base.ts";
+import { formatWeight, plural, relativeDay } from "../../format.ts";
+import type { ExerciseWithStats } from "../../types.ts";
 import { toast, toastError } from "../gz-toast/gz-toast.ts";
 
 type ExerciseListState = { status: "loading" } | { status: "ready"; items: ExerciseWithStats[] } | { status: "error"; message: string };

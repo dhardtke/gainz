@@ -59,7 +59,7 @@ the field on install: it documents the requirement rather than gating it.
   before the first paint, so it never flashes the wrong theme on load.
 
 Weights are stored as plain numbers and displayed in kilograms; to switch the
-whole UI to pounds, change `UNIT` in `frontend/js/format.ts`.
+whole UI to pounds, change `UNIT` in `frontend/src/format.ts`.
 
 Estimated 1RM uses the Epley formula (`weight × (1 + reps / 30)`), which puts
 sets of different rep counts on one comparable scale.
@@ -104,16 +104,16 @@ backend/
     migrate.test.ts  Unit tests for the migration runner
 frontend/
   index.html   The only page
-  css/
-    app.css      Document-level styles
-    shared.css   Layout utilities adopted by every component
-  components/    One directory per custom element, holding its script and the
-                 stylesheet named after its tag — gz-app/gz-app.ts beside
-                 gz-app/gz-app.css, and the same shape for gz-dashboard,
-                 gz-workout-list, gz-workout-detail, gz-set-row,
-                 gz-exercise-list, gz-exercise-detail, gz-chart, gz-stat-tile,
-                 gz-toast, gz-theme-toggle
-  js/
+  src/
+    css/
+      app.css      Document-level styles
+      shared.css   Layout utilities adopted by every component
+    components/    One directory per custom element, holding its script and the
+                   stylesheet named after its tag — gz-app/gz-app.ts beside
+                   gz-app/gz-app.css, and the same shape for gz-dashboard,
+                   gz-workout-list, gz-workout-detail, gz-set-row,
+                   gz-exercise-list, gz-exercise-detail, gz-chart, gz-stat-tile,
+                   gz-toast, gz-theme-toggle
     base.ts      GzElement: shadow root, escaping `html` tag, event delegation
     styles.ts    Fetches CSS into constructable stylesheets, per component
     theme.ts     Light/dark preference, stored and mirrored onto hosts
@@ -157,9 +157,9 @@ matching the page.
 
 No CSS lives in JavaScript. Each custom element owns a directory holding its
 script and the stylesheet named after its tag — `<gz-chart>` is
-`frontend/components/gz-chart/gz-chart.ts` beside `gz-chart.css` — which
-`js/styles.ts` fetches once into a `CSSStyleSheet` and every instance adopts by
-reference. Adding a component means creating `frontend/components/<tag>/` with
+`frontend/src/components/gz-chart/gz-chart.ts` beside `gz-chart.css` — which
+`src/styles.ts` fetches once into a `CSSStyleSheet` and every instance adopts by
+reference. Adding a component means creating `frontend/src/components/<tag>/` with
 both files and ending the module with `await define("<tag>", TheClass)`; there
 is no manifest to register it in.
 
@@ -211,7 +211,7 @@ Only the five route views in `gz-app`'s `VIEWS` table are loaded dynamically.
 
 ### Theming
 
-`js/theme.ts` holds the preference and mirrors it onto `<html>`; `base.ts`
+`src/theme.ts` holds the preference and mirrors it onto `<html>`; `base.ts`
 mirrors it onto every component host too, because Pico can only reach a shadow
 root through `:host`. There are two states, and one Pico rule covers each:
 

@@ -1,9 +1,9 @@
-import { api, ApiError, errorMessage } from "../../js/api.ts";
-import type { RawHtml } from "../../js/base.ts";
-import { define, GzElement, html } from "../../js/base.ts";
-import { formatDate, formatNumber, formatVolume, plural, relativeDay, UNIT } from "../../js/format.ts";
-import { navigate } from "../../js/router.ts";
-import type { Exercise, LiftSet, WorkoutWithSets } from "../../js/types.ts";
+import { api, ApiError, errorMessage } from "../../api.ts";
+import type { RawHtml } from "../../base.ts";
+import { define, GzElement, html } from "../../base.ts";
+import { formatDate, formatNumber, formatVolume, plural, relativeDay, UNIT } from "../../format.ts";
+import { navigate } from "../../router.ts";
+import type { Exercise, LiftSet, WorkoutWithSets } from "../../types.ts";
 import type { GzSetRow } from "../gz-set-row/gz-set-row.ts";
 import { toast, toastError } from "../gz-toast/gz-toast.ts";
 import "../gz-set-row/gz-set-row.ts";

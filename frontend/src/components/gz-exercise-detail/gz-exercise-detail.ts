@@ -1,8 +1,8 @@
-import { api, ApiError, errorMessage } from "../../js/api.ts";
-import type { RawHtml } from "../../js/base.ts";
-import { define, GzElement, html } from "../../js/base.ts";
-import { formatDate, formatDelta, formatNumber, formatShortDate, formatVolume, plural, relativeDay, UNIT } from "../../js/format.ts";
-import type { ExerciseProgress, SessionPoint } from "../../js/types.ts";
+import { api, ApiError, errorMessage } from "../../api.ts";
+import type { RawHtml } from "../../base.ts";
+import { define, GzElement, html } from "../../base.ts";
+import { formatDate, formatDelta, formatNumber, formatShortDate, formatVolume, plural, relativeDay, UNIT } from "../../format.ts";
+import type { ExerciseProgress, SessionPoint } from "../../types.ts";
 import type { GzChart } from "../gz-chart/gz-chart.ts";
 import { toastError } from "../gz-toast/gz-toast.ts";
 import "../gz-chart/gz-chart.ts";

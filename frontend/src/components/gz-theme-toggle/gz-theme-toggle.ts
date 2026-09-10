@@ -1,6 +1,6 @@
-import type { RawHtml } from "../../js/base.ts";
-import { define, GzElement, html } from "../../js/base.ts";
-import { currentTheme, onThemeChange, setTheme } from "../../js/theme.ts";
+import type { RawHtml } from "../../base.ts";
+import { define, GzElement, html } from "../../base.ts";
+import { currentTheme, onThemeChange, setTheme } from "../../theme.ts";
 
 /** Switch for the colour theme: off is light, on is dark. */
 class GzThemeToggle extends GzElement {

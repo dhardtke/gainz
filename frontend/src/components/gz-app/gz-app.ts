@@ -1,7 +1,7 @@
-import type { RawHtml } from "../../js/base.ts";
-import { define, GzElement, html } from "../../js/base.ts";
-import type { Route, ViewName } from "../../js/router.ts";
-import { currentRoute, isActive, onRouteChange } from "../../js/router.ts";
+import type { RawHtml } from "../../base.ts";
+import { define, GzElement, html } from "../../base.ts";
+import type { Route, ViewName } from "../../router.ts";
+import { currentRoute, isActive, onRouteChange } from "../../router.ts";
 import { toastError } from "../gz-toast/gz-toast.ts";
 import "../gz-theme-toggle/gz-theme-toggle.ts";
 

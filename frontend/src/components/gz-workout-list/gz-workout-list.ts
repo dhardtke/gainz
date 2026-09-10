@@ -1,9 +1,9 @@
-import { api, errorMessage } from "../../js/api.ts";
-import type { RawHtml } from "../../js/base.ts";
-import { define, GzElement, html } from "../../js/base.ts";
-import { formatDate, formatVolume, plural, relativeDay, todayIso } from "../../js/format.ts";
-import { navigate } from "../../js/router.ts";
-import type { WorkoutWithStats } from "../../js/types.ts";
+import { api, errorMessage } from "../../api.ts";
+import type { RawHtml } from "../../base.ts";
+import { define, GzElement, html } from "../../base.ts";
+import { formatDate, formatVolume, plural, relativeDay, todayIso } from "../../format.ts";
+import { navigate } from "../../router.ts";
+import type { WorkoutWithStats } from "../../types.ts";
 import { toast, toastError } from "../gz-toast/gz-toast.ts";
 
 /**
