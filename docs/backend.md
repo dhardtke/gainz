@@ -1,4 +1,4 @@
-### Backend (`backend/src/`)
+# Backend (`backend/src/`)
 
 A strict layering, one concern per file: `db.ts` (connection + PRAGMAs) → `migrations.ts` (schema) →
 `repo/` (**all** SQL, one method per operation, returns typed rows) → `routes.ts` (the registry that

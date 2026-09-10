@@ -1,4 +1,4 @@
-### Styling guidelines
+# Styling guidelines
 
 - Pico CSS provides typography, colours, form controls, tables and both themes. Hand-written CSS
   is a thin layer built from Pico's own `--pico-*` custom properties.
