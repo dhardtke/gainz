@@ -1,40 +1,32 @@
-import { errorMessage } from "../../js/api.js";
-import { define, GzElement, html } from "../../js/base.js";
+import { errorMessage } from "../../js/api.ts";
+import { define, GzElement, html } from "../../js/base.ts";
 
-/** @typedef {"info" | "success" | "error"} ToastKind */
+export type ToastKind = "info" | "success" | "error";
 
-/** @typedef {{ message: string, kind: ToastKind }} ToastDetail */
+export interface ToastDetail {
+  message: string;
+  kind: ToastKind;
+}
 
 const EVENT = "gz-toast";
 let nextId = 0;
 
-/**
- * Shows a transient message. Any module can call this without a DOM reference.
- *
- * @param {string} message
- * @param {ToastKind} [kind]
- */
-export function toast(message, kind = "info") {
+/** Shows a transient message. Any module can call this without a DOM reference. */
+export function toast(message: string, kind: ToastKind = "info"): void {
   window.dispatchEvent(new CustomEvent(EVENT, { detail: { message, kind } }));
 }
 
-/**
- * Reports a failed API call in the user's terms.
- *
- * @param {unknown} error
- */
-export function toastError(error) {
+/** Reports a failed API call in the user's terms. */
+export function toastError(error: unknown): void {
   toast(errorMessage(error), "error");
 }
 
 class GzToast extends GzElement {
-  /** @type {{ id: number, message: string, kind: ToastKind }[]} */
-  #items = [];
+  #items: { id: number; message: string; kind: ToastKind }[] = [];
 
-  /** @type {((event: Event) => void) | null} */
-  #onToast = null;
+  #onToast: ((event: Event) => void) | null = null;
 
-  connectedCallback() {
+  connectedCallback(): void {
     this.#onToast = (event) => {
       if (event instanceof CustomEvent) {
         this.#add(event.detail);
@@ -44,7 +36,7 @@ class GzToast extends GzElement {
     super.connectedCallback();
   }
 
-  disconnectedCallback() {
+  disconnectedCallback(): void {
     super.disconnectedCallback();
     if (this.#onToast) {
       window.removeEventListener(EVENT, this.#onToast);
@@ -52,16 +44,14 @@ class GzToast extends GzElement {
     this.#onToast = null;
   }
 
-  /** @param {ToastDetail} detail */
-  #add({ message, kind }) {
+  #add({ message, kind }: ToastDetail): void {
     const id = ++nextId;
     this.#items = [...this.#items, { id, message, kind }];
     this.render();
     setTimeout(() => this.#dismiss(id), kind === "error" ? 6000 : 3000);
   }
 
-  /** @param {number} id */
-  #dismiss(id) {
+  #dismiss(id: number): void {
     const remaining = this.#items.filter((item) => item.id !== id);
     if (remaining.length === this.#items.length) {
       return;
@@ -70,11 +60,7 @@ class GzToast extends GzElement {
     this.render();
   }
 
-  /**
-   * @param {string} action
-   * @param {HTMLElement} element
-   */
-  handleAction(action, element) {
+  handleAction(action: string, element: HTMLElement): void {
     if (action === "dismiss") {
       this.#dismiss(Number(element.dataset.id));
     }

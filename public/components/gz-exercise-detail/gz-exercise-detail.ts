@@ -1,39 +1,31 @@
-import { api, ApiError, errorMessage } from "../../js/api.js";
-import { define, GzElement, html } from "../../js/base.js";
-import { formatDate, formatDelta, formatNumber, formatShortDate, formatVolume, plural, relativeDay, UNIT } from "../../js/format.js";
-import { toastError } from "../gz-toast/gz-toast.js";
-import "../gz-chart/gz-chart.js";
-import "../gz-stat-tile/gz-stat-tile.js";
-
-/** @import { ExerciseProgress, SessionPoint } from "../../js/types.js" */
-/** @import { GzChart } from "../gz-chart/gz-chart.js" */
+import { api, ApiError, errorMessage } from "../../js/api.ts";
+import { define, GzElement, html } from "../../js/base.ts";
+import { formatDate, formatDelta, formatNumber, formatShortDate, formatVolume, plural, relativeDay, UNIT } from "../../js/format.ts";
+import type { ExerciseProgress, SessionPoint } from "../../js/types.ts";
+import type { GzChart } from "../gz-chart/gz-chart.ts";
+import { toastError } from "../gz-toast/gz-toast.ts";
+import "../gz-chart/gz-chart.ts";
+import "../gz-stat-tile/gz-stat-tile.ts";
 
 /** The `SessionPoint` fields that can be plotted. */
-/** @typedef {"est_one_rep_max" | "top_weight" | "total_volume"} MetricKey */
+type MetricKey = "est_one_rep_max" | "top_weight" | "total_volume";
 
-/**
- * @typedef {object} Metric
- * @property {MetricKey} key
- * @property {string} label
- * @property {string} unit
- * @property {string} hint
- */
+interface Metric {
+  key: MetricKey;
+  label: string;
+  unit: string;
+  hint: string;
+}
 
-/** @typedef {{ status: "ready" } & ExerciseProgress} ReadyState */
+type ReadyState = { status: "ready" } & ExerciseProgress;
 
-/**
- * @typedef {{ status: "loading" }
- *   | ReadyState
- *   | { status: "error", message: string }} ExerciseDetailState
- */
+type ExerciseDetailState = { status: "loading" } | ReadyState | { status: "error"; message: string };
 
 /**
  * Written as a non-empty tuple so `METRICS[0]` is always a metric — it is the
  * default, and the fallback when an unknown one is asked for.
- *
- * @type {[Metric, ...Metric[]]}
  */
-const METRICS = [
+const METRICS: [Metric, ...Metric[]] = [
   {
     key: "est_one_rep_max",
     label: "Estimated 1RM",
@@ -46,39 +38,31 @@ const METRICS = [
 
 /** Progress view for a single exercise. */
 class GzExerciseDetail extends GzElement {
-  /** @type {string | null} */
-  #exerciseId = null;
+  #exerciseId: string | null = null;
 
-  /** @type {ExerciseDetailState} */
-  #state = { status: "loading" };
+  #state: ExerciseDetailState = { status: "loading" };
 
-  /** @type {MetricKey} */
-  #metric = METRICS[0].key;
+  #metric: MetricKey = METRICS[0].key;
 
   static observedAttributes = ["exercise-id"];
 
-  /**
-   * @param {string} _name
-   * @param {string | null} oldValue
-   * @param {string | null} value
-   */
-  attributeChangedCallback(_name, oldValue, value) {
+  attributeChangedCallback(_name: string, oldValue: string | null, value: string | null): void {
     this.#exerciseId = value;
     if (this.isConnected && oldValue !== null && oldValue !== value) {
       void this.#load();
     }
   }
 
-  async connectedCallback() {
+  async connectedCallback(): Promise<void> {
     super.connectedCallback();
     await this.#load();
   }
 
-  async #load() {
+  async #load(): Promise<void> {
     try {
       // gz-app sets the attribute before the element is connected, so
       // attributeChangedCallback has already run by the time this does.
-      const id = /** @type {string} */ (this.#exerciseId);
+      const id = this.#exerciseId as string;
       this.#state = { status: "ready", ...(await api.exercises.progress(id)) };
     } catch (error) {
       this.#state = { status: "error", message: errorMessage(error) };
@@ -89,11 +73,7 @@ class GzExerciseDetail extends GzElement {
     this.render();
   }
 
-  /**
-   * @param {string} action
-   * @param {HTMLElement} element
-   */
-  handleAction(action, element) {
+  handleAction(action: string, element: HTMLElement): void {
     if (action === "metric") {
       const chosen = METRICS.find((candidate) => candidate.key === element.dataset.metric);
       if (!chosen) {
@@ -104,9 +84,8 @@ class GzExerciseDetail extends GzElement {
     }
   }
 
-  afterRender() {
-    /** @type {GzChart | null} */
-    const chart = this.$("gz-chart");
+  afterRender(): void {
+    const chart = this.$<GzChart>("gz-chart");
     if (!chart || this.#state.status !== "ready") {
       return;
     }
@@ -120,8 +99,7 @@ class GzExerciseDetail extends GzElement {
     }));
   }
 
-  /** @param {ReadyState} state */
-  #summaryTiles(state) {
+  #summaryTiles(state: ReadyState) {
     const { sessions, best_set: bestSet } = state;
     const latest = sessions.at(-1);
     const previous = sessions.at(-2);
@@ -151,8 +129,7 @@ class GzExerciseDetail extends GzElement {
     `;
   }
 
-  /** @param {SessionPoint[]} sessions */
-  #sessionsTable(sessions) {
+  #sessionsTable(sessions: SessionPoint[]) {
     return html`
       <article class="stack-sm">
         <h2>Session history</h2>

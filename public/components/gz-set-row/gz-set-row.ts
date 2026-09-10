@@ -1,9 +1,8 @@
-import { api } from "../../js/api.js";
-import { define, GzElement, html } from "../../js/base.js";
-import { formatNumber, formatVolume, UNIT } from "../../js/format.js";
-import { toast, toastError } from "../gz-toast/gz-toast.js";
-
-/** @import { Exercise, LiftSet } from "../../js/types.js" */
+import { api } from "../../js/api.ts";
+import { define, GzElement, html } from "../../js/base.ts";
+import { formatNumber, formatVolume, UNIT } from "../../js/format.ts";
+import type { Exercise, LiftSet } from "../../js/types.ts";
+import { toast, toastError } from "../gz-toast/gz-toast.ts";
 
 /**
  * One logged set. Reads in place, edits in place, and tells its parent to
@@ -12,39 +11,32 @@ import { toast, toastError } from "../gz-toast/gz-toast.js";
 export class GzSetRow extends GzElement {
   #editing = false;
 
-  /** @type {LiftSet | null} */
-  #set = null;
+  #set: LiftSet | null = null;
 
-  /** @type {Exercise[]} */
-  #exercises = [];
+  #exercises: Exercise[] = [];
 
   #index = 0;
 
-  /** @param {LiftSet | undefined} value */
-  set set(value) {
+  set set(value: LiftSet | undefined) {
     this.#set = value ?? null;
     if (this.isConnected) {
       this.render();
     }
   }
 
-  /** @param {Exercise[] | null | undefined} value */
-  set exercises(value) {
+  set exercises(value: Exercise[] | null | undefined) {
     this.#exercises = value ?? [];
   }
 
-  /** @param {number} value */
-  set index(value) {
+  set index(value: number) {
     this.#index = Number(value) || 0;
   }
 
-  /** @param {string} action */
-  async handleAction(action) {
+  async handleAction(action: string): Promise<void> {
     if (action === "edit") {
       this.#editing = true;
       this.render();
-      /** @type {HTMLInputElement | null} */
-      const weight = this.$("[name='weight']");
+      const weight = this.$<HTMLInputElement>("[name='weight']");
       weight?.focus();
       return;
     }
@@ -89,15 +81,11 @@ export class GzSetRow extends GzElement {
     }
   }
 
-  /**
-   * @param {string} action
-   * @param {HTMLFormElement} form
-   */
-  async handleSubmit(action, form) {
+  async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
     if (action !== "save" || !this.#set) {
       return;
     }
-    const values = /** @type {{ exercise_id: string, reps: string, weight: string, notes: string }} */ (this.formData(form));
+    const values = this.formData(form) as { exercise_id: string; reps: string; weight: string; notes: string };
     try {
       await api.sets.update(this.#set.id, {
         exercise_id: Number(values.exercise_id),
@@ -112,8 +100,7 @@ export class GzSetRow extends GzElement {
     }
   }
 
-  /** @param {LiftSet} set */
-  #editTemplate(set) {
+  #editTemplate(set: LiftSet) {
     return html`
       <form class="edit fields" data-action="save">
         <div class="field field-exercise">

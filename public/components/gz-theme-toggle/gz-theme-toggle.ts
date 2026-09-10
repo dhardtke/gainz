@@ -1,25 +1,24 @@
-import { define, GzElement, html } from "../../js/base.js";
-import { currentTheme, onThemeChange, setTheme } from "../../js/theme.js";
+import { define, GzElement, html } from "../../js/base.ts";
+import { currentTheme, onThemeChange, setTheme } from "../../js/theme.ts";
 
 /** Switch for the colour theme: off is light, on is dark. */
 class GzThemeToggle extends GzElement {
-  /** @type {(() => void) | null} */
-  #stopThemeSync = null;
+  #stopThemeSync: (() => void) | null = null;
 
-  connectedCallback() {
+  connectedCallback(): void {
     super.connectedCallback();
     // The base class keeps this element's own colours in step; this keeps the
     // switch position in step, so it agrees with a change made anywhere.
     this.#stopThemeSync = onThemeChange(() => this.#syncSwitch());
   }
 
-  disconnectedCallback() {
+  disconnectedCallback(): void {
     super.disconnectedCallback();
     this.#stopThemeSync?.();
     this.#stopThemeSync = null;
   }
 
-  afterRender() {
+  afterRender(): void {
     this.#syncSwitch();
   }
 
@@ -28,19 +27,14 @@ class GzThemeToggle extends GzElement {
    * survive its own click, or a keyboard toggle would destroy the element the
    * user is standing on and drop focus.
    */
-  #syncSwitch() {
-    /** @type {HTMLInputElement | null} */
-    const input = this.$('input[role="switch"]');
+  #syncSwitch(): void {
+    const input = this.$<HTMLInputElement>('input[role="switch"]');
     if (input) {
       input.checked = currentTheme() === "dark";
     }
   }
 
-  /**
-   * @param {string} action
-   * @param {HTMLElement} element
-   */
-  handleAction(action, element) {
+  handleAction(action: string, element: HTMLElement): void {
     if (action === "toggle-theme" && element instanceof HTMLInputElement) {
       setTheme(element.checked ? "dark" : "light");
     }

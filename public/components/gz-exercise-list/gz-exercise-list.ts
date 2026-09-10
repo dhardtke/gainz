@@ -1,30 +1,23 @@
-import { api, errorMessage } from "../../js/api.js";
-import { define, GzElement, html } from "../../js/base.js";
-import { formatWeight, plural, relativeDay } from "../../js/format.js";
-import { toast, toastError } from "../gz-toast/gz-toast.js";
+import { api, errorMessage } from "../../js/api.ts";
+import { define, GzElement, html } from "../../js/base.ts";
+import { formatWeight, plural, relativeDay } from "../../js/format.ts";
+import type { ExerciseWithStats } from "../../js/types.ts";
+import { toast, toastError } from "../gz-toast/gz-toast.ts";
 
-/** @import { ExerciseWithStats } from "../../js/types.js" */
-
-/**
- * @typedef {{ status: "loading" }
- *   | { status: "ready", items: ExerciseWithStats[] }
- *   | { status: "error", message: string }} ExerciseListState
- */
+type ExerciseListState = { status: "loading" } | { status: "ready"; items: ExerciseWithStats[] } | { status: "error"; message: string };
 
 /** The exercise catalogue — the vocabulary the rest of the log is written in. */
 class GzExerciseList extends GzElement {
-  /** @type {ExerciseListState} */
-  #state = { status: "loading" };
+  #state: ExerciseListState = { status: "loading" };
 
-  /** @type {number | null} */
-  #editingId = null;
+  #editingId: number | null = null;
 
-  async connectedCallback() {
+  async connectedCallback(): Promise<void> {
     super.connectedCallback();
     await this.#load();
   }
 
-  async #load() {
+  async #load(): Promise<void> {
     try {
       this.#state = { status: "ready", items: await api.exercises.list() };
     } catch (error) {
@@ -34,12 +27,8 @@ class GzExerciseList extends GzElement {
     this.render();
   }
 
-  /**
-   * @param {string} action
-   * @param {HTMLFormElement} form
-   */
-  async handleSubmit(action, form) {
-    const values = /** @type {{ name: string, muscle_group: string, notes: string }} */ (this.formData(form));
+  async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
+    const values = this.formData(form) as { name: string; muscle_group: string; notes: string };
 
     if (action === "create") {
       try {
@@ -72,16 +61,11 @@ class GzExerciseList extends GzElement {
     }
   }
 
-  /**
-   * @param {string} action
-   * @param {HTMLElement} element
-   */
-  async handleAction(action, element) {
+  async handleAction(action: string, element: HTMLElement): Promise<void> {
     if (action === "edit") {
       this.#editingId = Number(element.dataset.id);
       this.render();
-      /** @type {HTMLInputElement | null} */
-      const field = this.$(".edit-row input");
+      const field = this.$<HTMLInputElement>(".edit-row input");
       field?.focus();
       return;
     }
@@ -107,8 +91,7 @@ class GzExerciseList extends GzElement {
     }
   }
 
-  /** @param {ExerciseWithStats} exercise */
-  #editRow(exercise) {
+  #editRow(exercise: ExerciseWithStats) {
     return html`
       <tr class="edit-row">
         <td colspan="6">
@@ -133,8 +116,7 @@ class GzExerciseList extends GzElement {
     `;
   }
 
-  /** @param {ExerciseWithStats} exercise */
-  #row(exercise) {
+  #row(exercise: ExerciseWithStats) {
     return html`
       <tr>
         <td class="name">

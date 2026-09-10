@@ -1,41 +1,28 @@
-import { loadStyles, stylesFor } from "./styles.js";
-import { applyThemeTo, onThemeChange } from "./theme.js";
+import { loadStyles, stylesFor } from "./styles.ts";
+import { applyThemeTo, onThemeChange } from "./theme.ts";
 
 /** Marks a string as already-safe HTML so `html` will not escape it again. */
 class RawHtml {
-  /** @param {string} value */
-  constructor(value) {
+  value: string;
+
+  constructor(value: string) {
     this.value = value;
   }
-  toString() {
+  toString(): string {
     return this.value;
   }
 }
 
-/**
- * Wraps pre-rendered markup (usually the output of another `html` call).
- *
- * @param {unknown} value
- * @returns {RawHtml}
- */
-export const raw = (value) => new RawHtml(String(value));
+/** Wraps pre-rendered markup (usually the output of another `html` call). */
+export const raw = (value: unknown): RawHtml => new RawHtml(String(value));
 
-/** @type {Record<string, string>} */
-const ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+const ESCAPES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
 
-/**
- * @param {unknown} value
- * @returns {string}
- */
-export function escapeHtml(value) {
+export function escapeHtml(value: unknown): string {
   return String(value).replace(/[&<>"']/g, (char) => ESCAPES[char] ?? char);
 }
 
-/**
- * @param {unknown} value
- * @returns {string}
- */
-function interpolate(value) {
+function interpolate(value: unknown): string {
   if (value === null || value === undefined || value === false) {
     return "";
   }
@@ -51,12 +38,8 @@ function interpolate(value) {
 /**
  * Tagged template that escapes every interpolated value. Anything a user typed
  * — an exercise name, a set note — is therefore safe to drop straight in.
- *
- * @param {TemplateStringsArray} strings
- * @param {...unknown} values
- * @returns {RawHtml}
  */
-export function html(strings, ...values) {
+export function html(strings: TemplateStringsArray, ...values: unknown[]): RawHtml {
   let out = strings[0] ?? "";
   for (let i = 0; i < values.length; i++) {
     out += interpolate(values[i]) + (strings[i + 1] ?? "");
@@ -74,16 +57,13 @@ export function html(strings, ...values) {
  * component never carries CSS in JavaScript.
  */
 export class GzElement extends HTMLElement {
-  /** @type {(() => void) | null} */
-  #stopThemeSync = null;
+  #stopThemeSync: (() => void) | null = null;
 
   /**
    * The shadow root, kept here rather than read back from `this.shadowRoot`,
    * which the DOM types leave nullable for the life of the element.
-   *
-   * @type {ShadowRoot}
    */
-  #root;
+  #root: ShadowRoot;
 
   constructor() {
     super();
@@ -108,11 +88,11 @@ export class GzElement extends HTMLElement {
   }
 
   /** The component's shadow root. Non-null from the constructor onward. */
-  get root() {
+  get root(): ShadowRoot {
     return this.#root;
   }
 
-  connectedCallback() {
+  connectedCallback(): void {
     // Pico only themes a shadow root through :host, so the chosen theme has to
     // be mirrored onto each host rather than set once on <html>.
     applyThemeTo(this);
@@ -121,17 +101,17 @@ export class GzElement extends HTMLElement {
   }
 
   /** Subclasses that override this must call super, or the theme sync leaks. */
-  disconnectedCallback() {
+  disconnectedCallback(): void {
     this.#stopThemeSync?.();
     this.#stopThemeSync = null;
   }
 
   /** Subclasses return the shadow markup for the current state. */
-  template() {
+  template(): RawHtml {
     return raw("");
   }
 
-  render() {
+  render(): void {
     this.#root.innerHTML = String(this.template());
     this.afterRender();
   }
@@ -141,54 +121,31 @@ export class GzElement extends HTMLElement {
    * child component its data, or putting focus somewhere. A no-op here, like
    * the two handlers below — the base class calls them, subclasses fill them in.
    */
-  afterRender() {}
+  afterRender(): void {}
 
   /**
    * Handles a click on an element carrying `data-action`.
    *
-   * @param {string} _action
-   * @param {HTMLElement} _element the element the attribute sits on.
-   * @param {Event} _event
-   * @returns {void | Promise<void>}
+   * @param _element the element the attribute sits on.
    */
-  handleAction(_action, _element, _event) {}
+  handleAction(_action: string, _element: HTMLElement, _event: Event): void | Promise<void> {}
 
   /**
    * Handles a submit of a form carrying `data-action`. The default has already
    * been prevented by the time this runs.
-   *
-   * @param {string} _action
-   * @param {HTMLFormElement} _form
-   * @param {Event} _event
-   * @returns {void | Promise<void>}
    */
-  handleSubmit(_action, _form, _event) {}
+  handleSubmit(_action: string, _form: HTMLFormElement, _event: Event): void | Promise<void> {}
 
-  /**
-   * @template {Element} [T=Element]
-   * @param {string} selector
-   * @returns {T | null}
-   */
-  $(selector) {
-    return this.#root.querySelector(selector);
+  $<T extends Element = Element>(selector: string): T | null {
+    return this.#root.querySelector<T>(selector);
   }
 
-  /**
-   * @template {Element} [T=Element]
-   * @param {string} selector
-   * @returns {T[]}
-   */
-  $$(selector) {
-    return Array.from(this.#root.querySelectorAll(selector));
+  $$<T extends Element = Element>(selector: string): T[] {
+    return Array.from(this.#root.querySelectorAll<T>(selector));
   }
 
-  /**
-   * Dispatches a composed custom event so ancestors outside the shadow see it.
-   *
-   * @param {string} name
-   * @param {unknown} [detail]
-   */
-  emit(name, detail) {
+  /** Dispatches a composed custom event so ancestors outside the shadow see it. */
+  emit(name: string, detail?: unknown): void {
     this.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
   }
 
@@ -196,13 +153,9 @@ export class GzElement extends HTMLElement {
    * Reads a form's fields as a plain object, trimming text values. Only text
    * fields are kept — the app has no file inputs, and a caller that asked for
    * one would want to reach for `FormData` directly anyway.
-   *
-   * @param {HTMLFormElement} form
-   * @returns {Record<string, string>}
    */
-  formData(form) {
-    /** @type {Record<string, string>} */
-    const values = {};
+  formData(form: HTMLFormElement): Record<string, string> {
+    const values: Record<string, string> = {};
     for (const [key, value] of new FormData(form).entries()) {
       if (typeof value === "string") {
         values[key] = value.trim();
@@ -221,12 +174,8 @@ export class GzElement extends HTMLElement {
  * route can be fetched on demand and still be styled on its first paint.
  * Registering only after the sheet is cached is also what lets `stylesFor` stay
  * synchronous, as the constructor needs it to be.
- *
- * @param {string} name
- * @param {CustomElementConstructor} ctor
- * @returns {Promise<void>}
  */
-export async function define(name, ctor) {
+export async function define(name: string, ctor: CustomElementConstructor): Promise<void> {
   if (customElements.get(name)) {
     return;
   }

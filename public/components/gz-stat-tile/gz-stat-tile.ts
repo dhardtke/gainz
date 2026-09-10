@@ -1,10 +1,10 @@
-import { define, GzElement, html } from "../../js/base.js";
+import { define, GzElement, html } from "../../js/base.ts";
 
 /** A single headline number with a label and optional sub-line. */
 class GzStatTile extends GzElement {
   static observedAttributes = ["label", "value", "hint"];
 
-  attributeChangedCallback() {
+  attributeChangedCallback(): void {
     if (this.isConnected) {
       this.render();
     }
