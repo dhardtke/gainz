@@ -2,29 +2,29 @@
  * Display helpers. Weights are stored as plain numbers, so switching the whole
  * app to pounds is a matter of changing UNIT here.
  */
-export const UNIT = "kg";
+export const UNIT = 'kg';
 
 const DATE_FORMAT = new Intl.DateTimeFormat(undefined, {
-  weekday: "short",
-  day: "numeric",
-  month: "short",
-  year: "numeric",
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
 });
 
-const SHORT_DATE_FORMAT = new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short" });
+const SHORT_DATE_FORMAT = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' });
 
 /** Drops trailing zeros: 62.50 -> "62.5", 60.00 -> "60". */
 export function formatNumber(value: number | null | undefined, maxDecimals = 2): string {
   const num = Number(value);
   if (!Number.isFinite(num)) {
-    return "–";
+    return '–';
   }
   return num.toLocaleString(undefined, { maximumFractionDigits: maxDecimals });
 }
 
 export function formatWeight(value: number | null | undefined): string {
   if (value === null || value === undefined) {
-    return "–";
+    return '–';
   }
   if (value === 0) {
     return `bodyweight`;
@@ -44,7 +44,7 @@ export function formatVolume(value: number | null | undefined): string {
 /** @param iso a `YYYY-MM-DD` date. */
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) {
-    return "–";
+    return '–';
   }
   const date = new Date(`${iso}T00:00:00`);
   return Number.isNaN(date.getTime()) ? iso : DATE_FORMAT.format(date);
@@ -53,7 +53,7 @@ export function formatDate(iso: string | null | undefined): string {
 /** @param iso a `YYYY-MM-DD` date. */
 export function formatShortDate(iso: string | null | undefined): string {
   if (!iso) {
-    return "–";
+    return '–';
   }
   const date = new Date(`${iso}T00:00:00`);
   return Number.isNaN(date.getTime()) ? iso : SHORT_DATE_FORMAT.format(date);
@@ -67,32 +67,32 @@ export function formatShortDate(iso: string | null | undefined): string {
  */
 export function relativeDay(iso: string | null | undefined): string {
   if (!iso) {
-    return "";
+    return '';
   }
   const then = new Date(`${iso}T00:00:00`);
   if (Number.isNaN(then.getTime())) {
-    return "";
+    return '';
   }
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const days = Math.round((today.getTime() - then.getTime()) / 86400000);
 
   if (days === 0) {
-    return "today";
+    return 'today';
   }
   if (days === 1) {
-    return "yesterday";
+    return 'yesterday';
   }
   if (days < 0) {
-    return `in ${plural(-days, "day")}`;
+    return `in ${plural(-days, 'day')}`;
   }
   if (days < 30) {
-    return `${plural(days, "day")} ago`;
+    return `${plural(days, 'day')} ago`;
   }
   if (days < 365) {
-    return `${plural(Math.round(days / 30), "month")} ago`;
+    return `${plural(Math.round(days / 30), 'month')} ago`;
   }
-  return `${plural(Math.round(days / 365), "year")} ago`;
+  return `${plural(Math.round(days / 365), 'year')} ago`;
 }
 
 /** @param pluralForm defaults to the singular plus an "s". */
@@ -114,11 +114,11 @@ export function todayIso(): string {
  */
 export function formatDelta(current: number, previous: number | null | undefined): string {
   if (previous === null || previous === undefined) {
-    return "";
+    return '';
   }
   const diff = current - previous;
   if (Math.abs(diff) < 0.01) {
-    return "±0";
+    return '±0';
   }
-  return `${diff > 0 ? "+" : "−"}${formatNumber(Math.abs(diff))}`;
+  return `${diff > 0 ? '+' : '−'}${formatNumber(Math.abs(diff))}`;
 }

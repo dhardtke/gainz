@@ -1,15 +1,15 @@
-import { api, errorMessage } from "../../api.ts";
-import type { RawHtml } from "../../base.ts";
-import { define, GzElement, html } from "../../base.ts";
-import { formatWeight, plural, relativeDay } from "../../format.ts";
-import type { ExerciseWithStats } from "../../types.ts";
-import { toast, toastError } from "../gz-toast/gz-toast.ts";
+import { api, errorMessage } from '../../api.ts';
+import type { RawHtml } from '../../base.ts';
+import { define, GzElement, html } from '../../base.ts';
+import { formatWeight, plural, relativeDay } from '../../format.ts';
+import type { ExerciseWithStats } from '../../types.ts';
+import { toast, toastError } from '../gz-toast/gz-toast.ts';
 
-type ExerciseListState = { status: "loading" } | { status: "ready"; items: ExerciseWithStats[] } | { status: "error"; message: string };
+type ExerciseListState = { status: 'loading' } | { status: 'ready'; items: ExerciseWithStats[] } | { status: 'error'; message: string };
 
 /** The exercise catalogue — the vocabulary the rest of the log is written in. */
 class GzExerciseList extends GzElement {
-  #state: ExerciseListState = { status: "loading" };
+  #state: ExerciseListState = { status: 'loading' };
 
   #editingId: number | null = null;
 
@@ -20,9 +20,9 @@ class GzExerciseList extends GzElement {
 
   async #load(): Promise<void> {
     try {
-      this.#state = { status: "ready", items: await api.exercises.list() };
+      this.#state = { status: 'ready', items: await api.exercises.list() };
     } catch (error) {
-      this.#state = { status: "error", message: errorMessage(error) };
+      this.#state = { status: 'error', message: errorMessage(error) };
       toastError(error);
     }
     this.render();
@@ -32,16 +32,16 @@ class GzExerciseList extends GzElement {
     const values = this.formData(form);
     // The name input is `required`, so an empty one only reaches here if the
     // browser's own validation was bypassed; the API rejects it either way.
-    const name = values.name ?? "";
+    const name = values.name ?? '';
 
-    if (action === "create") {
+    if (action === 'create') {
       try {
         await api.exercises.create({
           name,
           muscle_group: values.muscle_group,
           notes: values.notes,
         });
-        toast(`Added ${name}`, "success");
+        toast(`Added ${name}`, 'success');
         form.reset();
         await this.#load();
       } catch (error) {
@@ -50,7 +50,7 @@ class GzExerciseList extends GzElement {
       return;
     }
 
-    if (action === "save") {
+    if (action === 'save') {
       try {
         await api.exercises.update(Number(form.dataset.id), {
           name,
@@ -66,28 +66,28 @@ class GzExerciseList extends GzElement {
   }
 
   async handleAction(action: string, element: HTMLElement): Promise<void> {
-    if (action === "edit") {
+    if (action === 'edit') {
       this.#editingId = Number(element.dataset.id);
       this.render();
-      const field = this.$<HTMLInputElement>(".edit-row input");
+      const field = this.$<HTMLInputElement>('.edit-row input');
       field?.focus();
       return;
     }
 
-    if (action === "cancel") {
+    if (action === 'cancel') {
       this.#editingId = null;
       this.render();
       return;
     }
 
-    if (action === "delete") {
+    if (action === 'delete') {
       const name = element.dataset.name;
       if (!confirm(`Delete "${name}"? Only possible while no set uses it.`)) {
         return;
       }
       try {
         await api.exercises.remove(Number(element.dataset.id));
-        toast(`Deleted ${name}`, "success");
+        toast(`Deleted ${name}`, 'success');
         await this.#load();
       } catch (error) {
         toastError(error);
@@ -106,11 +106,11 @@ class GzExerciseList extends GzElement {
             </div>
             <div class="field">
               <label>Muscle group</label>
-              <input name="muscle_group" type="text" maxlength="60" value="${exercise.muscle_group ?? ""}" />
+              <input name="muscle_group" type="text" maxlength="60" value="${exercise.muscle_group ?? ''}" />
             </div>
             <div class="field">
               <label>Notes</label>
-              <input name="notes" type="text" maxlength="2000" value="${exercise.notes ?? ""}" />
+              <input name="notes" type="text" maxlength="2000" value="${exercise.notes ?? ''}" />
             </div>
             <button type="submit">Save</button>
             <button class="secondary outline" type="button" data-action="cancel">Cancel</button>
@@ -125,11 +125,11 @@ class GzExerciseList extends GzElement {
       <tr>
         <td class="name">
           <a href="#/exercises/${exercise.id}">${exercise.name}</a>
-          ${exercise.notes ? html`<div class="muted">${exercise.notes}</div>` : ""}
+          ${exercise.notes ? html`<div class="muted">${exercise.notes}</div>` : ''}
         </td>
         <td>${exercise.muscle_group ?? html`<span class="muted">–</span>`}</td>
         <td class="num">${exercise.set_count}</td>
-        <td class="num">${exercise.best_weight === null ? "–" : formatWeight(exercise.best_weight)}</td>
+        <td class="num">${exercise.best_weight === null ? '–' : formatWeight(exercise.best_weight)}</td>
         <td class="nowrap">${exercise.last_performed_on ? relativeDay(exercise.last_performed_on) : html`<span class="muted">never</span>`}</td>
         <td class="actions">
           <button class="secondary outline compact" data-action="edit" data-id="${exercise.id}">Edit</button>
@@ -140,10 +140,10 @@ class GzExerciseList extends GzElement {
   }
 
   template(): RawHtml {
-    if (this.#state.status === "loading") {
+    if (this.#state.status === 'loading') {
       return html`<p aria-busy="true">Loading exercises…</p>`;
     }
-    if (this.#state.status === "error") {
+    if (this.#state.status === 'error') {
       return html`<p class="error-text">${this.#state.message}</p>`;
     }
 
@@ -153,7 +153,7 @@ class GzExerciseList extends GzElement {
       <div class="stack">
         <div class="row-between">
           <h1>Exercises</h1>
-          <span class="badge">${plural(items.length, "exercise")}</span>
+          <span class="badge">${plural(items.length, 'exercise')}</span>
         </div>
 
         <article class="stack-sm">
@@ -207,4 +207,4 @@ class GzExerciseList extends GzElement {
   }
 }
 
-await define("gz-exercise-list", GzExerciseList);
+await define('gz-exercise-list', GzExerciseList);

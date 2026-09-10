@@ -1,7 +1,7 @@
 /** Thin client for the gainz REST API. No dependencies, just fetch. */
 
-import type { Exercise, ExerciseInput, ExerciseProgress, ExerciseWithStats } from "./types.ts";
-import type { LiftSet, SetInput, Summary, Workout, WorkoutInput, WorkoutPage, WorkoutWithSets } from "./types.ts";
+import type { Exercise, ExerciseInput, ExerciseProgress, ExerciseWithStats } from './types.ts';
+import type { LiftSet, SetInput, Summary, Workout, WorkoutInput, WorkoutPage, WorkoutWithSets } from './types.ts';
 
 export class ApiError extends Error {
   /** The HTTP status, or 0 when the request never left. */
@@ -11,7 +11,7 @@ export class ApiError extends Error {
 
   constructor(message: string, status: number, details: unknown) {
     super(message);
-    this.name = "ApiError";
+    this.name = 'ApiError';
     this.status = status;
     this.details = details;
   }
@@ -39,23 +39,23 @@ export function errorMessage(error: unknown): string {
  * @returns the parsed body, or `null` when there is no body — a 204, say.
  * @throws {ApiError} on a transport failure or a non-2xx response.
  */
-async function request<T>(method: "GET" | "POST" | "PATCH" | "DELETE", path: string, body?: unknown): Promise<T> {
+async function request<T>(method: 'GET' | 'POST' | 'PATCH' | 'DELETE', path: string, body?: unknown): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`/api${path}`, {
       method,
-      headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
       // oxlint-disable-next-line unicorn/no-invalid-fetch-options
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch (cause) {
-    throw new ApiError("Could not reach the gainz server", 0, cause);
+    throw new ApiError('Could not reach the gainz server', 0, cause);
   }
 
   const text = await response.text();
   let data: unknown = null;
   try {
-    data = text === "" ? null : JSON.parse(text);
+    data = text === '' ? null : JSON.parse(text);
   } catch {
     data = null;
   }
@@ -63,9 +63,9 @@ async function request<T>(method: "GET" | "POST" | "PATCH" | "DELETE", path: str
   if (!response.ok) {
     // Narrowed rather than reached into: an error body is whatever the server
     // felt like sending, including nothing at all.
-    const errorBody = typeof data === "object" && data !== null ? data : {};
-    const message = "error" in errorBody && typeof errorBody.error === "string" ? errorBody.error : `Request failed (${response.status})`;
-    throw new ApiError(message, response.status, "details" in errorBody ? errorBody.details : undefined);
+    const errorBody = typeof data === 'object' && data !== null ? data : {};
+    const message = 'error' in errorBody && typeof errorBody.error === 'string' ? errorBody.error : `Request failed (${response.status})`;
+    throw new ApiError(message, response.status, 'details' in errorBody ? errorBody.details : undefined);
   }
 
   // The methods on `api` below declare what each endpoint returns. This is the
@@ -75,25 +75,25 @@ async function request<T>(method: "GET" | "POST" | "PATCH" | "DELETE", path: str
   return data as T;
 }
 
-const get = <T>(path: string): Promise<T> => request<T>("GET", path);
+const get = <T>(path: string): Promise<T> => request<T>('GET', path);
 
-const post = <T>(path: string, body?: unknown): Promise<T> => request<T>("POST", path, body ?? {});
+const post = <T>(path: string, body?: unknown): Promise<T> => request<T>('POST', path, body ?? {});
 
-const patch = <T>(path: string, body?: unknown): Promise<T> => request<T>("PATCH", path, body ?? {});
+const patch = <T>(path: string, body?: unknown): Promise<T> => request<T>('PATCH', path, body ?? {});
 
-const remove = (path: string): Promise<null> => request<null>("DELETE", path);
+const remove = (path: string): Promise<null> => request<null>('DELETE', path);
 
 export const api = {
-  summary: (): Promise<Summary> => get("/stats/summary"),
+  summary: (): Promise<Summary> => get('/stats/summary'),
 
   exercises: {
-    list: (): Promise<ExerciseWithStats[]> => get("/exercises"),
+    list: (): Promise<ExerciseWithStats[]> => get('/exercises'),
 
     get: (id: number | string): Promise<Exercise> => get(`/exercises/${id}`),
 
     progress: (id: number | string): Promise<ExerciseProgress> => get(`/exercises/${id}/progress`),
 
-    create: (input: ExerciseInput): Promise<Exercise> => post("/exercises", input),
+    create: (input: ExerciseInput): Promise<Exercise> => post('/exercises', input),
 
     update: (id: number | string, patchBody: Partial<ExerciseInput>): Promise<Exercise> => patch(`/exercises/${id}`, patchBody),
 
@@ -105,7 +105,7 @@ export const api = {
 
     get: (id: number | string): Promise<WorkoutWithSets> => get(`/workouts/${id}`),
 
-    create: (input: WorkoutInput): Promise<WorkoutWithSets> => post("/workouts", input),
+    create: (input: WorkoutInput): Promise<WorkoutWithSets> => post('/workouts', input),
 
     /** Updates the header only — the response carries no `sets`. */
     update: (id: number | string, patchBody: Partial<WorkoutInput>): Promise<Workout> => patch(`/workouts/${id}`, patchBody),

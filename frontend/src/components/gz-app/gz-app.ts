@@ -1,14 +1,14 @@
-import type { RawHtml } from "../../base.ts";
-import { define, GzElement, html } from "../../base.ts";
-import type { Route, ViewName } from "../../router.ts";
-import { currentRoute, isActive, onRouteChange } from "../../router.ts";
-import { toastError } from "../gz-toast/gz-toast.ts";
-import "../gz-theme-toggle/gz-theme-toggle.ts";
+import type { RawHtml } from '../../base.ts';
+import { define, GzElement, html } from '../../base.ts';
+import type { Route, ViewName } from '../../router.ts';
+import { currentRoute, isActive, onRouteChange } from '../../router.ts';
+import { toastError } from '../gz-toast/gz-toast.ts';
+import '../gz-theme-toggle/gz-theme-toggle.ts';
 
 const NAV = [
-  { path: "/", label: "Dashboard" },
-  { path: "/workouts", label: "Workouts" },
-  { path: "/exercises", label: "Exercises" },
+  { path: '/', label: 'Dashboard' },
+  { path: '/workouts', label: 'Workouts' },
+  { path: '/exercises', label: 'Exercises' },
 ];
 
 /**
@@ -22,11 +22,11 @@ const NAV = [
  * screen.
  */
 const VIEWS: Record<ViewName, () => Promise<unknown>> = {
-  dashboard: () => import("../gz-dashboard/gz-dashboard.ts"),
-  workouts: () => import("../gz-workout-list/gz-workout-list.ts"),
-  workout: () => import("../gz-workout-detail/gz-workout-detail.ts"),
-  exercises: () => import("../gz-exercise-list/gz-exercise-list.ts"),
-  exercise: () => import("../gz-exercise-detail/gz-exercise-detail.ts"),
+  dashboard: () => import('../gz-dashboard/gz-dashboard.ts'),
+  workouts: () => import('../gz-workout-list/gz-workout-list.ts'),
+  workout: () => import('../gz-workout-detail/gz-workout-detail.ts'),
+  exercises: () => import('../gz-exercise-list/gz-exercise-list.ts'),
+  exercise: () => import('../gz-exercise-detail/gz-exercise-detail.ts'),
 };
 
 /**
@@ -57,37 +57,37 @@ class GzApp extends GzElement {
 
   /** Builds the element for a route, fetching its module first if need be. */
   async #viewElement(route: Route): Promise<Element> {
-    if (route.name !== "notfound") {
+    if (route.name !== 'notfound') {
       await VIEWS[route.name]();
     }
 
     switch (route.name) {
-      case "dashboard":
-        return document.createElement("gz-dashboard");
+      case 'dashboard':
+        return document.createElement('gz-dashboard');
 
-      case "workouts":
-        return document.createElement("gz-workout-list");
+      case 'workouts':
+        return document.createElement('gz-workout-list');
 
-      case "workout": {
-        const view = document.createElement("gz-workout-detail");
-        view.setAttribute("workout-id", route.params.id ?? "");
+      case 'workout': {
+        const view = document.createElement('gz-workout-detail');
+        view.setAttribute('workout-id', route.params.id ?? '');
         return view;
       }
 
-      case "exercises":
-        return document.createElement("gz-exercise-list");
+      case 'exercises':
+        return document.createElement('gz-exercise-list');
 
-      case "exercise": {
-        const view = document.createElement("gz-exercise-detail");
-        view.setAttribute("exercise-id", route.params.id ?? "");
+      case 'exercise': {
+        const view = document.createElement('gz-exercise-detail');
+        view.setAttribute('exercise-id', route.params.id ?? '');
         return view;
       }
 
       // Listed rather than left to a default, so adding a route to the union is
       // a compile error here until this method knows how to build its view.
-      case "notfound": {
-        const view = document.createElement("p");
-        view.className = "empty";
+      case 'notfound': {
+        const view = document.createElement('p');
+        view.className = 'empty';
         view.textContent = `Nothing lives at ${route.path}.`;
         return view;
       }
@@ -96,7 +96,7 @@ class GzApp extends GzElement {
     // Unreachable: every ViewName is handled above, which is the point of
     // listing them. Spelled out because flow analysis stops at the switch and
     // asks what happens if none of the cases matched.
-    throw new Error("Unhandled route");
+    throw new Error('Unhandled route');
   }
 
   /**
@@ -117,17 +117,17 @@ class GzApp extends GzElement {
 
     // aria-current marks the active page for assistive tech, and gz-app.css
     // keys the solid button off it — one attribute does both jobs.
-    const links = this.$$<HTMLAnchorElement>("nav a[data-path]");
+    const links = this.$$<HTMLAnchorElement>('nav a[data-path]');
     for (const link of links) {
-      const active = isActive(link.dataset.path ?? "");
-      link.classList.toggle("outline", !active);
+      const active = isActive(link.dataset.path ?? '');
+      link.classList.toggle('outline', !active);
       if (active) {
-        link.setAttribute("aria-current", "page");
+        link.setAttribute('aria-current', 'page');
       } else {
-        link.removeAttribute("aria-current");
+        link.removeAttribute('aria-current');
       }
     }
-    window.scrollTo({ top: 0, behavior: "instant" });
+    window.scrollTo({ top: 0, behavior: 'instant' });
 
     void this.#swapView(route, token);
   }
@@ -150,7 +150,7 @@ class GzApp extends GzElement {
     }
 
     // Re-queried after the await: replaceChildren on a stale node is silent.
-    const main = this.$("main");
+    const main = this.$('main');
     if (main?.isConnected === true) {
       main.replaceChildren(view);
     }
@@ -187,4 +187,4 @@ class GzApp extends GzElement {
   }
 }
 
-await define("gz-app", GzApp);
+await define('gz-app', GzApp);

@@ -1,4 +1,4 @@
-import { basename } from "node:path";
+import { basename } from 'node:path';
 
 /**
  * Serves the TypeScript frontend as the JavaScript a browser can run.
@@ -12,7 +12,7 @@ import { basename } from "node:path";
  * Types are erased, not checked. `bun run typecheck` is the gate; a type error
  * transpiles happily and ships.
  */
-const transpiler = new Bun.Transpiler({ loader: "ts", target: "browser" });
+const transpiler = new Bun.Transpiler({ loader: 'ts', target: 'browser' });
 
 /**
  * Transpiles one module. `path` has already been resolved inside `frontend/` by
@@ -32,6 +32,6 @@ export async function transpileModule(path: string): Promise<Response> {
   }
 
   return new Response(code, {
-    headers: { "Content-Type": "text/javascript;charset=utf-8", "Cache-Control": "no-cache" },
+    headers: { 'Content-Type': 'text/javascript;charset=utf-8', 'Cache-Control': 'no-cache' },
   });
 }

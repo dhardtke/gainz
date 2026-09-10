@@ -1,4 +1,4 @@
-import type { DB } from "../db";
+import type { DB } from '../db';
 
 /** The whole-log totals half of a summary. */
 interface SummaryTotals {
@@ -46,7 +46,7 @@ export class StatsRepo {
     // Both queries aggregate, so SQLite always answers with a row. Spreading a
     // null would quietly hand the endpoint an empty object, so refuse instead.
     if (totals === null || recent === null) {
-      throw new Error("Summary query returned no row");
+      throw new Error('Summary query returned no row');
     }
     return { ...totals, ...recent };
   }

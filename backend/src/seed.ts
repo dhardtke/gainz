@@ -3,42 +3,42 @@
  * progress views have something to draw. Safe to run repeatedly: it does
  * nothing if the database already holds workouts.
  */
-import { DEFAULT_DB_PATH, openDatabase } from "./db";
-import { Repo } from "./repo";
+import { DEFAULT_DB_PATH, openDatabase } from './db';
+import { Repo } from './repo';
 
 const EXERCISES = [
-  { name: "Back Squat", muscle_group: "Legs", notes: "Low bar, belt above 100 kg." },
-  { name: "Bench Press", muscle_group: "Chest", notes: null },
-  { name: "Deadlift", muscle_group: "Back", notes: "Conventional stance." },
-  { name: "Overhead Press", muscle_group: "Shoulders", notes: null },
-  { name: "Barbell Row", muscle_group: "Back", notes: null },
-  { name: "Pull-up", muscle_group: "Back", notes: "Bodyweight plus belt." },
+  { name: 'Back Squat', muscle_group: 'Legs', notes: 'Low bar, belt above 100 kg.' },
+  { name: 'Bench Press', muscle_group: 'Chest', notes: null },
+  { name: 'Deadlift', muscle_group: 'Back', notes: 'Conventional stance.' },
+  { name: 'Overhead Press', muscle_group: 'Shoulders', notes: null },
+  { name: 'Barbell Row', muscle_group: 'Back', notes: null },
+  { name: 'Pull-up', muscle_group: 'Back', notes: 'Bodyweight plus belt.' },
 ];
 
 /** Day templates: exercise name, starting weight, weekly increment, reps. */
 const TEMPLATES = [
   {
-    title: "Push day",
+    title: 'Push day',
     lifts: [
-      { name: "Bench Press", start: 60, step: 2.5, reps: [8, 8, 6] },
-      { name: "Overhead Press", start: 35, step: 1.25, reps: [10, 8, 8] },
+      { name: 'Bench Press', start: 60, step: 2.5, reps: [8, 8, 6] },
+      { name: 'Overhead Press', start: 35, step: 1.25, reps: [10, 8, 8] },
     ],
   },
   {
-    title: "Pull day",
+    title: 'Pull day',
     lifts: [
-      { name: "Deadlift", start: 100, step: 5, reps: [5, 5, 5] },
-      { name: "Barbell Row", start: 50, step: 2.5, reps: [10, 10, 8] },
-      { name: "Pull-up", start: 0, step: 2.5, reps: [8, 6, 5] },
+      { name: 'Deadlift', start: 100, step: 5, reps: [5, 5, 5] },
+      { name: 'Barbell Row', start: 50, step: 2.5, reps: [10, 10, 8] },
+      { name: 'Pull-up', start: 0, step: 2.5, reps: [8, 6, 5] },
     ],
   },
   {
-    title: "Leg day",
-    lifts: [{ name: "Back Squat", start: 80, step: 5, reps: [8, 6, 6, 5] }],
+    title: 'Leg day',
+    lifts: [{ name: 'Back Squat', start: 80, step: 5, reps: [8, 6, 6, 5] }],
   },
 ];
 
-const SET_NOTES = [null, null, null, "Felt strong.", "Last rep grindy.", "Left shoulder tight."];
+const SET_NOTES = [null, null, null, 'Felt strong.', 'Last rep grindy.', 'Left shoulder tight.'];
 
 function isoDaysAgo(days: number): string {
   const date = new Date();
@@ -51,7 +51,7 @@ function main(): void {
   const repo = new Repo(db);
 
   if (repo.countWorkouts() > 0) {
-    console.log("Database already contains workouts — nothing seeded.");
+    console.log('Database already contains workouts — nothing seeded.');
     db.close();
     return;
   }
@@ -78,7 +78,7 @@ function main(): void {
         const workout = repo.createWorkout({
           performed_on: isoDaysAgo(daysAgo),
           title: template.title,
-          notes: week === weeks - 1 ? "First session of the block." : null,
+          notes: week === weeks - 1 ? 'First session of the block.' : null,
         });
 
         for (const lift of template.lifts) {

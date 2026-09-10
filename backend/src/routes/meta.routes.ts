@@ -1,12 +1,12 @@
-import { errorResponse, json, notFound } from "../http";
-import type { RouteTable } from "./shared";
-import { guard, guardAll } from "./shared";
+import { errorResponse, json, notFound } from '../http';
+import type { RouteTable } from './shared';
+import { guard, guardAll } from './shared';
 
 /** Routes that belong to no entity: the health probe. */
 export function metaRoutes(): RouteTable {
   return {
-    "/api/health": guardAll({
-      GET: () => json({ status: "ok", app: "gainz" }),
+    '/api/health': guardAll({
+      GET: () => json({ status: 'ok', app: 'gainz' }),
     }),
   };
 }
@@ -14,6 +14,6 @@ export function metaRoutes(): RouteTable {
 /** The /api catch-all. Spread last, so every named pattern wins over it. */
 export function notFoundRoute(): RouteTable {
   return {
-    "/api/*": guard(() => errorResponse(notFound("Endpoint"))),
+    '/api/*': guard(() => errorResponse(notFound('Endpoint'))),
   };
 }

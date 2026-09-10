@@ -3,11 +3,11 @@
  * rest of the app keeps a single, flat surface (`repo.listSets(id)`) while the SQL lives in the
  * module it belongs to. All SQL in this project lives under `backend/src/repo/` and nowhere else.
  */
-import type { DB } from "../db";
-import { type Exercise, ExerciseRepo, type ExerciseInput, type ExerciseWithStats, type SessionPoint } from "./exercises";
-import { type LiftSet, SetRepo, type SetInput } from "./sets";
-import { StatsRepo, type Summary } from "./stats";
-import { type Workout, WorkoutRepo, type WorkoutInput, type WorkoutWithStats } from "./workouts";
+import type { DB } from '../db';
+import { type Exercise, ExerciseRepo, type ExerciseInput, type ExerciseWithStats, type SessionPoint } from './exercises';
+import { type LiftSet, SetRepo, type SetInput } from './sets';
+import { StatsRepo, type Summary } from './stats';
+import { type Workout, WorkoutRepo, type WorkoutInput, type WorkoutWithStats } from './workouts';
 
 export type { Exercise, ExerciseInput, ExerciseWithStats, LiftSet, SessionPoint, SetInput, Summary, Workout, WorkoutInput, WorkoutWithStats };
 

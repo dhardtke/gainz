@@ -6,13 +6,13 @@
  * The vendor map is an allowlist rather than a served directory, so installing a package
  * never exposes anything the app did not ask to publish.
  */
-import { normalize, resolve, sep } from "node:path";
-import { fileURLToPath } from "node:url";
+import { normalize, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // Relative to this module's own location, so it only holds while the file sits in
 // `backend/src/`. Moving it into a subdirectory breaks the root silently.
-const REPO_ROOT = resolve(fileURLToPath(new URL("../..", import.meta.url)));
-export const FRONTEND_DIR = resolve(REPO_ROOT, "frontend");
+const REPO_ROOT = resolve(fileURLToPath(new URL('../..', import.meta.url)));
+export const FRONTEND_DIR = resolve(REPO_ROOT, 'frontend');
 
 /**
  * Third-party stylesheets served straight out of node_modules.
@@ -21,7 +21,7 @@ export const FRONTEND_DIR = resolve(REPO_ROOT, "frontend");
  * installing a package never exposes anything the app did not ask to publish.
  */
 const VENDOR_FILES: Record<string, string> = {
-  "/vendor/pico.css": "@picocss/pico/css/pico.orange.min.css",
+  '/vendor/pico.css': '@picocss/pico/css/pico.orange.min.css',
 };
 
 export function resolveVendorPath(pathname: string): string | null {
@@ -46,7 +46,7 @@ export function resolveStaticPath(pathname: string): string | null {
   } catch {
     return null;
   }
-  if (decoded.includes("\0")) {
+  if (decoded.includes('\0')) {
     return null;
   }
 

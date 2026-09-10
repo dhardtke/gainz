@@ -6,10 +6,10 @@
  * Epley formula. A rough but widely used way to put sets of different rep
  * counts on one scale, which is what makes a progress line comparable.
  */
-export const EST_1RM_SQL = "s.weight * (1 + s.reps / 30.0)";
+export const EST_1RM_SQL = 's.weight * (1 + s.reps / 30.0)';
 
-export const EXERCISE_COLUMNS = "e.id, e.name, e.muscle_group, e.notes, e.created_at";
-export const SET_COLUMNS = "s.id, s.workout_id, s.exercise_id, e.name AS exercise_name, s.reps, s.weight, s.notes, s.position, s.created_at";
+export const EXERCISE_COLUMNS = 'e.id, e.name, e.muscle_group, e.notes, e.created_at';
+export const SET_COLUMNS = 's.id, s.workout_id, s.exercise_id, e.name AS exercise_name, s.reps, s.weight, s.notes, s.position, s.created_at';
 
 export function isUniqueViolation(err: unknown): boolean {
   return err instanceof Error && /UNIQUE constraint failed/i.test(err.message);
@@ -37,7 +37,7 @@ export function buildUpdate<T extends object>(table: string, fields: readonly Ex
       // SQLite binds text, numbers and null. Anything else is a bug in the caller's
       // input type rather than something a request could cause, so say so loudly.
       const value = patch[field] ?? null;
-      if (value !== null && typeof value !== "string" && typeof value !== "number") {
+      if (value !== null && typeof value !== 'string' && typeof value !== 'number') {
         throw new TypeError(`Cannot bind ${table}.${field}: expected a string, a number or null`);
       }
       assignments.push(`${field} = ?`);
@@ -48,5 +48,5 @@ export function buildUpdate<T extends object>(table: string, fields: readonly Ex
   if (assignments.length === 0) {
     return null;
   }
-  return { sql: `UPDATE ${table} SET ${assignments.join(", ")} WHERE id = ?`, values };
+  return { sql: `UPDATE ${table} SET ${assignments.join(', ')} WHERE id = ?`, values };
 }

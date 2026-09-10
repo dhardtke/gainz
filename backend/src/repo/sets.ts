@@ -1,8 +1,8 @@
-import type { DB } from "../db";
-import { notFound } from "../http";
-import type { ExerciseRepo } from "./exercises";
-import { buildUpdate, SET_COLUMNS } from "./sql";
-import type { WorkoutRepo } from "./workouts";
+import type { DB } from '../db';
+import { notFound } from '../http';
+import type { ExerciseRepo } from './exercises';
+import { buildUpdate, SET_COLUMNS } from './sql';
+import type { WorkoutRepo } from './workouts';
 
 export interface LiftSet {
   id: number;
@@ -24,7 +24,7 @@ export interface SetInput {
   position?: number;
 }
 
-const FIELDS = ["exercise_id", "reps", "weight", "notes", "position"] as const;
+const FIELDS = ['exercise_id', 'reps', 'weight', 'notes', 'position'] as const;
 
 export class SetRepo {
   /**
@@ -56,7 +56,7 @@ export class SetRepo {
   require(id: number): LiftSet {
     const set = this.get(id);
     if (!set) {
-      throw notFound("Set");
+      throw notFound('Set');
     }
     return set;
   }
@@ -67,7 +67,7 @@ export class SetRepo {
 
     const position =
       input.position ??
-      this.db.query<{ next: number }, [number]>("SELECT COALESCE(MAX(position), 0) + 1 AS next FROM sets WHERE workout_id = ?").get(workoutId)?.next ??
+      this.db.query<{ next: number }, [number]>('SELECT COALESCE(MAX(position), 0) + 1 AS next FROM sets WHERE workout_id = ?').get(workoutId)?.next ??
       1;
 
     const inserted = this.db
@@ -78,7 +78,7 @@ export class SetRepo {
       )
       .get(workoutId, input.exercise_id, input.reps, input.weight, input.notes, position);
     if (!inserted) {
-      throw new Error("Insert of set returned no row");
+      throw new Error('Insert of set returned no row');
     }
     return this.require(inserted.id);
   }
@@ -91,7 +91,7 @@ export class SetRepo {
       this.exercises.require(patch.exercise_id);
     }
 
-    const update = buildUpdate("sets", FIELDS, patch);
+    const update = buildUpdate('sets', FIELDS, patch);
     if (update) {
       this.db.query(update.sql).run(...update.values, id);
     }
@@ -100,6 +100,6 @@ export class SetRepo {
 
   delete(id: number): void {
     this.require(id);
-    this.db.query("DELETE FROM sets WHERE id = ?").run(id);
+    this.db.query('DELETE FROM sets WHERE id = ?').run(id);
   }
 }

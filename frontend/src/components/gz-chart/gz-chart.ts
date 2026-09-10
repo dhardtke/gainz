@@ -1,6 +1,6 @@
-import type { RawHtml } from "../../base.ts";
-import { define, GzElement, html, raw } from "../../base.ts";
-import { formatNumber } from "../../format.ts";
+import type { RawHtml } from '../../base.ts';
+import { define, GzElement, html, raw } from '../../base.ts';
+import { formatNumber } from '../../format.ts';
 
 /** Plot area in SVG user units. Only geometry lives in here — never text. */
 const W = 600;
@@ -40,7 +40,7 @@ interface ChartScale {
  */
 export class GzChart extends GzElement {
   #series: ChartPoint[] = [];
-  #unit = "";
+  #unit = '';
 
   set series(value: ChartPoint[]) {
     this.#series = Array.isArray(value) ? value.filter((point) => Number.isFinite(point.value)) : [];
@@ -106,10 +106,10 @@ export class GzChart extends GzElement {
       x: scale.xFraction(index) * W,
       y: scale.yFraction(point.value) * H,
     }));
-    const line = points.map(({ x, y }) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+    const line = points.map(({ x, y }) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
     const first = points[0];
     const last = points.at(-1);
-    const area = first && last ? `M ${first.x.toFixed(1)},${H} L ${line.replaceAll(" ", " L ")} L ${last.x.toFixed(1)},${H} Z` : "";
+    const area = first && last ? `M ${first.x.toFixed(1)},${H} L ${line.replaceAll(' ', ' L ')} L ${last.x.toFixed(1)},${H} Z` : '';
 
     return html`
       <div class="chart">
@@ -120,7 +120,7 @@ export class GzChart extends GzElement {
             gutter exactly — no guessed column width to keep in step with the
             font.
           -->
-          <span class="sizer">${gridLabels.reduce((a, b) => (b.length > a.length ? b : a), "")}</span>
+          <span class="sizer">${gridLabels.reduce((a, b) => (b.length > a.length ? b : a), '')}</span>
           ${gridValues.map(
             (value, index) => html` <span class="tick" style="top: ${(scale.yFraction(value) * 100).toFixed(2)}%"> ${gridLabels[index]} </span> `,
           )}
@@ -133,11 +133,11 @@ export class GzChart extends GzElement {
               return html`<line class="grid" x1="0" y1="${y}" x2="${W}" y2="${y}" />`;
             })}
             <path class="area" d="${area}" />
-            ${raw(this.#series.length > 1 ? `<polyline class="line" points="${line}" />` : "")}
+            ${raw(this.#series.length > 1 ? `<polyline class="line" points="${line}" />` : '')}
           </svg>
 
           ${this.#series.map((point, index) => {
-            const title = `${point.label}: ${formatNumber(point.value)} ${this.#unit}${point.hint ? ` · ${point.hint}` : ""}`;
+            const title = `${point.label}: ${formatNumber(point.value)} ${this.#unit}${point.hint ? ` · ${point.hint}` : ''}`;
             return html`
               <span
                 class="dot"
@@ -158,4 +158,4 @@ export class GzChart extends GzElement {
   }
 }
 
-await define("gz-chart", GzChart);
+await define('gz-chart', GzChart);

@@ -1,17 +1,17 @@
-import { api, errorMessage } from "../../api.ts";
-import type { RawHtml } from "../../base.ts";
-import { define, GzElement, html } from "../../base.ts";
-import { formatDate, formatVolume, plural, relativeDay, todayIso } from "../../format.ts";
-import { navigate } from "../../router.ts";
-import type { Summary, WorkoutWithStats } from "../../types.ts";
-import { toastError } from "../gz-toast/gz-toast.ts";
-import "../gz-stat-tile/gz-stat-tile.ts";
+import { api, errorMessage } from '../../api.ts';
+import type { RawHtml } from '../../base.ts';
+import { define, GzElement, html } from '../../base.ts';
+import { formatDate, formatVolume, plural, relativeDay, todayIso } from '../../format.ts';
+import { navigate } from '../../router.ts';
+import type { Summary, WorkoutWithStats } from '../../types.ts';
+import { toastError } from '../gz-toast/gz-toast.ts';
+import '../gz-stat-tile/gz-stat-tile.ts';
 
-type DashboardState = { status: "loading" } | { status: "ready"; summary: Summary; workouts: WorkoutWithStats[] } | { status: "error"; message: string };
+type DashboardState = { status: 'loading' } | { status: 'ready'; summary: Summary; workouts: WorkoutWithStats[] } | { status: 'error'; message: string };
 
 /** Landing view: the numbers that answer "am I actually progressing?". */
 class GzDashboard extends GzElement {
-  #state: DashboardState = { status: "loading" };
+  #state: DashboardState = { status: 'loading' };
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -21,16 +21,16 @@ class GzDashboard extends GzElement {
   async #load(): Promise<void> {
     try {
       const [summary, page] = await Promise.all([api.summary(), api.workouts.list({ limit: 5 })]);
-      this.#state = { status: "ready", summary, workouts: page.items };
+      this.#state = { status: 'ready', summary, workouts: page.items };
     } catch (error) {
-      this.#state = { status: "error", message: errorMessage(error) };
+      this.#state = { status: 'error', message: errorMessage(error) };
       toastError(error);
     }
     this.render();
   }
 
   async handleAction(action: string): Promise<void> {
-    if (action !== "start-workout") {
+    if (action !== 'start-workout') {
       return;
     }
     try {
@@ -42,10 +42,10 @@ class GzDashboard extends GzElement {
   }
 
   template(): RawHtml {
-    if (this.#state.status === "loading") {
+    if (this.#state.status === 'loading') {
       return html`<p aria-busy="true">Loading your log…</p>`;
     }
-    if (this.#state.status === "error") {
+    if (this.#state.status === 'error') {
       return html`<p class="error-text">${this.#state.message}</p>`;
     }
 
@@ -64,10 +64,10 @@ class GzDashboard extends GzElement {
         </div>
 
         <div class="tiles">
-          <gz-stat-tile label="Workouts" value="${summary.workout_count}" hint="${plural(summary.set_count, "set")} total"></gz-stat-tile>
+          <gz-stat-tile label="Workouts" value="${summary.workout_count}" hint="${plural(summary.set_count, 'set')} total"></gz-stat-tile>
           <gz-stat-tile label="Total volume" value="${formatVolume(summary.total_volume)}" hint="reps × weight, all time"></gz-stat-tile>
           <gz-stat-tile label="Last 30 days" value="${summary.workouts_last_30_days}" hint="${formatVolume(summary.volume_last_30_days)} moved"></gz-stat-tile>
-          <gz-stat-tile label="Exercises" value="${summary.exercise_count}" hint="${plural(summary.total_reps, "rep")} lifted"></gz-stat-tile>
+          <gz-stat-tile label="Exercises" value="${summary.exercise_count}" hint="${plural(summary.total_reps, 'rep')} lifted"></gz-stat-tile>
         </div>
 
         <article class="stack-sm">
@@ -85,7 +85,7 @@ class GzDashboard extends GzElement {
                         <span class="title">${workout.title ?? formatDate(workout.performed_on)}</span>
                         <span class="muted"> · ${relativeDay(workout.performed_on)}</span>
                       </span>
-                      <span class="badge">${plural(workout.set_count, "set")} · ${formatVolume(workout.total_volume)}</span>
+                      <span class="badge">${plural(workout.set_count, 'set')} · ${formatVolume(workout.total_volume)}</span>
                     </a>
                   `,
                 )
@@ -96,4 +96,4 @@ class GzDashboard extends GzElement {
   }
 }
 
-await define("gz-dashboard", GzDashboard);
+await define('gz-dashboard', GzDashboard);

@@ -1,9 +1,9 @@
-import type { RawHtml } from "../../base.ts";
-import { define, GzElement, html } from "../../base.ts";
+import type { RawHtml } from '../../base.ts';
+import { define, GzElement, html } from '../../base.ts';
 
 /** A single headline number with a label and optional sub-line. */
 class GzStatTile extends GzElement {
-  static observedAttributes = ["label", "value", "hint"];
+  static observedAttributes = ['label', 'value', 'hint'];
 
   attributeChangedCallback(): void {
     if (this.isConnected) {
@@ -12,15 +12,15 @@ class GzStatTile extends GzElement {
   }
 
   template(): RawHtml {
-    const hint = this.getAttribute("hint");
+    const hint = this.getAttribute('hint');
     return html`
       <article>
-        <span class="label">${this.getAttribute("label")}</span>
-        <strong class="value">${this.getAttribute("value") ?? "–"}</strong>
-        ${hint ? html`<span class="hint">${hint}</span>` : ""}
+        <span class="label">${this.getAttribute('label')}</span>
+        <strong class="value">${this.getAttribute('value') ?? '–'}</strong>
+        ${hint ? html`<span class="hint">${hint}</span>` : ''}
       </article>
     `;
   }
 }
 
-await define("gz-stat-tile", GzStatTile);
+await define('gz-stat-tile', GzStatTile);

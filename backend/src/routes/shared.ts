@@ -1,4 +1,4 @@
-import { errorResponse } from "../http";
+import { errorResponse } from '../http';
 
 /** The Bun.serve route table this app builds, named once so partial tables can be spread together. */
 export type RouteTable = Bun.Serve.Routes<undefined, string>;

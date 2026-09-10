@@ -1,10 +1,10 @@
-import { afterEach, beforeEach, expect } from "bun:test";
-import type { Server } from "bun";
-import type { Database } from "bun:sqlite";
-import { openDatabase } from "../../src/db";
-import type { Exercise, LiftSet, SessionPoint, Workout, WorkoutWithStats } from "../../src/repo";
-import { Repo } from "../../src/repo";
-import { serveOptions } from "../../src/server";
+import { afterEach, beforeEach, expect } from 'bun:test';
+import type { Server } from 'bun';
+import type { Database } from 'bun:sqlite';
+import { openDatabase } from '../../src/db';
+import type { Exercise, LiftSet, SessionPoint, Workout, WorkoutWithStats } from '../../src/repo';
+import { Repo } from '../../src/repo';
+import { serveOptions } from '../../src/server';
 
 /** `GET /api/workouts/:id` and `POST /api/workouts`: a workout with its sets. */
 export interface WorkoutDetail extends Workout {
@@ -51,10 +51,10 @@ export interface TestServer {
 export function useServer(): TestServer {
   let db: Database;
   let server: Server<undefined>;
-  let base = "";
+  let base = '';
 
   beforeEach(() => {
-    db = openDatabase(":memory:");
+    db = openDatabase(':memory:');
     server = Bun.serve({ port: 0, ...serveOptions(new Repo(db)) });
     base = server.url.origin;
   });
@@ -70,28 +70,28 @@ export function useServer(): TestServer {
 
   function post(path: string, body: unknown): Promise<Response> {
     return api(path, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
   }
 
   function patch(path: string, body: unknown): Promise<Response> {
     return api(path, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
   }
 
-  async function createExercise(name = "Bench Press"): Promise<Exercise> {
-    const res = await post("/api/exercises", { name });
+  async function createExercise(name = 'Bench Press'): Promise<Exercise> {
+    const res = await post('/api/exercises', { name });
     expect(res.status).toBe(201);
     return body<Exercise>(res);
   }
 
-  async function createWorkout(performed_on = "2026-01-05"): Promise<WorkoutDetail> {
-    const res = await post("/api/workouts", { performed_on, title: "Push day" });
+  async function createWorkout(performed_on = '2026-01-05'): Promise<WorkoutDetail> {
+    const res = await post('/api/workouts', { performed_on, title: 'Push day' });
     expect(res.status).toBe(201);
     return body<WorkoutDetail>(res);
   }

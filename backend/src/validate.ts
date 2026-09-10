@@ -1,4 +1,4 @@
-import { badRequest } from "./http";
+import { badRequest } from './http';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -9,7 +9,7 @@ export function isPresent(body: Record<string, unknown>, field: string): boolean
 /** A required, non-empty string. */
 export function requiredString(body: Record<string, unknown>, field: string, maxLength = 200): string {
   const value = body[field];
-  if (typeof value !== "string" || value.trim() === "") {
+  if (typeof value !== 'string' || value.trim() === '') {
     throw badRequest(`"${field}" is required and must be a non-empty string`);
   }
   const trimmed = value.trim();
@@ -25,11 +25,11 @@ export function optionalString(body: Record<string, unknown>, field: string, max
   if (value === undefined || value === null) {
     return null;
   }
-  if (typeof value !== "string") {
+  if (typeof value !== 'string') {
     throw badRequest(`"${field}" must be a string`);
   }
   const trimmed = value.trim();
-  if (trimmed === "") {
+  if (trimmed === '') {
     return null;
   }
   if (trimmed.length > maxLength) {
@@ -44,8 +44,8 @@ export function requiredInt(
   { min = 0, max = Number.MAX_SAFE_INTEGER }: { min?: number; max?: number } = {},
 ): number {
   const value = body[field];
-  const num = typeof value === "string" && value.trim() !== "" ? Number(value) : value;
-  if (typeof num !== "number" || !Number.isInteger(num)) {
+  const num = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
+  if (typeof num !== 'number' || !Number.isInteger(num)) {
     throw badRequest(`"${field}" must be a whole number`);
   }
   if (num < min || num > max) {
@@ -56,8 +56,8 @@ export function requiredInt(
 
 export function requiredNumber(body: Record<string, unknown>, field: string, { min = 0, max = 100000 }: { min?: number; max?: number } = {}): number {
   const value = body[field];
-  const num = typeof value === "string" && value.trim() !== "" ? Number(value) : value;
-  if (typeof num !== "number" || !Number.isFinite(num)) {
+  const num = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
+  if (typeof num !== 'number' || !Number.isFinite(num)) {
     throw badRequest(`"${field}" must be a number`);
   }
   if (num < min || num > max) {
@@ -87,7 +87,7 @@ export function pathId(raw: string | undefined, what: string): number {
 
 export function queryInt(params: URLSearchParams, key: string, fallback: number, { min = 0, max = 1000 }: { min?: number; max?: number } = {}): number {
   const raw = params.get(key);
-  if (raw === null || raw === "") {
+  if (raw === null || raw === '') {
     return fallback;
   }
   const num = Number(raw);
