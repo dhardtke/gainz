@@ -78,18 +78,31 @@ own sake produces commits that cannot be reverted independently anyway.
 type(scope): Capitalized imperative summary
 ```
 
-`feat:` for new behaviour, `fix:` for a defect, `chore:` for housekeeping —
-tooling, config, dependency and documentation upkeep. A scope in parentheses
-only when it genuinely narrows things (`chore(idea):` for IDE run configs); most
-commits do not need one.
+`feat:` for new behaviour, `fix:` for a defect, `refactor:` for a change that
+rearranges code without changing what it does, `docs:` for documentation content
+— `README.md` and anything under `docs/` — `ci:` for the build and automation
+pipeline, and `chore:` for the rest of the housekeeping: tooling, config,
+dependency and editor upkeep, and instruction files like `AGENTS.md`.
 
-Imperative mood, capitalized after the colon, no trailing period, ideally under
-72 characters. "Add an Auto/Light/Dark theme switcher", not "Added a theme
+`refactor:` is the workhorse here; several recent commits use it for moves and
+regroupings. If a change both moves code and alters behaviour it is not a
+refactor — either split it or label it by the behaviour.
+
+A scope in parentheses only when it genuinely narrows things (`chore(idea):` for
+IDE run configs); most commits do not need one.
+
+Imperative mood, capitalized after the colon, no trailing period. Keep it short:
+aim for about 50 characters and treat 72 as a hard ceiling. Short here means
+dropping articles, possessives and the trailing prepositional phrase naming the
+path the diff already shows — "refactor: Group frontend modules and styles", not
+"refactor: Group the frontend's modules and styles under frontend/src/". Write
+the line, then remove words until the next one you removed would cost meaning.
+Detail that does not survive that trim belongs in the body, or nowhere.
+
+Say what the change accomplishes, not which files moved. "Load route scripts and
+styles on demand" tells you what the commit is about; "Update gz-app.js and
+styles.js" does not. "Add an Auto/Light/Dark theme switcher", not "Added a theme
 switcher" and not "theme switcher stuff".
-
-Say what the change accomplishes, not which files moved. "Load each route's
-script and stylesheet only when that route is opened" tells you what the commit
-is about; "Update gz-app.js and styles.js" does not.
 
 Several older commits in this log carry no type prefix. That is history rather
 than a pattern to follow — the recent ones are prefixed.
@@ -108,17 +121,25 @@ not answer them. In practice that means the change involved a tradeoff, a
 measurement, a constraint you discovered, an approach you tried and abandoned,
 or a consequence that is not visible from the code alone.
 
-Length follows the reasoning, not the diff. A one-line change that took a day to
-understand deserves several paragraphs. A four-hundred-line mechanical move
-deserves the one paragraph that says it is mechanical and names what was checked
-to confirm that.
+Length follows the reasoning, not the diff — and the reasoning is usually
+shorter than it feels while you are still holding the change in your head. One
+paragraph is the normal body. Two is common. Three or more has to be earned by
+three or more distinct things a reader could not recover from the diff, and if
+you have written that much, the first cut is almost always a sentence that
+restates the subject line or narrates the diff.
+
+A four-hundred-line mechanical move deserves the one paragraph that says it is
+mechanical and names what was checked to confirm that. A one-line change that
+took a day to understand may deserve several — but only for the day, not for the
+line.
 
 ## 5. Writing the body
 
 Before writing anything longer than a paragraph, read `references/examples.md` —
 five real messages from this log, with notes on what each paragraph is doing.
-The style is far easier to absorb from examples than from rules, and those
-examples are the actual standard.
+The style is far easier to absorb from examples than from rules. Take the shape
+of each paragraph from them, not the total length: the longest of the five is
+the ceiling for an exceptional change, not the target.
 
 The reasoning behind them:
 
@@ -207,6 +228,14 @@ skill exists to prevent.
 
 Writing a body because the diff was large. Size is not the trigger; unrecorded
 reasoning is.
+
+Padding the subject line with the detail that is already in the diff — the path
+the files moved to, the file names themselves, a qualifier that narrows nothing.
+Trim it to the accomplishment and let the body carry the rest.
+
+Writing three paragraphs where one carried the reasoning. Every extra paragraph
+costs the reader attention they will spend on the next commit instead; if a
+paragraph does not tell them something the diff cannot, cut it.
 
 Inventing rationale to fill the body out. Covered above, and worth repeating,
 because the pull to do it is strongest exactly when you know least about the
