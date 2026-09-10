@@ -4,7 +4,7 @@ git_commit: 8a44fb937757987599a54893a8138f64d39e18b5
 branch: main
 topic: "Split backend/src/server.ts into main / server / static / paths"
 tags: [plan, server, static-files, entry-point, bun-serve]
-status: ready
+status: complete
 ---
 
 # PLAN: Split `backend/src/server.ts` into four files
@@ -200,18 +200,18 @@ without changing a single observable behavior. The existing suite is the verific
 
 **Tasks**:
 
-- [ ] Create `backend/src/paths.ts` with `REPO_ROOT`, `FRONTEND_DIR`, `VENDOR_FILES`,
+- [x] Create `backend/src/paths.ts` with `REPO_ROOT`, `FRONTEND_DIR`, `VENDOR_FILES`,
       `resolveVendorPath` and `resolveStaticPath`, moved verbatim from `server.ts:9-53`.
       Export `FRONTEND_DIR`, `resolveVendorPath` and `resolveStaticPath`; keep `REPO_ROOT` and
       `VENDOR_FILES` module-private. Carry the existing doc comments across with them.
-- [ ] **Confirm `REPO_ROOT` still resolves correctly.** It is
+- [x] **Confirm `REPO_ROOT` still resolves correctly.** It is
       `resolve(fileURLToPath(new URL("../..", import.meta.url)))`, which depends on the
       module's own location. `paths.ts` sits in `backend/src/` exactly as `server.ts` did, so
       `../..` still lands on the repository root — but this breaks silently if the file is
       ever placed in a subdirectory. Add a comment saying so.
-- [ ] Give `paths.ts` a header comment explaining that it is the only place a URL becomes a
+- [x] Give `paths.ts` a header comment explaining that it is the only place a URL becomes a
       filesystem path, and that the vendor map is an allowlist rather than a served directory.
-- [ ] Create `backend/src/static.ts` holding `serveStatic`, moved verbatim from
+- [x] Create `backend/src/static.ts` holding `serveStatic`, moved verbatim from
       `server.ts:55-100`. Its full import list is:
 
       ```ts
@@ -223,10 +223,10 @@ without changing a single observable behavior. The existing suite is the verific
       come from `server.ts:1` today and do not travel with `paths.ts`. `FRONTEND_DIR` is the
       only path constant `serveStatic` needs — it references neither `REPO_ROOT` nor
       `VENDOR_FILES`.
-- [ ] Reduce `backend/src/server.ts` to `GainzServeOptions` and `serveOptions`, importing
+- [x] Reduce `backend/src/server.ts` to `GainzServeOptions` and `serveOptions`, importing
       `serveStatic` from `./static`, `apiRoutes` from `./routes` and `errorResponse` from
       `./http`. Narrow the `Repo` import to `import type { Repo } from "./repo"`.
-- [ ] Create `backend/src/main.ts` with the current `if (import.meta.main)` body as a named
+- [x] Create `backend/src/main.ts` with the current `if (import.meta.main)` body as a named
       `function main(): void`, followed by the guard. Mirror `migrate.ts:9-25`. Its import
       list is `basename` from `node:path`, `DEFAULT_DB_PATH` and `openDatabase` from `./db`,
       `Repo` from `./repo` **as a value** (not `import type` — it is constructed here), and
@@ -248,32 +248,32 @@ without changing a single observable behavior. The existing suite is the verific
         main();
       }
       ```
-- [ ] Point `package.json` at the new entry: `module` (line 7), `start` (line 9) and
+- [x] Point `package.json` at the new entry: `module` (line 7), `start` (line 9) and
       `start:dev` (line 10) all become `backend/src/main.ts`.
-- [ ] Update the `README.md` file tree at line 95, replacing the single `server.ts` entry with
+- [x] Update the `README.md` file tree at line 95, replacing the single `server.ts` entry with
       the four files and their one-line descriptions, keeping the existing column alignment.
-- [ ] Update `README.md:232`, which places the vendor allowlist in `backend/src/server.ts`;
+- [x] Update `README.md:232`, which places the vendor allowlist in `backend/src/server.ts`;
       it now lives in `backend/src/paths.ts`.
-- [ ] Update the layering sentence at `docs/backend.md:3-7` so the arrow chain ends
+- [x] Update the layering sentence at `docs/backend.md:3-7` so the arrow chain ends
       `... → server.ts (Bun.serve options) → main.ts (entry point)`, with `static.ts` and
       `paths.ts` named as the static half.
-- [ ] Update `docs/backend.md:50-52`, which names `VENDOR_FILES` as living in `server.ts`.
+- [x] Update `docs/backend.md:50-52`, which names `VENDOR_FILES` as living in `server.ts`.
 
 **Automated Verification**:
 
-- [ ] `bun test` — 52 pass, 0 fail, 139 `expect()` calls across 6 files, with no test file
+- [x] `bun test` — 52 pass, 0 fail, 139 `expect()` calls across 6 files, with no test file
       edited in this phase.
-- [ ] `bun test backend/test/static.api.test.ts` — all 15 tests pass (32 `expect()` calls),
+- [x] `bun test backend/test/static.api.test.ts` — all 15 tests pass (32 `expect()` calls),
       including the traversal refusals at lines 98-103.
-- [ ] `bun run typecheck` — clean.
-- [ ] `bun run lint` — clean.
-- [ ] `bun run fmt:check` — clean.
-- [ ] `backend/src/server.ts` is under 30 lines and contains no `Bun.serve(` call:
+- [x] `bun run typecheck` — clean.
+- [x] `bun run lint` — clean.
+- [x] `bun run fmt:check` — clean.
+- [x] `backend/src/server.ts` is under 30 lines and contains no `Bun.serve(` call:
       `Select-String -Path backend/src/server.ts -Pattern "Bun\.serve\("` returns nothing.
       Search for the call with its opening parenthesis, not the bare string — the reduced file
       still legitimately contains the *type* `Bun.Serve.Routes` and the identifier
       `serveStatic` as the `fetch` value.
-- [ ] `Select-String -Path package.json -Pattern "src/server\.ts"` returns nothing.
+- [x] `Select-String -Path package.json -Pattern "src/server\.ts"` returns nothing.
 
 **Manual Verification**:
 
@@ -281,11 +281,11 @@ without changing a single observable behavior. The existing suite is the verific
       lifting on …` and `  database: …`), serves the app at `http://localhost:3000`, and the
       dashboard renders with Pico styling — confirming `/vendor/pico.css` and the transpiled
       modules still resolve.
-- [ ] `bun start` with `GAINZ_DB` pointing at a throwaway path prints the third line,
+- [x] `bun start` with `GAINZ_DB` pointing at a throwaway path prints the third line,
       `applied 001-initial-schema`, ahead of the other two. Use the environment variable
       rather than deleting `data/gainz.sqlite`.
 - [ ] Ctrl-C shuts the process down cleanly with no error output.
-- [ ] `bun run start:dev` starts, and editing a backend file triggers a reload.
+- [x] `bun run start:dev` starts, and editing a backend file triggers a reload.
 
 ### Phase 2: Cover the error hook and document the verified behavior
 
@@ -296,13 +296,13 @@ and need documenting rather than fixing; the third is a real coverage gap.
 
 **Tasks**:
 
-- [ ] Add four imports to `backend/test/meta.api.test.ts`, which currently imports only
+- [x] Add four imports to `backend/test/meta.api.test.ts`, which currently imports only
       `describe`/`expect`/`test`, `type Summary`, and `type ErrorBody`/`body`/`useServer`
       (`meta.api.test.ts:1-4`): `openDatabase` from `../src/db`, `HttpError` from
       `../src/http`, `serveOptions` from `../src/server`, and `Repo` from `../src/repo`
       **as a value** — the existing `../src/repo` import is `import type` and cannot be used
       with `new`.
-- [ ] Add **one** test exercising the `error` hook directly, covering both branches in a
+- [x] Add **one** test exercising the `error` hook directly, covering both branches in a
       single `test()` so the suite total rises by exactly one.
 
       ```ts
@@ -326,23 +326,23 @@ and need documenting rather than fixing; the third is a real coverage gap.
       `guard` wraps the catch-all — so this asserts the wiring in `serveOptions`, not Bun's
       dispatch. Expect one line of `Unhandled error: Error: boom` on stderr from
       `http.ts:29`; that is the 500 branch logging, not a failure.
-- [ ] Add a comment to `serveStatic` in `backend/src/static.ts` recording why no explicit
+- [x] Add a comment to `serveStatic` in `backend/src/static.ts` recording why no explicit
       `Content-Type` is set: Bun resolves the type from the file extension and covers far more
       of the MIME database than a hand-written map would, so the map would be a subset that
       drifts. Name the measured examples (`.svg`, `.woff2`, `.png`, `.webp`) and the
       extensionless fallback (`application/octet-stream`).
-- [ ] Add a paragraph to `docs/backend.md`'s static-serving section recording both verified
+- [x] Add a paragraph to `docs/backend.md`'s static-serving section recording both verified
       behaviors — the `Content-Type` source above, and that a HEAD request is answered with
       the headers and no body by Bun itself, with `backend/test/static.api.test.ts:87` as the
       standing proof.
 
 **Automated Verification**:
 
-- [ ] `bun test backend/test/meta.api.test.ts` — passes, including the new error-hook test.
-- [ ] `bun test` — 53 pass, 0 fail; the count rises by exactly the one added test.
-- [ ] `bun run typecheck` — clean.
-- [ ] `bun run lint` — clean.
-- [ ] `bun run fmt:check` — clean.
+- [x] `bun test backend/test/meta.api.test.ts` — passes, including the new error-hook test.
+- [x] `bun test` — 53 pass, 0 fail; the count rises by exactly the one added test.
+- [x] `bun run typecheck` — clean.
+- [x] `bun run lint` — clean.
+- [x] `bun run fmt:check` — clean.
 
 ## Implementation Notes
 
