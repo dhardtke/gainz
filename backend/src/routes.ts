@@ -1,10 +1,10 @@
-import type { Repo } from "./repo";
-import { exerciseRoutes } from "./routes/exercise.routes";
-import { metaRoutes, notFoundRoute } from "./routes/meta.routes";
-import { setRoutes } from "./routes/set.routes";
-import type { RouteTable } from "./routes/shared";
-import { statsRoutes } from "./routes/stats.routes";
-import { workoutRoutes } from "./routes/workout.routes";
+import type { Repo } from './repo';
+import { exerciseRoutes } from './routes/exercise.routes';
+import { metaRoutes, notFoundRoute } from './routes/meta.routes';
+import { setRoutes } from './routes/set.routes';
+import type { RouteTable } from './routes/shared';
+import { statsRoutes } from './routes/stats.routes';
+import { workoutRoutes } from './routes/workout.routes';
 
 /**
  * The registry of Bun.serve routes: one file per URL group under routes/,

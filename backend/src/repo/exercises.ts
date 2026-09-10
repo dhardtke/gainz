@@ -1,7 +1,7 @@
-import type { DB } from "../db";
-import { conflict, notFound } from "../http";
-import type { LiftSet } from "./sets";
-import { buildUpdate, EST_1RM_SQL, EXERCISE_COLUMNS, isUniqueViolation, SET_COLUMNS } from "./sql";
+import type { DB } from '../db';
+import { conflict, notFound } from '../http';
+import type { LiftSet } from './sets';
+import { buildUpdate, EST_1RM_SQL, EXERCISE_COLUMNS, isUniqueViolation, SET_COLUMNS } from './sql';
 
 export interface Exercise {
   id: number;
@@ -34,7 +34,7 @@ export interface ExerciseInput {
   notes: string | null;
 }
 
-const FIELDS = ["name", "muscle_group", "notes"] as const;
+const FIELDS = ['name', 'muscle_group', 'notes'] as const;
 
 export class ExerciseRepo {
   constructor(private readonly db: DB) {}
@@ -63,7 +63,7 @@ export class ExerciseRepo {
   require(id: number): Exercise {
     const exercise = this.get(id);
     if (!exercise) {
-      throw notFound("Exercise");
+      throw notFound('Exercise');
     }
     return exercise;
   }
@@ -77,7 +77,7 @@ export class ExerciseRepo {
         )
         .get(input.name, input.muscle_group, input.notes);
       if (!row) {
-        throw new Error("Insert of exercise returned no row");
+        throw new Error('Insert of exercise returned no row');
       }
       return row;
     } catch (err) {
@@ -91,7 +91,7 @@ export class ExerciseRepo {
   update(id: number, patch: Partial<ExerciseInput>): Exercise {
     this.require(id);
 
-    const update = buildUpdate("exercises", FIELDS, patch);
+    const update = buildUpdate('exercises', FIELDS, patch);
     if (update) {
       try {
         this.db.query(update.sql).run(...update.values, id);
@@ -107,11 +107,11 @@ export class ExerciseRepo {
 
   delete(id: number): void {
     this.require(id);
-    const used = this.db.query<{ n: number }, [number]>("SELECT COUNT(*) AS n FROM sets WHERE exercise_id = ?").get(id);
+    const used = this.db.query<{ n: number }, [number]>('SELECT COUNT(*) AS n FROM sets WHERE exercise_id = ?').get(id);
     if (used && used.n > 0) {
       throw conflict(`Exercise is used by ${used.n} logged set(s); delete those sets first to keep your history intact`);
     }
-    this.db.query("DELETE FROM exercises WHERE id = ?").run(id);
+    this.db.query('DELETE FROM exercises WHERE id = ?').run(id);
   }
 
   /** Per-session aggregates for one exercise, oldest first — the progress curve. */

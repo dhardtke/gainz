@@ -1,9 +1,9 @@
-import { api } from "../../api.ts";
-import type { RawHtml } from "../../base.ts";
-import { define, GzElement, html } from "../../base.ts";
-import { formatNumber, formatVolume, UNIT } from "../../format.ts";
-import type { Exercise, LiftSet } from "../../types.ts";
-import { toast, toastError } from "../gz-toast/gz-toast.ts";
+import { api } from '../../api.ts';
+import type { RawHtml } from '../../base.ts';
+import { define, GzElement, html } from '../../base.ts';
+import { formatNumber, formatVolume, UNIT } from '../../format.ts';
+import type { Exercise, LiftSet } from '../../types.ts';
+import { toast, toastError } from '../gz-toast/gz-toast.ts';
 
 /**
  * One logged set. Reads in place, edits in place, and tells its parent to
@@ -35,7 +35,7 @@ export class GzSetRow extends GzElement {
   }
 
   async handleAction(action: string): Promise<void> {
-    if (action === "edit") {
+    if (action === 'edit') {
       this.#editing = true;
       this.render();
       const weight = this.$<HTMLInputElement>("[name='weight']");
@@ -43,7 +43,7 @@ export class GzSetRow extends GzElement {
       return;
     }
 
-    if (action === "cancel") {
+    if (action === 'cancel') {
       this.#editing = false;
       this.render();
       return;
@@ -54,7 +54,7 @@ export class GzSetRow extends GzElement {
       return;
     }
 
-    if (action === "duplicate") {
+    if (action === 'duplicate') {
       try {
         await api.workouts.addSet(set.workout_id, {
           exercise_id: set.exercise_id,
@@ -62,21 +62,21 @@ export class GzSetRow extends GzElement {
           weight: set.weight,
           notes: set.notes,
         });
-        this.emit("sets-changed");
+        this.emit('sets-changed');
       } catch (error) {
         toastError(error);
       }
       return;
     }
 
-    if (action === "delete") {
+    if (action === 'delete') {
       if (!confirm(`Delete this set (${formatNumber(set.weight)} ${UNIT} × ${set.reps})?`)) {
         return;
       }
       try {
         await api.sets.remove(set.id);
-        toast("Set deleted", "success");
-        this.emit("sets-changed");
+        toast('Set deleted', 'success');
+        this.emit('sets-changed');
       } catch (error) {
         toastError(error);
       }
@@ -84,7 +84,7 @@ export class GzSetRow extends GzElement {
   }
 
   async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
-    if (action !== "save" || !this.#set) {
+    if (action !== 'save' || !this.#set) {
       return;
     }
     const values = this.formData(form);
@@ -96,7 +96,7 @@ export class GzSetRow extends GzElement {
         notes: values.notes,
       });
       this.#editing = false;
-      this.emit("sets-changed");
+      this.emit('sets-changed');
     } catch (error) {
       toastError(error);
     }
@@ -109,7 +109,7 @@ export class GzSetRow extends GzElement {
           <label>Exercise</label>
           <select name="exercise_id">
             ${this.#exercises.map(
-              (exercise) => html` <option value="${exercise.id}" ${exercise.id === set.exercise_id ? "selected" : ""}>${exercise.name}</option> `,
+              (exercise) => html` <option value="${exercise.id}" ${exercise.id === set.exercise_id ? 'selected' : ''}>${exercise.name}</option> `,
             )}
           </select>
         </div>
@@ -123,7 +123,7 @@ export class GzSetRow extends GzElement {
         </div>
         <div class="field field-notes">
           <label>Notes</label>
-          <input name="notes" type="text" maxlength="2000" value="${set.notes ?? ""}" />
+          <input name="notes" type="text" maxlength="2000" value="${set.notes ?? ''}" />
         </div>
         <button type="submit">Save</button>
         <button class="secondary outline" type="button" data-action="cancel">Cancel</button>
@@ -145,7 +145,7 @@ export class GzSetRow extends GzElement {
         <span class="index">${this.#index}</span>
         <a class="exercise" href="#/exercises/${set.exercise_id}">${set.exercise_name}</a>
         <span class="load">${formatNumber(set.weight)} ${UNIT} × ${set.reps}</span>
-        <span class="note">${set.notes ?? ""}</span>
+        <span class="note">${set.notes ?? ''}</span>
         <span class="actions">
           <span class="volume mono">${formatVolume(set.weight * set.reps)}</span>
           <button class="secondary outline compact" data-action="edit">Edit</button>
@@ -157,4 +157,4 @@ export class GzSetRow extends GzElement {
   }
 }
 
-await define("gz-set-row", GzSetRow);
+await define('gz-set-row', GzSetRow);

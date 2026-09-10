@@ -1,15 +1,15 @@
-import { errorMessage } from "../../api.ts";
-import type { RawHtml } from "../../base.ts";
-import { define, GzElement, html } from "../../base.ts";
+import { errorMessage } from '../../api.ts';
+import type { RawHtml } from '../../base.ts';
+import { define, GzElement, html } from '../../base.ts';
 
-export type ToastKind = "info" | "success" | "error";
+export type ToastKind = 'info' | 'success' | 'error';
 
 export interface ToastDetail {
   message: string;
   kind: ToastKind;
 }
 
-const EVENT = "gz-toast";
+const EVENT = 'gz-toast';
 let nextId = 0;
 
 /**
@@ -20,18 +20,18 @@ let nextId = 0;
  */
 declare global {
   interface WindowEventMap {
-    "gz-toast": CustomEvent<ToastDetail>;
+    'gz-toast': CustomEvent<ToastDetail>;
   }
 }
 
 /** Shows a transient message. Any module can call this without a DOM reference. */
-export function toast(message: string, kind: ToastKind = "info"): void {
+export function toast(message: string, kind: ToastKind = 'info'): void {
   window.dispatchEvent(new CustomEvent(EVENT, { detail: { message, kind } }));
 }
 
 /** Reports a failed API call in the user's terms. */
 export function toastError(error: unknown): void {
-  toast(errorMessage(error), "error");
+  toast(errorMessage(error), 'error');
 }
 
 class GzToast extends GzElement {
@@ -63,7 +63,7 @@ class GzToast extends GzElement {
       () => {
         this.#dismiss(id);
       },
-      kind === "error" ? 6000 : 3000,
+      kind === 'error' ? 6000 : 3000,
     );
   }
 
@@ -77,7 +77,7 @@ class GzToast extends GzElement {
   }
 
   handleAction(action: string, element: HTMLElement): void {
-    if (action === "dismiss") {
+    if (action === 'dismiss') {
       this.#dismiss(Number(element.dataset.id));
     }
   }
@@ -96,4 +96,4 @@ class GzToast extends GzElement {
   }
 }
 
-await define("gz-toast", GzToast);
+await define('gz-toast', GzToast);

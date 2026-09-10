@@ -1,5 +1,5 @@
-import { loadStyles, stylesFor } from "./styles.ts";
-import { applyThemeTo, onThemeChange } from "./theme.ts";
+import { loadStyles, stylesFor } from './styles.ts';
+import { applyThemeTo, onThemeChange } from './theme.ts';
 
 /** Marks a string as already-safe HTML so `html` will not escape it again. */
 export class RawHtml {
@@ -13,7 +13,7 @@ export class RawHtml {
 /** Wraps pre-rendered markup (usually the output of another `html` call). */
 export const raw = (value: unknown): RawHtml => new RawHtml(String(value));
 
-const ESCAPES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+const ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 
 export function escapeHtml(value: unknown): string {
   return String(value).replace(/[&<>"']/g, (char) => ESCAPES[char] ?? char);
@@ -21,13 +21,13 @@ export function escapeHtml(value: unknown): string {
 
 function interpolate(value: unknown): string {
   if (value === null || value === undefined || value === false) {
-    return "";
+    return '';
   }
   if (value instanceof RawHtml) {
     return value.value;
   }
   if (Array.isArray(value)) {
-    return value.map(interpolate).join("");
+    return value.map(interpolate).join('');
   }
   return escapeHtml(value);
 }
@@ -37,9 +37,9 @@ function interpolate(value: unknown): string {
  * — an exercise name, a set note — is therefore safe to drop straight in.
  */
 export function html(strings: TemplateStringsArray, ...values: unknown[]): RawHtml {
-  let out = strings[0] ?? "";
+  let out = strings[0] ?? '';
   for (let i = 0; i < values.length; i++) {
-    out += interpolate(values[i]) + (strings[i + 1] ?? "");
+    out += interpolate(values[i]) + (strings[i + 1] ?? '');
   }
   return raw(out);
 }
@@ -64,18 +64,18 @@ export class GzElement extends HTMLElement {
 
   constructor() {
     super();
-    this.#root = this.attachShadow({ mode: "open" });
+    this.#root = this.attachShadow({ mode: 'open' });
     this.#root.adoptedStyleSheets = stylesFor(this.localName);
 
-    this.#root.addEventListener("click", (event) => {
-      const target = event.target instanceof Element ? event.target.closest("[data-action]") : null;
+    this.#root.addEventListener('click', (event) => {
+      const target = event.target instanceof Element ? event.target.closest('[data-action]') : null;
       if (target instanceof HTMLElement && target.dataset.action) {
         void this.handleAction(target.dataset.action, target, event);
       }
     });
 
-    this.#root.addEventListener("submit", (event) => {
-      const form = event.target instanceof Element ? event.target.closest("form[data-action]") : null;
+    this.#root.addEventListener('submit', (event) => {
+      const form = event.target instanceof Element ? event.target.closest('form[data-action]') : null;
       if (!(form instanceof HTMLFormElement) || !form.dataset.action) {
         return;
       }
@@ -107,7 +107,7 @@ export class GzElement extends HTMLElement {
 
   /** Subclasses return the shadow markup for the current state. */
   template(): RawHtml {
-    return raw("");
+    return raw('');
   }
 
   render(): void {
@@ -162,7 +162,7 @@ export class GzElement extends HTMLElement {
   formData(form: HTMLFormElement): Record<string, string> {
     const values: Record<string, string> = {};
     for (const [key, value] of new FormData(form).entries()) {
-      if (typeof value === "string") {
+      if (typeof value === 'string') {
         values[key] = value.trim();
       }
     }

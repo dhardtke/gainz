@@ -1,14 +1,14 @@
-import { api, ApiError, errorMessage } from "../../api.ts";
-import type { RawHtml } from "../../base.ts";
-import { define, GzElement, html } from "../../base.ts";
-import { formatDate, formatNumber, formatVolume, plural, relativeDay, UNIT } from "../../format.ts";
-import { navigate } from "../../router.ts";
-import type { Exercise, LiftSet, WorkoutWithSets } from "../../types.ts";
-import type { GzSetRow } from "../gz-set-row/gz-set-row.ts";
-import { toast, toastError } from "../gz-toast/gz-toast.ts";
-import "../gz-set-row/gz-set-row.ts";
+import { api, ApiError, errorMessage } from '../../api.ts';
+import type { RawHtml } from '../../base.ts';
+import { define, GzElement, html } from '../../base.ts';
+import { formatDate, formatNumber, formatVolume, plural, relativeDay, UNIT } from '../../format.ts';
+import { navigate } from '../../router.ts';
+import type { Exercise, LiftSet, WorkoutWithSets } from '../../types.ts';
+import type { GzSetRow } from '../gz-set-row/gz-set-row.ts';
+import { toast, toastError } from '../gz-toast/gz-toast.ts';
+import '../gz-set-row/gz-set-row.ts';
 
-type WorkoutDetailState = { status: "loading" } | { status: "ready"; workout: WorkoutWithSets } | { status: "error"; message: string };
+type WorkoutDetailState = { status: 'loading' } | { status: 'ready'; workout: WorkoutWithSets } | { status: 'error'; message: string };
 
 /** One exercise's totals within the session. */
 interface ExerciseTotals {
@@ -21,13 +21,13 @@ interface ExerciseTotals {
   top: number;
 }
 
-const NEW_EXERCISE = "__new__";
+const NEW_EXERCISE = '__new__';
 
 /** The logging screen for one session: edit the header, add sets, see totals. */
 class GzWorkoutDetail extends GzElement {
   #workoutId: string | null = null;
 
-  #state: WorkoutDetailState = { status: "loading" };
+  #state: WorkoutDetailState = { status: 'loading' };
 
   #exercises: Exercise[] = [];
 
@@ -41,12 +41,12 @@ class GzWorkoutDetail extends GzElement {
    */
   #draft: { exercise_id: number | typeof NEW_EXERCISE | null; weight: string; reps: string } = {
     exercise_id: null,
-    weight: "",
-    reps: "",
+    weight: '',
+    reps: '',
   };
   #focusAfterRender = false;
 
-  static observedAttributes = ["workout-id"];
+  static observedAttributes = ['workout-id'];
 
   attributeChangedCallback(_name: string, oldValue: string | null, value: string | null): void {
     this.#workoutId = value;
@@ -67,14 +67,14 @@ class GzWorkoutDetail extends GzElement {
   get #id(): string {
     const id = this.#workoutId;
     if (id === null) {
-      throw new Error("gz-workout-detail needs a workout-id attribute");
+      throw new Error('gz-workout-detail needs a workout-id attribute');
     }
     return id;
   }
 
   connectedCallback(): void {
     super.connectedCallback();
-    this.root.addEventListener("sets-changed", () => {
+    this.root.addEventListener('sets-changed', () => {
       void this.#load();
     });
     void this.#load();
@@ -84,13 +84,13 @@ class GzWorkoutDetail extends GzElement {
     try {
       const [workout, exercises] = await Promise.all([api.workouts.get(this.#id), api.exercises.list()]);
       this.#exercises = exercises;
-      this.#state = { status: "ready", workout };
+      this.#state = { status: 'ready', workout };
       if (this.#draft.exercise_id === null) {
         const lastSet = workout.sets.at(-1);
         this.#draft.exercise_id = lastSet?.exercise_id ?? exercises[0]?.id ?? null;
       }
     } catch (error) {
-      this.#state = { status: "error", message: errorMessage(error) };
+      this.#state = { status: 'error', message: errorMessage(error) };
       if (!(error instanceof ApiError) || error.status !== 404) {
         toastError(error);
       }
@@ -101,30 +101,30 @@ class GzWorkoutDetail extends GzElement {
   // ------------------------------------------------------------------ actions
 
   async handleAction(action: string, element: HTMLElement): Promise<void> {
-    if (action === "toggle-header") {
+    if (action === 'toggle-header') {
       this.#editingHeader = !this.#editingHeader;
       this.render();
       return;
     }
 
-    if (action === "delete-workout") {
-      if (!confirm("Delete this workout and all of its sets? This cannot be undone.")) {
+    if (action === 'delete-workout') {
+      if (!confirm('Delete this workout and all of its sets? This cannot be undone.')) {
         return;
       }
       try {
         await api.workouts.remove(this.#id);
-        toast("Workout deleted", "success");
-        navigate("/workouts");
+        toast('Workout deleted', 'success');
+        navigate('/workouts');
       } catch (error) {
         toastError(error);
       }
       return;
     }
 
-    if (action === "repeat-exercise") {
+    if (action === 'repeat-exercise') {
       // Re-log the last set of an exercise the user already did in this session.
       const exerciseId = Number(element.dataset.id);
-      if (this.#state.status !== "ready") {
+      if (this.#state.status !== 'ready') {
         return;
       }
       const last = this.#state.workout.sets.filter((set) => set.exercise_id === exerciseId).at(-1);
@@ -148,7 +148,7 @@ class GzWorkoutDetail extends GzElement {
   async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
     const values = this.formData(form);
 
-    if (action === "save-workout") {
+    if (action === 'save-workout') {
       try {
         await api.workouts.update(this.#id, {
           performed_on: values.performed_on,
@@ -156,7 +156,7 @@ class GzWorkoutDetail extends GzElement {
           notes: values.notes,
         });
         this.#editingHeader = false;
-        toast("Workout updated", "success");
+        toast('Workout updated', 'success');
         await this.#load();
       } catch (error) {
         toastError(error);
@@ -164,13 +164,13 @@ class GzWorkoutDetail extends GzElement {
       return;
     }
 
-    if (action === "add-set") {
+    if (action === 'add-set') {
       try {
-        let exerciseId: string | number = values.exercise_id ?? "";
+        let exerciseId: string | number = values.exercise_id ?? '';
 
         if (exerciseId === NEW_EXERCISE) {
           if (!values.new_exercise) {
-            toast("Give the new exercise a name", "error");
+            toast('Give the new exercise a name', 'error');
             return;
           }
           const created = await api.exercises.create({ name: values.new_exercise });
@@ -184,7 +184,7 @@ class GzWorkoutDetail extends GzElement {
           notes: values.notes,
         });
 
-        this.#draft = { exercise_id: Number(exerciseId), weight: values.weight ?? "", reps: values.reps ?? "" };
+        this.#draft = { exercise_id: Number(exerciseId), weight: values.weight ?? '', reps: values.reps ?? '' };
         this.#focusAfterRender = true;
         await this.#load();
       } catch (error) {
@@ -196,12 +196,12 @@ class GzWorkoutDetail extends GzElement {
   // ------------------------------------------------------------------- render
 
   afterRender(): void {
-    if (this.#state.status !== "ready") {
+    if (this.#state.status !== 'ready') {
       return;
     }
     const workout = this.#state.workout;
 
-    const rows = this.$$<GzSetRow>("gz-set-row");
+    const rows = this.$$<GzSetRow>('gz-set-row');
     for (const row of rows) {
       const set = workout.sets.find((candidate) => candidate.id === Number(row.dataset.id));
       row.exercises = this.#exercises;
@@ -211,8 +211,8 @@ class GzWorkoutDetail extends GzElement {
 
     const select = this.$<HTMLSelectElement>("select[name='exercise_id']");
     if (select) {
-      select.addEventListener("change", () => {
-        this.$(".field-new-exercise")?.toggleAttribute("hidden", select.value !== NEW_EXERCISE);
+      select.addEventListener('change', () => {
+        this.$('.field-new-exercise')?.toggleAttribute('hidden', select.value !== NEW_EXERCISE);
         this.#prefillFrom(Number(select.value));
       });
     }
@@ -226,7 +226,7 @@ class GzWorkoutDetail extends GzElement {
 
   /** Copies the last set of an exercise into the add-set form. */
   #prefillFrom(exerciseId: number): void {
-    if (this.#state.status !== "ready") {
+    if (this.#state.status !== 'ready') {
       return;
     }
     const previous = this.#state.workout.sets.filter((set) => set.exercise_id === exerciseId).at(-1);
@@ -257,7 +257,7 @@ class GzWorkoutDetail extends GzElement {
             <button class="danger" data-action="delete-workout">Delete</button>
           </div>
         </div>
-        ${workout.notes ? html`<p class="header-notes muted">${workout.notes}</p>` : ""}
+        ${workout.notes ? html`<p class="header-notes muted">${workout.notes}</p>` : ''}
       `;
     }
 
@@ -271,12 +271,12 @@ class GzWorkoutDetail extends GzElement {
             </div>
             <div class="field grow">
               <label for="title">Title</label>
-              <input id="title" name="title" type="text" maxlength="120" value="${workout.title ?? ""}" />
+              <input id="title" name="title" type="text" maxlength="120" value="${workout.title ?? ''}" />
             </div>
           </div>
           <div class="field">
             <label for="notes">Session notes</label>
-            <textarea id="notes" name="notes" maxlength="2000" placeholder="How did it feel?">${workout.notes ?? ""}</textarea>
+            <textarea id="notes" name="notes" maxlength="2000" placeholder="How did it feel?">${workout.notes ?? ''}</textarea>
           </div>
           <div class="row">
             <button type="submit">Save</button>
@@ -303,12 +303,12 @@ class GzWorkoutDetail extends GzElement {
               <label for="exercise_id">Exercise</label>
               <select id="exercise_id" name="exercise_id">
                 ${this.#exercises.map(
-                  (exercise) => html` <option value="${exercise.id}" ${exercise.id === selected ? "selected" : ""}>${exercise.name}</option> `,
+                  (exercise) => html` <option value="${exercise.id}" ${exercise.id === selected ? 'selected' : ''}>${exercise.name}</option> `,
                 )}
-                <option value="${NEW_EXERCISE}" ${selected === NEW_EXERCISE ? "selected" : ""}>＋ New exercise…</option>
+                <option value="${NEW_EXERCISE}" ${selected === NEW_EXERCISE ? 'selected' : ''}>＋ New exercise…</option>
               </select>
             </div>
-            <div class="field field-exercise field-new-exercise" ${selected === NEW_EXERCISE ? "" : "hidden"}>
+            <div class="field field-exercise field-new-exercise" ${selected === NEW_EXERCISE ? '' : 'hidden'}>
               <label for="new_exercise">New exercise name</label>
               <input id="new_exercise" name="new_exercise" type="text" maxlength="120" placeholder="Incline Press" />
             </div>
@@ -353,10 +353,10 @@ class GzWorkoutDetail extends GzElement {
   }
 
   template(): RawHtml {
-    if (this.#state.status === "loading") {
+    if (this.#state.status === 'loading') {
       return html`<p aria-busy="true">Loading workout…</p>`;
     }
-    if (this.#state.status === "error") {
+    if (this.#state.status === 'error') {
       return html`
         <div class="stack">
           <p class="error-text">${this.#state.message}</p>
@@ -376,9 +376,9 @@ class GzWorkoutDetail extends GzElement {
         ${this.#headerTemplate(workout)}
 
         <div class="totals">
-          <span class="badge">${plural(sets.length, "set")}</span>
-          <span class="badge">${plural(breakdown.length, "exercise")}</span>
-          <span class="badge">${plural(reps, "rep")}</span>
+          <span class="badge">${plural(sets.length, 'set')}</span>
+          <span class="badge">${plural(breakdown.length, 'exercise')}</span>
+          <span class="badge">${plural(reps, 'rep')}</span>
           <span class="badge">${formatVolume(volume)} total volume</span>
         </div>
 
@@ -395,7 +395,7 @@ class GzWorkoutDetail extends GzElement {
 
         ${
           breakdown.length === 0
-            ? ""
+            ? ''
             : html`
                 <article class="stack-sm">
                   <h2>By exercise</h2>
@@ -437,4 +437,4 @@ class GzWorkoutDetail extends GzElement {
   }
 }
 
-await define("gz-workout-detail", GzWorkoutDetail);
+await define('gz-workout-detail', GzWorkoutDetail);

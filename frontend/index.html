@@ -17,9 +17,9 @@
       // preference from then on; the storage key is duplicated here on purpose,
       // because this must run before any module has loaded.
       try {
-        const storedTheme = localStorage.getItem("gainz:theme");
-        if (storedTheme === "light" || storedTheme === "dark") {
-          document.documentElement.setAttribute("data-theme", storedTheme);
+        const storedTheme = localStorage.getItem('gainz:theme');
+        if (storedTheme === 'light' || storedTheme === 'dark') {
+          document.documentElement.setAttribute('data-theme', storedTheme);
         }
       } catch (error) {
         /* Storage unavailable — fall through to following the system. */

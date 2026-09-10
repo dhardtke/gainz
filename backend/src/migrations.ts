@@ -6,9 +6,9 @@
  * `bun:sqlite` is synchronous and `db.transaction()` already rolls back on a thrown exception,
  * which is the whole of what a migration runner needs.
  */
-import { readdirSync, readFileSync } from "node:fs";
-import { basename, join, resolve } from "node:path";
-import type { DB } from "./db";
+import { readdirSync, readFileSync } from 'node:fs';
+import { basename, join, resolve } from 'node:path';
+import type { DB } from './db';
 
 export interface Migration {
   /** The leading number of the filename — the ordering key. */
@@ -33,7 +33,7 @@ export interface MigrateOptions {
   onMigration?: (migration: Migration) => void;
 }
 
-export const MIGRATIONS_DIR = resolve(import.meta.dir, "../migrations");
+export const MIGRATIONS_DIR = resolve(import.meta.dir, '../migrations');
 
 const LEDGER = `
 CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -53,11 +53,11 @@ interface AppliedRow {
 
 /** The highest applied migration, or 0 when the database has never been migrated. */
 export function schemaVersion(db: DB): number {
-  const ledger = db.query<{ name: string }, [string]>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get("schema_migrations");
+  const ledger = db.query<{ name: string }, [string]>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get('schema_migrations');
   if (!ledger) {
     return 0;
   }
-  return db.query<{ version: number | null }, []>("SELECT MAX(version) AS version FROM schema_migrations").get()?.version ?? 0;
+  return db.query<{ version: number | null }, []>('SELECT MAX(version) AS version FROM schema_migrations').get()?.version ?? 0;
 }
 
 /** Every `.sql` file in `dir`, sorted by version. Throws on anything it cannot order confidently. */
@@ -66,7 +66,7 @@ function discover(dir: string): Migration[] {
   const byVersion = new Map<number, string>();
 
   for (const entry of readdirSync(dir)) {
-    if (!entry.endsWith(".sql")) {
+    if (!entry.endsWith('.sql')) {
       continue;
     }
 
@@ -123,7 +123,7 @@ export function migrate(db: DB, options: MigrateOptions = {}): MigrateResult {
 
   db.run(LEDGER);
   const files = discover(dir);
-  const previous = db.query<AppliedRow, []>("SELECT version, name FROM schema_migrations ORDER BY version").all();
+  const previous = db.query<AppliedRow, []>('SELECT version, name FROM schema_migrations ORDER BY version').all();
   assertConsistent(files, previous, dir);
 
   const done = new Set(previous.map((row) => row.version));
@@ -137,21 +137,21 @@ export function migrate(db: DB, options: MigrateOptions = {}): MigrateResult {
   // Changing an existing column means SQLite's 12-step table rebuild, which requires foreign keys
   // off — and `PRAGMA foreign_keys` is a silent no-op inside a transaction, so it has to be toggled
   // out here. `foreign_key_check` below is what keeps that from hiding a broken migration.
-  db.run("PRAGMA foreign_keys = OFF;");
+  db.run('PRAGMA foreign_keys = OFF;');
   try {
     for (const migration of pending) {
       try {
         db.transaction(() => {
-          db.run(readFileSync(migration.file, "utf8"));
+          db.run(readFileSync(migration.file, 'utf8'));
 
           // prepare() rather than query(): the schema just changed under us, so this must not come
           // from the statement cache.
-          const orphan = db.prepare<{ table: string }, []>("PRAGMA foreign_key_check").get();
+          const orphan = db.prepare<{ table: string }, []>('PRAGMA foreign_key_check').get();
           if (orphan) {
             throw new Error(`it left orphaned rows in "${orphan.table}"`);
           }
 
-          db.query("INSERT INTO schema_migrations (version, name) VALUES (?, ?)").run(migration.version, migration.name);
+          db.query('INSERT INTO schema_migrations (version, name) VALUES (?, ?)').run(migration.version, migration.name);
         })();
       } catch (err) {
         const reason = err instanceof Error ? err.message : String(err);
@@ -162,7 +162,7 @@ export function migrate(db: DB, options: MigrateOptions = {}): MigrateResult {
       options.onMigration?.(migration);
     }
   } finally {
-    db.run("PRAGMA foreign_keys = ON;");
+    db.run('PRAGMA foreign_keys = ON;');
   }
 
   return { version: schemaVersion(db), applied };

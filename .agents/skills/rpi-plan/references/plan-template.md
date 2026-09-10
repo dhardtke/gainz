@@ -7,7 +7,7 @@ Use this template for `docs/agents/plans/YYYY-MM-DD-description.md`.
 date: [ISO date/time from metadata]
 git_commit: [Current commit hash from metadata]
 branch: [Current branch name from metadata]
-topic: "[Feature/Task Name]"
+topic: '[Feature/Task Name]'
 tags: [plan, relevant-component-names]
 status: draft
 ---

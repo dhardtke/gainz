@@ -1,6 +1,6 @@
-import type { DB } from "../db";
-import { notFound } from "../http";
-import { buildUpdate } from "./sql";
+import type { DB } from '../db';
+import { notFound } from '../http';
+import { buildUpdate } from './sql';
 
 export interface Workout {
   id: number;
@@ -23,7 +23,7 @@ export interface WorkoutInput {
   notes: string | null;
 }
 
-const FIELDS = ["performed_on", "title", "notes"] as const;
+const FIELDS = ['performed_on', 'title', 'notes'] as const;
 
 export class WorkoutRepo {
   constructor(private readonly db: DB) {}
@@ -46,17 +46,17 @@ export class WorkoutRepo {
   }
 
   count(): number {
-    return this.db.query<{ n: number }, []>("SELECT COUNT(*) AS n FROM workouts").get()?.n ?? 0;
+    return this.db.query<{ n: number }, []>('SELECT COUNT(*) AS n FROM workouts').get()?.n ?? 0;
   }
 
   get(id: number): Workout | null {
-    return this.db.query<Workout, [number]>("SELECT id, performed_on, title, notes, created_at FROM workouts WHERE id = ?").get(id);
+    return this.db.query<Workout, [number]>('SELECT id, performed_on, title, notes, created_at FROM workouts WHERE id = ?').get(id);
   }
 
   require(id: number): Workout {
     const workout = this.get(id);
     if (!workout) {
-      throw notFound("Workout");
+      throw notFound('Workout');
     }
     return workout;
   }
@@ -80,7 +80,7 @@ export class WorkoutRepo {
         )
         .get(input.performed_on, input.title, input.notes);
       if (!row) {
-        throw new Error("Insert of workout returned no row");
+        throw new Error('Insert of workout returned no row');
       }
 
       if (copyFrom !== undefined) {
@@ -100,7 +100,7 @@ export class WorkoutRepo {
   update(id: number, patch: Partial<WorkoutInput>): Workout {
     this.require(id);
 
-    const update = buildUpdate("workouts", FIELDS, patch);
+    const update = buildUpdate('workouts', FIELDS, patch);
     if (update) {
       this.db.query(update.sql).run(...update.values, id);
     }
@@ -109,6 +109,6 @@ export class WorkoutRepo {
 
   delete(id: number): void {
     this.require(id);
-    this.db.query("DELETE FROM workouts WHERE id = ?").run(id);
+    this.db.query('DELETE FROM workouts WHERE id = ?').run(id);
   }
 }

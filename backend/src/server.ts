@@ -1,7 +1,7 @@
-import { errorResponse } from "./http";
-import type { Repo } from "./repo";
-import { apiRoutes } from "./routes";
-import { serveStatic } from "./static";
+import { errorResponse } from './http';
+import type { Repo } from './repo';
+import { apiRoutes } from './routes';
+import { serveStatic } from './static';
 
 /**
  * The subset of Bun.serve's options this app supplies. Spelled out rather than

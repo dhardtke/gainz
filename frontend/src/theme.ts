@@ -16,24 +16,24 @@
  *                     overrides that inheritance.
  */
 
-export type Theme = "light" | "dark";
+export type Theme = 'light' | 'dark';
 
 /** Also read by the inline no-flash script in index.html — keep them in step. */
-const STORAGE_KEY = "gainz:theme";
-const EVENT = "gz-theme-change";
+const STORAGE_KEY = 'gainz:theme';
+const EVENT = 'gz-theme-change';
 
-export const THEMES: readonly Theme[] = ["light", "dark"];
+export const THEMES: readonly Theme[] = ['light', 'dark'];
 
 function isTheme(value: string | null): value is Theme {
-  return value === "light" || value === "dark";
+  return value === 'light' || value === 'dark';
 }
 
 /** The system's setting, consulted once to seed a visitor who has never chosen. */
 function systemTheme(): Theme {
   try {
-    return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   } catch {
-    return "light";
+    return 'light';
   }
 }
 
@@ -59,7 +59,7 @@ export function currentTheme(): Theme {
 
 /** Mirrors the current choice onto one element (a shadow host, or <html>). */
 export function applyThemeTo(element: Element): void {
-  element.setAttribute("data-theme", current);
+  element.setAttribute('data-theme', current);
 }
 
 export function setTheme(theme: Theme): void {

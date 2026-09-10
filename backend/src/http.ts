@@ -6,7 +6,7 @@ export class HttpError extends Error {
     readonly details?: unknown,
   ) {
     super(message);
-    this.name = "HttpError";
+    this.name = 'HttpError';
   }
 }
 
@@ -26,8 +26,8 @@ export function errorResponse(err: unknown): Response {
   if (err instanceof HttpError) {
     return json({ error: err.message, details: err.details ?? undefined }, err.status);
   }
-  console.error("Unhandled error:", err);
-  return json({ error: "Internal server error" }, 500);
+  console.error('Unhandled error:', err);
+  return json({ error: 'Internal server error' }, 500);
 }
 
 /**
@@ -36,7 +36,7 @@ export function errorResponse(err: unknown): Response {
  * narrowing the caller gets.
  */
 function isJsonObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /** Parses a JSON request body, rejecting anything that is not a plain object. */
@@ -45,10 +45,10 @@ export async function readJsonObject(req: Request): Promise<Record<string, unkno
   try {
     parsed = await req.json();
   } catch {
-    throw badRequest("Request body must be valid JSON");
+    throw badRequest('Request body must be valid JSON');
   }
   if (!isJsonObject(parsed)) {
-    throw badRequest("Request body must be a JSON object");
+    throw badRequest('Request body must be a JSON object');
   }
   return parsed;
 }
