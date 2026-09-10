@@ -4,7 +4,7 @@ git_commit: 3d079f404f68f3113b824e8d30b73a1444e6cfd0
 branch: main
 topic: "Split routes.ts into per-entity route files under src/routes/"
 tags: [plan, routes, http, tests, refactor]
-status: draft
+status: ready
 ---
 
 # PLAN: Split `routes.ts` into per-entity route files
