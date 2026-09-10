@@ -18,14 +18,8 @@ bun run lint             # linting
 bun run fmt              # format (fmt:check for CI)
 ```
 
-Dependencies are pinned to exact versions.
-
-TypeScript and JavaScript use single quotes, CSS double; `bun run fmt` enforces both.
-
 The database lives at `data/gainz.sqlite` (override with `GAINZ_DB`), is created on first run,
 and is git-ignored. `:memory:` is supported and is what the tests use.
-
-Commits go directly on `main`; don't open a feature branch unless asked.
 
 Always put plans inside the project directory.
 
@@ -42,3 +36,5 @@ transpiled on request by `backend/src/transpile.ts` — no bundler, no output di
 
 `README.md` documents the full REST surface, the data model, and the reasoning behind the
 frontend's loading and theming design. Read it before changing either.
+
+See `docs/coding-guidelines.md` and `docs/styling-guidelines.md` for guidelines on how to code and style.
