@@ -12,6 +12,7 @@ You are tasked with implementing an approved technical plan. These plans contain
 If the user provided a plan path, proceed directly. If no plan path was provided, check `docs/agents/plans/` for the most recent plans. If none found, ask the user for a path.
 
 When you have a plan:
+
 - Read the plan completely and check for any existing checkmarks (`- [x]`)
 - Read all files mentioned in the plan
 - **Read files fully** - never use limit/offset parameters, you need complete context
@@ -30,6 +31,7 @@ The plan file is also a state tracker. After every task, you MUST immediately up
 ## Implementation Philosophy
 
 Plans are carefully designed, but reality can be messy. Your job is to:
+
 - Follow the plan's intent while adapting to what you find
 - Implement each phase fully before moving to the next
 - Verify your work makes sense in the broader codebase context
@@ -37,6 +39,7 @@ Plans are carefully designed, but reality can be messy. Your job is to:
 When things don't match the plan exactly, think about why and communicate clearly. The plan is your guide, but your judgment matters too.
 
 If you encounter a mismatch:
+
 - STOP and think deeply about why the plan can't be followed
 - Present the issue clearly:
   ```
@@ -51,6 +54,7 @@ If you encounter a mismatch:
 ## Verification Approach
 
 After implementing a phase:
+
 - Run the success criteria checks listed in the plan (test commands, linters, type checkers, etc.)
 - Fix any issues before proceeding
 - If the phase has **manual verification steps**, pause and inform the human:
@@ -74,6 +78,7 @@ After all phases are fully done, present a summary to the user for verification.
 ## If You Get Stuck
 
 When something isn't working as expected:
+
 - First, make sure you've read and understood all the relevant code
 - Consider if the codebase has evolved since the plan was written
 - Present the mismatch clearly and ask for guidance
@@ -83,6 +88,7 @@ Use sub-agents sparingly - mainly for targeted debugging or exploring unfamiliar
 ## Resuming Work
 
 If the plan has existing checkmarks:
+
 - Trust that completed work is done
 - Pick up from the first unchecked item
 - Verify previous work only if something seems off

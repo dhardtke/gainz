@@ -10,6 +10,7 @@ You are tasked with creating detailed implementation plans through an interactiv
 ## Initial Setup
 
 If the user already provided a task description, file path, or topic alongside this command, proceed directly to step 1 below. Only if no context was given, respond with:
+
 ```
 I'll help you create a detailed implementation plan. Let me start by understanding what we're building.
 
@@ -20,6 +21,7 @@ Please provide:
 
 I'll analyze this information and work with you to create a comprehensive plan.
 ```
+
 Then wait for the user's input.
 
 ## Process Steps
@@ -83,6 +85,7 @@ Then wait for the user's input.
    If a question can be answered by exploring the codebase, explore the codebase instead.
 
 ### Step 2: Plan Structure Development
+
 After all key decisions are clear, extract the acceptance criteria from the brainstorming process, then summarize the decisions and planned phases clearly so the user can improve the split.
 Each phase must be a **vertical**, testable slice.
 If that does not fit, use fewer larger phases:
@@ -104,7 +107,6 @@ Planned phases:
 
 Reply "create plan" and I will write the plan.
 ```
-
 
 **Phase by vertical feature slices**. Do NOT extract tests or documentation updates into their own phases. Include tests and documentation in the phase that delivers the related behavior.
 
@@ -137,6 +139,7 @@ After **explicit** approval of the user:
 2. **Fix relevant findings directly**
 
 3. **Present the draft plan location**:
+
    ```
    I've created the initial implementation plan at:
    `docs/agents/plans/YYYY-MM-DD-description.md`
@@ -159,6 +162,7 @@ After **explicit** approval of the user:
 5. **Once the user is happy**, set the status of the plan to `ready`. Offer the user to commit (only if the plan is not gitignored).
 
    Give the user a hint about the next step.
+
    ```text
    Next step: implement the plan.
 
@@ -228,6 +232,7 @@ After **explicit** approval of the user:
 ## Common Patterns
 
 ### For Database Changes:
+
 - Start with schema/migration
 - Add store methods
 - Update business logic
@@ -235,6 +240,7 @@ After **explicit** approval of the user:
 - Update clients
 
 ### For New Features:
+
 - Research existing patterns first
 - Start with data model
 - Build backend logic
@@ -242,6 +248,7 @@ After **explicit** approval of the user:
 - Implement UI last
 
 ### For Refactoring:
+
 - Document current behavior
 - Plan incremental changes
 - Maintain backwards compatibility
