@@ -18,16 +18,17 @@ leaving it blank with no error.
 All interpolation goes through the `html` template, which escapes; use `raw()` only for markup
 another `html` call produced.
 
-The frontend is TypeScript, served as JavaScript. `src/transpile.ts` runs each module through
-`Bun.Transpiler` on request; specifiers are left untouched, so a module imports `"./format.ts"` and
-the browser fetches the file of that name. Types are **erased, not checked** — `bun run typecheck`
+The frontend is TypeScript, served as JavaScript. `backend/src/transpile.ts` runs each module
+through `Bun.Transpiler` on request; specifiers are left untouched, so a module imports
+`"./format.ts"` and the browser fetches the file of that name. Types are **erased, not checked** — `bun run typecheck`
 is the only gate, and a type error will transpile and ship.
 
 The shapes the API returns are declared in `js/types.ts` and pulled in with
 `import type { … } from "../../js/types.ts"`, which the transpiler strips whole, so that module is
-never fetched at runtime. They are written out **by hand** rather than imported from `src/repo/`,
-even though a type-only import would be erased too: the frontend is a client of an HTTP API, so
-what it should be pinned to is the wire format it expects, not the server's internal row types.
+never fetched at runtime. They are written out **by hand** rather than imported from
+`backend/src/repo/`, even though a type-only import would be erased too: the frontend is a client
+of an HTTP API, so what it should be pinned to is the wire format it expects, not the server's
+internal row types.
 Sharing them would absorb a renamed column as a quiet refactor instead of surfacing it as the API
 change it is — and `bun run typecheck` will not catch that drift for you.
 

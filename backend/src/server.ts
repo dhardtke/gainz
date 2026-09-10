@@ -6,8 +6,8 @@ import { Repo } from "./repo";
 import { apiRoutes } from "./routes";
 import { transpileModule } from "./transpile";
 
-const PROJECT_ROOT = resolve(fileURLToPath(new URL("..", import.meta.url)));
-const FRONTEND_DIR = resolve(PROJECT_ROOT, "frontend");
+const REPO_ROOT = resolve(fileURLToPath(new URL("../..", import.meta.url)));
+const FRONTEND_DIR = resolve(REPO_ROOT, "frontend");
 
 /**
  * Third-party stylesheets served straight out of node_modules.
@@ -25,7 +25,7 @@ function resolveVendorPath(pathname: string): string | null {
     return null;
   }
   try {
-    return Bun.resolveSync(specifier, PROJECT_ROOT);
+    return Bun.resolveSync(specifier, REPO_ROOT);
   } catch {
     return null;
   }

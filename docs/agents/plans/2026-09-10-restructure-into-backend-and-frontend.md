@@ -4,7 +4,7 @@ git_commit: d2f925215b30d034700c78d3a892de63c08f33f0
 branch: main
 topic: "Restructure the repository into backend/ and frontend/"
 tags: [plan, layout, server, transpile, migrations, tsconfig, docs]
-status: ready
+status: complete
 ---
 
 # PLAN: Restructure the repository into backend/ and frontend/
@@ -276,60 +276,60 @@ preserved, then fix the one constant whose distance to the repository root actua
 
 **Tasks**:
 
-- [ ] Create the directory and move all three together, so `git` sees one coherent rename:
+- [x] Create the directory and move all three together, so `git` sees one coherent rename:
       `New-Item -ItemType Directory backend`, then `git mv src backend/src`,
       `git mv test backend/test`, `git mv migrations backend/migrations`
-- [ ] `backend/src/server.ts:9` — the module is now one level deeper, so the root is two hops up.
+- [x] `backend/src/server.ts:9` — the module is now one level deeper, so the root is two hops up.
       Rename it as well, since `PROJECT_ROOT` next to a `backend/` directory reads ambiguously:
       `const REPO_ROOT = resolve(fileURLToPath(new URL("../..", import.meta.url)));`
-- [ ] `backend/src/server.ts` — update both uses of the renamed constant: line 10
+- [x] `backend/src/server.ts` — update both uses of the renamed constant: line 10
       (`resolve(REPO_ROOT, "frontend")`) and line 28 (`Bun.resolveSync(specifier, REPO_ROOT)`).
       Line 28 is the one that must point at the directory holding `node_modules`, and it is only
       exercised by the `/vendor/pico.css` test.
-- [ ] `backend/src/migrations.ts:36` — **verify and do not edit.** `resolve(import.meta.dir,
+- [x] `backend/src/migrations.ts:36` — **verify and do not edit.** `resolve(import.meta.dir,
       "../migrations")` from `backend/src/` resolves to `backend/migrations/`, because both moved.
-- [ ] `backend/src/migrations.ts:4` — the module doc comment above that constant says numbered
+- [x] `backend/src/migrations.ts:4` — the module doc comment above that constant says numbered
       `.sql` files live under `migrations/`; per decision 6 it becomes `backend/migrations/`
-- [ ] `backend/src/repo/index.ts:4` — header comment: all SQL lives under `backend/src/repo/`
-- [ ] `frontend/js/types.ts:4` — the header comment explaining why these shapes are written by
+- [x] `backend/src/repo/index.ts:4` — header comment: all SQL lives under `backend/src/repo/`
+- [x] `frontend/js/types.ts:4` — the header comment explaining why these shapes are written by
       hand says they are "not imported from `src/repo/`"; becomes `backend/src/repo/`. This is
       the one edit that no search for `public` or `frontend` would ever surface — it lives in the
       frontend but names a backend directory.
-- [ ] `backend/test/static.api.test.ts:106` — the fixture path gains one more level:
+- [x] `backend/test/static.api.test.ts:106` — the fixture path gains one more level:
       `resolve(import.meta.dir, "..", "..", "frontend", "js", "__broken.ts")`
-- [ ] `backend/test/static.api.test.ts:101-102` — the two encoded traversal probes name
+- [x] `backend/test/static.api.test.ts:101-102` — the two encoded traversal probes name
       `/%2e%2e/src/server.ts` and `/%2e%2e/src/transpile.ts`. Both still return 404 after the
       move, so the assertions pass either way — but they would now be probing for a file that
       does not exist, which quietly turns a real test into a tautology. Repoint them at
       `/%2e%2e/backend/src/server.ts` and `/%2e%2e/backend/src/transpile.ts` so they keep
       describing an escape that would actually reach source if the guard failed.
-- [ ] `package.json:7` — `"module": "backend/src/server.ts"`
-- [ ] `package.json:9-12` — the four scripts:
+- [x] `package.json:7` — `"module": "backend/src/server.ts"`
+- [x] `package.json:9-12` — the four scripts:
       `start` → `bun run backend/src/server.ts`,
       `start:dev` → `bun --watch backend/src/server.ts`,
       `seed` → `bun run backend/src/seed.ts`,
       `migrate` → `bun run backend/src/migrate.ts`
-- [ ] `tsconfig.json:17` — `"include": ["backend/src", "backend/test", "frontend"]`
-- [ ] `docs/backend.md` — heading `### Backend (\`backend/src/\`)` (line 1), the schema location
+- [x] `tsconfig.json:17` — `"include": ["backend/src", "backend/test", "frontend"]`
+- [x] `docs/backend.md` — heading `### Backend (\`backend/src/\`)` (line 1), the schema location
       at line 32, and the two `test/` references at lines 41 and 47
-- [ ] `docs/frontend.md` — line 21 (`backend/src/transpile.ts`) and line 28 (`backend/src/repo/`)
-- [ ] `README.md` — rewrite the layout tree (lines 69-121) to nest `migrations/`, `src/` and
+- [x] `docs/frontend.md` — line 21 (`backend/src/transpile.ts`) and line 28 (`backend/src/repo/`)
+- [x] `README.md` — rewrite the layout tree (lines 69-121) to nest `migrations/`, `src/` and
       `test/` under `backend/`, and update the prose at line 33 (`backend/migrations/`), line 173
       (`backend/src/transpile.ts`), line 229 (`backend/src/server.ts`) and line 288 (adding a new
       migration file)
-- [ ] `AGENTS.md` — line 14 (`bun test backend/test/workout.api.test.ts`), line 16
+- [x] `AGENTS.md` — line 14 (`bun test backend/test/workout.api.test.ts`), line 16
       (`typechecking (backend + frontend)`), and the Architecture list at lines 32-35, which
       should now describe `backend/` as one entry with its three children
 
 **Automated Verification**:
 
-- [ ] `bun test` passes, and the run reports the same test count as before the refactor —
+- [x] `bun test` passes, and the run reports the same test count as before the refactor —
       confirming Bun still discovers the suite at its new depth rather than silently finding
       nothing
-- [ ] `bun run typecheck` is clean
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
-- [ ] `bun run migrate` against a **fresh** throwaway database prints `applied
+- [x] `bun run typecheck` is clean
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
+- [x] `bun run migrate` against a **fresh** throwaway database prints `applied
       001-initial-schema` and then `now at schema version 1`. Delete the file first, or the
       second run reports `already at schema version 1 — nothing to apply` and the check passes
       without applying anything:
@@ -338,24 +338,35 @@ preserved, then fix the one constant whose distance to the repository root actua
       exercises. It is *not* the check on `MIGRATIONS_DIR` — `backend/test/migrate.test.ts:179`
       already reads `001-initial-schema.sql` out of the real `MIGRATIONS_DIR`, so `bun test`
       fails loudly on its own if that resolution breaks.
-- [ ] `bun start` boots, and its second line still reads `database: data/gainz.sqlite` —
+- [x] `bun start` boots, and its second line still reads `database: data/gainz.sqlite` —
       the check that decision 1 held and that `DEFAULT_DB_PATH` was not disturbed
-- [ ] Against that running server, `/`, `/css/app.css`, `/js/main.ts`, `/vendor/pico.css` and
+- [x] Against that running server, `/`, `/css/app.css`, `/js/main.ts`, `/vendor/pico.css` and
       `/api/health` all return 200. The `import.meta.main` block and the real on-disk database
       path are the two things `useServer()` never exercises, which is why this is worth doing
       outside the suite.
-- [ ] A sweep for bare directory names in prose finds nothing stale. Unlike the phase-1 sweep
+- [x] A sweep for bare directory names in prose finds nothing stale. Unlike the phase-1 sweep
       this must look for the *other three* names, which is the class of miss that
       `frontend/js/types.ts:4` belongs to — a frontend file naming a backend directory:
       `Get-ChildItem -Path backend,frontend -Recurse -Include *.ts | Select-String -Pattern '(^|[^./\w])(src|test|migrations)/'`
       Every surviving hit must be a real relative import specifier such as `../src/repo`. Any
       hit inside a comment or a doc string is a stale path and must be repathed.
-- [ ] `git status` shows renames (`R`) for the moved files
-- [ ] The repository root contains no `src`, `test`, `migrations` or `public` directory
+- [x] `git status` shows renames (`R`) for the moved files
+- [x] The repository root contains no `src`, `test`, `migrations` or `public` directory
 
 ## Implementation Notes
 
-During implementation, document user feedback, problems, and decisions here.
+Both phases went as written; nothing in the plan had to be revised against the code. The only
+work the tasks did not name is prose rewrapping: repathing a directory inside a sentence pushes
+its line past the column the surrounding document keeps to, so the touched paragraphs in
+`README.md` (72–80 columns), `docs/backend.md`, `docs/frontend.md` (100) and the module doc
+comment in `backend/src/migrations.ts` were re-flowed. `oxfmt` does not reflow comments or
+Markdown prose, so `fmt:check` would not have caught a ragged line.
+
+Every verification listed in both phases was run and passed. `bun test` reported the same
+52 tests across 6 files before and after the move; `bun run migrate` against a fresh throwaway
+database applied `001-initial-schema` and reported schema version 1; a booted server answered
+`/`, `/css/app.css`, `/js/main.ts`, `/vendor/pico.css` and `/api/health` with 200 and printed
+`database: data/gainz.sqlite`, which is decision 1 holding.
 
 ## References
 

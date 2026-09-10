@@ -1,10 +1,10 @@
 /**
  * A small schema migration runner.
  *
- * Numbered `.sql` files under `migrations/` are applied in ascending order, each inside its own
- * transaction, and recorded in `schema_migrations`. There is no library behind this: `bun:sqlite`
- * is synchronous and `db.transaction()` already rolls back on a thrown exception, which is the
- * whole of what a migration runner needs.
+ * Numbered `.sql` files under `backend/migrations/` are applied in ascending order, each inside its
+ * own transaction, and recorded in `schema_migrations`. There is no library behind this:
+ * `bun:sqlite` is synchronous and `db.transaction()` already rolls back on a thrown exception,
+ * which is the whole of what a migration runner needs.
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";

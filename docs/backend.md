@@ -1,4 +1,4 @@
-### Backend (`src/`)
+### Backend (`backend/src/`)
 
 A strict layering, one concern per file: `db.ts` (connection + PRAGMAs) → `migrations.ts` (schema) →
 `repo/` (**all** SQL, one method per operation, returns typed rows) → `routes.ts` (the registry that
@@ -29,8 +29,8 @@ A write that needs more than one statement belongs in a single `Repo` method wra
 copied sets commit together or not at all. The route files never open a transaction; if a handler
 finds itself sequencing two writes, the sequence belongs in the repository instead.
 
-The schema lives in `migrations/`, one numbered `.sql` file per change. `openDatabase()` applies
-whatever is pending on every start: each file runs in its own transaction and is recorded in
+The schema lives in `backend/migrations/`, one numbered `.sql` file per change. `openDatabase()`
+applies whatever is pending on every start: each file runs in its own transaction and is recorded in
 `schema_migrations`, so a half-applied migration cannot exist. Foreign keys are switched off for the
 duration of the run — SQLite's table-rebuild procedure needs that, and `PRAGMA foreign_keys` is a
 silent no-op inside a transaction — and each migration must pass `PRAGMA foreign_key_check` before
@@ -38,14 +38,14 @@ it commits. Changing the schema means adding a file numbered above the current v
 else. The runner refuses to start rather than guess when the files and the database disagree.
 
 `serveOptions(repo)` is exported so the test suite can start a real server on port 0 against an
-in-memory DB. `test/helpers/server.ts` wraps that in `useServer()`, which registers the
+in-memory DB. `backend/test/helpers/server.ts` wraps that in `useServer()`, which registers the
 `beforeEach`/`afterEach` pair from inside the function — so each of the five API test files
 (`meta`, `static`, `exercise`, `workout`, `set`) gets its own hooks and its own database rather
 than sharing one through the module cache. The API files mirror the route files, except that tests
 group by subject where routes group by URL: the sets that are logged through
 `POST /api/workouts/:id/sets` are tested in `set.api.test.ts`. Tests are end-to-end over HTTP, with
-one exception: `test/migrate.test.ts` unit-tests the migration runner against throwaway fixture
-directories. There are no unit tests of `Repo`.
+one exception: `backend/test/migrate.test.ts` unit-tests the migration runner against throwaway
+fixture directories. There are no unit tests of `Repo`.
 
 Static serving is deliberately narrow: `frontend/` with a path-escape guard, plus `VENDOR_FILES`
 in `server.ts` — a one-file allowlist into `node_modules` (`/vendor/pico.css`). Serving anything
