@@ -56,46 +56,51 @@ function main() {
     return;
   }
 
-  const idByName = new Map<string, number>();
-  for (const exercise of EXERCISES) {
-    idByName.set(exercise.name, repo.createExercise(exercise).id);
-  }
+  // One transaction for the whole run: a seeder that fails half way should leave nothing behind,
+  // not a partial block of training history. createWorkout opens a transaction of its own, which
+  // nests as a savepoint.
+  db.transaction(() => {
+    const idByName = new Map<string, number>();
+    for (const exercise of EXERCISES) {
+      idByName.set(exercise.name, repo.createExercise(exercise).id);
+    }
 
-  const weeks = 6;
-  let created = 0;
+    const weeks = 6;
+    let created = 0;
 
-  for (let week = weeks - 1; week >= 0; week--) {
-    TEMPLATES.forEach((template, dayIndex) => {
-      const daysAgo = week * 7 - dayIndex * 2;
-      if (daysAgo < 0) {
-        return;
-      }
-
-      const workout = repo.createWorkout({
-        performed_on: isoDaysAgo(daysAgo),
-        title: template.title,
-        notes: week === weeks - 1 ? "First session of the block." : null,
-      });
-
-      for (const lift of template.lifts) {
-        const exerciseId = idByName.get(lift.name);
-        if (exerciseId === undefined) {
-          continue;
+    for (let week = weeks - 1; week >= 0; week--) {
+      TEMPLATES.forEach((template, dayIndex) => {
+        const daysAgo = week * 7 - dayIndex * 2;
+        if (daysAgo < 0) {
+          return;
         }
-        const weight = lift.start + (weeks - 1 - week) * lift.step;
 
-        lift.reps.forEach((reps, setIndex) => {
-          repo.createSet(workout.id, {
-            exercise_id: exerciseId,
-            reps,
-            weight,
-            notes: SET_NOTES[(created + setIndex) % SET_NOTES.length] ?? null,
-          });
+        const workout = repo.createWorkout({
+          performed_on: isoDaysAgo(daysAgo),
+          title: template.title,
+          notes: week === weeks - 1 ? "First session of the block." : null,
         });
-      }
-      created++;
-    });
-  }
+
+        for (const lift of template.lifts) {
+          const exerciseId = idByName.get(lift.name);
+          if (exerciseId === undefined) {
+            continue;
+          }
+          const weight = lift.start + (weeks - 1 - week) * lift.step;
+
+          lift.reps.forEach((reps, setIndex) => {
+            repo.createSet(workout.id, {
+              exercise_id: exerciseId,
+              reps,
+              weight,
+              notes: SET_NOTES[(created + setIndex) % SET_NOTES.length] ?? null,
+            });
+          });
+        }
+        created++;
+      });
+    }
+  })();
 
   const summary = repo.summary();
   console.log(`Seeded ${summary.workout_count} workouts, ${summary.set_count} sets across ${summary.exercise_count} exercises.`);

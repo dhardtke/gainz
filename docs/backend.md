@@ -15,6 +15,11 @@ needs through its constructor, so there is no runtime cycle to trip over.
 Error handling is by throwing: handlers throw `HttpError` and `guardAll()` in `routes.ts` turns
 it into a JSON `{ error }` body with the right status. New routes must be wrapped in `guardAll`.
 
+A write that needs more than one statement belongs in a single `Repo` method wrapped in
+`db.transaction()` — `createWorkout(input, { copyFrom })` is the example, where the workout and its
+copied sets commit together or not at all. `routes.ts` never opens a transaction; if a handler finds
+itself sequencing two writes, the sequence belongs in the repository instead.
+
 The schema lives in `migrations/`, one numbered `.sql` file per change. `openDatabase()` applies
 whatever is pending on every start: each file runs in its own transaction and is recorded in
 `schema_migrations`, so a half-applied migration cannot exist. Foreign keys are switched off for the
