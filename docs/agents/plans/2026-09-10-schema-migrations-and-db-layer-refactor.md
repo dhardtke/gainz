@@ -357,39 +357,39 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 - [x] Implement `migrate(db, options)` with the apply loop.
       ```ts
       export interface MigrateOptions {
-      dir?: string;
-      onMigration?: (migration: Migration) => void;
+        dir?: string;
+        onMigration?: (migration: Migration) => void;
       }
 
       export function migrate(db: DB, options: MigrateOptions = {}): MigrateResult {
-                    // exec ledger DDL, discover, read applied rows, assert consistency
-                    if (pending.length === 0) { return { version: current, applied: [] }; }
-                    db.exec("PRAGMA foreign_keys = OFF;");
-                    try {
-                      for (const migration of pending) {
-                        try {
-                          db.transaction(() => {
-                            db.exec(readFileSync(migration.file, "utf8"));
-                            const orphans = db.query<{ table: string }, []>("PRAGMA foreign_key_check").all();
-                            if (orphans.length > 0) { throw new Error(/* names orphans[0].table */); }
-                            db.query("INSERT INTO schema_migrations (version, name) VALUES (?, ?)")
-                              .run(migration.version, migration.name);
-                          })();
-                        } catch (err) {
-                          throw new Error(`Migration ${basename(migration.file)} failed and was rolled back: …`,
-                                          { cause: err });
-                        }
-                        applied.push(migration);
-                        options.onMigration?.(migration);
-                      }
-                    } finally {
-                      db.exec("PRAGMA foreign_keys = ON;");
-                    }
-                    return { version, applied };
-                  }
-                  ```
-                  The `finally` is what guarantees foreign keys come back on after a failure. `orphans[0]` is
-                  `T | undefined` under `noUncheckedIndexedAccess` — narrow it, as with the regex groups above.
+        // exec ledger DDL, discover, read applied rows, assert consistency
+        if (pending.length === 0) { return { version: current, applied: [] }; }
+        db.exec("PRAGMA foreign_keys = OFF;");
+        try {
+          for (const migration of pending) {
+            try {
+              db.transaction(() => {
+                db.exec(readFileSync(migration.file, "utf8"));
+                const orphans = db.query<{ table: string }, []>("PRAGMA foreign_key_check").all();
+                if (orphans.length > 0) { throw new Error(/* names orphans[0].table */); }
+                db.query("INSERT INTO schema_migrations (version, name) VALUES (?, ?)")
+                  .run(migration.version, migration.name);
+              })();
+            } catch (err) {
+              throw new Error(`Migration ${basename(migration.file)} failed and was rolled back: …`,
+                              { cause: err });
+            }
+            applied.push(migration);
+            options.onMigration?.(migration);
+          }
+        } finally {
+          db.exec("PRAGMA foreign_keys = ON;");
+        }
+        return { version, applied };
+      }
+      ```
+      The `finally` is what guarantees foreign keys come back on after a failure. `orphans[0]` is
+      `T | undefined` under `noUncheckedIndexedAccess` — narrow it, as with the regex groups above.
 
 - [x] Delete the `SCHEMA` constant from `src/db.ts` and replace `db.exec(SCHEMA)` with `migrate(db, { onMigration })`.
 - [x] Give `openDatabase` an optional second parameter `onMigration?: (m: Migration) => void`,
@@ -479,20 +479,20 @@ module per entity behind a facade, and collapse the triplicated `UPDATE` builder
 - [x] Add `buildUpdate` to `src/repo/sql.ts`.
       ```ts
       export interface UpdateStatement {
-      sql: string;
-      values: (string | number | null)[];
+        sql: string;
+        values: (string | number | null)[];
       }
 
       /** Builds `UPDATE <table> SET a = ?, b = ? WHERE id = ?`, or null when the patch is empty. */
-                  export function buildUpdate<T extends object, F extends Extract<keyof T, string>>(
-                    table: string,
-                    fields: readonly F[],
-                    patch: Partial<T>,
-                  ): UpdateStatement | null;
-                  ```
-                  Field names come only from the `fields` tuple, never from `Object.keys(patch)`. It must test
-                  membership with `field in patch` and push `patch[field] ?? null`, matching `repo.ts:149-151`
-                  exactly — `patch[field] !== undefined` would change how an explicit `null` is treated.
+      export function buildUpdate<T extends object, F extends Extract<keyof T, string>>(
+        table: string,
+        fields: readonly F[],
+        patch: Partial<T>,
+      ): UpdateStatement | null;
+      ```
+      Field names come only from the `fields` tuple, never from `Object.keys(patch)`. It must test
+      membership with `field in patch` and push `patch[field] ?? null`, matching `repo.ts:149-151`
+      exactly — `patch[field] !== undefined` would change how an explicit `null` is treated.
 
 - [x] Create `src/repo/exercises.ts`: the `Exercise`, `ExerciseWithStats`, `SessionPoint` and
       `ExerciseInput` interfaces plus an `ExerciseRepo` class with `list`, `get`, `require`, `create`,
