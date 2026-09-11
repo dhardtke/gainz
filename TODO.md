@@ -7,7 +7,6 @@
 - readWorkoutBody and readSetBody should be part of an explicit mapping layer
 - Validation should not be part of mapping (requiredInt, etc.)
 - Logging
-- Change static.ts to become an actual route, not a fetch fallback
 
 ## Features
 
