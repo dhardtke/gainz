@@ -33,14 +33,23 @@ needs through its constructor, so there is no runtime cycle to trip over.
 
 Error handling is by throwing: handlers throw `HttpError` and `guardAll()` in `routes/shared.ts`
 turns it into a JSON `{ error }` body with the right status. New routes must be wrapped in
-`guardAll` in whichever route file owns them.
+`guardAll` in whichever route file owns them. Three statuses cover everything the API refuses —
+400 for bad input, 404 for something missing, 409 for a conflict — which is why `http/http.ts`
+exports exactly `badRequest`, `notFound` and `conflict`.
 
 A write that needs more than one statement belongs in a single `Repo` method wrapped in
 `db.transaction()` — `createWorkout(input, { copyFrom })` is the example, where the workout and its
 copied sets commit together or not at all. The route files never open a transaction; if a handler
 finds itself sequencing two writes, the sequence belongs in the repository instead.
 
-The schema lives in `../src/backend/db/migrations`, one numbered `.sql` file per change. `openDatabase()`
+Three tables, `exercises ──< sets >── workouts`, and `sets` is the fact table: one row per set
+performed, carrying `reps`, `weight`, free-text `notes` and a `position` that preserves the order
+within a session. Its two foreign keys are deliberately asymmetric. `workout_id` is
+`ON DELETE CASCADE`, so deleting a workout takes its sets with it; `exercise_id` is
+`ON DELETE RESTRICT`, so deleting an exercise is refused while any set still points at it. History
+can be thrown away deliberately, but it cannot silently lose its meaning.
+
+The schema lives in `src/backend/db/migrations`, one numbered `.sql` file per change. `openDatabase()`
 applies whatever is pending on every start: each file runs in its own transaction and is recorded in
 `schema_migrations`, so a half-applied migration cannot exist. Foreign keys are switched off for the
 duration of the run — SQLite's table-rebuild procedure needs that, and `PRAGMA foreign_keys` is a
@@ -55,7 +64,7 @@ its own database rather than sharing one through the module cache. Every `*.test
 the module it exercises, and each one covers the module declaring the routes it drives, which is
 why the two tests for `POST /api/workouts/:id/sets` are in `workout.routes.test.ts` and not beside
 `set.routes.ts`. Tests are end-to-end over HTTP, with one exception:
-`../src/backend/db/migrations.test.ts` unit-tests the migration runner against throwaway fixture
+`src/backend/db/migrations.test.ts` unit-tests the migration runner against throwaway fixture
 directories. There are no unit tests of `Repo`.
 
 Static serving is deliberately narrow: `src/frontend/` with a path-escape guard, plus `VENDOR_FILES`
