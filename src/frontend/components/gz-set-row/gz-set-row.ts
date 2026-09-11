@@ -2,7 +2,7 @@ import { api } from '../../api.ts';
 import type { RawHtml } from '../../base.ts';
 import { define, GzElement, html } from '../../base.ts';
 import { formatNumber, formatVolume, UNIT } from '../../format.ts';
-import type { Exercise, LiftSet } from '../../types.ts';
+import type { ExerciseDto, LiftSetDto } from '../../../shared/dto/index.ts';
 import { toast, toastError } from '../gz-toast/gz-toast.ts';
 
 /**
@@ -12,20 +12,20 @@ import { toast, toastError } from '../gz-toast/gz-toast.ts';
 export class GzSetRow extends GzElement {
   #editing = false;
 
-  #set: LiftSet | null = null;
+  #set: LiftSetDto | null = null;
 
-  #exercises: Exercise[] = [];
+  #exercises: ExerciseDto[] = [];
 
   #index = 0;
 
-  set set(value: LiftSet | undefined) {
+  set set(value: LiftSetDto | undefined) {
     this.#set = value ?? null;
     if (this.isConnected) {
       this.render();
     }
   }
 
-  set exercises(value: Exercise[] | null | undefined) {
+  set exercises(value: ExerciseDto[] | null | undefined) {
     this.#exercises = value ?? [];
   }
 
@@ -56,8 +56,8 @@ export class GzSetRow extends GzElement {
 
     if (action === 'duplicate') {
       try {
-        await api.workouts.addSet(set.workout_id, {
-          exercise_id: set.exercise_id,
+        await api.workouts.addSet(set.workoutId, {
+          exerciseId: set.exerciseId,
           reps: set.reps,
           weight: set.weight,
           notes: set.notes,
@@ -90,7 +90,7 @@ export class GzSetRow extends GzElement {
     const values = this.formData(form);
     try {
       await api.sets.update(this.#set.id, {
-        exercise_id: Number(values.exercise_id),
+        exerciseId: Number(values.exerciseId),
         reps: Number(values.reps),
         weight: Number(values.weight),
         notes: values.notes,
@@ -102,14 +102,14 @@ export class GzSetRow extends GzElement {
     }
   }
 
-  #editTemplate(set: LiftSet): RawHtml {
+  #editTemplate(set: LiftSetDto): RawHtml {
     return html`
       <form class="edit fields" data-action="save">
         <div class="field field-exercise">
           <label>Exercise</label>
-          <select name="exercise_id">
+          <select name="exerciseId">
             ${this.#exercises.map(
-              (exercise) => html` <option value="${exercise.id}" ${exercise.id === set.exercise_id ? 'selected' : ''}>${exercise.name}</option> `,
+              (exercise) => html` <option value="${exercise.id}" ${exercise.id === set.exerciseId ? 'selected' : ''}>${exercise.name}</option> `,
             )}
           </select>
         </div>
@@ -143,7 +143,7 @@ export class GzSetRow extends GzElement {
     return html`
       <div class="row-view">
         <span class="index">${this.#index}</span>
-        <a class="exercise" href="#/exercises/${set.exercise_id}">${set.exercise_name}</a>
+        <a class="exercise" href="#/exercises/${set.exerciseId}">${set.exerciseName}</a>
         <span class="load">${formatNumber(set.weight)} ${UNIT} × ${set.reps}</span>
         <span class="note">${set.notes ?? ''}</span>
         <span class="actions">

@@ -24,13 +24,18 @@ leaving it blank with no error.
 All interpolation goes through the `html` template, which escapes, so notes and exercise names are
 safe to display; use `raw()` only for markup another `html` call produced.
 
-The shapes the API returns are declared in `types.ts` and pulled in with a type-only import, which
-the transpiler strips whole, so that module is never fetched at runtime. They are written out **by
-hand** rather than imported from `../src/backend/db/repos`, even though a type-only import would be
-erased too: the frontend is a client of an HTTP API, so what it should be pinned to is the wire
-format it expects, not the server's internal row types. Sharing them would absorb a renamed column
-as a quiet refactor instead of surfacing it as the API change it is — and `bun run typecheck` will
-not catch that drift for you.
+The shapes the API returns are declared once in `src/shared/dto/`, the single declaration of the
+wire format, and both halves of the app import it with a type-only import — the frontend as
+`'../shared/dto/index.ts'` from `api.ts`, `'../../../shared/dto/index.ts'` from a component. The
+transpiler strips such an import whole, so the module is never fetched at runtime, and that is
+load-bearing: `src/shared/` sits **outside the web root**, so a surviving specifier would be a 404.
+Everything under `src/shared/dto/` must therefore stay free of runtime code, which
+`src/shared/dto/index.test.ts` holds in place by asserting every file there transpiles to nothing.
+
+What the frontend is pinned to is still the wire format rather than the server's row types: the
+backend translates its rows into these DTOs in `src/backend/http/dto/` and the wire is camelCase
+where the database is snake_case, so a renamed column cannot arrive here as a silent refactor. It
+just no longer costs a hand-written second copy to say so.
 
 Shapes local to one module — a view's `#state` union, the chart's points — are declared in that
 module. `GzChart` and `GzSetRow` are exported so a view can type the element it drives; the

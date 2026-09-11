@@ -1,41 +1,47 @@
 import { json, noContent, readJsonObject } from '../http.ts';
-import type { ExerciseInput, Repo } from '../../db/repos';
+import type { Repo } from '../../db/repos';
+import type { CreateExerciseDto, EditExerciseDto } from '../../../shared/dto';
+import { fromCreateExercise, fromEditExercise, toExercise, toExerciseProgress, toExerciseWithStats } from '../dto';
 import { isPresent, optionalString, pathId, requiredString } from '../../shared/validate.ts';
 import type { RouteTable } from './shared.ts';
 import { guardAll, MAX_NAME, MAX_NOTES } from './shared.ts';
 
-function readExerciseBody(body: Record<string, unknown>): ExerciseInput {
+function readExerciseBody(body: Record<string, unknown>): CreateExerciseDto {
   return {
     name: requiredString(body, 'name', MAX_NAME),
-    muscle_group: optionalString(body, 'muscle_group', 60),
+    muscleGroup: optionalString(body, 'muscleGroup', 60),
     notes: optionalString(body, 'notes', MAX_NOTES),
   };
+}
+
+function readEditExerciseBody(body: Record<string, unknown>): EditExerciseDto {
+  const dto: EditExerciseDto = {};
+  if (isPresent(body, 'name')) {
+    dto.name = requiredString(body, 'name', MAX_NAME);
+  }
+  if (isPresent(body, 'muscleGroup')) {
+    dto.muscleGroup = optionalString(body, 'muscleGroup', 60);
+  }
+  if (isPresent(body, 'notes')) {
+    dto.notes = optionalString(body, 'notes', MAX_NOTES);
+  }
+  return dto;
 }
 
 export function exerciseRoutes(repo: Repo): RouteTable {
   return {
     '/api/exercises': guardAll({
-      GET: () => json(repo.listExercises()),
-      POST: async (req) => json(repo.createExercise(readExerciseBody(await readJsonObject(req))), 201),
+      GET: () => json(repo.listExercises().map(toExerciseWithStats)),
+      POST: async (req) => json(toExercise(repo.createExercise(fromCreateExercise(readExerciseBody(await readJsonObject(req))))), 201),
     }),
 
     '/api/exercises/:id': guardAll({
-      GET: (req) => json(repo.requireExercise(pathId(req.params.id, 'exercise'))),
+      GET: (req) => json(toExercise(repo.requireExercise(pathId(req.params.id, 'exercise')))),
 
       PATCH: async (req) => {
         const id = pathId(req.params.id, 'exercise');
-        const body = await readJsonObject(req);
-        const patch: Partial<ExerciseInput> = {};
-        if (isPresent(body, 'name')) {
-          patch.name = requiredString(body, 'name', MAX_NAME);
-        }
-        if (isPresent(body, 'muscle_group')) {
-          patch.muscle_group = optionalString(body, 'muscle_group', 60);
-        }
-        if (isPresent(body, 'notes')) {
-          patch.notes = optionalString(body, 'notes', MAX_NOTES);
-        }
-        return json(repo.updateExercise(id, patch));
+        const patch = readEditExerciseBody(await readJsonObject(req));
+        return json(toExercise(repo.updateExercise(id, fromEditExercise(patch))));
       },
 
       DELETE: (req) => {
@@ -47,11 +53,7 @@ export function exerciseRoutes(repo: Repo): RouteTable {
     '/api/exercises/:id/progress': guardAll({
       GET: (req) => {
         const id = pathId(req.params.id, 'exercise');
-        return json({
-          exercise: repo.requireExercise(id),
-          sessions: repo.exerciseProgress(id),
-          best_set: repo.exerciseBestSet(id),
-        });
+        return json(toExerciseProgress(repo.requireExercise(id), repo.exerciseProgress(id), repo.exerciseBestSet(id)));
       },
     }),
   };

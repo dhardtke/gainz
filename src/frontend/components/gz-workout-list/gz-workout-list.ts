@@ -3,7 +3,7 @@ import type { RawHtml } from '../../base.ts';
 import { define, GzElement, html } from '../../base.ts';
 import { formatDate, formatVolume, plural, relativeDay, todayIso } from '../../format.ts';
 import { navigate } from '../../router.ts';
-import type { WorkoutWithStats } from '../../types.ts';
+import type { WorkoutWithStatsDto } from '../../../shared/dto/index.ts';
 import { toast, toastError } from '../gz-toast/gz-toast.ts';
 
 /**
@@ -12,7 +12,7 @@ import { toast, toastError } from '../gz-toast/gz-toast.ts';
  */
 interface WorkoutListState {
   status: 'loading' | 'ready' | 'error';
-  items: WorkoutWithStats[];
+  items: WorkoutWithStatsDto[];
   total: number;
   message?: string;
 }
@@ -49,7 +49,7 @@ class GzWorkoutList extends GzElement {
       const workout = await api.workouts.create({
         // The date field is pre-filled and `required`, so an empty value means it
         // was cleared. The API defaults a missing date but rejects an empty one.
-        performed_on: values.performed_on === '' ? todayIso() : values.performed_on,
+        performedOn: values.performedOn === '' ? todayIso() : values.performedOn,
         title: values.title,
         notes: values.notes,
       });
@@ -70,9 +70,9 @@ class GzWorkoutList extends GzElement {
     if (action === 'repeat') {
       try {
         const workout = await api.workouts.create({
-          performed_on: todayIso(),
+          performedOn: todayIso(),
           title: element.dataset.title,
-          copy_from_workout_id: id,
+          copyFromWorkoutId: id,
         });
         toast(`Copied ${plural(workout.sets.length, 'set')} into a new session`, 'success');
         navigate(`/workouts/${workout.id}`);
@@ -104,8 +104,8 @@ class GzWorkoutList extends GzElement {
         <form class="new-form" data-action="create">
           <div class="fields">
             <div class="field">
-              <label for="performed_on">Date</label>
-              <input id="performed_on" name="performed_on" type="date" value="${todayIso()}" required />
+              <label for="performedOn">Date</label>
+              <input id="performedOn" name="performedOn" type="date" value="${todayIso()}" required />
             </div>
             <div class="field">
               <label for="title">Title</label>
@@ -146,11 +146,11 @@ class GzWorkoutList extends GzElement {
                   (workout) => html`
                     <div class="workout">
                       <div class="grow">
-                        <a href="#/workouts/${workout.id}">${workout.title ?? formatDate(workout.performed_on)}</a>
-                        <div class="date">${formatDate(workout.performed_on)} · ${relativeDay(workout.performed_on)}</div>
+                        <a href="#/workouts/${workout.id}">${workout.title ?? formatDate(workout.performedOn)}</a>
+                        <div class="date">${formatDate(workout.performedOn)} · ${relativeDay(workout.performedOn)}</div>
                       </div>
                       <span class="badge">
-                        ${plural(workout.set_count, 'set')} · ${plural(workout.exercise_count, 'exercise')} · ${formatVolume(workout.total_volume)}
+                        ${plural(workout.setCount, 'set')} · ${plural(workout.exerciseCount, 'exercise')} · ${formatVolume(workout.totalVolume)}
                       </span>
                       <div class="actions">
                         <button
@@ -166,7 +166,7 @@ class GzWorkoutList extends GzElement {
                           class="danger compact"
                           data-action="delete"
                           data-id="${workout.id}"
-                          data-label="${workout.title ?? formatDate(workout.performed_on)}"
+                          data-label="${workout.title ?? formatDate(workout.performedOn)}"
                         >
                           Delete
                         </button>

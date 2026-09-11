@@ -2,10 +2,10 @@ import { api, errorMessage } from '../../api.ts';
 import type { RawHtml } from '../../base.ts';
 import { define, GzElement, html } from '../../base.ts';
 import { formatWeight, plural, relativeDay } from '../../format.ts';
-import type { ExerciseWithStats } from '../../types.ts';
+import type { ExerciseWithStatsDto } from '../../../shared/dto/index.ts';
 import { toast, toastError } from '../gz-toast/gz-toast.ts';
 
-type ExerciseListState = { status: 'loading' } | { status: 'ready'; items: ExerciseWithStats[] } | { status: 'error'; message: string };
+type ExerciseListState = { status: 'loading' } | { status: 'ready'; items: ExerciseWithStatsDto[] } | { status: 'error'; message: string };
 
 /** The exercise catalogue — the vocabulary the rest of the log is written in. */
 class GzExerciseList extends GzElement {
@@ -38,7 +38,7 @@ class GzExerciseList extends GzElement {
       try {
         await api.exercises.create({
           name,
-          muscle_group: values.muscle_group,
+          muscleGroup: values.muscleGroup,
           notes: values.notes,
         });
         toast(`Added ${name}`, 'success');
@@ -54,7 +54,7 @@ class GzExerciseList extends GzElement {
       try {
         await api.exercises.update(Number(form.dataset.id), {
           name,
-          muscle_group: values.muscle_group,
+          muscleGroup: values.muscleGroup,
           notes: values.notes,
         });
         this.#editingId = null;
@@ -95,7 +95,7 @@ class GzExerciseList extends GzElement {
     }
   }
 
-  #editRow(exercise: ExerciseWithStats): RawHtml {
+  #editRow(exercise: ExerciseWithStatsDto): RawHtml {
     return html`
       <tr class="edit-row">
         <td colspan="6">
@@ -106,7 +106,7 @@ class GzExerciseList extends GzElement {
             </div>
             <div class="field">
               <label>Muscle group</label>
-              <input name="muscle_group" type="text" maxlength="60" value="${exercise.muscle_group ?? ''}" />
+              <input name="muscleGroup" type="text" maxlength="60" value="${exercise.muscleGroup ?? ''}" />
             </div>
             <div class="field">
               <label>Notes</label>
@@ -120,17 +120,17 @@ class GzExerciseList extends GzElement {
     `;
   }
 
-  #row(exercise: ExerciseWithStats): RawHtml {
+  #row(exercise: ExerciseWithStatsDto): RawHtml {
     return html`
       <tr>
         <td class="name">
           <a href="#/exercises/${exercise.id}">${exercise.name}</a>
           ${exercise.notes ? html`<div class="muted">${exercise.notes}</div>` : ''}
         </td>
-        <td>${exercise.muscle_group ?? html`<span class="muted">–</span>`}</td>
-        <td class="num">${exercise.set_count}</td>
-        <td class="num">${exercise.best_weight === null ? '–' : formatWeight(exercise.best_weight)}</td>
-        <td class="nowrap">${exercise.last_performed_on ? relativeDay(exercise.last_performed_on) : html`<span class="muted">never</span>`}</td>
+        <td>${exercise.muscleGroup ?? html`<span class="muted">–</span>`}</td>
+        <td class="num">${exercise.setCount}</td>
+        <td class="num">${exercise.bestWeight === null ? '–' : formatWeight(exercise.bestWeight)}</td>
+        <td class="nowrap">${exercise.lastPerformedOn ? relativeDay(exercise.lastPerformedOn) : html`<span class="muted">never</span>`}</td>
         <td class="actions">
           <button class="secondary outline compact" data-action="edit" data-id="${exercise.id}">Edit</button>
           <button class="danger compact" data-action="delete" data-id="${exercise.id}" data-name="${exercise.name}">Delete</button>
@@ -165,8 +165,8 @@ class GzExerciseList extends GzElement {
                 <input id="name" name="name" type="text" placeholder="Back Squat" maxlength="120" required />
               </div>
               <div class="field">
-                <label for="muscle_group">Muscle group</label>
-                <input id="muscle_group" name="muscle_group" type="text" placeholder="Legs" maxlength="60" />
+                <label for="muscleGroup">Muscle group</label>
+                <input id="muscleGroup" name="muscleGroup" type="text" placeholder="Legs" maxlength="60" />
               </div>
               <div class="field field-notes">
                 <label for="notes">Notes</label>

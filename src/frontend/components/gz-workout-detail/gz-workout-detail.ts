@@ -3,12 +3,12 @@ import type { RawHtml } from '../../base.ts';
 import { define, GzElement, html } from '../../base.ts';
 import { formatDate, formatNumber, formatVolume, plural, relativeDay, UNIT } from '../../format.ts';
 import { navigate } from '../../router.ts';
-import type { Exercise, LiftSet, WorkoutWithSets } from '../../types.ts';
+import type { ExerciseDto, LiftSetDto, WorkoutWithSetsDto } from '../../../shared/dto/index.ts';
 import type { GzSetRow } from '../gz-set-row/gz-set-row.ts';
 import { toast, toastError } from '../gz-toast/gz-toast.ts';
 import '../gz-set-row/gz-set-row.ts';
 
-type WorkoutDetailState = { status: 'loading' } | { status: 'ready'; workout: WorkoutWithSets } | { status: 'error'; message: string };
+type WorkoutDetailState = { status: 'loading' } | { status: 'ready'; workout: WorkoutWithSetsDto } | { status: 'error'; message: string };
 
 /** One exercise's totals within the session. */
 interface ExerciseTotals {
@@ -29,18 +29,18 @@ class GzWorkoutDetail extends GzElement {
 
   #state: WorkoutDetailState = { status: 'loading' };
 
-  #exercises: Exercise[] = [];
+  #exercises: ExerciseDto[] = [];
 
   #editingHeader = false;
 
   /**
    * Remembers the last logged set so the next one starts from it.
    *
-   * `exercise_id` also holds the "new exercise" sentinel, which is what the
+   * `exerciseId` also holds the "new exercise" sentinel, which is what the
    * select shows on a cold start with no exercises defined yet.
    */
-  #draft: { exercise_id: number | typeof NEW_EXERCISE | null; weight: string; reps: string } = {
-    exercise_id: null,
+  #draft: { exerciseId: number | typeof NEW_EXERCISE | null; weight: string; reps: string } = {
+    exerciseId: null,
     weight: '',
     reps: '',
   };
@@ -85,9 +85,9 @@ class GzWorkoutDetail extends GzElement {
       const [workout, exercises] = await Promise.all([api.workouts.get(this.#id), api.exercises.list()]);
       this.#exercises = exercises;
       this.#state = { status: 'ready', workout };
-      if (this.#draft.exercise_id === null) {
+      if (this.#draft.exerciseId === null) {
         const lastSet = workout.sets.at(-1);
-        this.#draft.exercise_id = lastSet?.exercise_id ?? exercises[0]?.id ?? null;
+        this.#draft.exerciseId = lastSet?.exerciseId ?? exercises[0]?.id ?? null;
       }
     } catch (error) {
       this.#state = { status: 'error', message: errorMessage(error) };
@@ -127,13 +127,13 @@ class GzWorkoutDetail extends GzElement {
       if (this.#state.status !== 'ready') {
         return;
       }
-      const last = this.#state.workout.sets.filter((set) => set.exercise_id === exerciseId).at(-1);
+      const last = this.#state.workout.sets.filter((set) => set.exerciseId === exerciseId).at(-1);
       if (!last) {
         return;
       }
       try {
         await api.workouts.addSet(this.#id, {
-          exercise_id: last.exercise_id,
+          exerciseId: last.exerciseId,
           reps: last.reps,
           weight: last.weight,
           notes: null,
@@ -151,7 +151,7 @@ class GzWorkoutDetail extends GzElement {
     if (action === 'save-workout') {
       try {
         await api.workouts.update(this.#id, {
-          performed_on: values.performed_on,
+          performedOn: values.performedOn,
           title: values.title,
           notes: values.notes,
         });
@@ -166,25 +166,25 @@ class GzWorkoutDetail extends GzElement {
 
     if (action === 'add-set') {
       try {
-        let exerciseId: string | number = values.exercise_id ?? '';
+        let exerciseId: string | number = values.exerciseId ?? '';
 
         if (exerciseId === NEW_EXERCISE) {
-          if (!values.new_exercise) {
+          if (!values.newExercise) {
             toast('Give the new exercise a name', 'error');
             return;
           }
-          const created = await api.exercises.create({ name: values.new_exercise });
+          const created = await api.exercises.create({ name: values.newExercise });
           exerciseId = created.id;
         }
 
         await api.workouts.addSet(this.#id, {
-          exercise_id: Number(exerciseId),
+          exerciseId: Number(exerciseId),
           reps: Number(values.reps),
           weight: Number(values.weight),
           notes: values.notes,
         });
 
-        this.#draft = { exercise_id: Number(exerciseId), weight: values.weight ?? '', reps: values.reps ?? '' };
+        this.#draft = { exerciseId: Number(exerciseId), weight: values.weight ?? '', reps: values.reps ?? '' };
         this.#focusAfterRender = true;
         await this.#load();
       } catch (error) {
@@ -209,7 +209,7 @@ class GzWorkoutDetail extends GzElement {
       row.set = set;
     }
 
-    const select = this.$<HTMLSelectElement>("select[name='exercise_id']");
+    const select = this.$<HTMLSelectElement>("select[name='exerciseId']");
     if (select) {
       select.addEventListener('change', () => {
         this.$('.field-new-exercise')?.toggleAttribute('hidden', select.value !== NEW_EXERCISE);
@@ -229,7 +229,7 @@ class GzWorkoutDetail extends GzElement {
     if (this.#state.status !== 'ready') {
       return;
     }
-    const previous = this.#state.workout.sets.filter((set) => set.exercise_id === exerciseId).at(-1);
+    const previous = this.#state.workout.sets.filter((set) => set.exerciseId === exerciseId).at(-1);
     if (!previous) {
       return;
     }
@@ -244,13 +244,13 @@ class GzWorkoutDetail extends GzElement {
     }
   }
 
-  #headerTemplate(workout: WorkoutWithSets): RawHtml {
+  #headerTemplate(workout: WorkoutWithSetsDto): RawHtml {
     if (!this.#editingHeader) {
       return html`
         <div class="row-between">
           <hgroup>
-            <h1>${workout.title ?? formatDate(workout.performed_on)}</h1>
-            <p>${formatDate(workout.performed_on)} · ${relativeDay(workout.performed_on)}</p>
+            <h1>${workout.title ?? formatDate(workout.performedOn)}</h1>
+            <p>${formatDate(workout.performedOn)} · ${relativeDay(workout.performedOn)}</p>
           </hgroup>
           <div class="row">
             <button class="secondary outline" data-action="toggle-header">Edit</button>
@@ -266,8 +266,8 @@ class GzWorkoutDetail extends GzElement {
         <form class="stack-sm" data-action="save-workout">
           <div class="fields">
             <div class="field">
-              <label for="performed_on">Date</label>
-              <input id="performed_on" name="performed_on" type="date" value="${workout.performed_on}" required />
+              <label for="performedOn">Date</label>
+              <input id="performedOn" name="performedOn" type="date" value="${workout.performedOn}" required />
             </div>
             <div class="field grow">
               <label for="title">Title</label>
@@ -288,11 +288,11 @@ class GzWorkoutDetail extends GzElement {
   }
 
   #addSetTemplate(): RawHtml {
-    if (this.#exercises.length === 0 && this.#draft.exercise_id === null) {
+    if (this.#exercises.length === 0 && this.#draft.exerciseId === null) {
       // Still offer the form: the inline "new exercise" field covers a cold start.
-      this.#draft.exercise_id = NEW_EXERCISE;
+      this.#draft.exerciseId = NEW_EXERCISE;
     }
-    const selected = this.#draft.exercise_id;
+    const selected = this.#draft.exerciseId;
 
     return html`
       <article class="add-form stack-sm">
@@ -300,8 +300,8 @@ class GzWorkoutDetail extends GzElement {
         <form data-action="add-set">
           <div class="fields">
             <div class="field field-exercise">
-              <label for="exercise_id">Exercise</label>
-              <select id="exercise_id" name="exercise_id">
+              <label for="exerciseId">Exercise</label>
+              <select id="exerciseId" name="exerciseId">
                 ${this.#exercises.map(
                   (exercise) => html` <option value="${exercise.id}" ${exercise.id === selected ? 'selected' : ''}>${exercise.name}</option> `,
                 )}
@@ -309,8 +309,8 @@ class GzWorkoutDetail extends GzElement {
               </select>
             </div>
             <div class="field field-exercise field-new-exercise" ${selected === NEW_EXERCISE ? '' : 'hidden'}>
-              <label for="new_exercise">New exercise name</label>
-              <input id="new_exercise" name="new_exercise" type="text" maxlength="120" placeholder="Incline Press" />
+              <label for="newExercise">New exercise name</label>
+              <input id="newExercise" name="newExercise" type="text" maxlength="120" placeholder="Incline Press" />
             </div>
             <div class="field field-num">
               <label for="weight">Weight (${UNIT})</label>
@@ -332,12 +332,12 @@ class GzWorkoutDetail extends GzElement {
   }
 
   /** Per-exercise totals for the session. */
-  #breakdown(sets: LiftSet[]): ExerciseTotals[] {
+  #breakdown(sets: LiftSetDto[]): ExerciseTotals[] {
     const byExercise = new Map<number, ExerciseTotals>();
     for (const set of sets) {
-      const entry = byExercise.get(set.exercise_id) ?? {
-        id: set.exercise_id,
-        name: set.exercise_name,
+      const entry = byExercise.get(set.exerciseId) ?? {
+        id: set.exerciseId,
+        name: set.exerciseName,
         sets: 0,
         reps: 0,
         volume: 0,
@@ -347,7 +347,7 @@ class GzWorkoutDetail extends GzElement {
       entry.reps += set.reps;
       entry.volume += set.reps * set.weight;
       entry.top = Math.max(entry.top, set.weight);
-      byExercise.set(set.exercise_id, entry);
+      byExercise.set(set.exerciseId, entry);
     }
     return [...byExercise.values()];
   }

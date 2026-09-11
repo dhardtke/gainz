@@ -32,6 +32,9 @@ the repository as it stood on the date it carries, so an old path in one is a re
 `*.test.ts` beside the module it exercises
 `src/frontend/` -> a **no-build-step** frontend: TypeScript ES modules and custom elements,
 transpiled on request by `src/backend/transpile.ts` — no bundler, no output directory
+`src/shared/` -> the wire contract both halves import: `dto/` declares every request and response
+shape, **types only**, because it is not web-served and reaches the browser only as an erased
+`import type`
 `src/scripts/` -> the `migrate` and `seed` entry points
 `docs/` -> the documents below
 

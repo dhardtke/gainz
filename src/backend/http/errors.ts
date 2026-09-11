@@ -1,4 +1,5 @@
 import { json } from './http.ts';
+import type { ErrorDto } from '../../shared/dto';
 
 /** An error carrying an HTTP status code; turned into a JSON error body by the server. */
 export class HttpError extends Error {
@@ -18,8 +19,10 @@ export const conflict = (message: string): HttpError => new HttpError(409, messa
 
 export function errorResponse(err: unknown): Response {
   if (err instanceof HttpError) {
-    return json({ error: err.message, details: err.details ?? undefined }, err.status);
+    const body: ErrorDto = { error: err.message, details: err.details ?? undefined };
+    return json(body, err.status);
   }
   console.error('Unhandled error:', err);
-  return json({ error: 'Internal server error' }, 500);
+  const body: ErrorDto = { error: 'Internal server error' };
+  return json(body, 500);
 }

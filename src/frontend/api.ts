@@ -1,7 +1,21 @@
 /** Thin client for the gainz REST API. No dependencies, just fetch. */
 
-import type { Exercise, ExerciseInput, ExerciseProgress, ExerciseWithStats } from './types.ts';
-import type { LiftSet, SetInput, Summary, Workout, WorkoutInput, WorkoutPage, WorkoutWithSets } from './types.ts';
+import type {
+  CreateExerciseDto,
+  CreateSetDto,
+  CreateWorkoutDto,
+  EditExerciseDto,
+  EditSetDto,
+  EditWorkoutDto,
+  ExerciseDto,
+  ExerciseProgressDto,
+  ExerciseWithStatsDto,
+  LiftSetDto,
+  SummaryDto,
+  WorkoutDto,
+  WorkoutPageDto,
+  WorkoutWithSetsDto,
+} from '../shared/dto/index.ts';
 
 export class ApiError extends Error {
   /** The HTTP status, or 0 when the request never left. */
@@ -61,8 +75,9 @@ async function request<T>(method: 'GET' | 'POST' | 'PATCH' | 'DELETE', path: str
   }
 
   if (!response.ok) {
-    // Narrowed rather than reached into: an error body is whatever the server
-    // felt like sending, including nothing at all.
+    // The shape being narrowed toward is `ErrorDto`, but it is narrowed rather than claimed:
+    // every other endpoint's DTO is asserted below, and an error body is the one response the
+    // client cannot assume arrived well-formed — a 502 from a proxy carries no JSON at all.
     const errorBody = typeof data === 'object' && data !== null ? data : {};
     const message = 'error' in errorBody && typeof errorBody.error === 'string' ? errorBody.error : `Request failed (${response.status})`;
     throw new ApiError(message, response.status, 'details' in errorBody ? errorBody.details : undefined);
@@ -84,39 +99,39 @@ const patch = <T>(path: string, body?: unknown): Promise<T> => request<T>('PATCH
 const remove = (path: string): Promise<null> => request<null>('DELETE', path);
 
 export const api = {
-  summary: (): Promise<Summary> => get('/stats/summary'),
+  summary: (): Promise<SummaryDto> => get('/stats/summary'),
 
   exercises: {
-    list: (): Promise<ExerciseWithStats[]> => get('/exercises'),
+    list: (): Promise<ExerciseWithStatsDto[]> => get('/exercises'),
 
-    get: (id: number | string): Promise<Exercise> => get(`/exercises/${id}`),
+    get: (id: number | string): Promise<ExerciseDto> => get(`/exercises/${id}`),
 
-    progress: (id: number | string): Promise<ExerciseProgress> => get(`/exercises/${id}/progress`),
+    progress: (id: number | string): Promise<ExerciseProgressDto> => get(`/exercises/${id}/progress`),
 
-    create: (input: ExerciseInput): Promise<Exercise> => post('/exercises', input),
+    create: (input: CreateExerciseDto): Promise<ExerciseDto> => post('/exercises', input),
 
-    update: (id: number | string, patchBody: Partial<ExerciseInput>): Promise<Exercise> => patch(`/exercises/${id}`, patchBody),
+    update: (id: number | string, patchBody: EditExerciseDto): Promise<ExerciseDto> => patch(`/exercises/${id}`, patchBody),
 
     remove: (id: number | string): Promise<null> => remove(`/exercises/${id}`),
   },
 
   workouts: {
-    list: ({ limit = 50, offset = 0 }: { limit?: number; offset?: number } = {}): Promise<WorkoutPage> => get(`/workouts?limit=${limit}&offset=${offset}`),
+    list: ({ limit = 50, offset = 0 }: { limit?: number; offset?: number } = {}): Promise<WorkoutPageDto> => get(`/workouts?limit=${limit}&offset=${offset}`),
 
-    get: (id: number | string): Promise<WorkoutWithSets> => get(`/workouts/${id}`),
+    get: (id: number | string): Promise<WorkoutWithSetsDto> => get(`/workouts/${id}`),
 
-    create: (input: WorkoutInput): Promise<WorkoutWithSets> => post('/workouts', input),
+    create: (input: CreateWorkoutDto): Promise<WorkoutWithSetsDto> => post('/workouts', input),
 
     /** Updates the header only — the response carries no `sets`. */
-    update: (id: number | string, patchBody: Partial<WorkoutInput>): Promise<Workout> => patch(`/workouts/${id}`, patchBody),
+    update: (id: number | string, patchBody: EditWorkoutDto): Promise<WorkoutDto> => patch(`/workouts/${id}`, patchBody),
 
     remove: (id: number | string): Promise<null> => remove(`/workouts/${id}`),
 
-    addSet: (id: number | string, input: SetInput): Promise<LiftSet> => post(`/workouts/${id}/sets`, input),
+    addSet: (id: number | string, input: CreateSetDto): Promise<LiftSetDto> => post(`/workouts/${id}/sets`, input),
   },
 
   sets: {
-    update: (id: number | string, patchBody: Partial<SetInput>): Promise<LiftSet> => patch(`/sets/${id}`, patchBody),
+    update: (id: number | string, patchBody: EditSetDto): Promise<LiftSetDto> => patch(`/sets/${id}`, patchBody),
 
     remove: (id: number | string): Promise<null> => remove(`/sets/${id}`),
   },

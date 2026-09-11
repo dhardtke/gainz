@@ -9,42 +9,17 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openDatabase } from './db/db.ts';
-import type { Exercise, LiftSet, SessionPoint, Workout, WorkoutWithStats } from './db/repos';
+import type { ExerciseDto, WorkoutWithSetsDto } from '../shared/dto';
 import { Repo } from './db/repos';
 import { serveOptions } from './http/server.ts';
-
-/** `GET /api/workouts/:id` and `POST /api/workouts`: a workout with its sets. */
-export interface WorkoutDetail extends Workout {
-  sets: LiftSet[];
-}
-
-/** One page of `GET /api/workouts`. */
-export interface WorkoutPage {
-  items: WorkoutWithStats[];
-  total: number;
-  limit: number;
-  offset: number;
-}
-
-/** `GET /api/exercises/:id/progress`. */
-export interface Progress {
-  exercise: Exercise;
-  sessions: SessionPoint[];
-  best_set: (LiftSet & { performed_on: string }) | null;
-}
-
-/** What the server puts in a 4xx body. */
-export interface ErrorBody {
-  error: string;
-}
 
 /** The request helpers a test file gets from `useServer()`. */
 export interface TestServer {
   api: (path: string, init?: RequestInit) => Promise<Response>;
   post: (path: string, body: unknown) => Promise<Response>;
   patch: (path: string, body: unknown) => Promise<Response>;
-  createExercise: (name?: string) => Promise<Exercise>;
-  createWorkout: (performed_on?: string) => Promise<WorkoutDetail>;
+  createExercise: (name?: string) => Promise<ExerciseDto>;
+  createWorkout: (performedOn?: string) => Promise<WorkoutWithSetsDto>;
 }
 
 /**
@@ -91,16 +66,16 @@ export function useServer(): TestServer {
     });
   }
 
-  async function createExercise(name = 'Bench Press'): Promise<Exercise> {
+  async function createExercise(name = 'Bench Press'): Promise<ExerciseDto> {
     const res = await post('/api/exercises', { name });
     expect(res.status).toBe(201);
-    return body<Exercise>(res);
+    return body<ExerciseDto>(res);
   }
 
-  async function createWorkout(performed_on = '2026-01-05'): Promise<WorkoutDetail> {
-    const res = await post('/api/workouts', { performed_on, title: 'Push day' });
+  async function createWorkout(performedOn = '2026-01-05'): Promise<WorkoutWithSetsDto> {
+    const res = await post('/api/workouts', { performedOn, title: 'Push day' });
     expect(res.status).toBe(201);
-    return body<WorkoutDetail>(res);
+    return body<WorkoutWithSetsDto>(res);
   }
 
   return { api, post, patch, createExercise, createWorkout };
