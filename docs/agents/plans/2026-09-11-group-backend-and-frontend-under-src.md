@@ -459,9 +459,9 @@ constant that pointed *out of* `src/` at a sibling directory actually moves.
       `backend/migrations/`; becomes `../../../src/backend/db/migrations`.
 - [x] `src/backend/testing.ts:2` — header comment: the harness every `*.test.ts` under
       `src/backend/` builds its fixtures from.
-- [x] `../../../src/backend/db/repo` — header comment: all SQL lives under `../../../src/backend/db/repo`.
+- [x] `../../../src/backend/db/repos` — header comment: all SQL lives under `../../../src/backend/db/repos`.
 - [x] `src/frontend/types.ts:4` — the header comment explaining why these shapes are written by
-  hand says they are "not imported from `backend/src/repo/`"; becomes `../../../src/backend/db/repo`.
+  hand says they are "not imported from `backend/src/repo/`"; becomes `../../../src/backend/db/repos`.
   This is the edit no search for `backend/src` inside the backend would surface — it lives in
   the frontend and names a backend directory, which is the class of miss decision 8 exists for.
 - [x] `src/backend/static.test.ts:53-54` — the traversal probes lose the level phase 1 gave them
@@ -482,7 +482,7 @@ constant that pointed *out of* `src/` at a sibling directory actually moves.
       location (`:34`) becomes `src/backend/migrations/`; and the three module references at
       `:43`, `:49` and `:62` become `src/backend/testing.ts`, `src/backend/migrations.test.ts` and
       `src/backend/static.test.ts:39`.
-- [x] `docs/frontend.md:21` and `:29` — `src/backend/transpile.ts` and `../../../src/backend/db/repo`.
+- [x] `docs/frontend.md:21` and `:29` — `src/backend/transpile.ts` and `../../../src/backend/db/repos`.
 - [x] `README.md` — rewrite the `backend/` half of the layout tree (`:70-111`) as `src/backend/`
       with `migrations/` among its children, and update the four prose references: `:33`
       (`../../../src/backend/db/migrations`), `:183` (`src/backend/transpile.ts`), `:239`

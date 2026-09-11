@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { LiftSet } from '../../db/repo';
+import type { LiftSet } from '../../db/repos';
 import type { WorkoutDetail } from '../../testing.ts';
 import { body, useServer } from '../../testing.ts';
 

@@ -1,6 +1,6 @@
 import { basename } from 'node:path';
 import { DEFAULT_DB_PATH, openDatabase } from './db/db.ts';
-import { Repo } from './db/repo';
+import { Repo } from './db/repos';
 import { serveOptions } from './http/server.ts';
 
 function main(): void {

@@ -185,7 +185,7 @@ In the same pass, fix the frontend drift:
 
 - `README.md:223` says `src/theme.ts`; the file is `src/frontend/theme.ts`. Fix it as the Theming
   section moves, not after.
-- `docs/frontend.md:29`: `../src/backend/db/repo` → `src/backend/db/repo`.
+- `docs/frontend.md:29`: `../src/backend/db/repo` → `../../../src/backend/db/repos`.
 - `docs/frontend.md:27`: quote the import as it appears in a component (`'../../types.ts'`) *and*
   note that `src/frontend/api.ts` uses `'./types.ts'`, or drop the literal specifier and describe
   it as a relative import — the specifier depends on depth and is what made the line wrong.

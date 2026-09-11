@@ -1,5 +1,5 @@
 import { errorResponse } from './http.ts';
-import type { Repo } from '../db/repo';
+import type { Repo } from '../db/repos';
 import { allRoutes } from './routes.ts';
 
 /**

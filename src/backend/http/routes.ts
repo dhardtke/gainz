@@ -1,4 +1,4 @@
-import type { Repo } from '../db/repo';
+import type { Repo } from '../db/repos';
 import { exerciseRoutes } from './routes/exercise.routes.ts';
 import { metaRoutes, notFoundRoute } from './routes/meta.routes.ts';
 import { setRoutes } from './routes/set.routes.ts';

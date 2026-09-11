@@ -1,5 +1,5 @@
 import { json, noContent, readJsonObject } from '../http.ts';
-import type { Repo, WorkoutInput } from '../../db/repo';
+import type { Repo, WorkoutInput } from '../../db/repos';
 import { isPresent, optionalString, pathId, queryInt, requiredDate, requiredInt, today } from '../../shared/validate.ts';
 import { readSetBody } from './set.routes.ts';
 import type { RouteTable } from './shared.ts';

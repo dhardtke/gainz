@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { ExerciseWithStats } from '../../db/repo';
+import type { ExerciseWithStats } from '../../db/repos';
 import type { ErrorBody, Progress, WorkoutDetail } from '../../testing.ts';
 import { at, body, useServer } from '../../testing.ts';
 

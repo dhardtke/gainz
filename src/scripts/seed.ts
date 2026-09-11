@@ -4,7 +4,7 @@
  * nothing if the database already holds workouts.
  */
 import { DEFAULT_DB_PATH, openDatabase } from '../backend/db/db.ts';
-import { Repo } from '../backend/db/repo';
+import { Repo } from '../backend/db/repos';
 
 const EXERCISES = [
   { name: 'Back Squat', muscle_group: 'Legs', notes: 'Low bar, belt above 100 kg.' },
