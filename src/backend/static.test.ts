@@ -11,13 +11,13 @@ describe('static files', () => {
     expect(await res.text()).toContain('gainz');
   });
 
-  test('rejects directory traversal below frontend/', async () => {
+  test('rejects directory traversal below src/frontend/', async () => {
     const res = await api('/../package.json');
     expect(res.status).toBe(404);
   });
 
   test('serves the app stylesheets', async () => {
-    for (const path of ['/src/css/app.css', '/src/css/shared.css', '/src/components/gz-app/gz-app.css']) {
+    for (const path of ['/css/app.css', '/css/shared.css', '/components/gz-app/gz-app.css']) {
       const res = await api(path);
       expect(res.status).toBe(200);
       expect(res.headers.get('content-type')).toContain('text/css');
@@ -37,20 +37,20 @@ describe('static files', () => {
   });
 
   test('answers HEAD with the headers and no body', async () => {
-    const res = await api('/src/format.ts', { method: 'HEAD' });
+    const res = await api('/format.ts', { method: 'HEAD' });
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toContain('text/javascript');
     expect(await res.text()).toBe('');
   });
 
   test('returns 404 for a .ts file that does not exist', async () => {
-    expect((await api('/src/nope.ts')).status).toBe(404);
+    expect((await api('/nope.ts')).status).toBe(404);
   });
 
-  test('refuses to transpile anything outside frontend/', async () => {
+  test('refuses to transpile anything outside src/frontend/', async () => {
     // Encoded, so the URL parser cannot normalise the traversal away before
     // resolveStaticPath sees it.
-    expect((await api('/%2e%2e/backend/src/server.ts')).status).toBe(404);
-    expect((await api('/%2e%2e/backend/src/transpile.ts')).status).toBe(404);
+    expect((await api('/%2e%2e/backend/server.ts')).status).toBe(404);
+    expect((await api('/%2e%2e/backend/transpile.ts')).status).toBe(404);
   });
 });

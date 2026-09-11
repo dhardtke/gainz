@@ -41,7 +41,7 @@ export async function serveStatic(req: Request): Promise<Response> {
     // No explicit Content-Type: `new Response(Bun.file(x))` carries the type Bun infers from
     // the extension, off a complete MIME database — .svg → image/svg+xml, .woff2 → font/woff2,
     // .png → image/png, .webp → image/webp, and no extension → application/octet-stream. A
-    // hand-written map here would be a subset of that, and would drift as `frontend/` grows.
+    // hand-written map here would be a subset of that, and would drift as `src/frontend/` grows.
     // The app is a single page; assets carry a hash-free URL, so revalidate.
     return new Response(file, { headers: { 'Cache-Control': 'no-cache' } });
   }

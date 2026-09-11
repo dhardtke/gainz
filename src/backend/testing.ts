@@ -1,5 +1,5 @@
 /**
- * Test-only. The harness every *.test.ts under backend/src/ builds its fixtures from;
+ * Test-only. The harness every *.test.ts under src/backend/ builds its fixtures from;
  * no production module imports it.
  */
 import { afterEach, beforeEach, expect } from 'bun:test';

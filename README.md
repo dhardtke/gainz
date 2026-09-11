@@ -30,7 +30,7 @@ bun start            # http://localhost:3000
 
 The database lives at `data/gainz.sqlite` (override with `GAINZ_DB`) and is
 created on first run. It is git-ignored — the log is your data, not source. Its
-schema comes from the numbered `.sql` files in `backend/migrations/`, which the
+schema comes from the numbered `.sql` files in `src/backend/migrations/`, which the
 server applies on startup; `bun run migrate` does the same without booting the
 server.
 
@@ -59,7 +59,7 @@ the field on install: it documents the requirement rather than gating it.
   before the first paint, so it never flashes the wrong theme on load.
 
 Weights are stored as plain numbers and displayed in kilograms; to switch the
-whole UI to pounds, change `UNIT` in `frontend/src/format.ts`.
+whole UI to pounds, change `UNIT` in `src/frontend/format.ts`.
 
 Estimated 1RM uses the Epley formula (`weight × (1 + reps / 30)`), which puts
 sets of different rep counts on one comparable scale.
@@ -67,67 +67,65 @@ sets of different rep counts on one comparable scale.
 ## Layout
 
 ```
-backend/
+src/backend/
   migrations/
     001-initial-schema.sql  Numbered DDL, applied in order on startup
-  src/
-    db.ts        SQLite connection and PRAGMAs
-    db.test.ts     openDatabase: the schema it applies, and WAL
-    migrations.ts  The migration runner
-    migrations.test.ts  Unit tests for the runner, against fixture directories
-    migrate.ts   `bun run migrate` entry point
-    repo/
-      index.ts     The Repo facade — one flat surface, no SQL
-      sql.ts       Shared fragments and the dynamic UPDATE builder
-      exercises.ts Exercise queries
-      workouts.ts  Workout queries
-      sets.ts      Set queries
-      stats.ts     The dashboard summary
-    routes.ts    The registry — spreads the route files into one table
-    routes/
-      shared.ts    RouteTable, guardAll and the shared field limits
-      meta.routes.ts     /api/health and the /api catch-all
-      meta.routes.test.ts
-      stats.routes.ts    The dashboard summary endpoint
-      stats.routes.test.ts
-      exercise.routes.ts Exercise endpoints, including progress
-      exercise.routes.test.ts
-      workout.routes.ts  Workout endpoints, including a workout's sets
-      workout.routes.test.ts
-      set.routes.ts      Set endpoints
-      set.routes.test.ts
-    validate.ts  Request-field parsing and limits
-    http.ts      JSON responses and HttpError
-    http.test.ts   readJsonObject: malformed and non-object bodies
-    transpile.ts Erases types from a frontend module on its way to the browser
-    transpile.test.ts   What the transpiler outputs
-    static.ts    Serves frontend/ and the vendor allowlist
-    static.test.ts      What the server serves and refuses
-    paths.ts     URL-to-file resolution, escape guard, VENDOR_FILES
-    server.ts    The Bun.serve options, shared by main.ts and the tests
-    server.test.ts      The Bun.serve error hook
-    testing.ts   Test-only: useServer(), useTempDir() and the response helpers
-    main.ts      Entry point — open the database, serve, shut down
-    seed.ts      Sample data
-frontend/
+  db.ts        SQLite connection and PRAGMAs
+  db.test.ts     openDatabase: the schema it applies, and WAL
+  migrations.ts  The migration runner
+  migrations.test.ts  Unit tests for the runner, against fixture directories
+  migrate.ts   `bun run migrate` entry point
+  repo/
+    index.ts     The Repo facade — one flat surface, no SQL
+    sql.ts       Shared fragments and the dynamic UPDATE builder
+    exercises.ts Exercise queries
+    workouts.ts  Workout queries
+    sets.ts      Set queries
+    stats.ts     The dashboard summary
+  routes.ts    The registry — spreads the route files into one table
+  routes/
+    shared.ts    RouteTable, guardAll and the shared field limits
+    meta.routes.ts     /api/health and the /api catch-all
+    meta.routes.test.ts
+    stats.routes.ts    The dashboard summary endpoint
+    stats.routes.test.ts
+    exercise.routes.ts Exercise endpoints, including progress
+    exercise.routes.test.ts
+    workout.routes.ts  Workout endpoints, including a workout's sets
+    workout.routes.test.ts
+    set.routes.ts      Set endpoints
+    set.routes.test.ts
+  validate.ts  Request-field parsing and limits
+  http.ts      JSON responses and HttpError
+  http.test.ts   readJsonObject: malformed and non-object bodies
+  transpile.ts Erases types from a frontend module on its way to the browser
+  transpile.test.ts   What the transpiler outputs
+  static.ts    Serves src/frontend/ and the vendor allowlist
+  static.test.ts      What the server serves and refuses
+  paths.ts     URL-to-file resolution, escape guard, VENDOR_FILES
+  server.ts    The Bun.serve options, shared by main.ts and the tests
+  server.test.ts      The Bun.serve error hook
+  testing.ts   Test-only: useServer(), useTempDir() and the response helpers
+  main.ts      Entry point — open the database, serve, shut down
+  seed.ts      Sample data
+src/frontend/
   index.html   The only page
-  src/
-    css/
-      app.css      Document-level styles
-      shared.css   Layout utilities adopted by every component
-    components/    One directory per custom element, holding its script and the
-                   stylesheet named after its tag — gz-app/gz-app.ts beside
-                   gz-app/gz-app.css, and the same shape for gz-dashboard,
-                   gz-workout-list, gz-workout-detail, gz-set-row,
-                   gz-exercise-list, gz-exercise-detail, gz-chart, gz-stat-tile,
-                   gz-toast, gz-theme-toggle
-    base.ts      GzElement: shadow root, escaping `html` tag, event delegation
-    styles.ts    Fetches CSS into constructable stylesheets, per component
-    theme.ts     Light/dark preference, stored and mirrored onto hosts
-    api.ts       fetch wrapper for the REST API
-    router.ts    Hash router
-    format.ts    Dates, weights, volumes
-    types.ts     The shapes the API returns; erased before the browser sees it
+  css/
+    app.css      Document-level styles
+    shared.css   Layout utilities adopted by every component
+  components/    One directory per custom element, holding its script and the
+                 stylesheet named after its tag — gz-app/gz-app.ts beside
+                 gz-app/gz-app.css, and the same shape for gz-dashboard,
+                 gz-workout-list, gz-workout-detail, gz-set-row,
+                 gz-exercise-list, gz-exercise-detail, gz-chart, gz-stat-tile,
+                 gz-toast, gz-theme-toggle
+  base.ts      GzElement: shadow root, escaping `html` tag, event delegation
+  styles.ts    Fetches CSS into constructable stylesheets, per component
+  theme.ts     Light/dark preference, stored and mirrored onto hosts
+  api.ts       fetch wrapper for the REST API
+  router.ts    Hash router
+  format.ts    Dates, weights, volumes
+  types.ts     The shapes the API returns; erased before the browser sees it
 ```
 
 Every component renders through the `html` tagged template in `base.ts`, which
@@ -164,11 +162,11 @@ matching the page.
 
 No CSS lives in JavaScript. Each custom element owns a directory holding its
 script and the stylesheet named after its tag — `<gz-chart>` is
-`frontend/src/components/gz-chart/gz-chart.ts` beside `gz-chart.css` — which
-`src/styles.ts` fetches once into a `CSSStyleSheet` and every instance adopts by
-reference. Adding a component means creating `frontend/src/components/<tag>/` with
-both files and ending the module with `await define('<tag>', TheClass)`; there
-is no manifest to register it in.
+`src/frontend/components/gz-chart/gz-chart.ts` beside `gz-chart.css` — which
+`src/frontend/styles.ts` fetches once into a `CSSStyleSheet` and every instance
+adopts by reference. Adding a component means creating
+`src/frontend/components/<tag>/` with both files and ending the module with
+`await define('<tag>', TheClass)`; there is no manifest to register it in.
 
 That `await` is load-bearing — see **Loading** below.
 
@@ -180,7 +178,7 @@ unchanged.
 ### Loading
 
 The frontend is TypeScript on disk and JavaScript on the wire.
-`backend/src/transpile.ts` runs each module through `Bun.Transpiler` as it is
+`src/backend/transpile.ts` runs each module through `Bun.Transpiler` as it is
 requested — around 76 µs per
 file, the whole frontend in under two milliseconds — and `serveStatic` hands the
 result back as `text/javascript`. Nothing is written to disk and nothing is
@@ -236,7 +234,7 @@ once, at load. The first flip stores an explicit choice that wins from then on,
 so the page does not follow the operating system around afterwards.
 
 Pico is served from `node_modules` at `/vendor/pico.css` through an explicit
-one-file allowlist in `backend/src/paths.ts` — installing a package never
+one-file allowlist in `src/backend/paths.ts` — installing a package never
 publishes anything the app did not ask to serve. The build is the `pico.orange`
 theme; swapping themes is a one-line change to `VENDOR_FILES`.
 
@@ -295,7 +293,7 @@ free-text `notes`, and a `position` that preserves the order within a session.
 Deleting a workout deletes its sets; deleting an exercise is refused while any
 set still points at it, so history cannot silently lose its meaning.
 
-To change the schema, add `backend/migrations/<next number>-<short-name>.sql`
+To change the schema, add `src/backend/migrations/<next number>-<short-name>.sql`
 and restart. The runner applies it in its own transaction, records it in
 `schema_migrations`, and refuses to start if the number is not above the version
 the database already carries.
