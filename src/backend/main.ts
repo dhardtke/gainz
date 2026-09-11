@@ -1,11 +1,7 @@
-/**
- * The process entry point: open the database, applying anything pending, and serve until a
- * signal arrives.
- */
 import { basename } from 'node:path';
-import { DEFAULT_DB_PATH, openDatabase } from './db';
-import { Repo } from './repo';
-import { serveOptions } from './server';
+import { DEFAULT_DB_PATH, openDatabase } from './db/db.ts';
+import { Repo } from './db/repo';
+import { serveOptions } from './http/server.ts';
 
 function main(): void {
   const db = openDatabase(DEFAULT_DB_PATH, (migration) => {

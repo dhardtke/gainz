@@ -11,7 +11,7 @@ status: complete
 
 Move the two halves of the application under one root: `backend/src/` becomes `src/backend/` and
 `frontend/src/` becomes `src/frontend/`, with the inner `src/` level collapsed away in both cases.
-`backend/migrations/` follows its backend into `src/backend/migrations/`. Afterwards the repository
+`backend/migrations/` follows its backend into `../../../src/backend/db/migrations`. Afterwards the repository
 root holds `src/`, `data/` and `docs/` plus the tooling files, and the word `src` appears exactly
 once in the tree instead of twice at the second level.
 
@@ -53,11 +53,11 @@ owning it rather than working around it.
    - Why: `DEFAULT_DB_PATH` is `'data/gainz.sqlite'`, resolved against the current working
      directory rather than against a module, and every `bun run` script executes from the root.
      The database is runtime data you own; the docs are not compiled by anything.
-   - Impact: `src/backend/db.ts` and `.gitignore` are untouched by this refactor. This is the same
+   - Impact: `../../../src/backend/db/db.ts` and `.gitignore` are untouched by this refactor. This is the same
      reasoning that kept `data/` out of `backend/` in the 2026-09-10 restructure, and it holds for
      the same reason.
 
-2. **`backend/migrations/` becomes `src/backend/migrations/`**, not a root-level `migrations/`.
+2. **`backend/migrations/` becomes `../../../src/backend/db/migrations`**, not a root-level `migrations/`.
    - Why: the migration runner is the only thing that reads them and it lives one directory away.
      Keeping them adjacent means `MIGRATIONS_DIR` stays a single hop and a reader of
      `src/backend/` sees the schema without leaving the directory.
@@ -76,7 +76,7 @@ owning it rather than working around it.
      URL indirection in a project whose whole static story is "a URL names a file". Neither is
      worth paying to keep a path prefix that only ever existed as an accident of nesting.
    - Impact: four files carry a URL literal — `src/frontend/index.html`, `src/frontend/styles.ts`,
-     `src/backend/static.test.ts` and `src/backend/transpile.test.ts` — and all four are edited in
+     `../../../src/backend/http/static.test.ts` and `src/backend/transpile.test.ts` — and all four are edited in
      phase 1. `/vendor/pico.css` is unaffected: it is served from the allowlist, not from
      `FRONTEND_DIR`. Nothing is cached across the change, since every frontend response already
      carries `Cache-Control: no-cache`.
@@ -116,10 +116,10 @@ owning it rather than working around it.
      fixture path in `transpile.test.ts`, and the layout tree in `README.md`.
 
 8. **One naming rule for prose:** every comment and document names a directory by its path from
-   the repository root — `src/backend/migrations/`, never a bare `migrations/`, even inside a file
+   the repository root — `../../../src/backend/db/migrations`, never a bare `migrations/`, even inside a file
    that sits next to it.
    - Why: this is the rule the 2026-09-10 restructure adopted, and the documents already follow
-     it. Dropping it now would produce `docs/backend.md` saying `src/backend/migrations/` while
+     it. Dropping it now would produce `docs/backend.md` saying `../../../src/backend/db/migrations` while
      `migrations.ts:4` says `migrations/`, and a reader could not tell stale from relative.
    - Impact: it surfaces the edits that no search for `backend` or `frontend` would find, because
      they live in one half and name the other — `src/frontend/types.ts:4` names the backend's
@@ -271,7 +271,7 @@ No new abstractions. Every change is a `git mv`, a path literal, a URL literal, 
     - `resolveVendorPath` — no change
   - `migrations.ts`
     - `MIGRATIONS_DIR` (`:36`) — loses the `../`
-    - module doc comment (`:4`) — names `src/backend/migrations/`
+    - module doc comment (`:4`) — names `../../../src/backend/db/migrations`
   - `static.ts` — one comment naming the frontend directory (`:44`)
   - `transpile.ts` — doc comment on `transpileModule` names `src/frontend/`
   - `testing.ts` — header comment says the harness serves every `*.test.ts` under `backend/src/`
@@ -456,14 +456,14 @@ constant that pointed *out of* `src/` at a sibling directory actually moves.
 - [x] `src/backend/migrations.ts:36` — `migrations/` is now a child rather than a sibling:
       `export const MIGRATIONS_DIR = resolve(import.meta.dir, 'migrations');`
 - [x] `src/backend/migrations.ts:4` — the module doc comment says numbered `.sql` files live under
-      `backend/migrations/`; becomes `src/backend/migrations/`.
+      `backend/migrations/`; becomes `../../../src/backend/db/migrations`.
 - [x] `src/backend/testing.ts:2` — header comment: the harness every `*.test.ts` under
       `src/backend/` builds its fixtures from.
-- [x] `src/backend/repo/index.ts:4` — header comment: all SQL lives under `src/backend/repo/`.
+- [x] `../../../src/backend/db/repo` — header comment: all SQL lives under `../../../src/backend/db/repo`.
 - [x] `src/frontend/types.ts:4` — the header comment explaining why these shapes are written by
-      hand says they are "not imported from `backend/src/repo/`"; becomes `src/backend/repo/`.
-      This is the edit no search for `backend/src` inside the backend would surface — it lives in
-      the frontend and names a backend directory, which is the class of miss decision 8 exists for.
+  hand says they are "not imported from `backend/src/repo/`"; becomes `../../../src/backend/db/repo`.
+  This is the edit no search for `backend/src` inside the backend would surface — it lives in
+  the frontend and names a backend directory, which is the class of miss decision 8 exists for.
 - [x] `src/backend/static.test.ts:53-54` — the traversal probes lose the level phase 1 gave them
       and the one the backend just lost: `/%2e%2e/backend/server.ts` and
       `/%2e%2e/backend/transpile.ts`. One `..` above the web root is `src/`, and `backend/` is
@@ -482,10 +482,10 @@ constant that pointed *out of* `src/` at a sibling directory actually moves.
       location (`:34`) becomes `src/backend/migrations/`; and the three module references at
       `:43`, `:49` and `:62` become `src/backend/testing.ts`, `src/backend/migrations.test.ts` and
       `src/backend/static.test.ts:39`.
-- [x] `docs/frontend.md:21` and `:29` — `src/backend/transpile.ts` and `src/backend/repo/`.
+- [x] `docs/frontend.md:21` and `:29` — `src/backend/transpile.ts` and `../../../src/backend/db/repo`.
 - [x] `README.md` — rewrite the `backend/` half of the layout tree (`:70-111`) as `src/backend/`
       with `migrations/` among its children, and update the four prose references: `:33`
-      (`src/backend/migrations/`), `:183` (`src/backend/transpile.ts`), `:239`
+      (`../../../src/backend/db/migrations`), `:183` (`src/backend/transpile.ts`), `:239`
       (`src/backend/paths.ts`) and `:298` (adding `src/backend/migrations/<next number>-…sql`).
 - [x] `AGENTS.md` — line 14 (`bun test src/backend/routes/workout.routes.test.ts`) and the
       Architecture block (`:30-35`), which should now describe `src/` as one entry with
@@ -537,9 +537,9 @@ constant that pointed *out of* `src/` at a sibling directory actually moves.
       and `/api/health` all return 200. The `import.meta.main` block and the real on-disk database
       path are the two things `useServer()` never exercises, which is why this is worth doing
       outside the suite.
-- [x] `bun run start:dev` picks up an edit to `src/backend/routes/meta.routes.ts` and restarts.
+- [x] `bun run start:dev` picks up an edit to `../../../src/backend/http/routes` and restarts.
       `--watch` is given a file path in `package.json` and is the one script whose rewritten path
-      has a mode of failure beyond "does not start".
+  has a mode of failure beyond "does not start".
 - [x] `bun run seed` against a throwaway `GAINZ_DB` fills the database without error — the fourth
       rewritten script path, and the only one no other check touches.
 
@@ -566,7 +566,7 @@ Four things the tasks did not name:
 - **Prose rewrapping.** Repathing a directory inside a sentence pushes the line past the column the
   surrounding document keeps to, so touched paragraphs in `README.md` (72–80 columns),
   `docs/backend.md`, `docs/frontend.md` (100) and the module doc comment in
-  `src/backend/migrations.ts` were re-flowed. `oxfmt` reflows neither comments nor Markdown prose,
+  `../../../src/backend/db/migrations.ts` were re-flowed. `oxfmt` reflows neither comments nor Markdown prose,
   so `fmt:check` would not have caught a ragged line.
 - **The `README.md` layout tree needed dedenting, not just repathing.** Collapsing `backend/src/`
   into `src/backend/` removes a level of indentation from 38 tree lines; repathing only the header
@@ -587,7 +587,7 @@ Two verification notes:
 - **The phase-2 manual checks were run programmatically rather than by hand**, and their output is
   in the session: `bun start` with no `GAINZ_DB` printed `database: data/gainz.sqlite` and answered
   `/api/health` with 200; `bun run start:dev` re-printed its boot line after
-  `src/backend/routes/meta.routes.ts` was touched, proving `--watch` follows the rewritten path;
+  `../../../src/backend/http/routes` was touched, proving `--watch` follows the rewritten path;
   `bun run seed` against a throwaway database seeded 16 workouts and 101 sets. The phase-1 browser
   checks are the only items left unticked — the Chrome extension was not connected in this session.
   What *was* verified for them is stronger than a spot check: with the server running, all 35 moved

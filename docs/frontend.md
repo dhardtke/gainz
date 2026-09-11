@@ -26,7 +26,7 @@ is the only gate, and a type error will transpile and ship.
 The shapes the API returns are declared in `types.ts` and pulled in with
 `import type { … } from '../../types.ts'`, which the transpiler strips whole, so that module is
 never fetched at runtime. They are written out **by hand** rather than imported from
-`src/backend/repo/`, even though a type-only import would be erased too: the frontend is a client
+`../src/backend/db/repo`, even though a type-only import would be erased too: the frontend is a client
 of an HTTP API, so what it should be pinned to is the wire format it expects, not the server's
 internal row types.
 Sharing them would absorb a renamed column as a quiet refactor instead of surfacing it as the API
