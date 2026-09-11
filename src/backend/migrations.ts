@@ -1,8 +1,8 @@
 /**
  * A small schema migration runner.
  *
- * Numbered `.sql` files under `backend/migrations/` are applied in ascending order, each inside its
- * own transaction, and recorded in `schema_migrations`. There is no library behind this:
+ * Numbered `.sql` files under `src/backend/migrations/` are applied in ascending order, each inside
+ * its own transaction, and recorded in `schema_migrations`. There is no library behind this:
  * `bun:sqlite` is synchronous and `db.transaction()` already rolls back on a thrown exception,
  * which is the whole of what a migration runner needs.
  */
@@ -33,7 +33,7 @@ export interface MigrateOptions {
   onMigration?: (migration: Migration) => void;
 }
 
-export const MIGRATIONS_DIR = resolve(import.meta.dir, '../migrations');
+export const MIGRATIONS_DIR = resolve(import.meta.dir, 'migrations');
 
 const LEDGER = `
 CREATE TABLE IF NOT EXISTS schema_migrations (

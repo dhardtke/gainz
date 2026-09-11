@@ -1,7 +1,7 @@
 /**
  * The one place a URL becomes a filesystem path.
  *
- * Everything the static half is allowed to read is decided here: `frontend/` behind an
+ * Everything the static half is allowed to read is decided here: `src/frontend/` behind an
  * escape guard, plus a hand-written allowlist of individual files from `node_modules`.
  * The vendor map is an allowlist rather than a served directory, so installing a package
  * never exposes anything the app did not ask to publish.
@@ -10,9 +10,9 @@ import { normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Relative to this module's own location, so it only holds while the file sits in
-// `backend/src/`. Moving it into a subdirectory breaks the root silently.
+// `src/backend/`. Moving it into a subdirectory breaks the root silently.
 const REPO_ROOT = resolve(fileURLToPath(new URL('../..', import.meta.url)));
-export const FRONTEND_DIR = resolve(REPO_ROOT, 'frontend');
+export const FRONTEND_DIR = resolve(REPO_ROOT, 'src', 'frontend');
 
 /**
  * Third-party stylesheets served straight out of node_modules.
@@ -37,7 +37,7 @@ export function resolveVendorPath(pathname: string): string | null {
 }
 
 /**
- * Maps a URL path to a file inside `frontend/`, or null if it would escape it.
+ * Maps a URL path to a file inside `src/frontend/`, or null if it would escape it.
  */
 export function resolveStaticPath(pathname: string): string | null {
   let decoded: string;

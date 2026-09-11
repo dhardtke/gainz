@@ -1,10 +1,10 @@
-# Frontend (`frontend/`)
+# Frontend (`src/frontend/`)
 
-`src/base.ts` holds `GzElement` (open shadow root, `data-action` click/submit delegation,
-`template()`/`render()`), the escaping `html` tagged template, and `define()`. `src/styles.ts`,
+`base.ts` holds `GzElement` (open shadow root, `data-action` click/submit delegation,
+`template()`/`render()`), the escaping `html` tagged template, and `define()`. `styles.ts`,
 `theme.ts`, `router.ts` (hash router), `api.ts`, `format.ts` are the rest of the shared layer.
 
-Each component is a directory `frontend/src/components/<tag>/` holding `<tag>.ts` and `<tag>.css`, found
+Each component is a directory `src/frontend/components/<tag>/` holding `<tag>.ts` and `<tag>.css`, found
 by convention. A component module ends with `await define('<tag>', TheClass)` — there is no
 manifest. **That top-level `await` is load-bearing**: it makes "module loaded" also mean
 "stylesheet loaded", which is what lets `gz-app` lazily `import()` a route view and still paint it
@@ -18,15 +18,15 @@ leaving it blank with no error.
 All interpolation goes through the `html` template, which escapes; use `raw()` only for markup
 another `html` call produced.
 
-The frontend is TypeScript, served as JavaScript. `backend/src/transpile.ts` runs each module
+The frontend is TypeScript, served as JavaScript. `src/backend/transpile.ts` runs each module
 through `Bun.Transpiler` on request; specifiers are left untouched, so a module imports
 `'./format.ts'` and the browser fetches the file of that name. Types are **erased, not checked** — `bun run typecheck`
 is the only gate, and a type error will transpile and ship.
 
-The shapes the API returns are declared in `src/types.ts` and pulled in with
+The shapes the API returns are declared in `types.ts` and pulled in with
 `import type { … } from '../../types.ts'`, which the transpiler strips whole, so that module is
 never fetched at runtime. They are written out **by hand** rather than imported from
-`backend/src/repo/`, even though a type-only import would be erased too: the frontend is a client
+`src/backend/repo/`, even though a type-only import would be erased too: the frontend is a client
 of an HTTP API, so what it should be pinned to is the wire format it expects, not the server's
 internal row types.
 Sharing them would absorb a renamed column as a quiet refactor instead of surfacing it as the API
