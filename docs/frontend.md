@@ -26,7 +26,7 @@ safe to display; use `raw()` only for markup another `html` call produced.
 
 The shapes the API returns are declared in `types.ts` and pulled in with a type-only import, which
 the transpiler strips whole, so that module is never fetched at runtime. They are written out **by
-hand** rather than imported from `src/backend/db/repo`, even though a type-only import would be
+hand** rather than imported from `../src/backend/db/repos`, even though a type-only import would be
 erased too: the frontend is a client of an HTTP API, so what it should be pinned to is the wire
 format it expects, not the server's internal row types. Sharing them would absorb a renamed column
 as a quiet refactor instead of surfacing it as the API change it is — and `bun run typecheck` will

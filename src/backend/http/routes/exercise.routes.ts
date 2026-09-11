@@ -1,5 +1,5 @@
 import { json, noContent, readJsonObject } from '../http.ts';
-import type { ExerciseInput, Repo } from '../../db/repo';
+import type { ExerciseInput, Repo } from '../../db/repos';
 import { isPresent, optionalString, pathId, requiredString } from '../../shared/validate.ts';
 import type { RouteTable } from './shared.ts';
 import { guardAll, MAX_NAME, MAX_NOTES } from './shared.ts';

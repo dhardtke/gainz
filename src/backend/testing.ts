@@ -9,8 +9,8 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openDatabase } from './db/db.ts';
-import type { Exercise, LiftSet, SessionPoint, Workout, WorkoutWithStats } from './db/repo';
-import { Repo } from './db/repo';
+import type { Exercise, LiftSet, SessionPoint, Workout, WorkoutWithStats } from './db/repos';
+import { Repo } from './db/repos';
 import { serveOptions } from './http/server.ts';
 
 /** `GET /api/workouts/:id` and `POST /api/workouts`: a workout with its sets. */

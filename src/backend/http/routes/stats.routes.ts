@@ -1,5 +1,5 @@
 import { json } from '../http.ts';
-import type { Repo } from '../../db/repo';
+import type { Repo } from '../../db/repos';
 import type { RouteTable } from './shared.ts';
 import { guardAll } from './shared.ts';
 

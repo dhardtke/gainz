@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { Summary } from '../../db/repo';
+import type { Summary } from '../../db/repos';
 import { body, useServer } from '../../testing.ts';
 
 const { api, post, createExercise, createWorkout } = useServer();

@@ -2,7 +2,7 @@
 
 A strict layering, one concern per file, and the directories name the layers: everything that
 touches SQLite lives in `db/`, everything that speaks HTTP lives in `http/`. So `db/db.ts`
-(connection + PRAGMAs) → `db/migrations.ts` (schema) → `db/repo/` (**all** SQL, one method per
+(connection + PRAGMAs) → `db/migrations.ts` (schema) → `db/repos/` (**all** SQL, one method per
 operation, returns typed rows) → `http/routes.ts` (the registry that spreads the route files into
 one `Bun.serve` table) and `http/routes/` (one file per URL group: `meta.routes.ts`,
 `stats.routes.ts`, `exercise.routes.ts`, `workout.routes.ts`, `set.routes.ts`, `static.routes.ts`,
@@ -27,10 +27,10 @@ spread order is for readers rather than for correctness: Bun matches by specific
 1.4.2), so `/api/health` wins over `/api/*` and `/api/*` over `/*` wherever they are declared —
 but declaring the catch-alls last reads the way the router dispatches.
 
-`db/repo/index.ts` is a facade: it owns no SQL, and delegates each method to one repository per
+`db/repos/index.ts` is a facade: it owns no SQL, and delegates each method to one repository per
 entity (`exercises.ts`, `workouts.ts`, `sets.ts`, `stats.ts`), which share their fragments and the
-single dynamic-`UPDATE` builder through `db/repo/sql.ts`. The flat surface is deliberate — callers
-say `repo.listSets(id)` and never reach a sub-repository. SQL lives under `db/repo/` and nowhere
+single dynamic-`UPDATE` builder through `db/repos/sql.ts`. The flat surface is deliberate — callers
+say `repo.listSets(id)` and never reach a sub-repository. SQL lives under `db/repos/` and nowhere
 else.
 The entity modules reference each other only with `import type`; `SetRepo` takes the siblings it
 needs through its constructor, so there is no runtime cycle to trip over.

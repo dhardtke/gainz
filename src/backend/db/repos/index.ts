@@ -1,7 +1,7 @@
 /**
  * The database layer. `Repo` is a thin facade over one repository per entity — it exists so the
  * rest of the app keeps a single, flat surface (`repo.listSets(id)`) while the SQL lives in the
- * module it belongs to. All SQL in this project lives under `src/backend/db/repo/` and nowhere else.
+ * module it belongs to. All SQL in this project lives under `src/backend/db/repos/` and nowhere else.
  */
 import type { DB } from '../db.ts';
 import { type Exercise, ExerciseRepo, type ExerciseInput, type ExerciseWithStats, type SessionPoint } from './exercises.ts';
