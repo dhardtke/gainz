@@ -4,7 +4,7 @@ git_commit: 27eb98c84e92f0e8923d03813ebc7b9be9170f74
 branch: main
 topic: 'Serve static files from a route handler instead of the fetch fallback'
 tags: [plan, backend, http, routes, static-files, bun-serve, vendor-allowlist]
-status: draft
+status: complete
 ---
 
 # PLAN: Static files as a route
@@ -568,7 +568,7 @@ same side of that test as `/nope.ts`.
 
 **Manual Verification**:
 
-- [ ] `bun start`, open `http://localhost:3000/`, and confirm the dashboard renders styled —
+- [x] `bun start`, open `http://localhost:3000/`, and confirm the dashboard renders styled —
       Pico from `/vendor/pico.css`, `/css/app.css`, and the lazily imported component scripts
       and stylesheets all arrive. Navigate to an exercise so a lazily loaded view and its chart
       are fetched, then reload on a deep client route such as `/workouts` and confirm the SPA
