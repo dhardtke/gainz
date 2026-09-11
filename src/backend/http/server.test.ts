@@ -5,10 +5,12 @@ import { Repo } from '../db/repo';
 import { serveOptions } from './server.ts';
 
 describe('the error hook', () => {
-  // Called directly rather than over HTTP: `guardAll` wraps the method maps and `guard` the
-  // `/api/*` catch-all, so no request can reach the hook through the route table. What is
-  // under test is our wiring in `serveOptions`, not Bun's dispatch. The 500 branch logs one
-  // `Unhandled error: Error: boom` line to stderr on the way past.
+  // Called directly rather than over HTTP: the hook is reachable — the `/*` static route is
+  // deliberately unguarded, because it answers plain text rather than JSON — but nothing there
+  // throws on purpose. The only way through is an I/O failure reading a module for transpilation
+  // (`src/backend/transpile.ts:22`, outside that module's own `try`), which a test cannot provoke
+  // over HTTP. What is under test is our wiring in `serveOptions`, not Bun's dispatch. The 500
+  // branch logs one `Unhandled error: Error: boom` line to stderr on the way past.
   test("renders errors through Bun.serve's error hook", () => {
     const db = openDatabase(':memory:');
     try {

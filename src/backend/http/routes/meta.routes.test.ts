@@ -16,4 +16,13 @@ describe('health and routing', () => {
     expect(res.status).toBe(404);
     expect((await body<ErrorBody>(res)).error).toContain('not found');
   });
+
+  test('the bare /api prefix returns a JSON 404, but /apix does not', async () => {
+    const res = await api('/api');
+    expect(res.status).toBe(404);
+    expect((await body<ErrorBody>(res)).error).toContain('not found');
+    // Every verb, not just GET: the key claims the URL before the static method gate.
+    expect((await api('/api', { method: 'POST' })).status).toBe(404);
+    expect((await api('/apix')).headers.get('content-type')).toContain('text/html');
+  });
 });
