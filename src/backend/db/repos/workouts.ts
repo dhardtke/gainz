@@ -1,5 +1,5 @@
 import type { DB } from '../db.ts';
-import { notFound } from '../../http/http.ts';
+import { notFound } from '../../http/errors.ts';
 import { buildUpdate } from './sql.ts';
 
 export interface Workout {

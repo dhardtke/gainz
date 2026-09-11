@@ -1,5 +1,5 @@
 import type { DB } from '../db.ts';
-import { conflict, notFound } from '../../http/http.ts';
+import { conflict, notFound } from '../../http/errors.ts';
 import type { LiftSet } from './sets.ts';
 import { buildUpdate, EST_1RM_SQL, EXERCISE_COLUMNS, isUniqueViolation, SET_COLUMNS } from './sql.ts';
 

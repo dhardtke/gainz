@@ -1,5 +1,5 @@
 import type { DB } from '../db.ts';
-import { notFound } from '../../http/http.ts';
+import { notFound } from '../../http/errors.ts';
 import type { ExerciseRepo } from './exercises.ts';
 import { buildUpdate, SET_COLUMNS } from './sql.ts';
 import type { WorkoutRepo } from './workouts.ts';
