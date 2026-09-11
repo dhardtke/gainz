@@ -8,8 +8,8 @@
   "scripts": {
     "start": "bun run src/backend/main.ts",
     "start:dev": "bun --watch src/backend/main.ts",
-    "seed": "bun run src/backend/seed.ts",
-    "migrate": "bun run src/backend/migrate.ts",
+    "seed": "bun run src/scripts/seed.ts",
+    "migrate": "bun run src/scripts/migrate.ts",
     "test": "bun test",
     "typecheck": "bunx tsc --noEmit",
     "fmt": "oxfmt .",

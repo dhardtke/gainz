@@ -30,7 +30,7 @@ bun start            # http://localhost:3000
 
 The database lives at `data/gainz.sqlite` (override with `GAINZ_DB`) and is
 created on first run. It is git-ignored — the log is your data, not source. Its
-schema comes from the numbered `.sql` files in `src/backend/migrations/`, which the
+schema comes from the numbered `.sql` files in `src/backend/db/migrations`, which the
 server applies on startup; `bun run migrate` does the same without booting the
 server.
 
@@ -68,45 +68,49 @@ sets of different rep counts on one comparable scale.
 
 ```
 src/backend/
-  migrations/
-    001-initial-schema.sql  Numbered DDL, applied in order on startup
-  db.ts        SQLite connection and PRAGMAs
-  db.test.ts     openDatabase: the schema it applies, and WAL
-  migrations.ts  The migration runner
-  migrations.test.ts  Unit tests for the runner, against fixture directories
-  migrate.ts   `bun run migrate` entry point
-  repo/
-    index.ts     The Repo facade — one flat surface, no SQL
-    sql.ts       Shared fragments and the dynamic UPDATE builder
-    exercises.ts Exercise queries
-    workouts.ts  Workout queries
-    sets.ts      Set queries
-    stats.ts     The dashboard summary
-  routes.ts    The registry — spreads the route files into one table
-  routes/
-    shared.ts    RouteTable, guardAll and the shared field limits
-    meta.routes.ts     /api/health and the /api catch-all
-    meta.routes.test.ts
-    stats.routes.ts    The dashboard summary endpoint
-    stats.routes.test.ts
-    exercise.routes.ts Exercise endpoints, including progress
-    exercise.routes.test.ts
-    workout.routes.ts  Workout endpoints, including a workout's sets
-    workout.routes.test.ts
-    set.routes.ts      Set endpoints
-    set.routes.test.ts
-  validate.ts  Request-field parsing and limits
-  http.ts      JSON responses and HttpError
-  http.test.ts   readJsonObject: malformed and non-object bodies
+  db/
+    migrations/
+      001-initial-schema.sql  Numbered DDL, applied in order on startup
+    db.ts        SQLite connection and PRAGMAs
+    db.test.ts     openDatabase: the schema it applies, and WAL
+    migrations.ts  The migration runner
+    migrations.test.ts  Unit tests for the runner, against fixture directories
+    repo/
+      index.ts     The Repo facade — one flat surface, no SQL
+      sql.ts       Shared fragments and the dynamic UPDATE builder
+      exercises.ts Exercise queries
+      workouts.ts  Workout queries
+      sets.ts      Set queries
+      stats.ts     The dashboard summary
+  http/
+    routes.ts    The registry — spreads the route files into one table
+    routes/
+      shared.ts    RouteTable, guardAll and the shared field limits
+      meta.routes.ts     /api/health and the /api catch-all
+      meta.routes.test.ts
+      stats.routes.ts    The dashboard summary endpoint
+      stats.routes.test.ts
+      exercise.routes.ts Exercise endpoints, including progress
+      exercise.routes.test.ts
+      workout.routes.ts  Workout endpoints, including a workout's sets
+      workout.routes.test.ts
+      set.routes.ts      Set endpoints
+      set.routes.test.ts
+    http.ts      JSON responses and HttpError
+    http.test.ts   readJsonObject: malformed and non-object bodies
+    static.ts    Serves src/frontend/ and the vendor allowlist
+    static.test.ts      What the server serves and refuses
+    server.ts    The Bun.serve options, shared by main.ts and the tests
+    server.test.ts      The Bun.serve error hook
+  shared/
+    validate.ts  Request-field parsing and limits
   transpile.ts Erases types from a frontend module on its way to the browser
   transpile.test.ts   What the transpiler outputs
-  static.ts    Serves src/frontend/ and the vendor allowlist
-  static.test.ts      What the server serves and refuses
   paths.ts     URL-to-file resolution, escape guard, VENDOR_FILES
-  server.ts    The Bun.serve options, shared by main.ts and the tests
-  server.test.ts      The Bun.serve error hook
   testing.ts   Test-only: useServer(), useTempDir() and the response helpers
   main.ts      Entry point — open the database, serve, shut down
+src/scripts/
+  migrate.ts   `bun run migrate` entry point
   seed.ts      Sample data
 src/frontend/
   index.html   The only page
@@ -293,7 +297,7 @@ free-text `notes`, and a `position` that preserves the order within a session.
 Deleting a workout deletes its sets; deleting an exercise is refused while any
 set still points at it, so history cannot silently lose its meaning.
 
-To change the schema, add `src/backend/migrations/<next number>-<short-name>.sql`
+To change the schema, add `src/backend/db/migrations/<next number>-<short-name>.sql`
 and restart. The runner applies it in its own transaction, records it in
 `schema_migrations`, and refuses to start if the number is not above the version
 the database already carries.

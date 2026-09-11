@@ -8,10 +8,10 @@ import type { Database } from 'bun:sqlite';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { openDatabase } from './db';
-import type { Exercise, LiftSet, SessionPoint, Workout, WorkoutWithStats } from './repo';
-import { Repo } from './repo';
-import { serveOptions } from './server';
+import { openDatabase } from './db/db.ts';
+import type { Exercise, LiftSet, SessionPoint, Workout, WorkoutWithStats } from './db/repo';
+import { Repo } from './db/repo';
+import { serveOptions } from './http/server.ts';
 
 /** `GET /api/workouts/:id` and `POST /api/workouts`: a workout with its sets. */
 export interface WorkoutDetail extends Workout {
