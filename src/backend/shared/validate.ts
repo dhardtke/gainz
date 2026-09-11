@@ -1,4 +1,4 @@
-import { badRequest } from '../http/http.ts';
+import { badRequest } from '../http/errors.ts';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 

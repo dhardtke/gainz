@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { openDatabase } from '../db/db.ts';
-import { HttpError } from './http.ts';
+import { HttpError } from './errors.ts';
 import { Repo } from '../db/repos';
 import { serveOptions } from './server.ts';
 

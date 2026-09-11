@@ -1,4 +1,5 @@
-import { errorResponse, json, notFound } from '../http.ts';
+import { errorResponse, notFound } from '../errors.ts';
+import { json } from '../http.ts';
 import type { RouteTable } from './shared.ts';
 import { guard, guardAll } from './shared.ts';
 
