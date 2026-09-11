@@ -3,8 +3,9 @@
 A strict layering, one concern per file, and the directories name the layers: everything that
 touches SQLite lives in `db/`, everything that speaks HTTP lives in `http/`. So `db/db.ts`
 (connection + PRAGMAs) → `db/migrations.ts` (schema) → `db/repos/` (**all** SQL, one method per
-operation, returns typed rows) → `http/routes.ts` (the registry that spreads the route files into
-one `Bun.serve` table) and `http/routes/` (one file per URL group: `meta.routes.ts`,
+operation, returns typed rows) → `http/dto/` (the translation between those rows and the wire
+format declared in `src/shared/dto/`) → `http/routes.ts` (the registry that spreads the route files
+into one `Bun.serve` table) and `http/routes/` (one file per URL group: `meta.routes.ts`,
 `stats.routes.ts`, `exercise.routes.ts`, `workout.routes.ts`, `set.routes.ts`, `static.routes.ts`,
 over the shared plumbing in `routes/shared.ts`) → `http/server.ts` (the `Bun.serve` options) →
 `main.ts` (entry point, and the only module that knows both halves). The static half is a route
@@ -13,6 +14,14 @@ per vendor allowlist entry, over `paths.ts` (the only place a URL becomes a file
 is no `fetch` fallback — every URL the server answers is a declared pattern.
 `shared/validate.ts` parses and bounds
 every request field; `http/http.ts` defines `HttpError` plus `badRequest`/`notFound`/`conflict`.
+
+**A route returns a DTO, never a row.** The wire format is declared once in `src/shared/dto/` —
+camelCase, type-only, imported by the frontend as well — and `http/dto/` holds one mapper per
+shape in each direction (`toLiftSet(row)`, `fromCreateSet(dto)`), split per entity the way
+`db/repos/` is. Those mappers are the only place outside `db/` that reads a row's fields, and each
+one names every field it maps: a spread would compile and would ship `workout_id` and `created_at`
+to the browser with nothing to catch it. The camelCase rename is what keeps that honest — a row is
+not structurally assignable to its own DTO.
 
 `paths.ts`, `transpile.ts` and `testing.ts` stay at the top of `src/backend/` because they belong to
 neither layer: the first two serve the frontend rather than the API, and the third is test-only

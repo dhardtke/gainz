@@ -2,14 +2,14 @@ import { api, ApiError, errorMessage } from '../../api.ts';
 import type { RawHtml } from '../../base.ts';
 import { define, GzElement, html } from '../../base.ts';
 import { formatDate, formatDelta, formatNumber, formatShortDate, formatVolume, plural, relativeDay, UNIT } from '../../format.ts';
-import type { ExerciseProgress, SessionPoint } from '../../types.ts';
+import type { ExerciseProgressDto, SessionPointDto } from '../../../shared/dto/index.ts';
 import type { GzChart } from '../gz-chart/gz-chart.ts';
 import { toastError } from '../gz-toast/gz-toast.ts';
 import '../gz-chart/gz-chart.ts';
 import '../gz-stat-tile/gz-stat-tile.ts';
 
-/** The `SessionPoint` fields that can be plotted. */
-type MetricKey = 'est_one_rep_max' | 'top_weight' | 'total_volume';
+/** The `SessionPointDto` fields that can be plotted. */
+type MetricKey = 'estOneRepMax' | 'topWeight' | 'totalVolume';
 
 interface Metric {
   key: MetricKey;
@@ -18,7 +18,7 @@ interface Metric {
   hint: string;
 }
 
-type ReadyState = { status: 'ready' } & ExerciseProgress;
+type ReadyState = { status: 'ready' } & ExerciseProgressDto;
 
 type ExerciseDetailState = { status: 'loading' } | ReadyState | { status: 'error'; message: string };
 
@@ -28,13 +28,13 @@ type ExerciseDetailState = { status: 'loading' } | ReadyState | { status: 'error
  */
 const METRICS: [Metric, ...Metric[]] = [
   {
-    key: 'est_one_rep_max',
+    key: 'estOneRepMax',
     label: 'Estimated 1RM',
     unit: UNIT,
     hint: 'Epley estimate from the best set of each session — comparable across rep ranges.',
   },
-  { key: 'top_weight', label: 'Top set', unit: UNIT, hint: 'Heaviest weight moved in each session.' },
-  { key: 'total_volume', label: 'Volume', unit: UNIT, hint: 'Reps × weight summed over the session.' },
+  { key: 'topWeight', label: 'Top set', unit: UNIT, hint: 'Heaviest weight moved in each session.' },
+  { key: 'totalVolume', label: 'Volume', unit: UNIT, hint: 'Reps × weight summed over the session.' },
 ];
 
 /** Progress view for a single exercise. */
@@ -107,35 +107,35 @@ class GzExerciseDetail extends GzElement {
     const metric = METRICS.find((candidate) => candidate.key === this.#metric) ?? METRICS[0];
     chart.unit = metric.unit;
     chart.series = this.#state.sessions.map((session) => ({
-      label: formatShortDate(session.performed_on),
+      label: formatShortDate(session.performedOn),
       value: session[metric.key],
-      hint: `${plural(session.set_count, 'set')}, ${plural(session.total_reps, 'rep')}`,
+      hint: `${plural(session.setCount, 'set')}, ${plural(session.totalReps, 'rep')}`,
     }));
   }
 
   #summaryTiles(state: ReadyState): RawHtml {
-    const { sessions, best_set: bestSet } = state;
+    const { sessions, bestSet } = state;
     const latest = sessions.at(-1);
     const previous = sessions.at(-2);
 
-    const totalVolume = sessions.reduce((sum, session) => sum + session.total_volume, 0);
-    const delta = latest && previous ? formatDelta(latest.est_one_rep_max, previous.est_one_rep_max) : '';
+    const totalVolume = sessions.reduce((sum, session) => sum + session.totalVolume, 0);
+    const delta = latest && previous ? formatDelta(latest.estOneRepMax, previous.estOneRepMax) : '';
 
     return html`
       <div class="tiles">
         <gz-stat-tile
           label="Sessions"
           value="${sessions.length}"
-          hint="${latest ? `last ${relativeDay(latest.performed_on)}` : 'not trained yet'}"
+          hint="${latest ? `last ${relativeDay(latest.performedOn)}` : 'not trained yet'}"
         ></gz-stat-tile>
         <gz-stat-tile
           label="Best set"
           value="${bestSet ? `${formatNumber(bestSet.weight)} ${UNIT} × ${bestSet.reps}` : '–'}"
-          hint="${bestSet ? formatDate(bestSet.performed_on) : 'no sets logged'}"
+          hint="${bestSet ? formatDate(bestSet.performedOn) : 'no sets logged'}"
         ></gz-stat-tile>
         <gz-stat-tile
           label="Estimated 1RM"
-          value="${latest ? `${formatNumber(latest.est_one_rep_max, 1)} ${UNIT}` : '–'}"
+          value="${latest ? `${formatNumber(latest.estOneRepMax, 1)} ${UNIT}` : '–'}"
           hint="${delta ? `${delta} ${UNIT} vs. previous session` : 'needs two sessions'}"
         ></gz-stat-tile>
         <gz-stat-tile label="Total volume" value="${formatVolume(totalVolume)}" hint="across all sessions"></gz-stat-tile>
@@ -143,7 +143,7 @@ class GzExerciseDetail extends GzElement {
     `;
   }
 
-  #sessionsTable(sessions: SessionPoint[]): RawHtml {
+  #sessionsTable(sessions: SessionPointDto[]): RawHtml {
     return html`
       <article class="stack-sm">
         <h2>Session history</h2>
@@ -162,18 +162,18 @@ class GzExerciseDetail extends GzElement {
             <tbody>
               ${[...sessions].reverse().map((session, index, reversed) => {
                 const earlier = reversed[index + 1];
-                const change = earlier ? formatDelta(session.est_one_rep_max, earlier.est_one_rep_max) : '';
+                const change = earlier ? formatDelta(session.estOneRepMax, earlier.estOneRepMax) : '';
                 const direction = change.startsWith('+') ? 'up' : change.startsWith('−') ? 'down' : '';
                 return html`
                   <tr>
                     <td class="name nowrap">
-                      <a href="#/workouts/${session.workout_id}">${formatDate(session.performed_on)}</a>
+                      <a href="#/workouts/${session.workoutId}">${formatDate(session.performedOn)}</a>
                     </td>
-                    <td class="num">${session.set_count}</td>
-                    <td class="num">${session.total_reps}</td>
-                    <td class="num">${formatNumber(session.top_weight)} ${UNIT}</td>
-                    <td class="num">${formatNumber(session.est_one_rep_max, 1)} ${change ? html`<span class="${direction}"> ${change}</span>` : ''}</td>
-                    <td class="num">${formatVolume(session.total_volume)}</td>
+                    <td class="num">${session.setCount}</td>
+                    <td class="num">${session.totalReps}</td>
+                    <td class="num">${formatNumber(session.topWeight)} ${UNIT}</td>
+                    <td class="num">${formatNumber(session.estOneRepMax, 1)} ${change ? html`<span class="${direction}"> ${change}</span>` : ''}</td>
+                    <td class="num">${formatVolume(session.totalVolume)}</td>
                   </tr>
                 `;
               })}
@@ -207,7 +207,7 @@ class GzExerciseDetail extends GzElement {
           <p><a href="#/exercises">← Exercises</a></p>
           <hgroup>
             <h1>${exercise.name}</h1>
-            <p>${exercise.muscle_group ?? 'No muscle group set'}${exercise.notes ? html` · ${exercise.notes}` : ''}</p>
+            <p>${exercise.muscleGroup ?? 'No muscle group set'}${exercise.notes ? html` · ${exercise.notes}` : ''}</p>
           </hgroup>
         </div>
 

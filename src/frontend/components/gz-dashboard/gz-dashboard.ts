@@ -3,11 +3,11 @@ import type { RawHtml } from '../../base.ts';
 import { define, GzElement, html } from '../../base.ts';
 import { formatDate, formatVolume, plural, relativeDay, todayIso } from '../../format.ts';
 import { navigate } from '../../router.ts';
-import type { Summary, WorkoutWithStats } from '../../types.ts';
+import type { SummaryDto, WorkoutWithStatsDto } from '../../../shared/dto/index.ts';
 import { toastError } from '../gz-toast/gz-toast.ts';
 import '../gz-stat-tile/gz-stat-tile.ts';
 
-type DashboardState = { status: 'loading' } | { status: 'ready'; summary: Summary; workouts: WorkoutWithStats[] } | { status: 'error'; message: string };
+type DashboardState = { status: 'loading' } | { status: 'ready'; summary: SummaryDto; workouts: WorkoutWithStatsDto[] } | { status: 'error'; message: string };
 
 /** Landing view: the numbers that answer "am I actually progressing?". */
 class GzDashboard extends GzElement {
@@ -34,7 +34,7 @@ class GzDashboard extends GzElement {
       return;
     }
     try {
-      const workout = await api.workouts.create({ performed_on: todayIso() });
+      const workout = await api.workouts.create({ performedOn: todayIso() });
       navigate(`/workouts/${workout.id}`);
     } catch (error) {
       toastError(error);
@@ -57,17 +57,17 @@ class GzDashboard extends GzElement {
           <div>
             <h1>Dashboard</h1>
             <p class="muted">
-              ${summary.last_performed_on ? html`Last session ${relativeDay(summary.last_performed_on)}.` : html`Nothing logged yet — time for session one.`}
+              ${summary.lastPerformedOn ? html`Last session ${relativeDay(summary.lastPerformedOn)}.` : html`Nothing logged yet — time for session one.`}
             </p>
           </div>
           <button data-action="start-workout">Log today's workout</button>
         </div>
 
         <div class="tiles">
-          <gz-stat-tile label="Workouts" value="${summary.workout_count}" hint="${plural(summary.set_count, 'set')} total"></gz-stat-tile>
-          <gz-stat-tile label="Total volume" value="${formatVolume(summary.total_volume)}" hint="reps × weight, all time"></gz-stat-tile>
-          <gz-stat-tile label="Last 30 days" value="${summary.workouts_last_30_days}" hint="${formatVolume(summary.volume_last_30_days)} moved"></gz-stat-tile>
-          <gz-stat-tile label="Exercises" value="${summary.exercise_count}" hint="${plural(summary.total_reps, 'rep')} lifted"></gz-stat-tile>
+          <gz-stat-tile label="Workouts" value="${summary.workoutCount}" hint="${plural(summary.setCount, 'set')} total"></gz-stat-tile>
+          <gz-stat-tile label="Total volume" value="${formatVolume(summary.totalVolume)}" hint="reps × weight, all time"></gz-stat-tile>
+          <gz-stat-tile label="Last 30 days" value="${summary.workoutsLast30Days}" hint="${formatVolume(summary.volumeLast30Days)} moved"></gz-stat-tile>
+          <gz-stat-tile label="Exercises" value="${summary.exerciseCount}" hint="${plural(summary.totalReps, 'rep')} lifted"></gz-stat-tile>
         </div>
 
         <article class="stack-sm">
@@ -82,10 +82,10 @@ class GzDashboard extends GzElement {
                   (workout) => html`
                     <a class="workout-link" href="#/workouts/${workout.id}">
                       <span class="grow">
-                        <span class="title">${workout.title ?? formatDate(workout.performed_on)}</span>
-                        <span class="muted"> · ${relativeDay(workout.performed_on)}</span>
+                        <span class="title">${workout.title ?? formatDate(workout.performedOn)}</span>
+                        <span class="muted"> · ${relativeDay(workout.performedOn)}</span>
                       </span>
-                      <span class="badge">${plural(workout.set_count, 'set')} · ${formatVolume(workout.total_volume)}</span>
+                      <span class="badge">${plural(workout.setCount, 'set')} · ${formatVolume(workout.totalVolume)}</span>
                     </a>
                   `,
                 )

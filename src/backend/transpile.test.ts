@@ -33,16 +33,11 @@ describe('typescript modules', () => {
     expect(await res.text()).toContain('./components/gz-app/gz-app.ts');
   });
 
-  test('erases a types-only module to nothing the browser runs', async () => {
-    const body = await (await api('/types.ts')).text();
-    // Every declaration in types.ts is a type, so nothing survives erasure. The
-    // browser never asks for it either — see the type-only import test below.
-    expect(body.trim()).toBe('');
-  });
-
-  test('strips type-only imports, so types.ts is never fetched at runtime', async () => {
+  test('strips type-only imports, so src/shared/ is never fetched at runtime', async () => {
     const body = await (await api('/components/gz-set-row/gz-set-row.ts')).text();
-    expect(body).not.toContain('types.ts');
+    // `src/shared/dto/` is outside the web root: a surviving specifier would be a 404 on
+    // every page load. That the module erases to nothing is pinned by src/shared/dto/index.test.ts.
+    expect(body).not.toContain('shared/dto');
   });
 
   test('keeps the load-bearing top-level await that pairs a module with its CSS', async () => {
