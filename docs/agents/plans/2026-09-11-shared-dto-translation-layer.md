@@ -4,7 +4,7 @@ git_commit: 5d3ed743cbf30e5f9ade3a5effcf27ce826614df
 branch: main
 topic: 'A shared DTO translation layer between backend and frontend'
 tags: [plan, types, dto, backend, frontend, shared, api]
-status: ready
+status: complete
 ---
 
 # PLAN: A shared DTO translation layer in `src/shared`
@@ -343,49 +343,49 @@ throughout; the mixture is expected, not a defect.
 
 **Tasks**:
 
-- [ ] Create `src/shared/dto/set.ts` with `LiftSetDto`, `BestSetDto extends LiftSetDto`
+- [x] Create `src/shared/dto/set.ts` with `LiftSetDto`, `BestSetDto extends LiftSetDto`
       (`performedOn`), `CreateSetDto` and `EditSetDto`, each field carrying the doc comment its
       counterpart has in `src/frontend/types.ts` today. `CreateSetDto.position` is optional and
       documented as "appended to the workout when left out"; `EditSetDto` lists all five fields as
       optional, written out rather than derived.
-- [ ] Create `src/shared/dto/index.ts` re-exporting `./set.ts` with a single `export type { … }`
+- [x] Create `src/shared/dto/index.ts` re-exporting `./set.ts` with a single `export type { … }`
       line, and a header comment stating that the module is type-only on purpose — the frontend
       reaches it with `import type`, which the transpiler erases, and `src/shared/` is not served.
-- [ ] Create `src/shared/dto/index.test.ts`: read every `.ts` file in the directory that is not a
+- [x] Create `src/shared/dto/index.test.ts`: read every `.ts` file in the directory that is not a
       test, run it through `new Bun.Transpiler({ loader: 'ts' })`, and assert the output trims to
       the empty string. This is what keeps decision 1 true as the module grows.
-- [ ] Create `src/backend/http/dto/set.ts` with `toLiftSet`, `toBestSet`, `fromCreateSet` and
+- [x] Create `src/backend/http/dto/set.ts` with `toLiftSet`, `toBestSet`, `fromCreateSet` and
       `fromEditSet` in the house style above.
-- [ ] Create `src/backend/http/dto/index.ts` re-exporting the set mappers.
-- [ ] `src/backend/http/routes/set.routes.ts`: change `readSetBody` to return `CreateSetDto`
+- [x] Create `src/backend/http/dto/index.ts` re-exporting the set mappers.
+- [x] `src/backend/http/routes/set.routes.ts`: change `readSetBody` to return `CreateSetDto`
       reading `exerciseId`, `reps`, `weight`, `notes`, `position`; add `readEditSetBody` returning
       `EditSetDto`, replacing the inline `Partial<SetInput>` assembly in `PATCH`; wrap both
       responses in `toLiftSet` and the repository calls in `fromCreateSet` / `fromEditSet`.
-- [ ] `src/backend/http/routes/workout.routes.ts`: map the two set endpoints
+- [x] `src/backend/http/routes/workout.routes.ts`: map the two set endpoints
       (`GET`/`POST /api/workouts/:id/sets`) through `toLiftSet`, and the inline
       `{ ...workout, sets }` composites' `sets` array likewise. **Also wrap the input**: line 72
       calls `repo.createSet(id, readSetBody(...))`, and `readSetBody` now returns `CreateSetDto`,
       so it becomes `repo.createSet(id, fromCreateSet(readSetBody(...)))`. The workout half of the
       response stays as it is until Phase 3.
-- [ ] `src/backend/testing.ts`: `WorkoutDetail.sets` becomes `LiftSetDto[]`, imported from
+- [x] `src/backend/testing.ts`: `WorkoutDetail.sets` becomes `LiftSetDto[]`, imported from
       `../shared/dto`.
-- [ ] `src/frontend/types.ts`: delete `SetInput`; re-point `WorkoutWithSets.sets` at `LiftSetDto`
+- [x] `src/frontend/types.ts`: delete `SetInput`; re-point `WorkoutWithSets.sets` at `LiftSetDto`
       via a type-only import. **`LiftSet` cannot simply go**: `ExerciseProgress.best_set` at line
       104 is `(LiftSet & { performed_on: string }) | null`, and that endpoint still returns
       snake_case until Phase 2. Rename the interface to an unexported `ProgressLiftSet` used only
       by `ExerciseProgress`, so the type keeps telling the truth and
       `gz-exercise-detail.ts:134` (`bestSet.performed_on`) keeps compiling. Phase 2 deletes it.
       Note in the header comment that the file is being dismantled.
-- [ ] `src/frontend/api.ts`: `sets.update(id, patchBody: EditSetDto): Promise<LiftSetDto>`,
+- [x] `src/frontend/api.ts`: `sets.update(id, patchBody: EditSetDto): Promise<LiftSetDto>`,
       `sets.remove`, and `workouts.addSet(id, input: CreateSetDto): Promise<LiftSetDto>`.
-- [ ] `src/frontend/components/gz-set-row/gz-set-row.ts`: import `LiftSetDto`; rename the field
+- [x] `src/frontend/components/gz-set-row/gz-set-row.ts`: import `LiftSetDto`; rename the field
       reads at lines 59-60, 93, 112, 146; rename the form field `exercise_id` → `exerciseId` in the
       `name` attribute, the `values` read and the `<select>` markup.
-- [ ] `src/frontend/components/gz-workout-detail/gz-workout-detail.ts`: the set-typed parts only —
+- [x] `src/frontend/components/gz-workout-detail/gz-workout-detail.ts`: the set-typed parts only —
       `#breakdown(sets: LiftSetDto[])`, the `#draft.exercise_id` → `#draft.exerciseId` rename, the
       add-set form's `name="exercise_id"`/`name="new_exercise"` attributes and their `id`/`for`
       partners, and the `select[name='exerciseId']` query at line 212.
-- [ ] Update **every** test that posts a set body — the wire key becomes `exerciseId`, so a missed
+- [x] Update **every** test that posts a set body — the wire key becomes `exerciseId`, so a missed
       one gets a 400 rather than a type error:
       - `set.routes.test.ts:12`, and re-point its `body<LiftSet>` claims (lines 2, 12) at
         `LiftSetDto`
@@ -394,29 +394,29 @@ throughout; the mixture is expected, not a defect.
         `LiftSet` import at line 2
       - `exercise.routes.test.ts:44, 66, 67`
       - `stats.routes.test.ts:11`
-- [ ] `docs/backend.md`: extend the layering paragraph so the chain reads
+- [x] `docs/backend.md`: extend the layering paragraph so the chain reads
       `db/repos/` → `http/dto/` → `http/routes/`, and state that a route returns a DTO rather than
       a row, with the mappers being the only place a row's fields are read outside `db/`.
 
 **Automated Verification**:
 
-- [ ] `bun test src/backend/http/routes/set.routes.test.ts` passes
-- [ ] `bun test src/backend/http/routes/workout.routes.test.ts` passes
-- [ ] `bun test src/backend/http/routes/exercise.routes.test.ts` passes — it posts sets too
-- [ ] `bun test src/backend/http/routes/stats.routes.test.ts` passes — it posts a set too
-- [ ] `bun test src/shared/dto/index.test.ts` passes — every declaration file erases to nothing
-- [ ] `bun test` passes
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
+- [x] `bun test src/backend/http/routes/set.routes.test.ts` passes
+- [x] `bun test src/backend/http/routes/workout.routes.test.ts` passes
+- [x] `bun test src/backend/http/routes/exercise.routes.test.ts` passes — it posts sets too
+- [x] `bun test src/backend/http/routes/stats.routes.test.ts` passes — it posts a set too
+- [x] `bun test src/shared/dto/index.test.ts` passes — every declaration file erases to nothing
+- [x] `bun test` passes
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
 
 **Manual Verification**:
 
-- [ ] `bun start`, open a workout, log a set through the add-set form, and confirm it appears with
+- [x] `bun start`, open a workout, log a set through the add-set form, and confirm it appears with
       the right exercise name, weight and reps — `formData(form)` is untyped, so a stale `name`
       attribute would send `undefined` and typecheck would not report it
-- [ ] Edit that set's weight and reps inline and confirm the change persists across a reload
-- [ ] Use the set row's "repeat" action and confirm the copied set carries the same exercise
+- [x] Edit that set's weight and reps inline and confirm the change persists across a reload
+- [x] Use the set row's "repeat" action and confirm the copied set carries the same exercise
 
 ### Phase 2: Exercises
 
@@ -424,48 +424,48 @@ Dependencies: Phase 1 (`BestSetDto` is nested in `ExerciseProgressDto`).
 
 **Tasks**:
 
-- [ ] Create `src/shared/dto/exercise.ts` with `ExerciseDto`, `ExerciseWithStatsDto extends
+- [x] Create `src/shared/dto/exercise.ts` with `ExerciseDto`, `ExerciseWithStatsDto extends
       ExerciseDto`, `SessionPointDto`, `ExerciseProgressDto`
       (`{ exercise, sessions, bestSet: BestSetDto | null }`), `CreateExerciseDto` and
       `EditExerciseDto`, carrying over today's doc comments.
-- [ ] Create `src/backend/http/dto/exercise.ts` with `toExercise`, `toExerciseWithStats`,
+- [x] Create `src/backend/http/dto/exercise.ts` with `toExercise`, `toExerciseWithStats`,
       `toSessionPoint`, `toExerciseProgress`, `fromCreateExercise` and `fromEditExercise`.
-- [ ] Extend both `index.ts` files with the exercise re-exports.
-- [ ] `src/backend/http/routes/exercise.routes.ts`: `readExerciseBody` returns `CreateExerciseDto`
+- [x] Extend both `index.ts` files with the exercise re-exports.
+- [x] `src/backend/http/routes/exercise.routes.ts`: `readExerciseBody` returns `CreateExerciseDto`
       reading `muscleGroup`; add `readEditExerciseBody` returning `EditExerciseDto`; map all four
       responses through `toExercise` / `toExerciseWithStats`; replace the inline progress object at
       lines 50-54 with `toExerciseProgress`.
-- [ ] `src/frontend/api.ts`: the five `exercises.*` methods take and return the exercise DTOs.
-- [ ] `src/frontend/components/gz-exercise-list/gz-exercise-list.ts`: `ExerciseWithStatsDto`;
+- [x] `src/frontend/api.ts`: the five `exercises.*` methods take and return the exercise DTOs.
+- [x] `src/frontend/components/gz-exercise-list/gz-exercise-list.ts`: `ExerciseWithStatsDto`;
       rename the `muscle_group` form field and its `id`/`for`/`name` attributes at lines 109,
       168-169; rename the field reads at lines 41, 57, 130-133.
-- [ ] `src/frontend/components/gz-exercise-detail/gz-exercise-detail.ts`: `ExerciseProgressDto`,
+- [x] `src/frontend/components/gz-exercise-detail/gz-exercise-detail.ts`: `ExerciseProgressDto`,
       `SessionPointDto`; retype `MetricKey` as `'estOneRepMax' | 'topWeight' | 'totalVolume'` and
       update the `METRICS` tuple at lines 29-38; the `best_set: bestSet` destructure at line 117
       becomes a plain `bestSet`; rename the ~26 field reads across the template.
-- [ ] `src/frontend/components/gz-set-row/gz-set-row.ts` and
+- [x] `src/frontend/components/gz-set-row/gz-set-row.ts` and
       `gz-workout-detail/gz-workout-detail.ts`: swap the `Exercise` import for `ExerciseDto`.
-- [ ] `src/frontend/types.ts`: delete `Exercise`, `ExerciseWithStats`, `SessionPoint`,
+- [x] `src/frontend/types.ts`: delete `Exercise`, `ExerciseWithStats`, `SessionPoint`,
       `ExerciseProgress`, `ExerciseInput` and the `ProgressLiftSet` placeholder Phase 1 left behind.
-- [ ] `src/backend/testing.ts`: `createExercise` returns `ExerciseDto`; delete the local `Progress`
+- [x] `src/backend/testing.ts`: `createExercise` returns `ExerciseDto`; delete the local `Progress`
       interface and point its users at `ExerciseProgressDto`.
-- [ ] Update `src/backend/http/routes/exercise.routes.test.ts` to post and expect camelCase, and
+- [x] Update `src/backend/http/routes/exercise.routes.test.ts` to post and expect camelCase, and
       re-point its `ExerciseWithStats` import (line 2) at `ExerciseWithStatsDto`.
 
 **Automated Verification**:
 
-- [ ] `bun test src/backend/http/routes/exercise.routes.test.ts` passes
-- [ ] `bun test` passes
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
+- [x] `bun test src/backend/http/routes/exercise.routes.test.ts` passes
+- [x] `bun test` passes
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
 
 **Manual Verification**:
 
-- [ ] Create an exercise with a muscle group set, and confirm the group shows in the list rather
+- [x] Create an exercise with a muscle group set, and confirm the group shows in the list rather
       than the `–` placeholder
-- [ ] Edit that exercise's muscle group and notes, and confirm both persist across a reload
-- [ ] Open an exercise with logged history and confirm the chart, the metric switcher (all three
+- [x] Edit that exercise's muscle group and notes, and confirm both persist across a reload
+- [x] Open an exercise with logged history and confirm the chart, the metric switcher (all three
       metrics) and the session table render real numbers rather than blanks
 
 ### Phase 3: Workouts, stats, and the removal of `types.ts`
@@ -478,16 +478,16 @@ hand-written copy of it.
 
 **Tasks**:
 
-- [ ] Create `src/shared/dto/workout.ts` with `WorkoutDto`, `WorkoutWithStatsDto`,
+- [x] Create `src/shared/dto/workout.ts` with `WorkoutDto`, `WorkoutWithStatsDto`,
       `WorkoutWithSetsDto`, `WorkoutPageDto`, `CreateWorkoutDto` (including `copyFromWorkoutId`)
       and `EditWorkoutDto` (which has no `copyFromWorkoutId`).
-- [ ] Create `src/shared/dto/stats.ts` with `SummaryDto`, including `workoutsLast30Days` and
+- [x] Create `src/shared/dto/stats.ts` with `SummaryDto`, including `workoutsLast30Days` and
       `volumeLast30Days`.
-- [ ] Create `src/backend/http/dto/workout.ts` (`toWorkout`, `toWorkoutWithStats`,
+- [x] Create `src/backend/http/dto/workout.ts` (`toWorkout`, `toWorkoutWithStats`,
       `toWorkoutWithSets`, `toWorkoutPage`, `fromCreateWorkout`, `fromEditWorkout`) and
       `src/backend/http/dto/stats.ts` (`toSummary`).
-- [ ] Extend both `index.ts` files with the workout and stats re-exports.
-- [ ] `src/backend/http/routes/workout.routes.ts`: `readWorkoutBody` returns `CreateWorkoutDto`
+- [x] Extend both `index.ts` files with the workout and stats re-exports.
+- [x] `src/backend/http/routes/workout.routes.ts`: `readWorkoutBody` returns `CreateWorkoutDto`
       and `fromCreateWorkout` converts it; add `readEditWorkoutBody` + `fromEditWorkout`; the
       handler reads `dto.copyFromWorkoutId` itself and passes it as `{ copyFrom }`; the inline page
       object at line 23 becomes `toWorkoutPage`, and the two `{ ...workout, sets }` composites
@@ -496,62 +496,62 @@ hand-written copy of it.
       `toWorkout`. Left as is, the acceptance criterion above is violated and
       `api.workouts.update` — retyped to `WorkoutDto` in this phase — silently receives
       `performed_on`, breaking the workout-detail save path with no compile error.
-- [ ] `src/backend/http/routes/stats.routes.ts`: `json(toSummary(repo.summary()))`.
-- [ ] `src/frontend/api.ts`: `summary()` and the six `workouts.*` methods take and return the new
+- [x] `src/backend/http/routes/stats.routes.ts`: `json(toSummary(repo.summary()))`.
+- [x] `src/frontend/api.ts`: `summary()` and the six `workouts.*` methods take and return the new
       DTOs; delete the now-empty import from `./types.ts`.
-- [ ] `src/frontend/components/gz-workout-list/gz-workout-list.ts`: `WorkoutWithStatsDto`; rename
+- [x] `src/frontend/components/gz-workout-list/gz-workout-list.ts`: `WorkoutWithStatsDto`; rename
       the `performed_on` form field and its attributes at lines 107-108, the
       `copy_from_workout_id` body at line 75, and the field reads at lines 52, 73, 149-153, 169.
-- [ ] `src/frontend/components/gz-dashboard/gz-dashboard.ts`: `SummaryDto`, `WorkoutWithStatsDto`;
+- [x] `src/frontend/components/gz-dashboard/gz-dashboard.ts`: `SummaryDto`, `WorkoutWithStatsDto`;
       rename the create body at line 37 and the 13 field reads at lines 60-88.
-- [ ] `src/frontend/components/gz-workout-detail/gz-workout-detail.ts`: `WorkoutWithSetsDto`; the
+- [x] `src/frontend/components/gz-workout-detail/gz-workout-detail.ts`: `WorkoutWithSetsDto`; the
       remaining workout-header reads and the `performed_on` edit form at lines 154, 252-253,
       269-270.
-- [ ] **Delete `src/frontend/types.ts`** and confirm nothing references it.
-- [ ] `src/backend/transpile.test.ts`: both tests at lines 36-46 are built on that file. The first
+- [x] **Delete `src/frontend/types.ts`** and confirm nothing references it.
+- [x] `src/backend/transpile.test.ts`: both tests at lines 36-46 are built on that file. The first
       asserts `/types.ts` transpiles to `''` and would now get a 404 body — `extname('/types.ts')`
       is `.ts`, so the single-page-app fallback is skipped and `static.routes.ts:78` answers
       `Not found`. Delete it; `src/shared/dto/index.test.ts` covers the same property directly, and
       no type-only module remains under `src/frontend/`. Re-point the second — "strips type-only
       imports" — to assert that the transpiled `gz-set-row.ts` does not contain `shared/dto`.
-- [ ] `src/backend/testing.ts`: delete `WorkoutDetail` and `WorkoutPage`; `createWorkout` returns
+- [x] `src/backend/testing.ts`: delete `WorkoutDetail` and `WorkoutPage`; `createWorkout` returns
       `WorkoutWithSetsDto`. **And change the body it posts** at line 101 from `{ performed_on }` to
       `{ performedOn }` — `post(path, body: unknown)` is untyped, so a stale key compiles, the
       server falls back to today's date, and every fixture workout silently loses its
       `2026-01-05`, breaking `stats.routes.test.ts:20` and `exercise.routes.test.ts:73`.
-- [ ] Update `workout.routes.test.ts` and `stats.routes.test.ts` to post and expect camelCase, and
+- [x] Update `workout.routes.test.ts` and `stats.routes.test.ts` to post and expect camelCase, and
       re-point their row-type imports (`LiftSet`, `Workout` at `workout.routes.test.ts:2`;
       `Summary` at `stats.routes.test.ts:2`) at the corresponding DTOs.
-- [ ] `docs/frontend.md`: replace the paragraph at lines 27-33 — the one stating that the wire
+- [x] `docs/frontend.md`: replace the paragraph at lines 27-33 — the one stating that the wire
       shapes are written out by hand on purpose and must not be shared — with the new arrangement:
       `src/shared/dto/` is the single declaration of the wire format, imported type-only by both
       halves; it is not served, which is why it must stay free of runtime code; and the backend
       translates its rows into it rather than returning them.
-- [ ] `CLAUDE.md`: add `src/shared/` to the architecture list beside `src/backend/` and
+- [x] `CLAUDE.md`: add `src/shared/` to the architecture list beside `src/backend/` and
       `src/frontend/`, describing it as the type-only wire contract both halves import.
 
 **Automated Verification**:
 
-- [ ] `bun test src/backend/http/routes/workout.routes.test.ts` passes
-- [ ] `bun test src/backend/http/routes/stats.routes.test.ts` passes
-- [ ] `bun test src/backend/transpile.test.ts` passes
-- [ ] `bun test` passes
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
-- [ ] `src/frontend/types.ts` does not exist, and a repository-wide search for `types.ts` finds no
+- [x] `bun test src/backend/http/routes/workout.routes.test.ts` passes
+- [x] `bun test src/backend/http/routes/stats.routes.test.ts` passes
+- [x] `bun test src/backend/transpile.test.ts` passes
+- [x] `bun test` passes
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
+- [x] `src/frontend/types.ts` does not exist, and a repository-wide search for `types.ts` finds no
       reference to it
-- [ ] A repository-wide search finds no `_` in any property name under `src/shared/dto/`
+- [x] A repository-wide search finds no `_` in any property name under `src/shared/dto/`
 
 **Manual Verification**:
 
-- [ ] Load the dashboard and confirm all four stat tiles show numbers, the "last session" line
+- [x] Load the dashboard and confirm all four stat tiles show numbers, the "last session" line
       shows a relative day, and the recent-workout list renders titles and volumes
-- [ ] Use "start today's session" on the dashboard and confirm it lands on a new workout
-- [ ] From the workout list, create a workout with an explicit date, and use "repeat" on an
+- [x] Use "start today's session" on the dashboard and confirm it lands on a new workout
+- [x] From the workout list, create a workout with an explicit date, and use "repeat" on an
       existing one — confirm the copy carries the original's sets
-- [ ] Open a workout, change its date and title, reload, and confirm both stuck
-- [ ] Page through the workout list and confirm the totals and paging still behave
+- [x] Open a workout, change its date and title, reload, and confirm both stuck
+- [x] Page through the workout list and confirm the totals and paging still behave
 
 ### Phase 4: The error body
 
@@ -559,37 +559,63 @@ Dependencies: Phase 3 (`testing.ts` should be down to its last local shape).
 
 **Tasks**:
 
-- [ ] Create `src/shared/dto/error.ts` with `ErrorDto` (`error: string`, `details?: unknown`),
+- [x] Create `src/shared/dto/error.ts` with `ErrorDto` (`error: string`, `details?: unknown`),
       documenting that `details` is only present on a 400 raised with one.
-- [ ] Extend `src/shared/dto/index.ts` with the re-export.
-- [ ] `src/backend/http/errors.ts`: annotate the two bodies `errorResponse` builds as `ErrorDto`.
-- [ ] `src/frontend/api.ts`: name `ErrorDto` in the comment at lines 64-65 as the shape being
+- [x] Extend `src/shared/dto/index.ts` with the re-export.
+- [x] `src/backend/http/errors.ts`: annotate the two bodies `errorResponse` builds as `ErrorDto`.
+- [x] `src/frontend/api.ts`: name `ErrorDto` in the comment at lines 64-65 as the shape being
       narrowed toward, keeping the hand-narrowing itself — the server's error body is the one
       response the client cannot assume arrived well-formed.
-- [ ] `src/backend/testing.ts`: delete `ErrorBody` and point its users at `ErrorDto` — they are
+- [x] `src/backend/testing.ts`: delete `ErrorBody` and point its users at `ErrorDto` — they are
       `src/backend/http/routes/meta.routes.test.ts:2,17,23` and
       `src/backend/http/routes/exercise.routes.test.ts:3,21`.
 
 **Automated Verification**:
 
-- [ ] `bun test src/backend/http/routes/meta.routes.test.ts` passes
-- [ ] `bun test` passes
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
-- [ ] `src/backend/testing.ts` declares no interface describing a response body — only `TestServer`
+- [x] `bun test src/backend/http/routes/meta.routes.test.ts` passes
+- [x] `bun test` passes
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
+- [x] `src/backend/testing.ts` declares no interface describing a response body — only `TestServer`
       remains
-- [ ] No `*.test.ts` under `src/backend/` imports a type from `'../../db/repos'` to claim a
+- [x] No `*.test.ts` under `src/backend/` imports a type from `'../../db/repos'` to claim a
       response body; every `body<T>()` call names a DTO
 
 **Manual Verification**:
 
-- [ ] Trigger a refused action in the UI — deleting an exercise that still has logged sets — and
+- [x] Trigger a refused action in the UI — deleting an exercise that still has logged sets — and
       confirm the toast shows the server's message rather than a generic failure
 
 ## Implementation Notes
 
-During implementation, document user feedback, problems, and decisions here.
+Three decisions the plan left open, settled during implementation:
+
+1. **`fromCreateWorkout(dto)` reads the clock.** The plan wanted the mapper uniform with
+   `fromCreateSet` and `fromCreateExercise` (decision 8), but `CreateWorkoutDto.performedOn` is
+   optional while `WorkoutInput.performed_on` is required, so the `today()` default had to live on
+   one side or the other. Putting it in the mapper keeps the single-argument signature and puts the
+   rule — "a create body with no date means today" — in one place; the cost is that this one mapper
+   is not a pure function. `readWorkoutBody` therefore only validates `performedOn` when it is
+   present, rather than defaulting it as the old route did.
+
+2. **Two mappers spread — but they spread a DTO, never a row.** `toBestSet` and
+   `toWorkoutWithSets` build on `toLiftSet` and `toWorkout`, which have already named every field,
+   so nothing internal can ride along. The rule the plan states ("every mapper names every field")
+   is really a rule about never spreading a *row*, and that holds everywhere.
+
+3. **`ProgressLiftSet`, the Phase 1 placeholder, behaved exactly as predicted** and was deleted in
+   Phase 2 with the rest of the exercise shapes.
+
+The `formData` seam decision 9 warns about was checked statically at the end: every `values.X` read
+in `src/frontend/` has a matching `name="X"` attribute, and the set is
+`exerciseId, muscleGroup, name, newExercise, notes, performedOn, reps, title, weight`.
+
+The finished wire was also smoke-tested against a running server: create/patch/list/summary/
+progress/repeat and a refused delete all round-trip in camelCase, `/api.ts` and
+`/components/gz-set-row/gz-set-row.ts` come back with no mention of `shared/dto`, and
+`GET /shared/dto/index.ts` is a 404 — which is what makes the type-only rule load-bearing rather
+than decorative.
 
 ## References
 
