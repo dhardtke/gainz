@@ -23,21 +23,25 @@ and is git-ignored. `:memory:` is supported and is what the tests use.
 
 Always put plans inside the project directory.
 
-Never edit existing plans or research docs in `docs/agents/` — only add new ones.
+Never edit existing plans or research docs in `docs/agents/` — only add new ones. Each describes
+the repository as it stood on the date it carries, so an old path in one is a record, not a bug.
 
 ## Architecture
 
-`src/` -> both halves of the application, and nothing else
-`src/backend/` -> the Bun + SQLite REST backend (TypeScript): the server with its tests side
-by side — every `*.test.ts` sits beside the module it exercises — plus
-`src/backend/db/migrations` (numbered `.sql` schema migrations, applied on startup)
+`src/backend/` -> the Bun + SQLite REST backend, layered `db/` -> `http/` -> `main.ts`, with every
+`*.test.ts` beside the module it exercises
 `src/frontend/` -> a **no-build-step** frontend: TypeScript ES modules and custom elements,
-transpiled on request by `src/backend/transpile.ts` — no bundler, no output directory.
-`src/frontend/` is also the web root, so a module's URL is its path below it:
-`src/frontend/components/gz-app/gz-app.ts` is served at `/components/gz-app/gz-app.ts`
-`docs/` -> design and API documentation
+transpiled on request by `src/backend/transpile.ts` — no bundler, no output directory
+`src/scripts/` -> the `migrate` and `seed` entry points
+`docs/` -> the documents below
 
-`README.md` documents the full REST surface, the data model, and the reasoning behind the
-frontend's loading and theming design. Read it before changing either.
+The REST surface has no reference document: `src/backend/http/routes/` holds one file per URL
+group, and a route belongs to the file its URL prefix names.
 
-See `docs/coding-guidelines.md` and `docs/styling-guidelines.md` for guidelines on how to code and style.
+- `docs/backend.md` — layering, routes, the repository, migrations, the data model, tests
+- `docs/frontend.md` — components, loading, theming, and why a module's URL is its path
+- `docs/coding-guidelines.md` — pinning, quote style, commits on `main`
+- `docs/styling-guidelines.md` — Pico, no CSS in JavaScript, no font sizes
+
+That list is the only index in the repository: a document added to `docs/` is added here in the
+same commit.

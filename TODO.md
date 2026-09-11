@@ -12,6 +12,7 @@
 ## Features
 
 - Have Exercises. Workouts contain Exercies. Each Exercise in a Workout has a number of sets and reps.
+- Integrate Eufy scale and Garmin watch data
 
 ## UI / UX
 
@@ -22,9 +23,3 @@
 ## Guardrails
 
 - E2E-Tests using Playwright
-
-## Misc
-
-- Change the commit skill to write much shorter commit subject lines and bodies
-- Cleanup AGENTS.md to be very condensed (<300 lines)
-- Move README.md stuff into dedicated files (if needed)
