@@ -5,10 +5,10 @@ app is about — `exercises/`, `workouts/`, `stats/`, `meta/`, `static/` — and
 its SQL and its mapping end to end, the mapping reached through its controllers. What is left outside `features/` is only what belongs to no
 feature: `db/` (the connection and its PRAGMAs in `db.ts`, the schema in `migrations.ts` and
 `migrations/`, and the table-agnostic statement helpers in `db/sql.ts`), `http/` (`routing.ts` for
-the `RouteTable`/`Handler` types and the `guard`/`guardAll` wrapper, `routes.ts` for the registry,
+the `RouteTable` and `ParamRequest` types, `routes.ts` for the registry,
 `http.ts`, `errors.ts` and `server.ts`), `shared/validate.ts` for the request-field parsers and
-their length bounds, and `main.ts`, the entry point that builds the facades and starts the
-server. There is no `fetch` fallback — every URL the server answers is a declared pattern.
+their length bounds, and `main.ts`, the entry point that opens the database and starts the server
+through `startServer`. There is no `fetch` fallback — every URL the server answers is a declared pattern.
 
 **Inside a feature, `ports/` is public and `internal/` is private.** `ports/` declares the row
 types other features may read and the `to*` mappers that turn them into DTOs; `internal/` holds
@@ -22,7 +22,7 @@ beside those two directories: the `*.routes.ts` files named after the URL groups
 the `<feature>.facade.ts` named after the feature itself — the front door described below.
 
 A route file is only a table: each handler is one line that passes the request to its controller
-and returns what comes back, wrapped in `guardAll`. The controller does the rest. It takes the
+and returns what comes back. The controller does the rest. It takes the
 request and returns a `Response`, reading it with `pathId`, `queryInt` and `readJsonObject` and
 answering with `json()` or `noContent()` and the status code, and in between it runs
 `body → translateTo<X>Dto → <X>Dto → from<X> → <Entity>Input → facade → row → to<X> → DTO`. The
@@ -72,7 +72,7 @@ The facades publish rows, not DTOs, so the rule above it is unchanged: the contr
 facade returns through a `to*` mapper, and the camelCase rename is still what the compiler checks.
 `features/facades.ts` is the single composition root — it declares `Facades` (a parameter object
 with no methods of its own) and `createFacades(db)` over the three per-feature factories, and it is
-what `main.ts`, `testing.ts`, `src/scripts/seed.ts` and `http/server.test.ts` each call.
+what `http/server.ts` and `src/scripts/seed.ts` each call.
 `allRoutes` then hands each route factory only the facades it uses: `workoutRoutes(workouts, sets)`,
 `exerciseRoutes(exercises)`, and so on, and each factory builds its own controller from them. `meta`
 and `static` have controllers but no facade: there is no table behind either. All SQL lives in a feature's `internal/`; `db/sql.ts` keeps
@@ -82,11 +82,10 @@ constructor — `SetRepository(db, workouts)`, wired in `createWorkoutFacades` �
 runtime cycle to trip over.
 
 Error handling is by throwing: controllers throw `HttpError`, directly or through the translators,
-validators and facades they call, and `guardAll()` in `http/routing.ts`, wrapping the route, turns
-it into a JSON `{ error }` body with the right status. New API routes must be wrapped in
-`guardAll` in whichever route file owns them. The static route is the one exception: it answers
-plain text, not JSON, so `guard` would give it the wrong body — a throw out of it belongs to the
-`error` hook in `http/server.ts` instead. Three statuses cover everything the API refuses —
+validators and facades they call, and the `error` hook in `http/server.ts` turns any throw from any
+route into a JSON `{ error }` body with the right status. It is the one error path, for the API and
+the static route alike, so a new route needs nothing to get it — Bun hands the hook a throw from a
+synchronous or async method map and from a bare-function route (measured on 1.4.2). Three statuses cover everything the API refuses —
 400 for bad input, 404 for something missing, 409 for a conflict — which is why `http/errors.ts`
 exports exactly `badRequest`, `notFound` and `conflict`. Which of the three a broken reference earns
 depends on where the id came from: a workout id in the path that names nothing is a 404, while an
@@ -115,17 +114,18 @@ silent no-op inside a transaction — and each migration must pass `PRAGMA forei
 it commits. Changing the schema means adding a file numbered above the current version; nothing
 else. The runner refuses to start rather than guess when the files and the database disagree.
 
-`serveOptions(facades)` is exported so the test suite can start a real server on port 0 against an
-in-memory DB. `src/backend/testing.ts` wraps that in `useServer()`, which registers the
-`beforeEach`/`afterEach` pair from inside the function — so each test file gets its own hooks and
+`startServer(db, port)` in `http/server.ts` is the one place `Bun.serve` is called: `main.ts` passes
+`PORT`, and `useServer()` in `src/backend/testing.ts` passes port 0 and an in-memory database.
+`useServer()` registers the `beforeEach`/`afterEach` pair from inside the function — so each test file gets its own hooks and
 its own database rather than sharing one through the module cache. Every `*.test.ts` sits beside
 the module it exercises, and each one covers the module declaring the routes it drives, which is
 why the two tests for `POST /api/workouts/:id/sets` are in `workout.routes.test.ts` and not beside
-`set.routes.ts`. Tests are end-to-end over HTTP, with one exception:
-`src/backend/db/migrations.test.ts` unit-tests the migration runner against throwaway fixture
-directories, and `features/static/internal/paths.test.ts` pins the web root, which is derived by
+`set.routes.ts`. Tests are end-to-end over HTTP, with four exceptions: `db/db.test.ts` checks the real
+migrations; `db/migrations.test.ts` unit-tests the migration runner against throwaway fixture
+directories; `features/static/internal/paths.test.ts` pins the web root, which is derived by
 counting directories up from that module's own URL and would otherwise 404 every asset in silence
-if the file were moved. There are no unit tests of the repositories.
+if the file were moved; and `http/errors.test.ts` covers `errorResponse`, whose 500 branch cannot be
+provoked over HTTP. There are no unit tests of the repositories.
 
 Static serving is deliberately narrow: `src/frontend/` with a path-escape guard, plus `VENDOR_FILES`
 in `internal/paths.ts` — a one-file allowlist into `node_modules` (`/vendor/pico.css`). Serving anything

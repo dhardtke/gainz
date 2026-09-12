@@ -10,8 +10,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openDatabase } from './db/db.ts';
 import type { ExerciseDto, WorkoutWithSetsDto } from '../shared/dto';
-import { createFacades } from './features/facades.ts';
-import { serveOptions } from './http/server.ts';
+import { startServer } from './http/server.ts';
 
 /** The request helpers a test file gets from `useServer()`. */
 export interface TestServer {
@@ -37,7 +36,7 @@ export function useServer(): TestServer {
 
   beforeEach(() => {
     db = openDatabase(':memory:');
-    server = Bun.serve({ port: 0, ...serveOptions(createFacades(db)) });
+    server = startServer(db, 0);
     base = server.url.origin;
   });
 
