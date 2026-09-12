@@ -1,14 +1,14 @@
 import type { CreateExerciseDto, EditExerciseDto } from '../../../shared/dto';
 import type { DB } from '../../db/db.ts';
 import { isPresent, MAX_NAME, MAX_NOTES, optionalString, requiredString } from '../../shared/validate.ts';
-import { fromCreateExercise, fromEditExercise } from './internal/exercise.mapper.ts';
+import { translateDtoToCreateExercise, translateDtoToEditExercise } from './internal/exercise.translator.ts';
 import { ExerciseRepository } from './internal/exercise.repository.ts';
 import type { Exercise, ExerciseWithStats, SessionPoint } from './ports/exercise.ts';
 import type { LiftSet } from '../workouts/ports/set.ts';
 
 /**
  * The exercises feature's front door. Controllers hold this rather than the repository, so the SQL,
- * the ExerciseInput shape and the nullable get() stay inside the feature. Rows cross the boundary
+ * the CreateExercise shape and the nullable get() stay inside the feature. Rows cross the boundary
  * unchanged: mapping a row to a DTO is the controller's job, and the compiler is what enforces it.
  */
 export class ExerciseFacade {
@@ -23,11 +23,11 @@ export class ExerciseFacade {
   }
 
   create(dto: CreateExerciseDto): Exercise {
-    return this.exercises.create(fromCreateExercise(this.validateCreate(dto)));
+    return this.exercises.create(translateDtoToCreateExercise(this.validateCreate(dto)));
   }
 
   update(id: number, dto: EditExerciseDto): Exercise {
-    return this.exercises.update(id, fromEditExercise(this.validateEdit(dto)));
+    return this.exercises.update(id, translateDtoToEditExercise(this.validateEdit(dto)));
   }
 
   delete(id: number): void {

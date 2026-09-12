@@ -1,4 +1,5 @@
 import type { CreateSetDto, EditSetDto } from '../../../../shared/dto';
+import type { CreateSet, EditSet } from './set.repository.ts';
 
 export function translateToCreateSetDto(body: Record<string, unknown>): CreateSetDto {
   return {
@@ -18,4 +19,34 @@ export function translateToEditSetDto(body: Record<string, unknown>): EditSetDto
     notes: body.notes as string | null | undefined,
     position: body.position as number | undefined,
   };
+}
+
+export function translateDtoToCreateSet(dto: CreateSetDto): CreateSet {
+  return {
+    exercise_id: dto.exerciseId,
+    reps: dto.reps,
+    weight: dto.weight,
+    notes: dto.notes ?? null,
+    ...(dto.position === undefined ? {} : { position: dto.position }),
+  };
+}
+
+export function translateDtoToEditSet(dto: EditSetDto): EditSet {
+  const patch: EditSet = {};
+  if (dto.exerciseId !== undefined) {
+    patch.exercise_id = dto.exerciseId;
+  }
+  if (dto.reps !== undefined) {
+    patch.reps = dto.reps;
+  }
+  if (dto.weight !== undefined) {
+    patch.weight = dto.weight;
+  }
+  if (dto.notes !== undefined) {
+    patch.notes = dto.notes;
+  }
+  if (dto.position !== undefined) {
+    patch.position = dto.position;
+  }
+  return patch;
 }

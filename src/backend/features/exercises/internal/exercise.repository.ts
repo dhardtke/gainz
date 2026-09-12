@@ -5,11 +5,13 @@ import { EST_1RM_SQL, SET_COLUMNS } from '../../workouts/ports/sql.ts';
 import type { Exercise, ExerciseWithStats, SessionPoint } from '../ports/exercise.ts';
 import type { LiftSet } from '../../workouts/ports/set.ts';
 
-export interface ExerciseInput {
+export interface CreateExercise {
   name: string;
   muscle_group: string | null;
   notes: string | null;
 }
+
+export type EditExercise = Partial<CreateExercise>;
 
 const EXERCISE_COLUMNS = 'e.id, e.name, e.muscle_group, e.notes, e.created_at';
 const FIELDS = ['name', 'muscle_group', 'notes'] as const;
@@ -46,7 +48,7 @@ export class ExerciseRepository {
     return exercise;
   }
 
-  create(input: ExerciseInput): Exercise {
+  create(input: CreateExercise): Exercise {
     try {
       const row = this.db
         .query<Exercise, [string, string | null, string | null]>(
@@ -66,7 +68,7 @@ export class ExerciseRepository {
     }
   }
 
-  update(id: number, patch: Partial<ExerciseInput>): Exercise {
+  update(id: number, patch: EditExercise): Exercise {
     this.require(id);
 
     const update = buildUpdate('exercises', FIELDS, patch);

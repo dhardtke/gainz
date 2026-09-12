@@ -13,8 +13,8 @@ through `startServer`. There is no `fetch` fallback — every URL the server ans
 
 **Inside a feature, `ports/` is public and `internal/` is private.** `ports/` declares the row
 types other features may read and the `to*` mappers that turn them into DTOs; `internal/` holds
-everything about how the feature talks to its own table — the repository, its `<Entity>Input`, the
-`from*` mappers and the translator, which casts a body onto its request DTO — and the controllers, one `<x>.controller.ts` per route file and
+everything about how the feature talks to its own table — the repository, its `Create<Entity>` and `Edit<Entity>` (a `Partial` of it), the
+translator, which casts a body onto its request DTO and translates a DTO into that input — and the controllers, one `<x>.controller.ts` per route file and
 named after it. No module under `features/<a>/` may import from `features/<b>/internal/`, and the
 arrows that do cross a feature line all land on a `ports/`: the exercises repository queries the
 sets table, so it takes `SET_COLUMNS` and `EST_1RM_SQL` from `features/workouts/ports/sql.ts` and
@@ -27,16 +27,16 @@ and returns what comes back. The controller does the rest. It takes the
 request and returns a `Response`, reading it with `pathId`, `queryInt` and `readJsonObject` and
 answering with `json()` or `noContent()` and the status code, and in between it runs
 `body → translateTo<X>Dto → <X>Dto → facade → row → to<X> → DTO`. The facade's write methods in
-turn run `validate → <X>Dto → from<X> → <Entity>Input → repository`. The translator only casts, so
-a request DTO is unchecked until the facade has validated and normalised it, which happens before
-anything touches the database; the mapper is where renaming happens. None of the three does
-another's job.
+turn run `validate → <X>Dto → translateDtoTo<Create|Edit><Entity> → <Create|Edit><Entity> → repository`. The
+translator's body-to-DTO half only casts, so a request DTO is unchecked until the facade has
+validated and normalised it, which happens before anything touches the database; its DTO-to-input
+half is where renaming happens. Neither half, nor the facade, does another's job.
 
 **A controller answers with a DTO, never a row.** The wire format is declared once in `src/shared/dto/` —
-camelCase, type-only, imported by the frontend as well — and each feature holds one mapper per
-shape in each direction (`toLiftSet(row)` in `ports/`, called by the controller, and
-`fromCreateSet(dto)` in `internal/`, called by the facade). Those
-mappers are the only place that reads a row's fields outside the repository that produced it, and
+camelCase, type-only, imported by the frontend as well — and each feature holds one function per
+shape in each direction (the `toLiftSet(row)` mapper in `ports/`, called by the controller, and
+`translateDtoToCreateSet(dto)` in `internal/set.translator.ts`, called by the facade). Those
+functions are the only place that reads a row's fields outside the repository that produced it, and
 each one names every field it maps: a spread would compile and would ship `workout_id` and
 `created_at` to the browser with nothing to catch it. The camelCase rename is what keeps that
 honest — a row is not structurally assignable to its own DTO.
@@ -70,7 +70,7 @@ import anything under `internal/` except its controller, anything under `ports/`
 `*.repository.ts`, or the request and response helpers (`http/http.ts`, `http/errors.ts`,
 `shared/validate.ts`), which is what keeps its handlers one line long; and no `*.controller.ts` may
 import a `*.repository.ts`. The third exempts `*.translator.ts` from
-`typescript/no-unsafe-type-assertion`, since casting a body onto a DTO is a translator's whole job.
+`typescript/no-unsafe-type-assertion`, since casting a body onto a DTO is half of a translator's job.
 The facades are not pure delegation: their write methods validate and map the request with the
 facade's own private `validateCreate` / `validateEdit` methods before calling the repository.
 Composition across facades, like `GET /api/workouts/:id` reading a workout and its sets, still
