@@ -1,19 +1,19 @@
-import { errorResponse, notFound } from '../../http/errors.ts';
-import { json } from '../../http/http.ts';
 import type { RouteTable } from '../../http/routing.ts';
 import { guard, guardAll } from '../../http/routing.ts';
+import { MetaController } from './internal/meta.controller.ts';
 
 export function metaRoutes(): RouteTable {
+  const controller = new MetaController();
   return {
-    ...healthRoute(),
-    ...notFoundRoute(),
+    ...healthRoute(controller),
+    ...notFoundRoute(controller),
   };
 }
 
-function healthRoute(): RouteTable {
+function healthRoute(controller: MetaController): RouteTable {
   return {
     '/api/health': guardAll({
-      GET: () => json({ status: 'ok', app: 'gainz' }),
+      GET: () => controller.health(),
     }),
   };
 }
@@ -24,8 +24,8 @@ function healthRoute(): RouteTable {
  * `/api/*` does not match the bare prefix, so `/api` needs its own key — without it the URL
  * falls through to the static route and answers with the single-page app.
  */
-function notFoundRoute(): RouteTable {
-  const endpointNotFound = guard(() => errorResponse(notFound('Endpoint')));
+function notFoundRoute(controller: MetaController): RouteTable {
+  const endpointNotFound = guard(() => controller.endpointNotFound());
   return {
     '/api': endpointNotFound,
     '/api/*': endpointNotFound,

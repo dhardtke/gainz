@@ -5,7 +5,7 @@ import type { WorkoutInput } from './workout.repository.ts';
 /**
  * A create body with no date means today, which is why this is the one mapper that reads the
  * clock. `copyFromWorkoutId` is deliberately not read here: the repository takes it as a separate
- * `options` argument rather than as part of the input, so the handler passes it on itself.
+ * `options` argument rather than as part of the input, so `WorkoutController.create` passes it on itself.
  */
 export function fromCreateWorkout(dto: CreateWorkoutDto): WorkoutInput {
   return {

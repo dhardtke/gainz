@@ -5,8 +5,8 @@ import type { LiftSet } from './ports/set.ts';
 import type { Workout, WorkoutWithStats } from './ports/workout.ts';
 
 /**
- * The workouts half of the feature's front door. Routes hold this rather than the repository, so
- * the SQL, the WorkoutInput shape and the nullable get() stay inside the feature.
+ * The workouts half of the feature's front door. Controllers hold this rather than the repository,
+ * so the SQL, the WorkoutInput shape and the nullable get() stay inside the feature.
  */
 export class WorkoutFacade {
   constructor(private readonly workouts: WorkoutRepository) {}

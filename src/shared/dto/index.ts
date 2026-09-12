@@ -13,6 +13,7 @@
  */
 export type { ErrorDto } from './error.ts';
 export type { CreateExerciseDto, EditExerciseDto, ExerciseDto, ExerciseProgressDto, ExerciseWithStatsDto, SessionPointDto } from './exercise.ts';
+export type { HealthDto } from './meta.ts';
 export type { BestSetDto, CreateSetDto, EditSetDto, LiftSetDto } from './set.ts';
 export type { SummaryDto } from './stats.ts';
 export type { CreateWorkoutDto, EditWorkoutDto, WorkoutDto, WorkoutPageDto, WorkoutWithSetsDto, WorkoutWithStatsDto } from './workout.ts';

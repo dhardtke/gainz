@@ -30,10 +30,14 @@ the repository as it stood on the date it carries, so an old path in one is a re
 
 `src/backend/` -> the Bun + SQLite REST backend, organised by feature: `features/<feature>/` owns
 its routes, its SQL and its mapping, publishing rows and `to*` mappers through `ports/` and keeping
-its repository, mappers and translator in `internal/`. At its root, beside the routes, sits
-`<feature>.facade.ts` — the feature's front door, the only module that names its repository and the
-only thing a route handler holds; `features/facades.ts` assembles the four into the `Facades` object
-`allRoutes` is given, and `bun run lint` fails if a route imports a repository. Only what belongs to
+its repository, mappers, translator and controllers in `internal/` — one `*.controller.ts` per
+route file, which takes the request, calls the facades and returns the `Response`; a route handler
+is one line handing the request to it. At its root, beside the routes, sits `<feature>.facade.ts`, the
+feature's front door and the only module that names its repository; `features/facades.ts`
+assembles the four into the `Facades` object `allRoutes` is given. `bun run lint` fails if a route
+reaches `ports/`, a repository, anything in `internal/` but its controller, or the request helpers
+in `http/http.ts`, `http/errors.ts` and `shared/validate.ts`, or if a controller reaches a
+repository. Only what belongs to
 no feature sits outside — `db/` (connection, migrations, statement helpers), `http/` (routing, the
 registry, the server), `shared/validate.ts` and `main.ts`. Every `*.test.ts` sits beside the module
 it exercises

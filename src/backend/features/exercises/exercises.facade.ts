@@ -4,9 +4,9 @@ import type { Exercise, ExerciseWithStats, SessionPoint } from './ports/exercise
 import type { LiftSet } from '../workouts/ports/set.ts';
 
 /**
- * The exercises feature's front door. Routes hold this rather than the repository, so the SQL, the
- * ExerciseInput shape and the nullable get() stay inside the feature. Rows cross the boundary
- * unchanged: mapping a row to a DTO is the route's job, and the compiler is what enforces it.
+ * The exercises feature's front door. Controllers hold this rather than the repository, so the SQL,
+ * the ExerciseInput shape and the nullable get() stay inside the feature. Rows cross the boundary
+ * unchanged: mapping a row to a DTO is the controller's job, and the compiler is what enforces it.
  */
 export class ExerciseFacade {
   constructor(private readonly exercises: ExerciseRepository) {}
