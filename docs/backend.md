@@ -16,11 +16,13 @@ types other features may read and the `to*` mappers that turn them into DTOs; `i
 everything about how the feature talks to its own table — the repository, its `Create<Entity>` and `Edit<Entity>` (a `Partial` of it), the
 translator, which casts a body onto its request DTO and translates a DTO into that input — and the controllers, one `<x>.controller.ts` per route file and
 named after it. No module under `features/<a>/` may import from `features/<b>/internal/`, and the
-arrows that do cross a feature line all land on a `ports/`: the exercises repository queries the
-sets table, so it takes `SET_COLUMNS` and `EST_1RM_SQL` from `features/workouts/ports/sql.ts` and
-`LiftSet` from `features/workouts/ports/set.ts`. The third place a feature keeps code is its root,
-beside those two directories: the `*.routes.ts` files named after the URL groups they answer, and
-the `<feature>.facade.ts` named after the feature itself — the front door described below.
+arrows in production code that do cross a feature line all land on a `ports/`: the exercises
+repository queries the sets table, so it takes `SET_COLUMNS` and `EST_1RM_SQL` from
+`features/workouts/ports/sql.ts` and `LiftSet` from `features/workouts/ports/set.ts`. The third place
+a feature keeps code is its root, beside those two directories: the `*.routes.ts` files named after
+the URL groups they answer, the `<feature>.facade.ts` named after the feature itself — the front
+door described below — and, for a feature whose data other tests need, a test-only
+`<feature>.fixtures.ts`.
 
 A route file is only a table: each handler is one line that passes the request to its controller
 and returns what comes back. The controller does the rest. It takes the
@@ -42,7 +44,12 @@ each one names every field it maps: a spread would compile and would ship `worko
 honest — a row is not structurally assignable to its own DTO.
 
 `testing.ts` stays at the top of `src/backend/` because it belongs to no feature: it is test-only
-plumbing every feature's tests use. The static feature keeps its own private modules where the rule
+plumbing every feature's tests use, and it holds only technical hooks — `useServer()`, `useTempDir()`,
+`body()` and `at()`. The fixtures that create a feature's data over HTTP — `createExercise` in
+`exercises/exercises.fixtures.ts` and `createWorkout` in `workouts/workouts.fixtures.ts` — live in
+the feature that owns the endpoint and take `post` from `useServer()` as their first argument.
+Other features' route tests import them directly, the one cross-feature import that does not go
+through `ports/`. The static feature keeps its own private modules where the rule
 says they go — `features/static/internal/paths.ts` (the only place a URL becomes a filesystem path)
 and `internal/transpile.ts` — and calls them from `internal/static.controller.ts`. The two operator entry points — `bun run migrate` and `bun run seed` —
 live outside the backend entirely, in `src/scripts/`, so that `src/backend/` holds the running

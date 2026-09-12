@@ -1,12 +1,14 @@
 import { describe, expect, test } from 'bun:test';
 import type { ErrorDto, ExerciseProgressDto, ExerciseWithStatsDto, WorkoutWithSetsDto } from '../../../shared/dto';
 import { at, body, useServer } from '../../testing.ts';
+import { createExercise } from './exercises.fixtures.ts';
+import { createWorkout } from '../workouts/workouts.fixtures.ts';
 
-const { api, post, patch, createExercise, createWorkout } = useServer();
+const { api, post, patch } = useServer();
 
 describe('exercises', () => {
   test('creates and lists exercises', async () => {
-    const created = await createExercise('Back Squat');
+    const created = await createExercise(post, 'Back Squat');
     expect(created).toMatchObject({ name: 'Back Squat' });
 
     const list = await body<ExerciseWithStatsDto[]>(await api('/api/exercises'));
@@ -21,13 +23,13 @@ describe('exercises', () => {
   });
 
   test('rejects a duplicate name regardless of case', async () => {
-    await createExercise('Deadlift');
+    await createExercise(post, 'Deadlift');
     const res = await post('/api/exercises', { name: 'deadlift' });
     expect(res.status).toBe(409);
   });
 
   test('updates only the supplied fields', async () => {
-    const exercise = await createExercise();
+    const exercise = await createExercise(post);
     const res = await patch(`/api/exercises/${exercise.id}`, { muscleGroup: 'Chest' });
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ name: 'Bench Press', muscleGroup: 'Chest' });
@@ -38,8 +40,8 @@ describe('exercises', () => {
   });
 
   test('refuses to delete an exercise that has logged sets', async () => {
-    const exercise = await createExercise();
-    const workout = await createWorkout();
+    const exercise = await createExercise(post);
+    const workout = await createWorkout(post);
     await post(`/api/workouts/${workout.id}/sets`, { exerciseId: exercise.id, reps: 5, weight: 60 });
 
     const res = await api(`/api/exercises/${exercise.id}`, { method: 'DELETE' });
@@ -47,7 +49,7 @@ describe('exercises', () => {
   });
 
   test('deletes an unused exercise', async () => {
-    const exercise = await createExercise();
+    const exercise = await createExercise(post);
     expect((await api(`/api/exercises/${exercise.id}`, { method: 'DELETE' })).status).toBe(204);
     expect((await api(`/api/exercises/${exercise.id}`)).status).toBe(404);
   });
@@ -55,7 +57,7 @@ describe('exercises', () => {
 
 describe('progress', () => {
   test('aggregates one line per session and reports the best set', async () => {
-    const exercise = await createExercise();
+    const exercise = await createExercise(post);
 
     for (const [date, weight] of [
       ['2026-01-05', 60],

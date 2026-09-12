@@ -2,14 +2,13 @@
  * Test-only. The harness every *.test.ts under src/backend/ builds its fixtures from;
  * no production module imports it.
  */
-import { afterEach, beforeEach, expect } from 'bun:test';
+import { afterEach, beforeEach } from 'bun:test';
 import type { Server } from 'bun';
 import type { Database } from 'bun:sqlite';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openDatabase } from './db/db.ts';
-import type { ExerciseDto, WorkoutWithSetsDto } from '../shared/dto';
 import { startServer } from './http/server.ts';
 
 /** The request helpers a test file gets from `useServer()`. */
@@ -17,8 +16,6 @@ export interface TestServer {
   api: (path: string, init?: RequestInit) => Promise<Response>;
   post: (path: string, body: unknown) => Promise<Response>;
   patch: (path: string, body: unknown) => Promise<Response>;
-  createExercise: (name?: string) => Promise<ExerciseDto>;
-  createWorkout: (performedOn?: string) => Promise<WorkoutWithSetsDto>;
 }
 
 /**
@@ -65,19 +62,7 @@ export function useServer(): TestServer {
     });
   }
 
-  async function createExercise(name = 'Bench Press'): Promise<ExerciseDto> {
-    const res = await post('/api/exercises', { name });
-    expect(res.status).toBe(201);
-    return body<ExerciseDto>(res);
-  }
-
-  async function createWorkout(performedOn = '2026-01-05'): Promise<WorkoutWithSetsDto> {
-    const res = await post('/api/workouts', { performedOn, title: 'Push day' });
-    expect(res.status).toBe(201);
-    return body<WorkoutWithSetsDto>(res);
-  }
-
-  return { api, post, patch, createExercise, createWorkout };
+  return { api, post, patch };
 }
 
 /** A throwaway directory, made before each test and removed after it. */
