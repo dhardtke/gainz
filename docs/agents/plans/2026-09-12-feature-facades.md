@@ -4,7 +4,7 @@ git_commit: 89659b29769e8947b0080a386e0aea89eb29e4f8
 branch: main
 topic: 'Route handlers reach the database through a per-feature facade'
 tags: [plan, backend, features, facades, repositories, routes, refactor, oxlint]
-status: ready
+status: complete
 ---
 
 # PLAN: Every feature has a front door
