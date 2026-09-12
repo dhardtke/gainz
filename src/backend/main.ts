@@ -1,7 +1,6 @@
 import { basename } from 'node:path';
 import { DEFAULT_DB_PATH, openDatabase } from './db/db.ts';
-import { createFacades } from './features/facades.ts';
-import { serveOptions } from './http/server.ts';
+import { startServer } from './http/server.ts';
 
 function main(): void {
   const db = openDatabase(DEFAULT_DB_PATH, (migration) => {
@@ -9,7 +8,7 @@ function main(): void {
   });
   const port = Number(process.env.PORT ?? 3000);
 
-  const server = Bun.serve({ port, ...serveOptions(createFacades(db)) });
+  const server = startServer(db, port);
 
   console.log(`gainz is running on ${server.url}`);
   console.log(`  database: ${DEFAULT_DB_PATH}`);

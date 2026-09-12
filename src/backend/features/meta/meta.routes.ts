@@ -1,5 +1,4 @@
 import type { RouteTable } from '../../http/routing.ts';
-import { guard, guardAll } from '../../http/routing.ts';
 import { MetaController } from './internal/meta.controller.ts';
 
 export function metaRoutes(): RouteTable {
@@ -12,9 +11,9 @@ export function metaRoutes(): RouteTable {
 
 function healthRoute(controller: MetaController): RouteTable {
   return {
-    '/api/health': guardAll({
+    '/api/health': {
       GET: () => controller.health(),
-    }),
+    },
   };
 }
 
@@ -25,7 +24,7 @@ function healthRoute(controller: MetaController): RouteTable {
  * falls through to the static route and answers with the single-page app.
  */
 function notFoundRoute(controller: MetaController): RouteTable {
-  const endpointNotFound = guard(() => controller.endpointNotFound());
+  const endpointNotFound = (): Response => controller.endpointNotFound();
   return {
     '/api': endpointNotFound,
     '/api/*': endpointNotFound,

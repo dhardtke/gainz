@@ -4,7 +4,7 @@ git_commit: c8e146309ade1ceb98efc10607dc324e3c859a2c
 branch: main
 topic: 'Remove guard/guardAll in favour of the error hook, and start the server through one function'
 tags: [plan, backend, http, server, routing, errors, testing, refactor]
-status: ready
+status: complete
 ---
 
 # PLAN: One server entry point, no guard
@@ -170,18 +170,18 @@ route tests that assert 4xx statuses and `{ error }` bodies prove the responses 
 
 **Tasks**:
 
-- [ ] `src/backend/features/exercises/exercise.routes.ts` — unwrap the three `guardAll({ … })` calls
+- [x] `src/backend/features/exercises/exercise.routes.ts` — unwrap the three `guardAll({ … })` calls
       to plain objects; remove `import { guardAll } from '../../http/routing.ts';`.
-- [ ] `src/backend/features/workouts/workout.routes.ts` — unwrap the three `guardAll` calls; remove
+- [x] `src/backend/features/workouts/workout.routes.ts` — unwrap the three `guardAll` calls; remove
       the import.
-- [ ] `src/backend/features/workouts/set.routes.ts` — unwrap the `guardAll` call; remove the import.
-- [ ] `src/backend/features/stats/stats.routes.ts` — unwrap the `guardAll` call; remove the import.
-- [ ] `src/backend/features/meta/meta.routes.ts` — unwrap `guardAll` in `healthRoute`; in
+- [x] `src/backend/features/workouts/set.routes.ts` — unwrap the `guardAll` call; remove the import.
+- [x] `src/backend/features/stats/stats.routes.ts` — unwrap the `guardAll` call; remove the import.
+- [x] `src/backend/features/meta/meta.routes.ts` — unwrap `guardAll` in `healthRoute`; in
       `notFoundRoute` replace `guard(() => controller.endpointNotFound())` with
       `(): Response => controller.endpointNotFound()`; remove the `guard, guardAll` import.
-- [ ] `src/backend/http/routing.ts` — delete `Handler`, `guard`, `guardAll` and the
+- [x] `src/backend/http/routing.ts` — delete `Handler`, `guard`, `guardAll` and the
       `import { errorResponse } from './errors.ts';`, leaving `RouteTable` and `ParamRequest`.
-- [ ] `docs/backend.md` — rewrite the passages that name the wrapper:
+- [x] `docs/backend.md` — rewrite the passages that name the wrapper:
   - line 8: `routing.ts` is described as holding the `RouteTable` and `ParamRequest` types, with no
     mention of `guard`/`guardAll`;
   - line 25: drop ", wrapped in `guardAll`" from the route-file sentence;
@@ -194,23 +194,23 @@ route tests that assert 4xx statuses and `{ error }` bodies prove the responses 
 
 **Automated Verification**:
 
-- [ ] This search finds nothing (run in PowerShell; the single quotes keep the backtick literal):
+- [x] This search finds nothing (run in PowerShell; the single quotes keep the backtick literal):
       ```powershell
       git grep -nE 'guardAll|guard\(|\bguard`|Handler\b' -- src/backend docs/backend.md
       ```
-- [ ] `bun test src/backend/features/exercises/exercise.routes.test.ts` passes — `rejects a blank
+- [x] `bun test src/backend/features/exercises/exercise.routes.test.ts` passes — `rejects a blank
       name` (400 with `error` containing `name`), `rejects a duplicate name regardless of case`,
       `returns 404 for a missing exercise` and `refuses to delete an exercise that has logged sets`
       now go through the `error` hook.
-- [ ] `bun test src/backend/http/http.test.ts` passes — `rejects malformed JSON` is a throw from
+- [x] `bun test src/backend/http/http.test.ts` passes — `rejects malformed JSON` is a throw from
       inside an async controller method, the case `guard` used to await.
-- [ ] `bun test src/backend/features/meta/meta.routes.test.ts` passes — `unknown api endpoint returns
+- [x] `bun test src/backend/features/meta/meta.routes.test.ts` passes — `unknown api endpoint returns
       a JSON 404` and `the bare /api prefix returns a JSON 404, but /apix does not`.
-- [ ] `bun test` passes.
-- [ ] `bun run typecheck` passes (handler `req` parameters infer from `RouteTable` without
+- [x] `bun test` passes.
+- [x] `bun run typecheck` passes (handler `req` parameters infer from `RouteTable` without
       annotations).
-- [ ] `bun run lint` passes.
-- [ ] `bun run fmt:check` passes.
+- [x] `bun run lint` passes.
+- [x] `bun run fmt:check` passes.
 
 ### Phase 2: One server entry point
 
@@ -222,7 +222,7 @@ hook becomes a unit test of `errorResponse`.
 
 **Tasks**:
 
-- [ ] `src/backend/http/server.ts` — replace `GainzServeOptions` and `serveOptions` (and the doc
+- [x] `src/backend/http/server.ts` — replace `GainzServeOptions` and `serveOptions` (and the doc
       comment explaining why the options interface is spelled out) with:
       ```ts
       import type { Server } from 'bun';
@@ -239,12 +239,12 @@ hook becomes a unit test of `errorResponse`.
         });
       }
       ```
-- [ ] `src/backend/main.ts` — `const server = startServer(db, port);`; import `startServer` from
+- [x] `src/backend/main.ts` — `const server = startServer(db, port);`; import `startServer` from
       `./http/server.ts`; remove the `createFacades` and `serveOptions` imports.
-- [ ] `src/backend/testing.ts` — `server = startServer(db, 0);` in `beforeEach`; import `startServer`;
+- [x] `src/backend/testing.ts` — `server = startServer(db, 0);` in `beforeEach`; import `startServer`;
       remove the `createFacades` and `serveOptions` imports.
-- [ ] Delete `src/backend/http/server.test.ts`.
-- [ ] Add `src/backend/http/errors.test.ts`:
+- [x] Delete `src/backend/http/server.test.ts`.
+- [x] Add `src/backend/http/errors.test.ts`:
       ```ts
       import { describe, expect, spyOn, test } from 'bun:test';
       import type { ErrorDto } from '../../shared/dto';
@@ -271,7 +271,7 @@ hook becomes a unit test of `errorResponse`.
         });
       });
       ```
-- [ ] `docs/backend.md`:
+- [x] `docs/backend.md`:
   - lines 9-11: `main.ts` is the entry point that opens the database and starts the server through
     `startServer`;
   - line 75: `features/facades.ts` is called by `http/server.ts` and `src/scripts/seed.ts` (no longer
@@ -287,19 +287,19 @@ hook becomes a unit test of `errorResponse`.
 
 **Automated Verification**:
 
-- [ ] `git grep -nE "serveOptions|GainzServeOptions|server\.test\.ts" -- src docs/backend.md` finds
+- [x] `git grep -nE "serveOptions|GainzServeOptions|server\.test\.ts" -- src docs/backend.md` finds
       nothing.
-- [ ] `git grep -n "Bun.serve(" -- src` finds only `src/backend/http/server.ts`.
-- [ ] `bun test src/backend/http/errors.test.ts` passes both tests without printing
+- [x] `git grep -n "Bun.serve(" -- src` finds only `src/backend/http/server.ts`.
+- [x] `bun test src/backend/http/errors.test.ts` passes both tests without printing
       `Unhandled error` to stderr.
-- [ ] `bun test` passes (every route test now starts its server through `startServer`).
-- [ ] `bun run typecheck` passes.
-- [ ] `bun run lint` passes.
-- [ ] `bun run fmt:check` passes.
+- [x] `bun test` passes (every route test now starts its server through `startServer`).
+- [x] `bun run typecheck` passes.
+- [x] `bun run lint` passes.
+- [x] `bun run fmt:check` passes.
 
 **Manual Verification**:
 
-- [ ] `bun start` prints `gainz is running on http://localhost:3000/`; `GET /api/health` answers
+- [x] `bun start` prints `gainz is running on http://localhost:3000/`; `GET /api/health` answers
       `{"status":"ok","app":"gainz"}`, `GET /api/nope` answers a JSON 404, and Ctrl+C shuts the
       server down cleanly.
 
