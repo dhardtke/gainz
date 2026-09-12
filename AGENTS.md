@@ -30,9 +30,13 @@ the repository as it stood on the date it carries, so an old path in one is a re
 
 `src/backend/` -> the Bun + SQLite REST backend, organised by feature: `features/<feature>/` owns
 its routes, its SQL and its mapping, publishing rows and `to*` mappers through `ports/` and keeping
-its repository, mappers and translator in `internal/`. Only what belongs to no feature sits outside
-— `db/` (connection, migrations, statement helpers), `http/` (routing, the registry, the server),
-`shared/validate.ts` and `main.ts`. Every `*.test.ts` sits beside the module it exercises
+its repository, mappers and translator in `internal/`. At its root, beside the routes, sits
+`<feature>.facade.ts` — the feature's front door, the only module that names its repository and the
+only thing a route handler holds; `features/facades.ts` assembles the four into the `Facades` object
+`allRoutes` is given, and `bun run lint` fails if a route imports a repository. Only what belongs to
+no feature sits outside — `db/` (connection, migrations, statement helpers), `http/` (routing, the
+registry, the server), `shared/validate.ts` and `main.ts`. Every `*.test.ts` sits beside the module
+it exercises
 `src/frontend/` -> a **no-build-step** frontend: TypeScript ES modules and custom elements,
 transpiled on request by `src/backend/features/static` — no bundler, no output directory
 `src/shared/` -> the wire contract both halves import: `dto/` declares every request and response

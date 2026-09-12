@@ -18,8 +18,9 @@ const FIELDS = ['exercise_id', 'reps', 'weight', 'notes', 'position'] as const;
 export class SetRepository {
   /**
    * `workouts` is injected rather than imported as a value because both repositories live in this
-   * feature and either import would be as good as the other; taking it as an argument keeps the
-   * composition roots the one place that decides which workout repository a set repository reads.
+   * feature and either import would be as good as the other; taking it as an argument keeps
+   * `createWorkoutFacades` the one place that decides which workout repository a set repository
+   * reads.
    */
   constructor(
     private readonly db: DB,

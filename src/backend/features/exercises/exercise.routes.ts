@@ -1,5 +1,5 @@
 import { json, noContent, readJsonObject } from '../../http/http.ts';
-import type { ExerciseRepository } from './internal/exercise.repository.ts';
+import type { ExerciseFacade } from './exercises.facade.ts';
 import { pathId } from '../../shared/validate.ts';
 import type { RouteTable } from '../../http/routing.ts';
 import { guardAll } from '../../http/routing.ts';
@@ -7,7 +7,7 @@ import { toExercise, toExerciseProgress, toExerciseWithStats } from './ports/exe
 import { fromCreateExercise, fromEditExercise } from './internal/exercise.mapper.ts';
 import { translateToEditExerciseDto, translateToCreateExerciseDto } from './internal/exercise.translator.ts';
 
-export function exerciseRoutes(exercises: ExerciseRepository): RouteTable {
+export function exerciseRoutes(exercises: ExerciseFacade): RouteTable {
   return {
     '/api/exercises': guardAll({
       GET: () => json(exercises.list().map(toExerciseWithStats)),

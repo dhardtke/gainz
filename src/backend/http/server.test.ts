@@ -1,10 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { openDatabase } from '../db/db.ts';
 import { HttpError } from './errors.ts';
-import { ExerciseRepository } from '../features/exercises/internal/exercise.repository.ts';
-import { SetRepository } from '../features/workouts/internal/set.repository.ts';
-import { StatsRepository } from '../features/stats/internal/stats.repository.ts';
-import { WorkoutRepository } from '../features/workouts/internal/workout.repository.ts';
+import { createFacades } from '../features/facades.ts';
 import { serveOptions } from './server.ts';
 
 describe('the error hook', () => {
@@ -17,13 +14,7 @@ describe('the error hook', () => {
   test("renders errors through Bun.serve's error hook", () => {
     const db = openDatabase(':memory:');
     try {
-      const workouts = new WorkoutRepository(db);
-      const { error } = serveOptions({
-        exercises: new ExerciseRepository(db),
-        workouts,
-        sets: new SetRepository(db, workouts),
-        stats: new StatsRepository(db),
-      });
+      const { error } = serveOptions(createFacades(db));
 
       expect(error(new HttpError(418, 'teapot')).status).toBe(418);
       expect(error(new Error('boom')).status).toBe(500);
