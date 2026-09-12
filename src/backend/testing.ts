@@ -103,3 +103,10 @@ export function at<T>(items: T[], index: number): T {
   }
   return item;
 }
+
+export function tables(database: Database): string[] {
+  return database
+    .query<{ name: string }, []>("SELECT name FROM sqlite_master WHERE type = 'table'")
+    .all()
+    .map((row) => row.name);
+}
