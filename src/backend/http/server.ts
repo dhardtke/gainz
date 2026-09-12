@@ -1,5 +1,6 @@
 import { errorResponse } from './errors.ts';
-import { allRoutes, type Repositories } from './routes.ts';
+import type { Facades } from '../features/facades.ts';
+import { allRoutes } from './routes.ts';
 
 /**
  * The subset of Bun.serve's options this app supplies. Spelled out rather than
@@ -12,9 +13,9 @@ interface GainzServeOptions {
 }
 
 /** Options for Bun.serve, shared by the CLI entry point and the test suite. */
-export function serveOptions(repos: Repositories): GainzServeOptions {
+export function serveOptions(facades: Facades): GainzServeOptions {
   return {
-    routes: allRoutes(repos),
+    routes: allRoutes(facades),
     error: (err: Error): Response => errorResponse(err),
   };
 }

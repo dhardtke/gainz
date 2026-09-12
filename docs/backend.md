@@ -7,7 +7,7 @@ feature: `db/` (the connection and its PRAGMAs in `db.ts`, the schema in `migrat
 `migrations/`, and the table-agnostic statement helpers in `db/sql.ts`), `http/` (`routing.ts` for
 the `RouteTable`/`Handler` types and the `guard`/`guardAll` wrapper, `routes.ts` for the registry,
 `http.ts`, `errors.ts` and `server.ts`), `shared/validate.ts` for the request-field parsers and
-their length bounds, and `main.ts`, the entry point that builds the repositories and starts the
+their length bounds, and `main.ts`, the entry point that builds the facades and starts the
 server. There is no `fetch` fallback — every URL the server answers is a declared pattern.
 
 **Inside a feature, `ports/` is public and `internal/` is private.** `ports/` declares the row
@@ -16,7 +16,10 @@ everything about how the feature talks to its own table — the repository, its 
 `from*` mappers and the translator. No module under `features/<a>/` may import from
 `features/<b>/internal/`, and the arrows that do cross a feature line all land on a `ports/`: the
 exercises repository queries the sets table, so it takes `SET_COLUMNS` and `EST_1RM_SQL` from
-`features/workouts/ports/sql.ts` and `LiftSet` from `features/workouts/ports/set.ts`.
+`features/workouts/ports/sql.ts` and `LiftSet` from `features/workouts/ports/set.ts`. The third
+place a feature keeps code is its root, beside those two directories: the `*.routes.ts` files named
+after the URL groups they answer, and the `<feature>.facade.ts` named after the feature itself — the
+front door described below.
 
 A request runs `body → translateTo<X>Dto → <X>Dto → from<X> → <Entity>Input → repository → row`,
 and the response comes back through a `to*` mapper in `ports/`. The translator is where validation
@@ -46,17 +49,29 @@ for correctness: Bun matches by specificity (measured on 1.4.2), so `/api/health
 `/api/*` and `/api/*` over `/*` wherever they are declared — but declaring the catch-alls last
 reads the way the router dispatches.
 
-There is no facade over the repositories. Each feature declares its own — `ExerciseRepository`,
-`WorkoutRepository`, `SetRepository`, `StatsRepository`, each in
-`features/<feature>/internal/<entity>.repository.ts` — and they are constructed in the composition
-roots that start a server: `main.ts`, `testing.ts`, `src/scripts/seed.ts` and `http/server.test.ts`.
-Those four build a `Repositories` (declared in `http/routes.ts`, a parameter object with no methods
-of its own), and `allRoutes` hands each route factory only the repositories it uses:
-`workoutRoutes(workouts, sets)`, `exerciseRoutes(exercises)`, and so on. All SQL lives in a
-feature's `internal/`; `db/sql.ts` keeps only what names no table — `buildUpdate`,
-`isUniqueViolation` and `isForeignKeyViolation`. Repositories reference each other only with
-`import type` and take what they need through their constructor — `SetRepository(db, workouts)` —
-so there is no runtime cycle to trip over.
+**Every data-owning feature has a front door.** Each publishes exactly one facade module at its
+root — `exercises/exercises.facade.ts`, `workouts/workouts.facade.ts`, `stats/stats.facade.ts` —
+holding a `<Entity>Facade` per repository, and a route handler holds a facade rather than a
+repository. A repository is named only by its own feature's facade, and constructed only by that
+facade's factory, so `features/workouts/internal/` is the whole world in which `SetRepository`
+exists as a name. That is what a facade buys: a published surface narrower than the repository
+behind it (no `get()`, which only `require()` ever called), one place a repository is built, and a
+boundary a linter can check — the `overrides` block in `.oxlintrc.json` fails `bun run lint` if a
+`*.routes.ts` imports a `*.repository.ts`, type imports included. The facades are otherwise pure
+delegation, and deliberately so; if a composition like `GET /api/workouts/:id` ever wants pushing
+down out of its handler, the facade is where it goes.
+
+The facades publish rows, not DTOs, so the rule above it is unchanged: a handler still maps what
+the facade returns through a `to*` mapper, and the camelCase rename is still what the compiler
+checks. `features/facades.ts` is the single composition root — it declares `Facades` (a parameter
+object with no methods of its own) and `createFacades(db)` over the three per-feature factories,
+and it is what `main.ts`, `testing.ts`, `src/scripts/seed.ts` and `http/server.test.ts` each call.
+`allRoutes` then hands each route factory only the facades it uses: `workoutRoutes(workouts, sets)`,
+`exerciseRoutes(exercises)`, and so on. All SQL lives in a feature's `internal/`; `db/sql.ts` keeps
+only what names no table — `buildUpdate`, `isUniqueViolation` and `isForeignKeyViolation`.
+Repositories reference each other only with `import type` and take what they need through their
+constructor — `SetRepository(db, workouts)`, wired in `createWorkoutFacades` — so there is no
+runtime cycle to trip over.
 
 Error handling is by throwing: handlers throw `HttpError` and `guardAll()` in `http/routing.ts`
 turns it into a JSON `{ error }` body with the right status. New API routes must be wrapped in
@@ -91,7 +106,7 @@ silent no-op inside a transaction — and each migration must pass `PRAGMA forei
 it commits. Changing the schema means adding a file numbered above the current version; nothing
 else. The runner refuses to start rather than guess when the files and the database disagree.
 
-`serveOptions(repos)` is exported so the test suite can start a real server on port 0 against an
+`serveOptions(facades)` is exported so the test suite can start a real server on port 0 against an
 in-memory DB. `src/backend/testing.ts` wraps that in `useServer()`, which registers the
 `beforeEach`/`afterEach` pair from inside the function — so each test file gets its own hooks and
 its own database rather than sharing one through the module cache. Every `*.test.ts` sits beside

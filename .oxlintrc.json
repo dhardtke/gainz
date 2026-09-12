@@ -125,5 +125,23 @@
     "typescript/unbound-method": "error",
     "typescript/unified-signatures": "error",
     "typescript/use-unknown-in-catch-callback-variable": "error"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["src/backend/features/**/*.routes.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/*.repository.ts"],
+                "message": "Route handlers reach the database through their feature's facade."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

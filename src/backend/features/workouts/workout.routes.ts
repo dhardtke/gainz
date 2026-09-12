@@ -1,6 +1,5 @@
 import { json, noContent, readJsonObject } from '../../http/http.ts';
-import type { WorkoutRepository } from './internal/workout.repository.ts';
-import type { SetRepository } from './internal/set.repository.ts';
+import type { SetFacade, WorkoutFacade } from './workouts.facade.ts';
 import { toWorkout, toWorkoutPage, toWorkoutWithSets } from './ports/workout.ts';
 import { toLiftSet } from './ports/set.ts';
 import { fromCreateWorkout, fromEditWorkout } from './internal/workout.mapper.ts';
@@ -11,7 +10,7 @@ import { pathId, queryInt } from '../../shared/validate.ts';
 import type { RouteTable } from '../../http/routing.ts';
 import { guardAll } from '../../http/routing.ts';
 
-export function workoutRoutes(workouts: WorkoutRepository, sets: SetRepository): RouteTable {
+export function workoutRoutes(workouts: WorkoutFacade, sets: SetFacade): RouteTable {
   return {
     '/api/workouts': guardAll({
       GET: (req) => {

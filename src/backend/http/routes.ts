@@ -1,26 +1,11 @@
-import type { ExerciseRepository } from '../features/exercises/internal/exercise.repository.ts';
 import { exerciseRoutes } from '../features/exercises/exercise.routes.ts';
+import type { Facades } from '../features/facades.ts';
 import { metaRoutes } from '../features/meta/meta.routes.ts';
 import { setRoutes } from '../features/workouts/set.routes.ts';
-import type { SetRepository } from '../features/workouts/internal/set.repository.ts';
 import type { RouteTable } from './routing.ts';
 import { statsRoutes } from '../features/stats/stats.routes.ts';
-import type { StatsRepository } from '../features/stats/internal/stats.repository.ts';
 import { staticRoutes } from '../features/static/static.routes.ts';
 import { workoutRoutes } from '../features/workouts/workout.routes.ts';
-import type { WorkoutRepository } from '../features/workouts/internal/workout.repository.ts';
-
-/**
- * Everything the route table needs to reach the database, built by whoever starts a server. A
- * parameter object rather than a class: it holds the four repositories and knows nothing itself,
- * so each route factory can be handed only the ones it actually uses.
- */
-export interface Repositories {
-  exercises: ExerciseRepository;
-  workouts: WorkoutRepository;
-  sets: SetRepository;
-  stats: StatsRepository;
-}
 
 /**
  * The registry of Bun.serve routes: one file per URL group, owned by the feature
@@ -32,13 +17,13 @@ export interface Repositories {
  * router matches by specificity, so /api/health wins over /api/* and /api/* over
  * /* wherever they are declared. Least specific last reads the way it dispatches.
  */
-export function allRoutes(repos: Repositories): RouteTable {
+export function allRoutes(facades: Facades): RouteTable {
   return {
     ...metaRoutes(),
-    ...statsRoutes(repos.stats),
-    ...exerciseRoutes(repos.exercises),
-    ...workoutRoutes(repos.workouts, repos.sets),
-    ...setRoutes(repos.sets),
+    ...statsRoutes(facades.stats),
+    ...exerciseRoutes(facades.exercises),
+    ...workoutRoutes(facades.workouts, facades.sets),
+    ...setRoutes(facades.sets),
     ...staticRoutes(),
   };
 }

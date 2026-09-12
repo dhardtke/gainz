@@ -305,7 +305,7 @@ task is watching them go.
 
 **Tasks**:
 
-- [ ] `.oxlintrc.json` — add the `overrides` block after `rules`. Confirm it reports the five errors
+- [x] `.oxlintrc.json` — add the `overrides` block after `rules`. Confirm it reports the five errors
       listed under Current State before changing any source:
       ```json
       "overrides": [
@@ -327,7 +327,7 @@ task is watching them go.
         }
       ]
       ```
-- [ ] Create `src/backend/features/exercises/exercises.facade.ts`:
+- [x] Create `src/backend/features/exercises/exercises.facade.ts`:
       ```ts
       import type { DB } from '../../db/db.ts';
       import { ExerciseRepository, type ExerciseInput } from './internal/exercise.repository.ts';
@@ -356,7 +356,7 @@ task is watching them go.
       ```
       `bestSet` returns `(LiftSet & { performed_on: string }) | null`, which is why `LiftSet` comes
       from the workouts ports — the same cross-feature arrow `ports/exercise.ts:2` already draws
-- [ ] Create `src/backend/features/workouts/workouts.facade.ts` with `WorkoutFacade`, `SetFacade`
+- [x] Create `src/backend/features/workouts/workouts.facade.ts` with `WorkoutFacade`, `SetFacade`
       and the factory that builds both. The factory is where the repository-into-repository wiring
       now lives:
       ```ts
@@ -375,12 +375,12 @@ task is watching them go.
       ```
       `WorkoutFacade.create` mirrors the repository's optional second argument:
       `create(input: WorkoutInput, options: { copyFrom?: number } = {}): Workout`
-- [ ] `src/backend/features/workouts/internal/set.repository.ts:19-23` — rewrite the constructor
+- [x] `src/backend/features/workouts/internal/set.repository.ts:19-23` — rewrite the constructor
       comment: the composition roots no longer decide which workout repository a set repository
       reads, `createWorkoutFacades` does. Keep the `import type` (still no runtime cycle)
-- [ ] Create `src/backend/features/stats/stats.facade.ts` — `StatsFacade` with the single
+- [x] Create `src/backend/features/stats/stats.facade.ts` — `StatsFacade` with the single
       `summary(): Summary`, and `createStatsFacade(db)`
-- [ ] Create `src/backend/features/facades.ts`:
+- [x] Create `src/backend/features/facades.ts`:
       ```ts
       import type { DB } from '../db/db.ts';
       import { createExerciseFacade, type ExerciseFacade } from './exercises/exercises.facade.ts';
@@ -408,18 +408,18 @@ task is watching them go.
         };
       }
       ```
-- [ ] `features/exercises/exercise.routes.ts:2` and `:10` — import `ExerciseFacade` from
+- [x] `features/exercises/exercise.routes.ts:2` and `:10` — import `ExerciseFacade` from
       `./exercises.facade.ts` and change the signature to `exerciseRoutes(exercises: ExerciseFacade)`.
       No handler body changes
-- [ ] `features/stats/stats.routes.ts:2` and `:7` — the same for `StatsFacade`
-- [ ] `features/workouts/workout.routes.ts:2-3` and `:14` — replace both repository imports with one
+- [x] `features/stats/stats.routes.ts:2` and `:7` — the same for `StatsFacade`
+- [x] `features/workouts/workout.routes.ts:2-3` and `:14` — replace both repository imports with one
       `import type { SetFacade, WorkoutFacade } from './workouts.facade.ts';` and change the
       signature to `workoutRoutes(workouts: WorkoutFacade, sets: SetFacade)`. No handler body
       changes — `workouts.require(id)`, `sets.list(id)`, `workouts.create(…, { copyFrom })` all read
       identically against the facade
-- [ ] `features/workouts/set.routes.ts:2` and `:10` — the same for `SetFacade`, imported from
+- [x] `features/workouts/set.routes.ts:2` and `:10` — the same for `SetFacade`, imported from
       `./workouts.facade.ts`
-- [ ] `http/routes.ts` — delete the `Repositories` interface and the four repository `import type`
+- [x] `http/routes.ts` — delete the `Repositories` interface and the four repository `import type`
       lines; take `Facades` from `../features/facades.ts`. Keep the comment above `allRoutes` about
       spread order and Bun's specificity matching:
       ```ts
@@ -434,29 +434,29 @@ task is watching them go.
         };
       }
       ```
-- [ ] `http/server.ts` — `serveOptions(facades: Facades)`, importing `Facades` from
+- [x] `http/server.ts` — `serveOptions(facades: Facades)`, importing `Facades` from
       `../features/facades.ts` and passing it to `allRoutes`. Its doc comment still reads "shared by
       the CLI entry point and the test suite", which stays true
-- [ ] `src/backend/main.ts:3-6,13-22` — drop the four repository imports for
+- [x] `src/backend/main.ts:3-6,13-22` — drop the four repository imports for
       `import { createFacades } from './features/facades.ts';`, and build the server with
       `Bun.serve({ port, ...serveOptions(createFacades(db)) })`
-- [ ] `src/backend/testing.ts:13-16,41-54` — the same in `beforeEach`:
+- [x] `src/backend/testing.ts:13-16,41-54` — the same in `beforeEach`:
       ```ts
       db = openDatabase(':memory:');
       server = Bun.serve({ port: 0, ...serveOptions(createFacades(db)) });
       base = server.url.origin;
       ```
       This is the only edit to a `*.test*` module, and it changes no test
-- [ ] `src/backend/http/server.test.ts:4-7,20-26` — `const { error } = serveOptions(createFacades(db));`.
+- [x] `src/backend/http/server.test.ts:4-7,20-26` — `const { error } = serveOptions(createFacades(db));`.
       Leave the comment above the test alone: what it describes about the unguarded static route is
       unaffected
-- [ ] `src/scripts/seed.ts:7-10,52-57` — one import, one destructuring:
+- [x] `src/scripts/seed.ts:7-10,52-57` — one import, one destructuring:
       `const { exercises, workouts, sets, stats } = createFacades(db);`. Every call site
       (`workouts.count()`, `exercises.create(…)`, `workouts.create(…)`, `sets.create(…)`,
       `stats.summary()`) is unchanged. Re-point the comment at lines 65-67 from
       "WorkoutRepository.create opens a transaction of its own" to name what the seeder now calls,
       `workouts.create()`; the nesting-as-a-savepoint sentence stays true
-- [ ] `docs/backend.md` — three edits:
+- [x] `docs/backend.md` — three edits:
       - line 10-11: `main.ts` is "the entry point that builds the repositories and starts the
         server" → builds the facades
       - lines 13-19: the `ports/`-is-public / `internal/`-is-private paragraph gains the third
@@ -469,22 +469,22 @@ task is watching them go.
         unchanged; and the oxlint override is what keeps a route from reaching past it. Keep the
         surrounding sentences about `db/sql.ts` and `import type` between repositories
       - line 94: `serveOptions(repos)` → `serveOptions(facades)`
-- [ ] `AGENTS.md` — the architecture paragraph (`features/<feature>/` owns its routes, its SQL and
+- [x] `AGENTS.md` — the architecture paragraph (`features/<feature>/` owns its routes, its SQL and
       its mapping …) gains the facade at the feature root and `features/facades.ts` as what
       `allRoutes` is given. `CLAUDE.md` is a symbolic link to this file, so it needs no separate
       edit
-- [ ] `bun run fmt`
+- [x] `bun run fmt`
 
 **Automated Verification**:
 
-- [ ] `bun run lint` passes — in particular the five `no-restricted-imports` errors listed under
+- [x] `bun run lint` passes — in particular the five `no-restricted-imports` errors listed under
       Current State are all gone, which is the rule confirming the refactor rather than the rule
       being satisfied vacuously
-- [ ] `bun run typecheck` passes
-- [ ] `bun run fmt:check` passes
-- [ ] `bun test` passes, and `git diff -- '*.test.ts'` shows one file, `http/server.test.ts`, whose
+- [x] `bun run typecheck` passes
+- [x] `bun run fmt:check` passes
+- [x] `bun test` passes, and `git diff -- '*.test.ts'` shows one file, `http/server.test.ts`, whose
       diff is its imports and the argument to `serveOptions` — no assertion anywhere changed
-- [ ] `grep -rln "\.repository\.ts'" src/` lists exactly these seven, every one of them inside the
+- [x] `grep -rln "\.repository\.ts'" src/` lists exactly these seven, every one of them inside the
       feature that owns the repository, and the only three outside `internal/` are the facades:
       ```
       features/exercises/exercises.facade.ts
@@ -497,10 +497,10 @@ task is watching them go.
       ```
       The nine to disappear from today's list are `http/routes.ts`, `main.ts`, `testing.ts`,
       `http/server.test.ts`, `src/scripts/seed.ts` and the four `*.routes.ts` files
-- [ ] `grep -rn "Repositories" src/` returns nothing
-- [ ] `grep -rln "features/.*/internal/" src/backend/http src/scripts src/backend/main.ts src/backend/testing.ts`
+- [x] `grep -rn "Repositories" src/` returns nothing
+- [x] `grep -rln "features/.*/internal/" src/backend/http src/scripts src/backend/main.ts src/backend/testing.ts`
       returns nothing — no module outside a feature names another feature's internals
-- [ ] `bun run seed` against a throwaway `GAINZ_DB` fills an empty database and prints its summary
+- [x] `bun run seed` against a throwaway `GAINZ_DB` fills an empty database and prints its summary
       line; a second run reports "Database already contains workouts"
 
 ## Implementation Notes

@@ -4,10 +4,7 @@
  * nothing if the database already holds workouts.
  */
 import { DEFAULT_DB_PATH, openDatabase } from '../backend/db/db.ts';
-import { ExerciseRepository } from '../backend/features/exercises/internal/exercise.repository.ts';
-import { SetRepository } from '../backend/features/workouts/internal/set.repository.ts';
-import { StatsRepository } from '../backend/features/stats/internal/stats.repository.ts';
-import { WorkoutRepository } from '../backend/features/workouts/internal/workout.repository.ts';
+import { createFacades } from '../backend/features/facades.ts';
 
 const EXERCISES = [
   { name: 'Back Squat', muscle_group: 'Legs', notes: 'Low bar, belt above 100 kg.' },
@@ -51,10 +48,7 @@ function isoDaysAgo(days: number): string {
 
 function main(): void {
   const db = openDatabase(DEFAULT_DB_PATH);
-  const exercises = new ExerciseRepository(db);
-  const workouts = new WorkoutRepository(db);
-  const sets = new SetRepository(db, workouts);
-  const stats = new StatsRepository(db);
+  const { exercises, workouts, sets, stats } = createFacades(db);
 
   if (workouts.count() > 0) {
     console.log('Database already contains workouts — nothing seeded.');
@@ -63,7 +57,7 @@ function main(): void {
   }
 
   // One transaction for the whole run: a seeder that fails half way should leave nothing behind,
-  // not a partial block of training history. WorkoutRepository.create opens a transaction of its own, which
+  // not a partial block of training history. `workouts.create()` opens a transaction of its own, which
   // nests as a savepoint.
   db.transaction(() => {
     const idByName = new Map<string, number>();
