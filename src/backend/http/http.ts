@@ -17,7 +17,6 @@ function isJsonObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-/** Parses a JSON request body, rejecting anything that is not a plain object. */
 export async function readJsonObject(req: Request): Promise<Record<string, unknown>> {
   let parsed: unknown;
   try {

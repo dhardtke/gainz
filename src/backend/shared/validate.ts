@@ -10,7 +10,6 @@ export function isPresent(body: Record<string, unknown>, field: string): boolean
   return Object.prototype.hasOwnProperty.call(body, field) && body[field] !== undefined;
 }
 
-/** A required, non-empty string. */
 export function requiredString(body: Record<string, unknown>, field: string, maxLength = 200): string {
   const value = body[field];
   if (typeof value !== 'string' || value.trim() === '') {
@@ -71,7 +70,6 @@ export function requiredNumber(body: Record<string, unknown>, field: string, { m
   return Math.round(num * 100) / 100;
 }
 
-/** A calendar date in YYYY-MM-DD form. */
 export function requiredDate(body: Record<string, unknown>, field: string): string {
   const value = requiredString(body, field, 10);
   if (!ISO_DATE.test(value) || Number.isNaN(Date.parse(value))) {
@@ -80,7 +78,6 @@ export function requiredDate(body: Record<string, unknown>, field: string): stri
   return value;
 }
 
-/** Parses a path parameter as a positive integer id. */
 export function pathId(raw: string | undefined, what: string): number {
   const id = Number(raw);
   if (!Number.isInteger(id) || id < 1) {

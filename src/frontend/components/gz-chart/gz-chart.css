@@ -15,8 +15,6 @@
   row-gap: 0.25rem;
 }
 
-/* ------------------------------------------------------------------ y axis */
-
 .y-axis {
   grid-column: 1;
   grid-row: 1;
@@ -36,8 +34,6 @@
     white-space: nowrap;
   }
 }
-
-/* -------------------------------------------------------------------- plot */
 
 .plot {
   grid-column: 2;
@@ -91,8 +87,6 @@ svg {
   background: var(--pico-card-background-color);
   cursor: pointer;
 }
-
-/* ------------------------------------------------------------------ x axis */
 
 .x-axis {
   grid-column: 2;
