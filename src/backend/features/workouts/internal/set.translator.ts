@@ -1,32 +1,21 @@
 import type { CreateSetDto, EditSetDto } from '../../../../shared/dto';
-import { isPresent, MAX_NOTES, optionalString, requiredInt, requiredNumber } from '../../../shared/validate.ts';
 
 export function translateToCreateSetDto(body: Record<string, unknown>): CreateSetDto {
   return {
-    exerciseId: requiredInt(body, 'exerciseId', { min: 1 }),
-    reps: requiredInt(body, 'reps', { min: 1, max: 1000 }),
-    weight: requiredNumber(body, 'weight', { min: 0, max: 100000 }),
-    notes: optionalString(body, 'notes', MAX_NOTES),
-    ...(isPresent(body, 'position') ? { position: requiredInt(body, 'position', { min: 0 }) } : {}),
+    exerciseId: body.exerciseId as number,
+    reps: body.reps as number,
+    weight: body.weight as number,
+    notes: body.notes as string | null | undefined,
+    position: body.position as number | undefined,
   };
 }
 
 export function translateToEditSetDto(body: Record<string, unknown>): EditSetDto {
-  const dto: EditSetDto = {};
-  if (isPresent(body, 'exerciseId')) {
-    dto.exerciseId = requiredInt(body, 'exerciseId', { min: 1 });
-  }
-  if (isPresent(body, 'reps')) {
-    dto.reps = requiredInt(body, 'reps', { min: 1, max: 1000 });
-  }
-  if (isPresent(body, 'weight')) {
-    dto.weight = requiredNumber(body, 'weight', { min: 0, max: 100000 });
-  }
-  if (isPresent(body, 'notes')) {
-    dto.notes = optionalString(body, 'notes', MAX_NOTES);
-  }
-  if (isPresent(body, 'position')) {
-    dto.position = requiredInt(body, 'position', { min: 0 });
-  }
-  return dto;
+  return {
+    exerciseId: body.exerciseId as number | undefined,
+    reps: body.reps as number | undefined,
+    weight: body.weight as number | undefined,
+    notes: body.notes as string | null | undefined,
+    position: body.position as number | undefined,
+  };
 }

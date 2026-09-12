@@ -166,6 +166,12 @@
           }
         ]
       }
+    },
+    {
+      "files": ["src/backend/features/**/*.translator.ts"],
+      "rules": {
+        "typescript/no-unsafe-type-assertion": "off"
+      }
     }
   ]
 }

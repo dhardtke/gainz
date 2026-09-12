@@ -1,5 +1,8 @@
+import type { CreateExerciseDto, EditExerciseDto } from '../../../shared/dto';
 import type { DB } from '../../db/db.ts';
-import { ExerciseRepository, type ExerciseInput } from './internal/exercise.repository.ts';
+import { isPresent, MAX_NAME, MAX_NOTES, optionalString, requiredString } from '../../shared/validate.ts';
+import { fromCreateExercise, fromEditExercise } from './internal/exercise.mapper.ts';
+import { ExerciseRepository } from './internal/exercise.repository.ts';
 import type { Exercise, ExerciseWithStats, SessionPoint } from './ports/exercise.ts';
 import type { LiftSet } from '../workouts/ports/set.ts';
 
@@ -19,12 +22,12 @@ export class ExerciseFacade {
     return this.exercises.require(id);
   }
 
-  create(input: ExerciseInput): Exercise {
-    return this.exercises.create(input);
+  create(dto: CreateExerciseDto): Exercise {
+    return this.exercises.create(fromCreateExercise(this.validateCreate(dto)));
   }
 
-  update(id: number, patch: Partial<ExerciseInput>): Exercise {
-    return this.exercises.update(id, patch);
+  update(id: number, dto: EditExerciseDto): Exercise {
+    return this.exercises.update(id, fromEditExercise(this.validateEdit(dto)));
   }
 
   delete(id: number): void {
@@ -37,6 +40,28 @@ export class ExerciseFacade {
 
   bestSet(id: number): (LiftSet & { performed_on: string }) | null {
     return this.exercises.bestSet(id);
+  }
+
+  private validateCreate(dto: CreateExerciseDto): CreateExerciseDto {
+    return {
+      name: requiredString(dto, 'name', MAX_NAME),
+      muscleGroup: optionalString(dto, 'muscleGroup', 60),
+      notes: optionalString(dto, 'notes', MAX_NOTES),
+    };
+  }
+
+  private validateEdit(dto: EditExerciseDto): EditExerciseDto {
+    const valid: EditExerciseDto = {};
+    if (isPresent(dto, 'name')) {
+      valid.name = requiredString(dto, 'name', MAX_NAME);
+    }
+    if (isPresent(dto, 'muscleGroup')) {
+      valid.muscleGroup = optionalString(dto, 'muscleGroup', 60);
+    }
+    if (isPresent(dto, 'notes')) {
+      valid.notes = optionalString(dto, 'notes', MAX_NOTES);
+    }
+    return valid;
   }
 }
 

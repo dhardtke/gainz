@@ -7,12 +7,12 @@ import { DEFAULT_DB_PATH, openDatabase } from '../backend/db/db.ts';
 import { createFacades } from '../backend/features/facades.ts';
 
 const EXERCISES = [
-  { name: 'Back Squat', muscle_group: 'Legs', notes: 'Low bar, belt above 100 kg.' },
-  { name: 'Bench Press', muscle_group: 'Chest', notes: null },
-  { name: 'Deadlift', muscle_group: 'Back', notes: 'Conventional stance.' },
-  { name: 'Overhead Press', muscle_group: 'Shoulders', notes: null },
-  { name: 'Barbell Row', muscle_group: 'Back', notes: null },
-  { name: 'Pull-up', muscle_group: 'Back', notes: 'Bodyweight plus belt.' },
+  { name: 'Back Squat', muscleGroup: 'Legs', notes: 'Low bar, belt above 100 kg.' },
+  { name: 'Bench Press', muscleGroup: 'Chest', notes: null },
+  { name: 'Deadlift', muscleGroup: 'Back', notes: 'Conventional stance.' },
+  { name: 'Overhead Press', muscleGroup: 'Shoulders', notes: null },
+  { name: 'Barbell Row', muscleGroup: 'Back', notes: null },
+  { name: 'Pull-up', muscleGroup: 'Back', notes: 'Bodyweight plus belt.' },
 ];
 
 /** Day templates: exercise name, starting weight, weekly increment, reps. */
@@ -76,7 +76,7 @@ function main(): void {
         }
 
         const workout = workouts.create({
-          performed_on: isoDaysAgo(daysAgo),
+          performedOn: isoDaysAgo(daysAgo),
           title: template.title,
           notes: week === weeks - 1 ? 'First session of the block.' : null,
         });
@@ -90,7 +90,7 @@ function main(): void {
 
           lift.reps.forEach((reps, setIndex) => {
             sets.create(workout.id, {
-              exercise_id: exerciseId,
+              exerciseId,
               reps,
               weight,
               notes: SET_NOTES[(created + setIndex) % SET_NOTES.length] ?? null,

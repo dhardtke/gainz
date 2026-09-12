@@ -29,3 +29,23 @@ export async function readJsonObject(req: Request): Promise<Record<string, unkno
   }
   return parsed;
 }
+
+export function pathId(raw: string | undefined, what: string): number {
+  const id = Number(raw);
+  if (!Number.isInteger(id) || id < 1) {
+    throw badRequest(`Invalid ${what} id`);
+  }
+  return id;
+}
+
+export function queryInt(params: URLSearchParams, key: string, fallback: number, { min = 0, max = 1000 }: { min?: number; max?: number } = {}): number {
+  const raw = params.get(key);
+  if (raw === null || raw === '') {
+    return fallback;
+  }
+  const num = Number(raw);
+  if (!Number.isInteger(num) || num < min || num > max) {
+    throw badRequest(`"${key}" must be a whole number between ${min} and ${max}`);
+  }
+  return num;
+}

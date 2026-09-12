@@ -4,7 +4,7 @@ git_commit: eb2e69d2cebe7214a5449b6477a63d37093317b8
 branch: main
 topic: 'Move request validation from translators into facades'
 tags: [plan, validation, facades, translators, controllers, mappers, seed, lint]
-status: ready
+status: complete
 ---
 
 # PLAN: Move request validation from translators into facades
@@ -217,26 +217,26 @@ bodies unchanged.
 
 **Tasks**:
 
-- [ ] `src/backend/shared/validate.ts`: change `isPresent`, `requiredString`, `optionalString`,
+- [x] `src/backend/shared/validate.ts`: change `isPresent`, `requiredString`, `optionalString`,
       `requiredInt`, `requiredNumber` and `requiredDate` to
       `<T extends object>(dto: T, field: keyof T & string, …)` reading
       `const value: unknown = dto[field]`; keep their logic and messages. Remove `pathId` and
       `queryInt`. The `MAX_NAME` doc comment says the facades share the bounds.
-- [ ] `src/backend/http/http.ts`: add `pathId` and `queryInt` unchanged; `badRequest` is already
+- [x] `src/backend/http/http.ts`: add `pathId` and `queryInt` unchanged; `badRequest` is already
       imported.
-- [ ] Update the `pathId` / `queryInt` imports in `exercise.controller.ts`,
+- [x] Update the `pathId` / `queryInt` imports in `exercise.controller.ts`,
       `workout.controller.ts` and `set.controller.ts` to `http/http.ts`.
-- [ ] `.oxlintrc.json`: add an override for `src/backend/features/**/*.translator.ts` setting
+- [x] `.oxlintrc.json`: add an override for `src/backend/features/**/*.translator.ts` setting
       `"typescript/no-unsafe-type-assertion": "off"`.
-- [ ] `exercises.facade.ts`: add private
+- [x] `exercises.facade.ts`: add private
       `validateCreate(dto: CreateExerciseDto): CreateExerciseDto` and
       `validateEdit(dto: EditExerciseDto): EditExerciseDto`, holding today's translator bodies.
-- [ ] `exercises.facade.ts`: `create(dto: CreateExerciseDto): Exercise` runs
+- [x] `exercises.facade.ts`: `create(dto: CreateExerciseDto): Exercise` runs
       `this.exercises.create(fromCreateExercise(this.validateCreate(dto)))`;
       `update(id: number, dto: EditExerciseDto): Exercise` runs
       `this.exercises.update(id, fromEditExercise(this.validateEdit(dto)))`. Drop the
       `ExerciseInput` import if unused.
-- [ ] `exercise.translator.ts`: replace the bodies with casts and remove the `shared/validate.ts`
+- [x] `exercise.translator.ts`: replace the bodies with casts and remove the `shared/validate.ts`
       import:
       ```ts
       export function translateToCreateExerciseDto(body: Record<string, unknown>): CreateExerciseDto {
@@ -248,16 +248,16 @@ bodies unchanged.
       }
       ```
       `translateToEditExerciseDto` casts the same three fields, `name` as `string | undefined`.
-- [ ] `exercise.controller.ts`: `create` passes `translateToCreateExerciseDto(await readJsonObject(req))`
+- [x] `exercise.controller.ts`: `create` passes `translateToCreateExerciseDto(await readJsonObject(req))`
       and `update` passes `translateToEditExerciseDto(...)` to the facade; remove the mapper import.
-- [ ] `src/scripts/seed.ts`: `EXERCISES` entries use `muscleGroup` instead of `muscle_group`.
-- [ ] New `src/backend/shared/validate.test.ts`, calling the helpers with plain object literals:
+- [x] `src/scripts/seed.ts`: `EXERCISES` entries use `muscleGroup` instead of `muscle_group`.
+- [x] New `src/backend/shared/validate.test.ts`, calling the helpers with plain object literals:
       `requiredString` (trims, rejects blank and non-string, max length after trim),
       `optionalString` (`undefined` / `null` / `''` → `null`, rejects a number), `requiredInt`
       (`'5'` → 5, rejects `1.5` and `'nope'`, range message), `requiredNumber` (rounds `62.555` to
       two decimals, rejects `NaN` / `Infinity`), `requiredDate` (accepts `2026-09-12`, rejects
       `12.09.2026`), and `isPresent` (an `undefined` value is absent).
-- [ ] New `src/backend/features/exercises/exercises.facade.test.ts` over
+- [x] New `src/backend/features/exercises/exercises.facade.test.ts` over
       `createExerciseFacade(openDatabase(':memory:'))`:
       `create({ name: '  Squat ', muscleGroup: '' })` returns a row with `name: 'Squat'` and
       `muscle_group: null`; `create({ name: '' })` throws the `"name" is required…` 400;
@@ -266,14 +266,14 @@ bodies unchanged.
 
 **Automated Verification**:
 
-- [ ] `bun test src/backend/shared/validate.test.ts` passes
-- [ ] `bun test src/backend/features/exercises` passes, including the new facade tests and the
+- [x] `bun test src/backend/shared/validate.test.ts` passes
+- [x] `bun test src/backend/features/exercises` passes, including the new facade tests and the
       existing blank-name 400 and duplicate-name 409 route tests
-- [ ] `bun test` passes
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
-- [ ] `$env:GAINZ_DB = ':memory:'; bun run seed; Remove-Item Env:GAINZ_DB` completes and prints the
+- [x] `bun test` passes
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
+- [x] `$env:GAINZ_DB = ':memory:'; bun run seed; Remove-Item Env:GAINZ_DB` completes and prints the
       seeded counts
 
 ### Phase 2: Workouts and sets validate in their facades
@@ -285,7 +285,7 @@ validation order, and document the new flow.
 
 **Tasks**:
 
-- [ ] `workouts.facade.ts` `WorkoutFacade`: private `validateCreate(dto: CreateWorkoutDto): CreateWorkoutDto`
+- [x] `workouts.facade.ts` `WorkoutFacade`: private `validateCreate(dto: CreateWorkoutDto): CreateWorkoutDto`
       and `validateEdit(dto: EditWorkoutDto): EditWorkoutDto` holding today's workout translator
       bodies, and:
       ```ts
@@ -299,25 +299,25 @@ validation order, and document the new flow.
       }
       ```
       Remove the `copyFrom` doc comment on `create`.
-- [ ] `workouts.facade.ts` `SetFacade`: private `validateCreate(dto: CreateSetDto): CreateSetDto` and
+- [x] `workouts.facade.ts` `SetFacade`: private `validateCreate(dto: CreateSetDto): CreateSetDto` and
       `validateEdit(dto: EditSetDto): EditSetDto` holding today's set translator bodies;
       `create(workoutId: number, dto: CreateSetDto)` and `update(id: number, dto: EditSetDto)`
       validate, map, then call the repository. Drop the `SetInput` / `WorkoutInput` imports if unused.
-- [ ] `workout.translator.ts`: casts only. `translateToCreateWorkoutDto` casts `performedOn` as
+- [x] `workout.translator.ts`: casts only. `translateToCreateWorkoutDto` casts `performedOn` as
       `string | undefined`, `title` and `notes` as `string | null | undefined`, and
       `copyFromWorkoutId` as `number | undefined`. `translateToEditWorkoutDto` casts `performedOn`,
       `title` and `notes` the same way. Remove the `shared/validate.ts` import.
-- [ ] `set.translator.ts`: casts only, as in Desired End State; `translateToEditSetDto` casts every
+- [x] `set.translator.ts`: casts only, as in Desired End State; `translateToEditSetDto` casts every
       field with `| undefined`. Remove the `shared/validate.ts` import.
-- [ ] `workout.mapper.ts`: the doc comment says `WorkoutFacade.create` passes `copyFromWorkoutId`
+- [x] `workout.mapper.ts`: the doc comment says `WorkoutFacade.create` passes `copyFromWorkoutId`
       on, not `WorkoutController.create`.
-- [ ] `workout.controller.ts`: `create`, `update` and `addSet` pass the translator result to the
+- [x] `workout.controller.ts`: `create`, `update` and `addSet` pass the translator result to the
       facade; remove the mapper imports and the `copyFromWorkoutId` comment.
-- [ ] `set.controller.ts`: `update` passes `translateToEditSetDto(await readJsonObject(req))`; remove
+- [x] `set.controller.ts`: `update` passes `translateToEditSetDto(await readJsonObject(req))`; remove
       the mapper import.
-- [ ] `src/scripts/seed.ts`: `workouts.create({ performedOn, title, notes })` and
+- [x] `src/scripts/seed.ts`: `workouts.create({ performedOn, title, notes })` and
       `sets.create(workout.id, { exerciseId, reps, weight, notes })`.
-- [ ] New `src/backend/features/workouts/workouts.facade.test.ts` over
+- [x] New `src/backend/features/workouts/workouts.facade.test.ts` over
       `createWorkoutFacades(openDatabase(':memory:'))`:
   - `workouts.create({})` returns a row dated today; `create({ performedOn: '05.01.2026' })` throws
     400; `create({ copyFromWorkoutId: sourceId })` copies that workout's sets.
@@ -326,9 +326,9 @@ validation order, and document the new flow.
     `weight: 62.56`, `notes: null` and the next `position`;
     `sets.create(workoutId, { exerciseId, reps: 0, weight: 60 })` throws 400;
     `sets.update(id, { notes: '' })` clears `notes` and leaves `reps`.
-- [ ] `set.routes.test.ts`: add `test('validates the body before looking up the set', …)` —
+- [x] `set.routes.test.ts`: add `test('validates the body before looking up the set', …)` —
       `PATCH /api/sets/999999` with `{ reps: 0 }` returns 400.
-- [ ] `docs/backend.md`:
+- [x] `docs/backend.md`:
   - Line 5: the mapping is reached through the feature's controllers and facade.
   - Line 9: `shared/validate.ts` holds the request-field rules, and `http/http.ts` holds `pathId` /
     `queryInt` beside `readJsonObject`.
@@ -349,22 +349,22 @@ validation order, and document the new flow.
     and validators.
   - Lines 123-128: change "four exceptions" to "seven exceptions" and add `shared/validate.test.ts`
     and the two `*.facade.test.ts` files.
-- [ ] `AGENTS.md` lines 31-35: the translator casts a body onto its request DTO, and the facade
+- [x] `AGENTS.md` lines 31-35: the translator casts a body onto its request DTO, and the facade
       validates that DTO before handing it to the repository.
 
 **Automated Verification**:
 
-- [ ] `bun test src/backend/features/workouts` passes, including the new facade tests, the
+- [x] `bun test src/backend/features/workouts` passes, including the new facade tests, the
       `validates the body before looking up the set` route test, and the existing bad-date,
       `copyFromWorkoutId: 'nope'`, `reps: 0` and unknown-`exerciseId` route tests
-- [ ] `bun test` passes
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
-- [ ] `$env:GAINZ_DB = ':memory:'; bun run seed; Remove-Item Env:GAINZ_DB` completes and prints the
+- [x] `bun test` passes
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
+- [x] `$env:GAINZ_DB = ':memory:'; bun run seed; Remove-Item Env:GAINZ_DB` completes and prints the
       seeded counts
-- [ ] `git grep -n "shared/validate" -- "src/backend/features/*.translator.ts"` finds nothing
-- [ ] `git grep -nE "shared/validate|mapper" -- "src/backend/features/*.controller.ts"` finds nothing
+- [x] `git grep -n "shared/validate" -- "src/backend/features/*.translator.ts"` finds nothing
+- [x] `git grep -nE "shared/validate|mapper" -- "src/backend/features/*.controller.ts"` finds nothing
 
 ## Implementation Notes
 

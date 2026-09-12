@@ -2,18 +2,19 @@
 
 The backend is organised by feature, not by layer. `features/` holds one directory per thing the
 app is about — `exercises/`, `workouts/`, `stats/`, `meta/`, `static/` — and each owns its routes,
-its SQL and its mapping end to end, the mapping reached through its controllers. What is left outside `features/` is only what belongs to no
+its SQL and its mapping end to end, the mapping reached through its controllers and its facade. What is left outside `features/` is only what belongs to no
 feature: `db/` (the connection and its PRAGMAs in `db.ts`, the schema in `migrations.ts` and
 `migrations/`, and the table-agnostic statement helpers in `db/sql.ts`), `http/` (`routing.ts` for
 the `RouteTable` and `ParamRequest` types, `routes.ts` for the registry,
-`http.ts`, `errors.ts` and `server.ts`), `shared/validate.ts` for the request-field parsers and
-their length bounds, and `main.ts`, the entry point that opens the database and starts the server
+`http.ts`, `errors.ts` and `server.ts`, with `http.ts` holding `pathId` and `queryInt` beside
+`readJsonObject`), `shared/validate.ts` for the request-field rules and their length bounds, and
+`main.ts`, the entry point that opens the database and starts the server
 through `startServer`. There is no `fetch` fallback — every URL the server answers is a declared pattern.
 
 **Inside a feature, `ports/` is public and `internal/` is private.** `ports/` declares the row
 types other features may read and the `to*` mappers that turn them into DTOs; `internal/` holds
 everything about how the feature talks to its own table — the repository, its `<Entity>Input`, the
-`from*` mappers and the translator — and the controllers, one `<x>.controller.ts` per route file and
+`from*` mappers and the translator, which casts a body onto its request DTO — and the controllers, one `<x>.controller.ts` per route file and
 named after it. No module under `features/<a>/` may import from `features/<b>/internal/`, and the
 arrows that do cross a feature line all land on a `ports/`: the exercises repository queries the
 sets table, so it takes `SET_COLUMNS` and `EST_1RM_SQL` from `features/workouts/ports/sql.ts` and
@@ -25,13 +26,16 @@ A route file is only a table: each handler is one line that passes the request t
 and returns what comes back. The controller does the rest. It takes the
 request and returns a `Response`, reading it with `pathId`, `queryInt` and `readJsonObject` and
 answering with `json()` or `noContent()` and the status code, and in between it runs
-`body → translateTo<X>Dto → <X>Dto → from<X> → <Entity>Input → facade → row → to<X> → DTO`. The
-translator is where validation happens and the mapper is where renaming happens; neither does the
-other's job.
+`body → translateTo<X>Dto → <X>Dto → facade → row → to<X> → DTO`. The facade's write methods in
+turn run `validate → <X>Dto → from<X> → <Entity>Input → repository`. The translator only casts, so
+a request DTO is unchecked until the facade has validated and normalised it, which happens before
+anything touches the database; the mapper is where renaming happens. None of the three does
+another's job.
 
 **A controller answers with a DTO, never a row.** The wire format is declared once in `src/shared/dto/` —
 camelCase, type-only, imported by the frontend as well — and each feature holds one mapper per
-shape in each direction (`toLiftSet(row)` in `ports/`, `fromCreateSet(dto)` in `internal/`). Those
+shape in each direction (`toLiftSet(row)` in `ports/`, called by the controller, and
+`fromCreateSet(dto)` in `internal/`, called by the facade). Those
 mappers are the only place that reads a row's fields outside the repository that produced it, and
 each one names every field it maps: a spread would compile and would ship `workout_id` and
 `created_at` to the browser with nothing to catch it. The camelCase rename is what keeps that
@@ -60,19 +64,25 @@ holds the facades. A repository is named only by its own feature's facade, and c
 that facade's factory, so `features/workouts/internal/` is the whole world in which `SetRepository`
 exists as a name. That is what a facade buys: a published surface narrower than the repository
 behind it (no `get()`, which only `require()` ever called), one place a repository is built, and a
-boundary a linter can check. The `overrides` block in `.oxlintrc.json` holds two rules, type
-imports included: no `*.routes.ts` — `static.routes.ts` among them — may import anything under
-`internal/` except its controller, anything under `ports/`, a `*.repository.ts`, or the request and
-response helpers (`http/http.ts`, `http/errors.ts`, `shared/validate.ts`), which is what keeps its
-handlers one line long; and no `*.controller.ts` may import a `*.repository.ts`. The facades are otherwise pure delegation, and deliberately so:
-composition across facades, like `GET /api/workouts/:id` reading a workout and its sets, lives in
-the controller, and the facade is where it goes if it ever needs to move further down.
+boundary a linter can check. The `overrides` block in `.oxlintrc.json` holds three rules. Two
+restrict imports, type imports included: no `*.routes.ts` — `static.routes.ts` among them — may
+import anything under `internal/` except its controller, anything under `ports/`, a
+`*.repository.ts`, or the request and response helpers (`http/http.ts`, `http/errors.ts`,
+`shared/validate.ts`), which is what keeps its handlers one line long; and no `*.controller.ts` may
+import a `*.repository.ts`. The third exempts `*.translator.ts` from
+`typescript/no-unsafe-type-assertion`, since casting a body onto a DTO is a translator's whole job.
+The facades are not pure delegation: their write methods validate and map the request with the
+facade's own private `validateCreate` / `validateEdit` methods before calling the repository.
+Composition across facades, like `GET /api/workouts/:id` reading a workout and its sets, still
+lives in the controller, and the facade is where it goes if it ever needs to move further down.
 
-The facades publish rows, not DTOs, so the rule above it is unchanged: the controller maps what the
-facade returns through a `to*` mapper, and the camelCase rename is still what the compiler checks.
+The facades take request DTOs and publish rows, so the rule above it is unchanged: the controller
+maps what the facade returns through a `to*` mapper, and the camelCase rename is still what the
+compiler checks.
 `features/facades.ts` is the single composition root — it declares `Facades` (a parameter object
 with no methods of its own) and `createFacades(db)` over the three per-feature factories, and it is
-what `http/server.ts` and `src/scripts/seed.ts` each call.
+what `http/server.ts` and `src/scripts/seed.ts` each call. `seed.ts` hands the facades camelCase
+DTOs, so seeded data passes the same validation as the API.
 `allRoutes` then hands each route factory only the facades it uses: `workoutRoutes(workouts, sets)`,
 `exerciseRoutes(exercises)`, and so on, and each factory builds its own controller from them. `meta`
 and `static` have controllers but no facade: there is no table behind either. All SQL lives in a feature's `internal/`; `db/sql.ts` keeps
@@ -81,8 +91,8 @@ Repositories reference each other only with `import type` and take what they nee
 constructor — `SetRepository(db, workouts)`, wired in `createWorkoutFacades` — so there is no
 runtime cycle to trip over.
 
-Error handling is by throwing: controllers throw `HttpError`, directly or through the translators,
-validators and facades they call, and the `error` hook in `http/server.ts` turns any throw from any
+Error handling is by throwing: controllers throw `HttpError`, directly or through the facades they
+call — the facades' validation and the repositories behind them — and the `error` hook in `http/server.ts` turns any throw from any
 route into a JSON `{ error }` body with the right status. It is the one error path, for the API and
 the static route alike, so a new route needs nothing to get it — Bun hands the hook a throw from a
 synchronous or async method map and from a bare-function route (measured on 1.4.2). Three statuses cover everything the API refuses —
@@ -120,12 +130,15 @@ else. The runner refuses to start rather than guess when the files and the datab
 its own database rather than sharing one through the module cache. Every `*.test.ts` sits beside
 the module it exercises, and each one covers the module declaring the routes it drives, which is
 why the two tests for `POST /api/workouts/:id/sets` are in `workout.routes.test.ts` and not beside
-`set.routes.ts`. Tests are end-to-end over HTTP, with four exceptions: `db/db.test.ts` checks the real
+`set.routes.ts`. Tests are end-to-end over HTTP, with seven exceptions: `db/db.test.ts` checks the real
 migrations; `db/migrations.test.ts` unit-tests the migration runner against throwaway fixture
 directories; `features/static/internal/paths.test.ts` pins the web root, which is derived by
 counting directories up from that module's own URL and would otherwise 404 every asset in silence
-if the file were moved; and `http/errors.test.ts` covers `errorResponse`, whose 500 branch cannot be
-provoked over HTTP. There are no unit tests of the repositories.
+if the file were moved; `http/errors.test.ts` covers `errorResponse`, whose 500 branch cannot be
+provoked over HTTP; `shared/validate.test.ts` pins the field helpers' normalisation edge cases; and
+`features/exercises/exercises.facade.test.ts` and `features/workouts/workouts.facade.test.ts` drive
+each facade's validation directly, including that a bad body on an unknown id is a 400 rather than
+a 404. There are no unit tests of the repositories.
 
 Static serving is deliberately narrow: `src/frontend/` with a path-escape guard, plus `VENDOR_FILES`
 in `internal/paths.ts` — a one-file allowlist into `node_modules` (`/vendor/pico.css`). Serving anything

@@ -25,4 +25,8 @@ describe('sets', () => {
 
     expect((await patch(`/api/sets/${set.id}`, { exerciseId: 4242 })).status).toBe(400);
   });
+
+  test('validates the body before looking up the set', async () => {
+    expect((await patch('/api/sets/999999', { reps: 0 })).status).toBe(400);
+  });
 });
