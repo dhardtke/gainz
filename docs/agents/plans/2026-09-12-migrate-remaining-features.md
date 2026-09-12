@@ -4,7 +4,7 @@ git_commit: 4893a581c636d8b2a7e86786a42b1872f5d74b83
 branch: main
 topic: 'Migrate the remaining backend features into the features/<feature>/{ports,internal} structure'
 tags: [plan, backend, features, repositories, refactor, ports, internal]
-status: draft
+status: complete
 ---
 
 # PLAN: Every feature owns its repository
