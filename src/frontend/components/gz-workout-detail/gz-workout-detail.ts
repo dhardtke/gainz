@@ -3,7 +3,7 @@ import type { RawHtml } from '../../base.ts';
 import { define, GzElement, html } from '../../base.ts';
 import { formatDate, formatNumber, formatVolume, plural, relativeDay, UNIT } from '../../format.ts';
 import { navigate } from '../../router.ts';
-import type { ExerciseDto, LiftSetDto, WorkoutWithSetsDto } from '../../../shared/dto/index.ts';
+import type { ExerciseDto, LiftSetDto, WorkoutWithSetsDto } from '../../../shared/dto';
 import type { GzSetRow } from '../gz-set-row/gz-set-row.ts';
 import { toast, toastError } from '../gz-toast/gz-toast.ts';
 import '../gz-set-row/gz-set-row.ts';
