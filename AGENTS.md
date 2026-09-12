@@ -30,7 +30,7 @@ the repository as it stood on the date it carries, so an old path in one is a re
 
 `src/backend/` -> the Bun + SQLite REST backend, organised by feature: `features/<feature>/` owns
 its routes, its SQL and its mapping, publishing rows and `to*` mappers through `ports/` and keeping
-its repository, mappers, translator and controllers in `internal/` — one `*.controller.ts` per
+its repository, translator and controllers in `internal/` — one `*.controller.ts` per
 route file, which takes the request, casts its body onto a request DTO through the translator, calls
 the facades and returns the `Response`; a route handler is one line handing the request to it. At
 its root, beside the routes, sits `<feature>.facade.ts`, the feature's front door and the only

@@ -5,13 +5,15 @@ import type { WorkoutRepository } from './workout.repository.ts';
 import type { LiftSet } from '../ports/set.ts';
 import { SET_COLUMNS } from '../ports/sql.ts';
 
-export interface SetInput {
+export interface CreateSet {
   exercise_id: number;
   reps: number;
   weight: number;
   notes: string | null;
   position?: number;
 }
+
+export type EditSet = Partial<CreateSet>;
 
 const FIELDS = ['exercise_id', 'reps', 'weight', 'notes', 'position'] as const;
 
@@ -55,7 +57,7 @@ export class SetRepository {
    * The workout id comes from the path, so an unknown one is a 404. The exercise id comes from the
    * body, and the foreign key is left to catch an unknown one — hence the 400 rather than a 404.
    */
-  create(workoutId: number, input: SetInput): LiftSet {
+  create(workoutId: number, input: CreateSet): LiftSet {
     this.workouts.require(workoutId);
 
     const position =
@@ -83,7 +85,7 @@ export class SetRepository {
     }
   }
 
-  update(id: number, patch: Partial<SetInput>): LiftSet {
+  update(id: number, patch: EditSet): LiftSet {
     this.require(id);
 
     const update = buildUpdate('sets', FIELDS, patch);

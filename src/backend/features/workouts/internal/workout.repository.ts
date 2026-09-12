@@ -3,11 +3,13 @@ import { notFound } from '../../../http/errors.ts';
 import { buildUpdate } from '../../../db/sql.ts';
 import type { Workout, WorkoutWithStats } from '../ports/workout.ts';
 
-export interface WorkoutInput {
+export interface CreateWorkout {
   performed_on: string;
   title: string | null;
   notes: string | null;
 }
+
+export type EditWorkout = Partial<CreateWorkout>;
 
 const FIELDS = ['performed_on', 'title', 'notes'] as const;
 
@@ -52,7 +54,7 @@ export class WorkoutRepository {
    * session". The insert and the copy commit together, so an unknown `copyFrom` fails without
    * leaving an empty workout behind.
    */
-  create(input: WorkoutInput, options: { copyFrom?: number } = {}): Workout {
+  create(input: CreateWorkout, options: { copyFrom?: number } = {}): Workout {
     return this.db.transaction(() => {
       const { copyFrom } = options;
       if (copyFrom !== undefined) {
@@ -83,7 +85,7 @@ export class WorkoutRepository {
     })();
   }
 
-  update(id: number, patch: Partial<WorkoutInput>): Workout {
+  update(id: number, patch: EditWorkout): Workout {
     this.require(id);
 
     const update = buildUpdate('workouts', FIELDS, patch);

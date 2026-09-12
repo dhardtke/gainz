@@ -1,16 +1,16 @@
 import type { CreateSetDto, CreateWorkoutDto, EditSetDto, EditWorkoutDto } from '../../../shared/dto';
 import type { DB } from '../../db/db.ts';
 import { isPresent, MAX_NAME, MAX_NOTES, optionalString, requiredDate, requiredInt, requiredNumber } from '../../shared/validate.ts';
-import { fromCreateSet, fromEditSet } from './internal/set.mapper.ts';
 import { SetRepository } from './internal/set.repository.ts';
-import { fromCreateWorkout, fromEditWorkout } from './internal/workout.mapper.ts';
+import { translateDtoToCreateSet, translateDtoToEditSet } from './internal/set.translator.ts';
 import { WorkoutRepository } from './internal/workout.repository.ts';
+import { translateDtoToCreateWorkout, translateDtoToEditWorkout } from './internal/workout.translator.ts';
 import type { LiftSet } from './ports/set.ts';
 import type { Workout, WorkoutWithStats } from './ports/workout.ts';
 
 /**
  * The workouts half of the feature's front door. Controllers hold this rather than the repository,
- * so the SQL, the WorkoutInput shape and the nullable get() stay inside the feature.
+ * so the SQL, the CreateWorkout shape and the nullable get() stay inside the feature.
  */
 export class WorkoutFacade {
   constructor(private readonly workouts: WorkoutRepository) {}
@@ -29,11 +29,11 @@ export class WorkoutFacade {
 
   create(dto: CreateWorkoutDto): Workout {
     const valid = this.validateCreate(dto);
-    return this.workouts.create(fromCreateWorkout(valid), { copyFrom: valid.copyFromWorkoutId });
+    return this.workouts.create(translateDtoToCreateWorkout(valid), { copyFrom: valid.copyFromWorkoutId });
   }
 
   update(id: number, dto: EditWorkoutDto): Workout {
-    return this.workouts.update(id, fromEditWorkout(this.validateEdit(dto)));
+    return this.workouts.update(id, translateDtoToEditWorkout(this.validateEdit(dto)));
   }
 
   delete(id: number): void {
@@ -81,11 +81,11 @@ export class SetFacade {
   }
 
   create(workoutId: number, dto: CreateSetDto): LiftSet {
-    return this.sets.create(workoutId, fromCreateSet(this.validateCreate(dto)));
+    return this.sets.create(workoutId, translateDtoToCreateSet(this.validateCreate(dto)));
   }
 
   update(id: number, dto: EditSetDto): LiftSet {
-    return this.sets.update(id, fromEditSet(this.validateEdit(dto)));
+    return this.sets.update(id, translateDtoToEditSet(this.validateEdit(dto)));
   }
 
   delete(id: number): void {
