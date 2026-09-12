@@ -4,7 +4,7 @@ git_commit: 57ce3f1e164d247c91683f72de19894e2694b66f
 branch: main
 topic: 'Move domain fixtures out of testing.ts into their features'
 tags: [plan, tests, testing, fixtures, exercises, workouts, stats]
-status: ready
+status: complete
 ---
 
 # PLAN: Move domain fixtures out of testing.ts into their features
@@ -160,7 +160,7 @@ test files not compiling, so there is no smaller vertical slice.
 
 **Tasks**:
 
-- [ ] Create `src/backend/features/exercises/exercises.fixtures.ts`:
+- [x] Create `src/backend/features/exercises/exercises.fixtures.ts`:
       ```ts
       /** Test-only. Exercise data for any feature's route tests; no production module imports it. */
       import { expect } from 'bun:test';
@@ -173,26 +173,26 @@ test files not compiling, so there is no smaller vertical slice.
         return body<ExerciseDto>(res);
       }
       ```
-- [ ] Create `src/backend/features/workouts/workouts.fixtures.ts`, following the same pattern:
+- [x] Create `src/backend/features/workouts/workouts.fixtures.ts`, following the same pattern:
       `createWorkout(post: TestServer['post'], performedOn = '2026-01-05'): Promise<WorkoutWithSetsDto>`
       posting `{ performedOn, title: 'Push day' }` to `/api/workouts`.
-- [ ] `src/backend/testing.ts`: remove `createExercise` and `createWorkout` from `TestServer`, from
+- [x] `src/backend/testing.ts`: remove `createExercise` and `createWorkout` from `TestServer`, from
       `useServer()` and from its returned object (`return { api, post, patch };`), and remove the
       now-unused `expect` import and `import type { ExerciseDto, WorkoutWithSetsDto }`.
-- [ ] `src/backend/features/exercises/exercise.routes.test.ts`: import `createExercise` from
+- [x] `src/backend/features/exercises/exercise.routes.test.ts`: import `createExercise` from
       `./exercises.fixtures.ts` and `createWorkout` from `../workouts/workouts.fixtures.ts`, destructure
       `{ api, post, patch }` from `useServer()`, and pass `post` as the first argument at all 7 call
       sites (`createExercise('Back Squat')` becomes `createExercise(post, 'Back Squat')`).
-- [ ] `src/backend/features/workouts/workout.routes.test.ts`: import `createExercise` from
+- [x] `src/backend/features/workouts/workout.routes.test.ts`: import `createExercise` from
       `../exercises/exercises.fixtures.ts` and `createWorkout` from `./workouts.fixtures.ts`, destructure
       `{ api, post }`, and pass `post` at all 11 call sites (`createWorkout('2026-01-05')` becomes
       `createWorkout(post, '2026-01-05')`).
-- [ ] `src/backend/features/workouts/set.routes.test.ts`: import both fixtures the same way,
+- [x] `src/backend/features/workouts/set.routes.test.ts`: import both fixtures the same way,
       destructure `{ api, post, patch }`, and pass `post` at all 4 call sites.
-- [ ] `src/backend/features/stats/stats.routes.test.ts`: import `createExercise` from
+- [x] `src/backend/features/stats/stats.routes.test.ts`: import `createExercise` from
       `../exercises/exercises.fixtures.ts` and `createWorkout` from `../workouts/workouts.fixtures.ts`,
       destructure `{ api, post }`, and pass `post` at both call sites.
-- [ ] `docs/backend.md`: in the paragraph at lines 18-23, qualify "the arrows that do cross a feature
+- [x] `docs/backend.md`: in the paragraph at lines 18-23, qualify "the arrows that do cross a feature
       line all land on a `ports/`" so it excludes test code, and list `<feature>.fixtures.ts` among the
       modules a feature keeps at its root. In the paragraph at line 44, add that `testing.ts` holds
       only technical hooks (`useServer()`, `useTempDir()`, `body()`, `at()`), while the fixtures that
@@ -203,13 +203,13 @@ test files not compiling, so there is no smaller vertical slice.
 
 **Automated Verification**:
 
-- [ ] `bun test` passes, with the same number of tests as before the change
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
-- [ ] A search for `createExercise|createWorkout|shared/dto|expect` in `src/backend/testing.ts`
+- [x] `bun test` passes, with the same number of tests as before the change
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
+- [x] A search for `createExercise|createWorkout|shared/dto|expect` in `src/backend/testing.ts`
       finds nothing
-- [ ] A search for `createExercise|createWorkout` outside `*.test.ts`, `*.fixtures.ts`, `docs/` and
+- [x] A search for `createExercise|createWorkout` outside `*.test.ts`, `*.fixtures.ts`, `docs/` and
       the facade factories (`createExerciseFacade`, `createWorkoutFacades`) finds nothing
 
 ## Implementation Notes
