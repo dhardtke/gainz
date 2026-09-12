@@ -1,10 +1,3 @@
--- The schema as it stood before this project had a migration system.
---
--- The IF NOT EXISTS guards are deliberate and specific to this first migration: databases created
--- by earlier versions of gainz already hold these tables, and applying 001 to one of them must be a
--- no-op that only writes the schema_migrations row. Later migrations start from a known version, so
--- they need no such guard and should not use one.
-
 CREATE TABLE IF NOT EXISTS exercises (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   name          TEXT    NOT NULL,
