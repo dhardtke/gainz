@@ -10,7 +10,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openDatabase } from './db/db.ts';
 import type { ExerciseDto, WorkoutWithSetsDto } from '../shared/dto';
-import { Repo } from './db/repos';
+import { ExerciseRepository } from './features/exercises/internal/exercise.repository.ts';
+import { SetRepository } from './features/workouts/internal/set.repository.ts';
+import { StatsRepository } from './features/stats/internal/stats.repository.ts';
+import { WorkoutRepository } from './features/workouts/internal/workout.repository.ts';
 import { serveOptions } from './http/server.ts';
 
 /** The request helpers a test file gets from `useServer()`. */
@@ -37,7 +40,16 @@ export function useServer(): TestServer {
 
   beforeEach(() => {
     db = openDatabase(':memory:');
-    server = Bun.serve({ port: 0, ...serveOptions(new Repo(db)) });
+    const workouts = new WorkoutRepository(db);
+    server = Bun.serve({
+      port: 0,
+      ...serveOptions({
+        exercises: new ExerciseRepository(db),
+        workouts,
+        sets: new SetRepository(db, workouts),
+        stats: new StatsRepository(db),
+      }),
+    });
     base = server.url.origin;
   });
 

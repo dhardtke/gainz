@@ -2,6 +2,10 @@ import { badRequest } from '../http/errors.ts';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+/** The two length bounds the translators share: a name-ish field and a free-text one. */
+export const MAX_NAME = 120;
+export const MAX_NOTES = 2000;
+
 export function isPresent(body: Record<string, unknown>, field: string): boolean {
   return Object.prototype.hasOwnProperty.call(body, field) && body[field] !== undefined;
 }

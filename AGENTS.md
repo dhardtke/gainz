@@ -11,7 +11,7 @@ bun run start:dev        # same, with --watch
 bun run seed             # fill an empty DB with sample workouts
 bun run migrate          # apply pending schema migrations, then exit
 bun test                 # the test suite against in-memory SQLite
-bun test src/backend/http/routes/workout.routes.test.ts # one file
+bun test src/backend/features/workouts/workout.routes.test.ts # one file
 bun test -t "health"     # one test / describe block by name
 bun run typecheck        # typechecking (backend + frontend)
 bun run lint             # linting
@@ -28,20 +28,23 @@ the repository as it stood on the date it carries, so an old path in one is a re
 
 ## Architecture
 
-`src/backend/` -> the Bun + SQLite REST backend, layered `db/` -> `http/` -> `main.ts`, with every
-`*.test.ts` beside the module it exercises
+`src/backend/` -> the Bun + SQLite REST backend, organised by feature: `features/<feature>/` owns
+its routes, its SQL and its mapping, publishing rows and `to*` mappers through `ports/` and keeping
+its repository, mappers and translator in `internal/`. Only what belongs to no feature sits outside
+— `db/` (connection, migrations, statement helpers), `http/` (routing, the registry, the server),
+`shared/validate.ts` and `main.ts`. Every `*.test.ts` sits beside the module it exercises
 `src/frontend/` -> a **no-build-step** frontend: TypeScript ES modules and custom elements,
-transpiled on request by `src/backend/transpile.ts` — no bundler, no output directory
+transpiled on request by `src/backend/features/static` — no bundler, no output directory
 `src/shared/` -> the wire contract both halves import: `dto/` declares every request and response
 shape, **types only**, because it is not web-served and reaches the browser only as an erased
 `import type`
 `src/scripts/` -> the `migrate` and `seed` entry points
 `docs/` -> the documents below
 
-The REST surface has no reference document: `src/backend/http/routes/` holds one file per URL
+The REST surface has no reference document: each feature holds one `*.routes.ts` file per URL
 group, and a route belongs to the file its URL prefix names.
 
-- `docs/backend.md` — layering, routes, the repository, migrations, the data model, tests
+- `docs/backend.md` — features, ports/internal, routes, repositories, migrations, the data model, tests
 - `docs/frontend.md` — components, loading, theming, and why a module's URL is its path
 - `docs/coding-guidelines.md` — pinning, quote style, commits on `main`
 - `docs/styling-guidelines.md` — Pico, no CSS in JavaScript, no font sizes

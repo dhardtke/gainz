@@ -4,8 +4,6 @@
 
 - Import maps to have hashed filenames
 - Have DTOs that are shared between FE / BE
-- readWorkoutBody and readSetBody should be part of an explicit mapping layer
-- Validation should not be part of mapping (requiredInt, etc.)
 - Logging
 
 ## Features
