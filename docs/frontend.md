@@ -33,7 +33,7 @@ Everything under `src/shared/dto/` must therefore stay free of runtime code, whi
 `src/shared/dto/index.test.ts` holds in place by asserting every file there transpiles to nothing.
 
 What the frontend is pinned to is still the wire format rather than the server's row types: the
-backend translates its rows into these DTOs in `src/backend/http/dto/` and the wire is camelCase
+backend translates its rows into these DTOs in each feature's `ports/` and the wire is camelCase
 where the database is snake_case, so a renamed column cannot arrive here as a silent refactor. It
 just no longer costs a hand-written second copy to say so.
 
@@ -43,7 +43,7 @@ other nine components stay private to their module.
 
 ## Loading
 
-The frontend is TypeScript on disk and JavaScript on the wire. `src/backend/transpile.ts` runs
+The frontend is TypeScript on disk and JavaScript on the wire. `src/backend/features/static` runs
 each module through `Bun.Transpiler` as it is requested — around 76 µs per file, the whole
 frontend in under two milliseconds — and hands the result back as `text/javascript`. Nothing is
 written to disk and nothing is bundled: specifiers are left untouched, so a module imports
@@ -87,6 +87,6 @@ The first flip stores an explicit choice that wins from then on, so the page doe
 operating system around afterwards.
 
 Pico is served from `node_modules` at `/vendor/pico.css` through an explicit one-file allowlist in
-`src/backend/paths.ts` — installing a package never publishes anything the app did not ask to
+`src/backend/features/static` — installing a package never publishes anything the app did not ask to
 serve. The build is the `pico.orange` theme; swapping themes is a one-line change to
 `VENDOR_FILES`.

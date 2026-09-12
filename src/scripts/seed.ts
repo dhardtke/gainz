@@ -4,7 +4,10 @@
  * nothing if the database already holds workouts.
  */
 import { DEFAULT_DB_PATH, openDatabase } from '../backend/db/db.ts';
-import { Repo } from '../backend/db/repos';
+import { ExerciseRepository } from '../backend/features/exercises/internal/exercise.repository.ts';
+import { SetRepository } from '../backend/features/workouts/internal/set.repository.ts';
+import { StatsRepository } from '../backend/features/stats/internal/stats.repository.ts';
+import { WorkoutRepository } from '../backend/features/workouts/internal/workout.repository.ts';
 
 const EXERCISES = [
   { name: 'Back Squat', muscle_group: 'Legs', notes: 'Low bar, belt above 100 kg.' },
@@ -48,21 +51,24 @@ function isoDaysAgo(days: number): string {
 
 function main(): void {
   const db = openDatabase(DEFAULT_DB_PATH);
-  const repo = new Repo(db);
+  const exercises = new ExerciseRepository(db);
+  const workouts = new WorkoutRepository(db);
+  const sets = new SetRepository(db, workouts);
+  const stats = new StatsRepository(db);
 
-  if (repo.countWorkouts() > 0) {
+  if (workouts.count() > 0) {
     console.log('Database already contains workouts — nothing seeded.');
     db.close();
     return;
   }
 
   // One transaction for the whole run: a seeder that fails half way should leave nothing behind,
-  // not a partial block of training history. createWorkout opens a transaction of its own, which
+  // not a partial block of training history. WorkoutRepository.create opens a transaction of its own, which
   // nests as a savepoint.
   db.transaction(() => {
     const idByName = new Map<string, number>();
     for (const exercise of EXERCISES) {
-      idByName.set(exercise.name, repo.createExercise(exercise).id);
+      idByName.set(exercise.name, exercises.create(exercise).id);
     }
 
     const weeks = 6;
@@ -75,7 +81,7 @@ function main(): void {
           return;
         }
 
-        const workout = repo.createWorkout({
+        const workout = workouts.create({
           performed_on: isoDaysAgo(daysAgo),
           title: template.title,
           notes: week === weeks - 1 ? 'First session of the block.' : null,
@@ -89,7 +95,7 @@ function main(): void {
           const weight = lift.start + (weeks - 1 - week) * lift.step;
 
           lift.reps.forEach((reps, setIndex) => {
-            repo.createSet(workout.id, {
+            sets.create(workout.id, {
               exercise_id: exerciseId,
               reps,
               weight,
@@ -102,7 +108,7 @@ function main(): void {
     }
   })();
 
-  const summary = repo.summary();
+  const summary = stats.summary();
   console.log(`Seeded ${summary.workout_count} workouts, ${summary.set_count} sets across ${summary.exercise_count} exercises.`);
   db.close();
 }
