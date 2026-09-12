@@ -95,7 +95,6 @@ export function relativeDay(iso: string | null | undefined): string {
   return `${plural(Math.round(days / 365), 'year')} ago`;
 }
 
-/** @param pluralForm defaults to the singular plus an "s". */
 export function plural(count: number, singular: string, pluralForm = `${singular}s`): string {
   return `${count} ${count === 1 ? singular : pluralForm}`;
 }

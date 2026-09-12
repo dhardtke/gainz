@@ -98,8 +98,6 @@ class GzWorkoutDetail extends GzElement {
     this.render();
   }
 
-  // ------------------------------------------------------------------ actions
-
   async handleAction(action: string, element: HTMLElement): Promise<void> {
     if (action === 'toggle-header') {
       this.#editingHeader = !this.#editingHeader;
@@ -192,8 +190,6 @@ class GzWorkoutDetail extends GzElement {
       }
     }
   }
-
-  // ------------------------------------------------------------------- render
 
   afterRender(): void {
     if (this.#state.status !== 'ready') {
@@ -331,7 +327,6 @@ class GzWorkoutDetail extends GzElement {
     `;
   }
 
-  /** Per-exercise totals for the session. */
   #breakdown(sets: LiftSetDto[]): ExerciseTotals[] {
     const byExercise = new Map<number, ExerciseTotals>();
     for (const set of sets) {
