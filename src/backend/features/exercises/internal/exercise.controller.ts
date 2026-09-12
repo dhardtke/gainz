@@ -1,9 +1,7 @@
-import { json, noContent, readJsonObject } from '../../../http/http.ts';
+import { json, noContent, pathId, readJsonObject } from '../../../http/http.ts';
 import type { ParamRequest } from '../../../http/routing.ts';
-import { pathId } from '../../../shared/validate.ts';
 import type { ExerciseFacade } from '../exercises.facade.ts';
 import { toExercise, toExerciseProgress, toExerciseWithStats } from '../ports/exercise.ts';
-import { fromCreateExercise, fromEditExercise } from './exercise.mapper.ts';
 import { translateToCreateExerciseDto, translateToEditExerciseDto } from './exercise.translator.ts';
 
 export class ExerciseController {
@@ -14,8 +12,8 @@ export class ExerciseController {
   }
 
   async create(req: Request): Promise<Response> {
-    const input = fromCreateExercise(translateToCreateExerciseDto(await readJsonObject(req)));
-    return json(toExercise(this.exercises.create(input)), 201);
+    const dto = translateToCreateExerciseDto(await readJsonObject(req));
+    return json(toExercise(this.exercises.create(dto)), 201);
   }
 
   show(req: ParamRequest): Response {
@@ -24,8 +22,8 @@ export class ExerciseController {
 
   async update(req: ParamRequest): Promise<Response> {
     const id = pathId(req.params.id, 'exercise');
-    const patch = translateToEditExerciseDto(await readJsonObject(req));
-    return json(toExercise(this.exercises.update(id, fromEditExercise(patch))));
+    const dto = translateToEditExerciseDto(await readJsonObject(req));
+    return json(toExercise(this.exercises.update(id, dto)));
   }
 
   delete(req: ParamRequest): Response {

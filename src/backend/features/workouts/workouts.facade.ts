@@ -1,6 +1,10 @@
+import type { CreateSetDto, CreateWorkoutDto, EditSetDto, EditWorkoutDto } from '../../../shared/dto';
 import type { DB } from '../../db/db.ts';
-import { SetRepository, type SetInput } from './internal/set.repository.ts';
-import { WorkoutRepository, type WorkoutInput } from './internal/workout.repository.ts';
+import { isPresent, MAX_NAME, MAX_NOTES, optionalString, requiredDate, requiredInt, requiredNumber } from '../../shared/validate.ts';
+import { fromCreateSet, fromEditSet } from './internal/set.mapper.ts';
+import { SetRepository } from './internal/set.repository.ts';
+import { fromCreateWorkout, fromEditWorkout } from './internal/workout.mapper.ts';
+import { WorkoutRepository } from './internal/workout.repository.ts';
 import type { LiftSet } from './ports/set.ts';
 import type { Workout, WorkoutWithStats } from './ports/workout.ts';
 
@@ -23,17 +27,40 @@ export class WorkoutFacade {
     return this.workouts.require(id);
   }
 
-  /** `copyFrom` stays a separate argument, as it is on the repository: it is not part of a row. */
-  create(input: WorkoutInput, options: { copyFrom?: number } = {}): Workout {
-    return this.workouts.create(input, options);
+  create(dto: CreateWorkoutDto): Workout {
+    const valid = this.validateCreate(dto);
+    return this.workouts.create(fromCreateWorkout(valid), { copyFrom: valid.copyFromWorkoutId });
   }
 
-  update(id: number, patch: Partial<WorkoutInput>): Workout {
-    return this.workouts.update(id, patch);
+  update(id: number, dto: EditWorkoutDto): Workout {
+    return this.workouts.update(id, fromEditWorkout(this.validateEdit(dto)));
   }
 
   delete(id: number): void {
     this.workouts.delete(id);
+  }
+
+  private validateCreate(dto: CreateWorkoutDto): CreateWorkoutDto {
+    return {
+      ...(isPresent(dto, 'performedOn') ? { performedOn: requiredDate(dto, 'performedOn') } : {}),
+      title: optionalString(dto, 'title', MAX_NAME),
+      notes: optionalString(dto, 'notes', MAX_NOTES),
+      ...(isPresent(dto, 'copyFromWorkoutId') ? { copyFromWorkoutId: requiredInt(dto, 'copyFromWorkoutId', { min: 1 }) } : {}),
+    };
+  }
+
+  private validateEdit(dto: EditWorkoutDto): EditWorkoutDto {
+    const valid: EditWorkoutDto = {};
+    if (isPresent(dto, 'performedOn')) {
+      valid.performedOn = requiredDate(dto, 'performedOn');
+    }
+    if (isPresent(dto, 'title')) {
+      valid.title = optionalString(dto, 'title', MAX_NAME);
+    }
+    if (isPresent(dto, 'notes')) {
+      valid.notes = optionalString(dto, 'notes', MAX_NOTES);
+    }
+    return valid;
   }
 }
 
@@ -53,16 +80,46 @@ export class SetFacade {
     return this.sets.require(id);
   }
 
-  create(workoutId: number, input: SetInput): LiftSet {
-    return this.sets.create(workoutId, input);
+  create(workoutId: number, dto: CreateSetDto): LiftSet {
+    return this.sets.create(workoutId, fromCreateSet(this.validateCreate(dto)));
   }
 
-  update(id: number, patch: Partial<SetInput>): LiftSet {
-    return this.sets.update(id, patch);
+  update(id: number, dto: EditSetDto): LiftSet {
+    return this.sets.update(id, fromEditSet(this.validateEdit(dto)));
   }
 
   delete(id: number): void {
     this.sets.delete(id);
+  }
+
+  private validateCreate(dto: CreateSetDto): CreateSetDto {
+    return {
+      exerciseId: requiredInt(dto, 'exerciseId', { min: 1 }),
+      reps: requiredInt(dto, 'reps', { min: 1, max: 1000 }),
+      weight: requiredNumber(dto, 'weight', { min: 0, max: 100000 }),
+      notes: optionalString(dto, 'notes', MAX_NOTES),
+      ...(isPresent(dto, 'position') ? { position: requiredInt(dto, 'position', { min: 0 }) } : {}),
+    };
+  }
+
+  private validateEdit(dto: EditSetDto): EditSetDto {
+    const valid: EditSetDto = {};
+    if (isPresent(dto, 'exerciseId')) {
+      valid.exerciseId = requiredInt(dto, 'exerciseId', { min: 1 });
+    }
+    if (isPresent(dto, 'reps')) {
+      valid.reps = requiredInt(dto, 'reps', { min: 1, max: 1000 });
+    }
+    if (isPresent(dto, 'weight')) {
+      valid.weight = requiredNumber(dto, 'weight', { min: 0, max: 100000 });
+    }
+    if (isPresent(dto, 'notes')) {
+      valid.notes = optionalString(dto, 'notes', MAX_NOTES);
+    }
+    if (isPresent(dto, 'position')) {
+      valid.position = requiredInt(dto, 'position', { min: 0 });
+    }
+    return valid;
   }
 }
 

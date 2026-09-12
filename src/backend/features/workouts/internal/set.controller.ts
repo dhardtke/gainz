@@ -1,9 +1,7 @@
-import { json, noContent, readJsonObject } from '../../../http/http.ts';
+import { json, noContent, pathId, readJsonObject } from '../../../http/http.ts';
 import type { ParamRequest } from '../../../http/routing.ts';
-import { pathId } from '../../../shared/validate.ts';
 import type { SetFacade } from '../workouts.facade.ts';
 import { toLiftSet } from '../ports/set.ts';
-import { fromEditSet } from './set.mapper.ts';
 import { translateToEditSetDto } from './set.translator.ts';
 
 export class SetController {
@@ -15,8 +13,8 @@ export class SetController {
 
   async update(req: ParamRequest): Promise<Response> {
     const id = pathId(req.params.id, 'set');
-    const patch = translateToEditSetDto(await readJsonObject(req));
-    return json(toLiftSet(this.sets.update(id, fromEditSet(patch))));
+    const dto = translateToEditSetDto(await readJsonObject(req));
+    return json(toLiftSet(this.sets.update(id, dto)));
   }
 
   delete(req: ParamRequest): Response {
