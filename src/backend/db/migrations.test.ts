@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { Database } from 'bun:sqlite';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { MIGRATIONS_DIR, migrate, schemaVersion, type MigrateResult } from './migrations.ts';
-import { useTempDir } from '../testing.ts';
+import { migrate, type MigrateResult, MIGRATIONS_DIR, schemaVersion } from './migrations.ts';
+import { tables, useTempDir } from '../testing.ts';
 
 const tempDir = useTempDir();
 let db: Database;
@@ -24,13 +24,6 @@ function write(filename: string, sql: string): void {
 
 function run(): MigrateResult {
   return migrate(db, { dir: tempDir() });
-}
-
-function tables(database: Database): string[] {
-  return database
-    .query<{ name: string }, []>("SELECT name FROM sqlite_master WHERE type = 'table'")
-    .all()
-    .map((row) => row.name);
 }
 
 function foreignKeysOn(database: Database): boolean {

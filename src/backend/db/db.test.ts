@@ -1,18 +1,10 @@
 import { describe, expect, test } from 'bun:test';
-import type { Database } from 'bun:sqlite';
 import { join } from 'node:path';
 import { openDatabase } from './db.ts';
 import { schemaVersion } from './migrations.ts';
-import { useTempDir } from '../testing.ts';
+import { tables, useTempDir } from '../testing.ts';
 
 const tempDir = useTempDir();
-
-function tables(database: Database): string[] {
-  return database
-    .query<{ name: string }, []>("SELECT name FROM sqlite_master WHERE type = 'table'")
-    .all()
-    .map((row) => row.name);
-}
 
 describe('the real migrations', () => {
   test('openDatabase applies them to an in-memory database', () => {
