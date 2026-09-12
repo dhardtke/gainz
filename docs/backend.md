@@ -2,7 +2,7 @@
 
 The backend is organised by feature, not by layer. `features/` holds one directory per thing the
 app is about — `exercises/`, `workouts/`, `stats/`, `meta/`, `static/` — and each owns its routes,
-its SQL and its mapping end to end. What is left outside `features/` is only what belongs to no
+its SQL and its mapping end to end, the mapping reached through its controllers. What is left outside `features/` is only what belongs to no
 feature: `db/` (the connection and its PRAGMAs in `db.ts`, the schema in `migrations.ts` and
 `migrations/`, and the table-agnostic statement helpers in `db/sql.ts`), `http/` (`routing.ts` for
 the `RouteTable`/`Handler` types and the `guard`/`guardAll` wrapper, `routes.ts` for the registry,
@@ -13,19 +13,23 @@ server. There is no `fetch` fallback — every URL the server answers is a decla
 **Inside a feature, `ports/` is public and `internal/` is private.** `ports/` declares the row
 types other features may read and the `to*` mappers that turn them into DTOs; `internal/` holds
 everything about how the feature talks to its own table — the repository, its `<Entity>Input`, the
-`from*` mappers and the translator. No module under `features/<a>/` may import from
-`features/<b>/internal/`, and the arrows that do cross a feature line all land on a `ports/`: the
-exercises repository queries the sets table, so it takes `SET_COLUMNS` and `EST_1RM_SQL` from
-`features/workouts/ports/sql.ts` and `LiftSet` from `features/workouts/ports/set.ts`. The third
-place a feature keeps code is its root, beside those two directories: the `*.routes.ts` files named
-after the URL groups they answer, and the `<feature>.facade.ts` named after the feature itself — the
-front door described below.
+`from*` mappers and the translator — and the controllers, one `<x>.controller.ts` per route file and
+named after it. No module under `features/<a>/` may import from `features/<b>/internal/`, and the
+arrows that do cross a feature line all land on a `ports/`: the exercises repository queries the
+sets table, so it takes `SET_COLUMNS` and `EST_1RM_SQL` from `features/workouts/ports/sql.ts` and
+`LiftSet` from `features/workouts/ports/set.ts`. The third place a feature keeps code is its root,
+beside those two directories: the `*.routes.ts` files named after the URL groups they answer, and
+the `<feature>.facade.ts` named after the feature itself — the front door described below.
 
-A request runs `body → translateTo<X>Dto → <X>Dto → from<X> → <Entity>Input → repository → row`,
-and the response comes back through a `to*` mapper in `ports/`. The translator is where validation
-happens and the mapper is where renaming happens; neither does the other's job.
+A route file is only a table: each handler is one line that passes the request to its controller
+and returns what comes back, wrapped in `guardAll`. The controller does the rest. It takes the
+request and returns a `Response`, reading it with `pathId`, `queryInt` and `readJsonObject` and
+answering with `json()` or `noContent()` and the status code, and in between it runs
+`body → translateTo<X>Dto → <X>Dto → from<X> → <Entity>Input → facade → row → to<X> → DTO`. The
+translator is where validation happens and the mapper is where renaming happens; neither does the
+other's job.
 
-**A route returns a DTO, never a row.** The wire format is declared once in `src/shared/dto/` —
+**A controller answers with a DTO, never a row.** The wire format is declared once in `src/shared/dto/` —
 camelCase, type-only, imported by the frontend as well — and each feature holds one mapper per
 shape in each direction (`toLiftSet(row)` in `ports/`, `fromCreateSet(dto)` in `internal/`). Those
 mappers are the only place that reads a row's fields outside the repository that produced it, and
@@ -36,7 +40,7 @@ honest — a row is not structurally assignable to its own DTO.
 `testing.ts` stays at the top of `src/backend/` because it belongs to no feature: it is test-only
 plumbing every feature's tests use. The static feature keeps its own private modules where the rule
 says they go — `features/static/internal/paths.ts` (the only place a URL becomes a filesystem path)
-and `internal/transpile.ts`. The two operator entry points — `bun run migrate` and `bun run seed` —
+and `internal/transpile.ts` — and calls them from `internal/static.controller.ts`. The two operator entry points — `bun run migrate` and `bun run seed` —
 live outside the backend entirely, in `src/scripts/`, so that `src/backend/` holds the running
 server and nothing else.
 
@@ -51,30 +55,35 @@ reads the way the router dispatches.
 
 **Every data-owning feature has a front door.** Each publishes exactly one facade module at its
 root — `exercises/exercises.facade.ts`, `workouts/workouts.facade.ts`, `stats/stats.facade.ts` —
-holding a `<Entity>Facade` per repository, and a route handler holds a facade rather than a
-repository. A repository is named only by its own feature's facade, and constructed only by that
-facade's factory, so `features/workouts/internal/` is the whole world in which `SetRepository`
+holding a `<Entity>Facade` per repository. A route handler holds its controller, and the controller
+holds the facades. A repository is named only by its own feature's facade, and constructed only by
+that facade's factory, so `features/workouts/internal/` is the whole world in which `SetRepository`
 exists as a name. That is what a facade buys: a published surface narrower than the repository
 behind it (no `get()`, which only `require()` ever called), one place a repository is built, and a
-boundary a linter can check — the `overrides` block in `.oxlintrc.json` fails `bun run lint` if a
-`*.routes.ts` imports a `*.repository.ts`, type imports included. The facades are otherwise pure
-delegation, and deliberately so; if a composition like `GET /api/workouts/:id` ever wants pushing
-down out of its handler, the facade is where it goes.
+boundary a linter can check. The `overrides` block in `.oxlintrc.json` holds two rules, type
+imports included: no `*.routes.ts` — `static.routes.ts` among them — may import anything under
+`internal/` except its controller, anything under `ports/`, a `*.repository.ts`, or the request and
+response helpers (`http/http.ts`, `http/errors.ts`, `shared/validate.ts`), which is what keeps its
+handlers one line long; and no `*.controller.ts` may import a `*.repository.ts`. The facades are otherwise pure delegation, and deliberately so:
+composition across facades, like `GET /api/workouts/:id` reading a workout and its sets, lives in
+the controller, and the facade is where it goes if it ever needs to move further down.
 
-The facades publish rows, not DTOs, so the rule above it is unchanged: a handler still maps what
-the facade returns through a `to*` mapper, and the camelCase rename is still what the compiler
-checks. `features/facades.ts` is the single composition root — it declares `Facades` (a parameter
-object with no methods of its own) and `createFacades(db)` over the three per-feature factories,
-and it is what `main.ts`, `testing.ts`, `src/scripts/seed.ts` and `http/server.test.ts` each call.
+The facades publish rows, not DTOs, so the rule above it is unchanged: the controller maps what the
+facade returns through a `to*` mapper, and the camelCase rename is still what the compiler checks.
+`features/facades.ts` is the single composition root — it declares `Facades` (a parameter object
+with no methods of its own) and `createFacades(db)` over the three per-feature factories, and it is
+what `main.ts`, `testing.ts`, `src/scripts/seed.ts` and `http/server.test.ts` each call.
 `allRoutes` then hands each route factory only the facades it uses: `workoutRoutes(workouts, sets)`,
-`exerciseRoutes(exercises)`, and so on. All SQL lives in a feature's `internal/`; `db/sql.ts` keeps
+`exerciseRoutes(exercises)`, and so on, and each factory builds its own controller from them. `meta`
+and `static` have controllers but no facade: there is no table behind either. All SQL lives in a feature's `internal/`; `db/sql.ts` keeps
 only what names no table — `buildUpdate`, `isUniqueViolation` and `isForeignKeyViolation`.
 Repositories reference each other only with `import type` and take what they need through their
 constructor — `SetRepository(db, workouts)`, wired in `createWorkoutFacades` — so there is no
 runtime cycle to trip over.
 
-Error handling is by throwing: handlers throw `HttpError` and `guardAll()` in `http/routing.ts`
-turns it into a JSON `{ error }` body with the right status. New API routes must be wrapped in
+Error handling is by throwing: controllers throw `HttpError`, directly or through the translators,
+validators and facades they call, and `guardAll()` in `http/routing.ts`, wrapping the route, turns
+it into a JSON `{ error }` body with the right status. New API routes must be wrapped in
 `guardAll` in whichever route file owns them. The static route is the one exception: it answers
 plain text, not JSON, so `guard` would give it the wrong body — a throw out of it belongs to the
 `error` hook in `http/server.ts` instead. Three statuses cover everything the API refuses —
@@ -87,9 +96,9 @@ into the 400.
 
 A write that needs more than one statement belongs in a single repository method wrapped in
 `db.transaction()` — `WorkoutRepository.create(input, { copyFrom })` is the example, where the
-workout and its copied sets commit together or not at all. The route files never open a
-transaction; if a handler finds itself sequencing two writes, the sequence belongs in the
-repository instead.
+workout and its copied sets commit together or not at all. Neither the route files nor the
+controllers ever open a transaction; if a controller finds itself sequencing two writes, the
+sequence belongs in the repository instead.
 
 Three tables, `exercises ──< sets >── workouts`, and `sets` is the fact table: one row per set
 performed, carrying `reps`, `weight`, free-text `notes` and a `position` that preserves the order
@@ -122,16 +131,20 @@ Static serving is deliberately narrow: `src/frontend/` with a path-escape guard,
 in `internal/paths.ts` — a one-file allowlist into `node_modules` (`/vendor/pico.css`). Serving anything
 else from a package means adding it to that map. A trailing slash asks for `index.html` in that
 directory, and a directory without one is a 404 rather than the single-page app — otherwise the
-extension-less fallback would mask a real miss, which is the thing it exists to avoid.
+extension-less fallback would mask a real miss, which is the thing it exists to avoid. All of
+that — the path-escape guard, the vendor allowlist, the directory index, the single-page fallback
+and transpiling — lives in `internal/static.controller.ts`, and `static.routes.ts` only declares
+the URLs that reach it.
 
-Two things `static.routes.ts` deliberately does not do. It sets no `Content-Type` except on the vendor
-stylesheet: `new Response(Bun.file(x))` already carries the type Bun infers from the extension,
+Two things the static feature deliberately does not do. It sets a `Content-Type` only on responses
+whose body is not a file on disk with a telling extension — the vendor stylesheet and transpiled
+modules — and otherwise leaves it to `new Response(Bun.file(x))`, which already carries the type Bun infers from the extension,
 off a complete MIME database (`.svg` → `image/svg+xml`, `.woff2` → `font/woff2`, `.png` →
 `image/png`, `.webp` → `image/webp`, no extension → `application/octet-stream`, all measured on
 Bun 1.4.2), so a hand-written map would be a subset that drifts. And it does not special-case
 HEAD beyond letting it past the method check — Bun strips the body itself and leaves the headers
 alone, which `src/backend/features/static/static.routes.test.ts:39` holds in place. What it does do is
-own the `405 Method not allowed` for the whole server: `/*` is declared as a bare handler function
+own the `405 Method not allowed` for the whole server, answered by `StaticController.frontend`: `/*` is declared as a bare handler function
 rather than a `{ GET, HEAD }` map, because a map answers an unmatched verb with an empty-bodied 404
 and there is no `fetch` behind it to say otherwise. An unmatched verb on a vendor route falls
 through to `/*` and is answered there.

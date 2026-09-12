@@ -4,7 +4,7 @@ git_commit: 6f2a5ffd8f977e03197b60075555b3b1cfd500d0
 branch: main
 topic: 'Route handlers delegate to a per-route-file controller that maps requests and responses'
 tags: [plan, backend, features, controllers, facades, routes, dto, mappers, static, oxlint, refactor]
-status: ready
+status: complete
 ---
 
 # PLAN: Every route file has a controller
@@ -328,7 +328,7 @@ place.
 
 **Tasks**:
 
-- [ ] `.oxlintrc.json` — keep the existing `features/**/*.routes.ts` override as the **first** entry
+- [x] `.oxlintrc.json` — keep the existing `features/**/*.routes.ts` override as the **first** entry
       and append two more. Order matters: for a file matched by two entries, the later
       `no-restricted-imports` replaces the earlier.
       ```json
@@ -367,7 +367,7 @@ place.
       ```
       Confirm `bun run lint` now reports `stats.routes.ts:5` (`./ports/stats.ts`) before changing
       any source
-- [ ] Create `src/backend/features/stats/stats.controller.ts`:
+- [x] Create `src/backend/features/stats/stats.controller.ts`:
       ```ts
       import type { SummaryDto } from '../../../shared/dto';
       import type { StatsFacade } from './stats.facade.ts';
@@ -381,7 +381,7 @@ place.
         }
       }
       ```
-- [ ] `src/backend/features/stats/stats.routes.ts` — drop the `ports/stats.ts` import, construct the
+- [x] `src/backend/features/stats/stats.routes.ts` — drop the `ports/stats.ts` import, construct the
       controller, and call it:
       ```ts
       export function statsRoutes(stats: StatsFacade): RouteTable {
@@ -393,9 +393,9 @@ place.
         };
       }
       ```
-- [ ] `src/backend/features/stats/stats.facade.ts:5-8` — the doc comment's point ("the repository
+- [x] `src/backend/features/stats/stats.facade.ts:5-8` — the doc comment's point ("the repository
       behind it is named nowhere else") stays; add that its caller is `StatsController`
-- [ ] Create `src/shared/dto/meta.ts`, types only:
+- [x] Create `src/shared/dto/meta.ts`, types only:
       ```ts
       /** `GET /api/health`. */
       export interface HealthDto {
@@ -403,9 +403,9 @@ place.
         app: 'gainz';
       }
       ```
-- [ ] `src/shared/dto/index.ts` — `export type { HealthDto } from './meta.ts';`, alphabetically
+- [x] `src/shared/dto/index.ts` — `export type { HealthDto } from './meta.ts';`, alphabetically
       between `exercise.ts` and `set.ts`
-- [ ] Create `src/backend/features/meta/meta.controller.ts`:
+- [x] Create `src/backend/features/meta/meta.controller.ts`:
       ```ts
       import type { HealthDto } from '../../../shared/dto';
 
@@ -415,10 +415,10 @@ place.
         }
       }
       ```
-- [ ] `src/backend/features/meta/meta.routes.ts` — `metaRoutes()` constructs `MetaController` and
+- [x] `src/backend/features/meta/meta.routes.ts` — `metaRoutes()` constructs `MetaController` and
       passes it to `healthRoute(controller)`, whose handler becomes
       `GET: () => json(controller.health())`. `notFoundRoute()` and its comment are unchanged
-- [ ] `bun run fmt`
+- [x] `bun run fmt`
 
 `docs/backend.md` and `AGENTS.md` are deliberately not edited until phase 4: they describe the
 backend as a whole, and until every route file is converted a sentence saying "a route handler
@@ -426,13 +426,13 @@ holds only its controller" would be false for the rest.
 
 **Automated Verification**:
 
-- [ ] `bun run lint` passes, with no error in `stats.routes.ts` or `meta.routes.ts`
-- [ ] `bun run typecheck` passes
-- [ ] `bun run fmt:check` passes
-- [ ] `bun test src/backend/features/stats src/backend/features/meta src/shared/dto` passes —
+- [x] `bun run lint` passes, with no error in `stats.routes.ts` or `meta.routes.ts`
+- [x] `bun run typecheck` passes
+- [x] `bun run fmt:check` passes
+- [x] `bun test src/backend/features/stats src/backend/features/meta src/shared/dto` passes —
       including `index.test.ts` over the new `meta.ts`
-- [ ] `bun test` passes
-- [ ] `git diff --name-only 6f2a5ff -- '*.test.ts'` prints nothing
+- [x] `bun test` passes
+- [x] `git diff --name-only 6f2a5ff -- '*.test.ts'` prints nothing
 
 ### Phase 2: ExerciseController
 
@@ -440,9 +440,9 @@ Dependencies: Phase 1.
 
 **Tasks**:
 
-- [ ] `.oxlintrc.json` — add `"src/backend/features/exercises/*.routes.ts"` to the `files` of the
+- [x] `.oxlintrc.json` — add `"src/backend/features/exercises/*.routes.ts"` to the `files` of the
       routes override added in phase 1. Confirm lint reports `exercise.routes.ts:6-8`
-- [ ] Create `src/backend/features/exercises/exercise.controller.ts`:
+- [x] Create `src/backend/features/exercises/exercise.controller.ts`:
       ```ts
       import type { ExerciseDto, ExerciseProgressDto, ExerciseWithStatsDto } from '../../../shared/dto';
       import type { ExerciseFacade } from './exercises.facade.ts';
@@ -480,7 +480,7 @@ Dependencies: Phase 1.
       ```
       The translator runs before the facade in `update`, as it does today, so a bad body is a 400
       even for an unknown id
-- [ ] `src/backend/features/exercises/exercise.routes.ts` — imports shrink to `http/http.ts`,
+- [x] `src/backend/features/exercises/exercise.routes.ts` — imports shrink to `http/http.ts`,
       `http/routing.ts`, `shared/validate.ts`, `ExerciseFacade` (type) and `ExerciseController`.
       The factory builds `const controller = new ExerciseController(exercises);` and every handler
       calls it:
@@ -510,19 +510,19 @@ Dependencies: Phase 1.
       ```
       `pathId` is still evaluated before `readJsonObject` in `PATCH`, so an invalid id is still
       reported ahead of an invalid body
-- [ ] `src/backend/features/exercises/exercises.facade.ts:6-10` — "Routes hold this rather than the
+- [x] `src/backend/features/exercises/exercises.facade.ts:6-10` — "Routes hold this rather than the
       repository" → controllers hold it; "mapping a row to a DTO is the route's job" → it is the
       controller's job, and the compiler still enforces it
-- [ ] `bun run fmt`
+- [x] `bun run fmt`
 
 **Automated Verification**:
 
-- [ ] `bun run lint` passes, with no error in `exercise.routes.ts`
-- [ ] `bun run typecheck` passes
-- [ ] `bun run fmt:check` passes
-- [ ] `bun test src/backend/features/exercises` passes
-- [ ] `bun test` passes
-- [ ] `git diff --name-only 6f2a5ff -- '*.test.ts'` prints nothing
+- [x] `bun run lint` passes, with no error in `exercise.routes.ts`
+- [x] `bun run typecheck` passes
+- [x] `bun run fmt:check` passes
+- [x] `bun test src/backend/features/exercises` passes
+- [x] `bun test` passes
+- [x] `git diff --name-only 6f2a5ff -- '*.test.ts'` prints nothing
 
 ### Phase 3: WorkoutController and SetController
 
@@ -530,9 +530,9 @@ Dependencies: Phase 1.
 
 **Tasks**:
 
-- [ ] `.oxlintrc.json` — add `"src/backend/features/workouts/*.routes.ts"` to the routes override's
+- [x] `.oxlintrc.json` — add `"src/backend/features/workouts/*.routes.ts"` to the routes override's
       `files`. Confirm lint reports `workout.routes.ts:3-8` and `set.routes.ts:3-5`
-- [ ] Create `src/backend/features/workouts/workout.controller.ts`:
+- [x] Create `src/backend/features/workouts/workout.controller.ts`:
       ```ts
       import type { LiftSetDto, WorkoutDto, WorkoutPageDto, WorkoutWithSetsDto } from '../../../shared/dto';
       import type { SetFacade, WorkoutFacade } from './workouts.facade.ts';
@@ -583,10 +583,10 @@ Dependencies: Phase 1.
       }
       ```
       The comment at `workout.routes.ts:25-26` moves here, shortened to the one line above
-- [ ] Create `src/backend/features/workouts/set.controller.ts` — `SetController` holding `SetFacade`,
+- [x] Create `src/backend/features/workouts/set.controller.ts` — `SetController` holding `SetFacade`,
       with `show(id): LiftSetDto` (`toLiftSet(require)`), `update(id, body): LiftSetDto`
       (`toLiftSet(update(id, fromEditSet(translateToEditSetDto(body))))`) and `delete(id): void`
-- [ ] `src/backend/features/workouts/workout.routes.ts` — imports shrink to `http/http.ts`,
+- [x] `src/backend/features/workouts/workout.routes.ts` — imports shrink to `http/http.ts`,
       `http/routing.ts`, `shared/validate.ts`, the two facade types and `WorkoutController`. The
       factory builds `new WorkoutController(workouts, sets)`. `GET /api/workouts` keeps its
       `queryInt` calls and ends `json(controller.list(limit, offset))`; `POST` is
@@ -594,22 +594,22 @@ Dependencies: Phase 1.
       `delete` + `noContent()`; `/:id/sets` calls `listSets(id)` and
       `json(controller.addSet(id, await readJsonObject(req)), 201)`. Each `pathId` stays before its
       `readJsonObject`
-- [ ] `src/backend/features/workouts/set.routes.ts` — the same, with `new SetController(sets)` and
+- [x] `src/backend/features/workouts/set.routes.ts` — the same, with `new SetController(sets)` and
       `show` / `update` / `delete`
-- [ ] `src/backend/features/workouts/workouts.facade.ts:7-10` — "Routes hold this rather than the
+- [x] `src/backend/features/workouts/workouts.facade.ts:7-10` — "Routes hold this rather than the
       repository" → controllers hold it
-- [ ] `src/backend/features/workouts/internal/workout.mapper.ts:8` — "so the handler passes it on
+- [x] `src/backend/features/workouts/internal/workout.mapper.ts:8` — "so the handler passes it on
       itself" → so `WorkoutController.create` passes it on itself
-- [ ] `bun run fmt`
+- [x] `bun run fmt`
 
 **Automated Verification**:
 
-- [ ] `bun run lint` passes, with no error in `workout.routes.ts` or `set.routes.ts`
-- [ ] `bun run typecheck` passes
-- [ ] `bun run fmt:check` passes
-- [ ] `bun test src/backend/features/workouts` passes
-- [ ] `bun test` passes
-- [ ] `git diff --name-only 6f2a5ff -- '*.test.ts'` prints nothing
+- [x] `bun run lint` passes, with no error in `workout.routes.ts` or `set.routes.ts`
+- [x] `bun run typecheck` passes
+- [x] `bun run fmt:check` passes
+- [x] `bun test src/backend/features/workouts` passes
+- [x] `bun test` passes
+- [x] `git diff --name-only 6f2a5ff -- '*.test.ts'` prints nothing
 
 ### Phase 4: StaticController, and the rule over every route file
 
@@ -617,20 +617,20 @@ Dependencies: Phases 1–3.
 
 **Tasks**:
 
-- [ ] `.oxlintrc.json` — replace the first override (repository-only, `features/**/*.routes.ts`) and
+- [x] `.oxlintrc.json` — replace the first override (repository-only, `features/**/*.routes.ts`) and
       the per-file routes override with a single entry: `files`
       `["src/backend/features/**/*.routes.ts"]`, group
       `["**/internal/**", "**/ports/**", "**/*.repository.ts"]`, message "Route handlers map requests
       and responses through their controller." Keep the controllers override. Confirm lint now
       reports exactly `static.routes.ts:11` and `:12`
-- [ ] `src/backend/features/static/internal/transpile.ts` — `transpileModule(path)` returns
+- [x] `src/backend/features/static/internal/transpile.ts` — `transpileModule(path)` returns
       `Promise<string | null>`: the code on success; on a transform error it keeps its
       `console.error` line and returns `null`. The `basename` import goes; the header comment's
       "Serves the TypeScript frontend" becomes "Turns the TypeScript frontend into". The doc comment
       at `:17-20` ("resolved inside `src/frontend/` by the caller, which is where the traversal guard
       lives") becomes: resolved inside `src/frontend/` by `StaticController`, through the traversal
       guard in `paths.ts`
-- [ ] Create `src/backend/features/static/static.controller.ts`:
+- [x] Create `src/backend/features/static/static.controller.ts`:
       ```ts
       import type { BunFile } from 'bun';
       import { basename, extname, resolve } from 'node:path';
@@ -690,7 +690,7 @@ Dependencies: Phases 1–3.
       ```
       Both union aliases pass `typescript/consistent-type-definitions`, and `StaticController` and
       `MetaController` pass `no-extraneous-class` (measured in a scratch copy)
-- [ ] `src/backend/features/static/static.routes.ts` — imports shrink to `http/routing.ts` and
+- [x] `src/backend/features/static/static.routes.ts` — imports shrink to `http/routing.ts` and
       `StaticController` (plus `type VendorResult` / `FrontendResult` if a helper names them).
       `staticRoutes()` builds `const controller = new StaticController();`. `serveVendor` and
       `serveFrontend` stay module-level functions and take the controller as their first
@@ -724,7 +724,7 @@ Dependencies: Phases 1–3.
       Bun's MIME inference (today at `:62-66`). The header comment (`:1-9`) stays. The SPA-fallback
       comment (`:70-71`) moves to the controller, and the "Today's 404" wording at `:27` loses
       "Today's", which described a behaviour that no longer needs defending
-- [ ] `docs/backend.md` — describe the controller layer, now that it covers every route file:
+- [x] `docs/backend.md` — describe the controller layer, now that it covers every route file:
       - lines 3-5: a feature owns "its routes, its SQL and its mapping" — the mapping is reached
         through its controllers
       - lines 19-22: the feature root holds a third kind of module, `<x>.controller.ts`, one per
@@ -757,26 +757,26 @@ Dependencies: Phases 1–3.
         `Content-Type` only on responses whose body is not a file on disk with a telling extension —
         the vendor stylesheet and transpiled modules — and otherwise leaves `new Response(Bun.file(x))`
         to infer it. The HEAD point and the 405 ownership stay as they are
-- [ ] `AGENTS.md:31-39` — the architecture paragraph: beside the facade at the feature root sit the
+- [x] `AGENTS.md:31-39` — the architecture paragraph: beside the facade at the feature root sit the
       `*.controller.ts` files, one per route file, which translate the body, call the facades and
       map rows to DTOs; a route handler holds only its controller; `bun run lint` fails if a route
       reaches `internal/`, `ports/` or a repository, or a controller reaches `http/` or a
       repository. `CLAUDE.md` is a symbolic link to `AGENTS.md` and needs no separate edit
-- [ ] `bun run fmt`
+- [x] `bun run fmt`
 
 **Automated Verification**:
 
-- [ ] `bun run lint` passes, and `.oxlintrc.json` has exactly two `overrides` entries
-- [ ] `bun run typecheck` passes
-- [ ] `bun run fmt:check` passes
-- [ ] `bun test src/backend/features/static` passes — covering the vendor stylesheet, HEAD, 405,
+- [x] `bun run lint` passes, and `.oxlintrc.json` has exactly two `overrides` entries
+- [x] `bun run typecheck` passes
+- [x] `bun run fmt:check` passes
+- [x] `bun test src/backend/features/static` passes — covering the vendor stylesheet, HEAD, 405,
       path escapes, the SPA fallback, `.ts` transpiling and the untranspilable-module 500
-- [ ] `bun test` passes
-- [ ] `git diff --name-only 6f2a5ff -- '*.test.ts'` prints nothing
-- [ ] `git grep -lE "from '\./(internal|ports)/" -- 'src/backend/features/**/*.routes.ts'` prints nothing
-- [ ] `git grep --untracked -l "http/" -- 'src/backend/features/**/*.controller.ts'` prints nothing
-- [ ] `git grep -lE "route's job|handler still maps|handler passes it on|if a handler finds itself" -- src docs/backend.md AGENTS.md` prints nothing
-- [ ] `git ls-files --cached --others --exclude-standard -- 'src/backend/features/**/*.controller.ts'` lists exactly six files:
+- [x] `bun test` passes
+- [x] `git diff --name-only 6f2a5ff -- '*.test.ts'` prints nothing
+- [x] `git grep -lE "from '\./(internal|ports)/" -- 'src/backend/features/**/*.routes.ts'` prints nothing
+- [x] `git grep --untracked -l "http/" -- 'src/backend/features/**/*.controller.ts'` prints nothing
+- [x] `git grep -lE "route's job|handler still maps|handler passes it on|if a handler finds itself" -- src docs/backend.md AGENTS.md` prints nothing
+- [x] `git ls-files --cached --others --exclude-standard -- 'src/backend/features/**/*.controller.ts'` lists exactly six files:
       `exercises/exercise.controller.ts`, `workouts/workout.controller.ts`,
       `workouts/set.controller.ts`, `stats/stats.controller.ts`, `meta/meta.controller.ts`,
       `static/static.controller.ts`
@@ -784,6 +784,9 @@ Dependencies: Phases 1–3.
 ## Implementation Notes
 
 During implementation, document user feedback, problems, and decisions here.
+
+- The SPA-fallback comment moved to `StaticController.frontend` whole, both lines, since its first line
+  explains why the fallback exists at all.
 
 ## References
 
