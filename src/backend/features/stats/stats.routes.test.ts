@@ -1,13 +1,15 @@
 import { describe, expect, test } from 'bun:test';
 import type { SummaryDto } from '../../../shared/dto';
 import { body, useServer } from '../../testing.ts';
+import { createExercise } from '../exercises/exercises.fixtures.ts';
+import { createWorkout } from '../workouts/workouts.fixtures.ts';
 
-const { api, post, createExercise, createWorkout } = useServer();
+const { api, post } = useServer();
 
 describe('stats', () => {
   test('summarises the whole log', async () => {
-    const exercise = await createExercise();
-    const workout = await createWorkout();
+    const exercise = await createExercise(post);
+    const workout = await createWorkout(post);
     await post(`/api/workouts/${workout.id}/sets`, { exerciseId: exercise.id, reps: 10, weight: 40 });
 
     const summary = await body<SummaryDto>(await api('/api/stats/summary'));

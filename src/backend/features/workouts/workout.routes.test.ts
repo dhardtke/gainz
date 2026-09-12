@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import type { LiftSetDto, WorkoutDto, WorkoutPageDto, WorkoutWithSetsDto } from '../../../shared/dto';
 import { at, body, useServer } from '../../testing.ts';
+import { createExercise } from '../exercises/exercises.fixtures.ts';
+import { createWorkout } from './workouts.fixtures.ts';
 
-const { api, post, createExercise, createWorkout } = useServer();
+const { api, post } = useServer();
 
 describe('workouts', () => {
   test('defaults the workout date to today', async () => {
@@ -17,8 +19,8 @@ describe('workouts', () => {
   });
 
   test('deleting a workout removes its sets', async () => {
-    const exercise = await createExercise();
-    const workout = await createWorkout();
+    const exercise = await createExercise(post);
+    const workout = await createWorkout(post);
     const set = await body<LiftSetDto>(await post(`/api/workouts/${workout.id}/sets`, { exerciseId: exercise.id, reps: 5, weight: 60 }));
 
     expect((await api(`/api/workouts/${workout.id}`, { method: 'DELETE' })).status).toBe(204);
@@ -26,8 +28,8 @@ describe('workouts', () => {
   });
 
   test('copies sets from a previous workout', async () => {
-    const exercise = await createExercise();
-    const source = await createWorkout('2026-01-05');
+    const exercise = await createExercise(post);
+    const source = await createWorkout(post, '2026-01-05');
     await post(`/api/workouts/${source.id}/sets`, { exerciseId: exercise.id, reps: 5, weight: 60 });
     await post(`/api/workouts/${source.id}/sets`, { exerciseId: exercise.id, reps: 5, weight: 65 });
 
@@ -39,7 +41,7 @@ describe('workouts', () => {
   });
 
   test('copying from a missing workout creates nothing', async () => {
-    await createWorkout('2026-01-05');
+    await createWorkout(post, '2026-01-05');
     const before = (await body<WorkoutPageDto>(await api('/api/workouts'))).total;
 
     const res = await post('/api/workouts', { performedOn: '2026-01-12', copyFromWorkoutId: 9999 });
@@ -58,8 +60,8 @@ describe('workouts', () => {
   });
 
   test('lists workouts with roll-up statistics', async () => {
-    const exercise = await createExercise();
-    const workout = await createWorkout();
+    const exercise = await createExercise(post);
+    const workout = await createWorkout(post);
     await post(`/api/workouts/${workout.id}/sets`, { exerciseId: exercise.id, reps: 10, weight: 50 });
     await post(`/api/workouts/${workout.id}/sets`, { exerciseId: exercise.id, reps: 5, weight: 60 });
 
@@ -75,8 +77,8 @@ describe('workouts', () => {
 
 describe("a workout's sets", () => {
   test('logs sets and returns them with the workout', async () => {
-    const exercise = await createExercise();
-    const workout = await createWorkout();
+    const exercise = await createExercise(post);
+    const workout = await createWorkout(post);
 
     await post(`/api/workouts/${workout.id}/sets`, {
       exerciseId: exercise.id,
@@ -93,8 +95,8 @@ describe("a workout's sets", () => {
   });
 
   test('rejects non-positive reps, and an exercise that does not exist, with 400', async () => {
-    const exercise = await createExercise();
-    const workout = await createWorkout();
+    const exercise = await createExercise(post);
+    const workout = await createWorkout(post);
 
     expect((await post(`/api/workouts/${workout.id}/sets`, { exerciseId: exercise.id, reps: 0, weight: 60 })).status).toBe(400);
     // The foreign key refuses the insert; the workout id in the path is what earns a 404.
