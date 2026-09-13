@@ -1,4 +1,5 @@
 import type { CreateSetDto, CreateWorkoutDto, EditSetDto, EditWorkoutDto } from '../../../shared/dto';
+import type { LiftSetId, WorkoutId } from '../../../shared/flavors.ts';
 import type { DB } from '../../db/db.ts';
 import { isPresent, MAX_NAME, MAX_NOTES, optionalString, requiredDate, requiredInt, requiredNumber } from '../../shared/validate.ts';
 import { SetRepository } from './internal/set.repository.ts';
@@ -23,7 +24,7 @@ export class WorkoutFacade {
     return this.workouts.count();
   }
 
-  require(id: number): Workout {
+  require(id: WorkoutId): Workout {
     return this.workouts.require(id);
   }
 
@@ -32,11 +33,11 @@ export class WorkoutFacade {
     return this.workouts.create(translateDtoToCreateWorkout(valid), { copyFrom: valid.copyFromWorkoutId });
   }
 
-  update(id: number, dto: EditWorkoutDto): Workout {
+  update(id: WorkoutId, dto: EditWorkoutDto): Workout {
     return this.workouts.update(id, translateDtoToEditWorkout(this.validateEdit(dto)));
   }
 
-  delete(id: number): void {
+  delete(id: WorkoutId): void {
     this.workouts.delete(id);
   }
 
@@ -72,23 +73,23 @@ export class WorkoutFacade {
 export class SetFacade {
   constructor(private readonly sets: SetRepository) {}
 
-  list(workoutId: number): LiftSet[] {
+  list(workoutId: WorkoutId): LiftSet[] {
     return this.sets.list(workoutId);
   }
 
-  require(id: number): LiftSet {
+  require(id: LiftSetId): LiftSet {
     return this.sets.require(id);
   }
 
-  create(workoutId: number, dto: CreateSetDto): LiftSet {
+  create(workoutId: WorkoutId, dto: CreateSetDto): LiftSet {
     return this.sets.create(workoutId, translateDtoToCreateSet(this.validateCreate(dto)));
   }
 
-  update(id: number, dto: EditSetDto): LiftSet {
+  update(id: LiftSetId, dto: EditSetDto): LiftSet {
     return this.sets.update(id, translateDtoToEditSet(this.validateEdit(dto)));
   }
 
-  delete(id: number): void {
+  delete(id: LiftSetId): void {
     this.sets.delete(id);
   }
 

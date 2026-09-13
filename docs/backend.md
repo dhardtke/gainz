@@ -43,6 +43,16 @@ each one names every field it maps: a spread would compile and would ship `worko
 `created_at` to the browser with nothing to catch it. The camelCase rename is what keeps that
 honest — a row is not structurally assignable to its own DTO.
 
+Ids and dates are flavored on both sides of that rename. `src/shared/flavors.ts` declares
+`WorkoutId`, `ExerciseId`, `LiftSetId`, `Iso8601Date` (`YYYY-MM-DD`) and `Iso8601DateTime` (what
+SQLite writes into `created_at`), and the rows, the repository signatures, the bound-parameter
+tuples on `db.query` and the DTOs all name the one they carry. A plain `number` or `string` still
+flows into a flavor, so nothing needs a cast; what the compiler refuses is one flavor standing in
+for another, which is why a workout id can no longer be handed to `exercises.require()` and a
+`created_at` can no longer be formatted as a calendar date. `pathId` deliberately still returns a
+plain `number` — a path segment has no flavor of its own, and the controller names it as it binds
+the local (`const id: WorkoutId = pathId(req.params.id, 'workout')`).
+
 `testing.ts` stays at the top of `src/backend/` because it belongs to no feature: it is test-only
 plumbing every feature's tests use, and it holds only technical hooks — `useServer()`, `useTempDir()`,
 `body()` and `at()`. The fixtures that create a feature's data over HTTP — `createExercise` in

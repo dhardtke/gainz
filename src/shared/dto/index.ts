@@ -6,7 +6,11 @@
  * anything resolving outside it — so the frontend reaches these declarations with `import type`,
  * which `Bun.Transpiler` erases whole. The browser therefore never asks for the module. A single
  * runtime statement in here would turn that erased import into a 404, which is why
- * `index.test.ts` pins the rule.
+ * `src/shared/shared.test.ts` pins the rule for the whole of `src/shared/`.
+ *
+ * The ids and dates in these shapes are the flavored primitives from `../flavors.ts`, so a
+ * workout id cannot stand in for an exercise id and a `createdAt` cannot stand in for a
+ * `YYYY-MM-DD` date.
  *
  * The backend translates its repository rows into these shapes in each feature's `ports/`; the
  * rows themselves stay snake_case and never leave the feature that owns the table.

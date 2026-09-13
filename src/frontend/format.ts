@@ -2,6 +2,8 @@
  * Display helpers. Weights are stored as plain numbers, so switching the whole
  * app to pounds is a matter of changing UNIT here.
  */
+import type { Iso8601Date } from '../shared/flavors.ts';
+
 export const UNIT = 'kg';
 
 const DATE_FORMAT = new Intl.DateTimeFormat(undefined, {
@@ -42,7 +44,7 @@ export function formatVolume(value: number | null | undefined): string {
 }
 
 /** @param iso a `YYYY-MM-DD` date. */
-export function formatDate(iso: string | null | undefined): string {
+export function formatDate(iso: Iso8601Date | null | undefined): string {
   if (!iso) {
     return '–';
   }
@@ -51,7 +53,7 @@ export function formatDate(iso: string | null | undefined): string {
 }
 
 /** @param iso a `YYYY-MM-DD` date. */
-export function formatShortDate(iso: string | null | undefined): string {
+export function formatShortDate(iso: Iso8601Date | null | undefined): string {
   if (!iso) {
     return '–';
   }
@@ -65,7 +67,7 @@ export function formatShortDate(iso: string | null | undefined): string {
  * @param iso a `YYYY-MM-DD` date.
  * @returns empty when there is no usable date.
  */
-export function relativeDay(iso: string | null | undefined): string {
+export function relativeDay(iso: Iso8601Date | null | undefined): string {
   if (!iso) {
     return '';
   }
@@ -100,7 +102,7 @@ export function plural(count: number, singular: string, pluralForm = `${singular
 }
 
 /** @returns today as `YYYY-MM-DD`, in the visitor's own timezone. */
-export function todayIso(): string {
+export function todayIso(): Iso8601Date {
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   return now.toISOString().slice(0, 10);

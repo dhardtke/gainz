@@ -5,6 +5,7 @@
  */
 import { DEFAULT_DB_PATH, openDatabase } from '../backend/db/db.ts';
 import { createFacades } from '../backend/features/facades.ts';
+import type { ExerciseId, Iso8601Date } from '../shared/flavors.ts';
 
 const EXERCISES = [
   { name: 'Back Squat', muscleGroup: 'Legs', notes: 'Low bar, belt above 100 kg.' },
@@ -40,7 +41,7 @@ const TEMPLATES = [
 
 const SET_NOTES = [null, null, null, 'Felt strong.', 'Last rep grindy.', 'Left shoulder tight.'];
 
-function isoDaysAgo(days: number): string {
+function isoDaysAgo(days: number): Iso8601Date {
   const date = new Date();
   date.setDate(date.getDate() - days);
   return date.toISOString().slice(0, 10);
@@ -60,7 +61,7 @@ function main(): void {
   // not a partial block of training history. `workouts.create()` opens a transaction of its own, which
   // nests as a savepoint.
   db.transaction(() => {
-    const idByName = new Map<string, number>();
+    const idByName = new Map<string, ExerciseId>();
     for (const exercise of EXERCISES) {
       idByName.set(exercise.name, exercises.create(exercise).id);
     }

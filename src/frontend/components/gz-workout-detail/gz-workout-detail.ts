@@ -4,6 +4,7 @@ import { define, GzElement, html } from '../../base.ts';
 import { formatDate, formatNumber, formatVolume, plural, relativeDay, UNIT } from '../../format.ts';
 import { navigate } from '../../router.ts';
 import type { ExerciseDto, LiftSetDto, WorkoutWithSetsDto } from '../../../shared/dto';
+import type { ExerciseId, WorkoutId } from '../../../shared/flavors.ts';
 import type { GzSetRow } from '../gz-set-row/gz-set-row.ts';
 import { toast, toastError } from '../gz-toast/gz-toast.ts';
 import '../gz-set-row/gz-set-row.ts';
@@ -12,7 +13,7 @@ type WorkoutDetailState = { status: 'loading' } | { status: 'ready'; workout: Wo
 
 /** One exercise's totals within the session. */
 interface ExerciseTotals {
-  id: number;
+  id: ExerciseId;
   name: string;
   sets: number;
   reps: number;
@@ -39,7 +40,7 @@ class GzWorkoutDetail extends GzElement {
    * `exerciseId` also holds the "new exercise" sentinel, which is what the
    * select shows on a cold start with no exercises defined yet.
    */
-  #draft: { exerciseId: number | typeof NEW_EXERCISE | null; weight: string; reps: string } = {
+  #draft: { exerciseId: ExerciseId | typeof NEW_EXERCISE | null; weight: string; reps: string } = {
     exerciseId: null,
     weight: '',
     reps: '',
@@ -63,13 +64,16 @@ class GzWorkoutDetail extends GzElement {
    * attributeChangedCallback has always run by the time anything asks for it.
    * Reading it through here states that invariant once, in the one place that
    * would notice it being broken, instead of at every call site.
+   *
+   * The attribute mirrors a route parameter `router.ts` matches as `(\d+)`, so it is always
+   * digits and the conversion cannot produce a NaN.
    */
-  get #id(): string {
+  get #id(): WorkoutId {
     const id = this.#workoutId;
     if (id === null) {
       throw new Error('gz-workout-detail needs a workout-id attribute');
     }
-    return id;
+    return Number(id);
   }
 
   connectedCallback(): void {
@@ -221,7 +225,7 @@ class GzWorkoutDetail extends GzElement {
   }
 
   /** Copies the last set of an exercise into the add-set form. */
-  #prefillFrom(exerciseId: number): void {
+  #prefillFrom(exerciseId: ExerciseId): void {
     if (this.#state.status !== 'ready') {
       return;
     }
@@ -328,7 +332,7 @@ class GzWorkoutDetail extends GzElement {
   }
 
   #breakdown(sets: LiftSetDto[]): ExerciseTotals[] {
-    const byExercise = new Map<number, ExerciseTotals>();
+    const byExercise = new Map<ExerciseId, ExerciseTotals>();
     for (const set of sets) {
       const entry = byExercise.get(set.exerciseId) ?? {
         id: set.exerciseId,

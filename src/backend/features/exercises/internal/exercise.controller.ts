@@ -1,5 +1,6 @@
 import { json, noContent, pathId, readJsonObject } from '../../../http/http.ts';
 import type { ParamRequest } from '../../../http/routing.ts';
+import type { ExerciseId } from '../../../../shared/flavors.ts';
 import type { ExerciseFacade } from '../exercises.facade.ts';
 import { toExercise, toExerciseProgress, toExerciseWithStats } from '../ports/exercise.ts';
 import { translateToCreateExerciseDto, translateToEditExerciseDto } from './exercise.translator.ts';
@@ -21,7 +22,7 @@ export class ExerciseController {
   }
 
   async update(req: ParamRequest): Promise<Response> {
-    const id = pathId(req.params.id, 'exercise');
+    const id: ExerciseId = pathId(req.params.id, 'exercise');
     const dto = translateToEditExerciseDto(await readJsonObject(req));
     return json(toExercise(this.exercises.update(id, dto)));
   }
@@ -32,7 +33,7 @@ export class ExerciseController {
   }
 
   progress(req: ParamRequest): Response {
-    const id = pathId(req.params.id, 'exercise');
+    const id: ExerciseId = pathId(req.params.id, 'exercise');
     return json(toExerciseProgress(this.exercises.require(id), this.exercises.progress(id), this.exercises.bestSet(id)));
   }
 }

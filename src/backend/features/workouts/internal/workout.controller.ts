@@ -1,5 +1,6 @@
 import { json, noContent, pathId, queryInt, readJsonObject } from '../../../http/http.ts';
 import type { ParamRequest } from '../../../http/routing.ts';
+import type { WorkoutId } from '../../../../shared/flavors.ts';
 import type { SetFacade, WorkoutFacade } from '../workouts.facade.ts';
 import { toWorkout, toWorkoutPage, toWorkoutWithSets } from '../ports/workout.ts';
 import { toLiftSet } from '../ports/set.ts';
@@ -25,12 +26,12 @@ export class WorkoutController {
   }
 
   show(req: ParamRequest): Response {
-    const id = pathId(req.params.id, 'workout');
+    const id: WorkoutId = pathId(req.params.id, 'workout');
     return json(toWorkoutWithSets(this.workouts.require(id), this.sets.list(id)));
   }
 
   async update(req: ParamRequest): Promise<Response> {
-    const id = pathId(req.params.id, 'workout');
+    const id: WorkoutId = pathId(req.params.id, 'workout');
     const dto = translateToEditWorkoutDto(await readJsonObject(req));
     return json(toWorkout(this.workouts.update(id, dto)));
   }
@@ -41,13 +42,13 @@ export class WorkoutController {
   }
 
   listSets(req: ParamRequest): Response {
-    const id = pathId(req.params.id, 'workout');
+    const id: WorkoutId = pathId(req.params.id, 'workout');
     this.workouts.require(id);
     return json(this.sets.list(id).map(toLiftSet));
   }
 
   async addSet(req: ParamRequest): Promise<Response> {
-    const id = pathId(req.params.id, 'workout');
+    const id: WorkoutId = pathId(req.params.id, 'workout');
     const dto = translateToCreateSetDto(await readJsonObject(req));
     return json(toLiftSet(this.sets.create(id, dto)), 201);
   }

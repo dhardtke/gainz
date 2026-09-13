@@ -3,6 +3,7 @@ import type { RawHtml } from '../../base.ts';
 import { define, GzElement, html } from '../../base.ts';
 import { formatDate, formatDelta, formatNumber, formatShortDate, formatVolume, plural, relativeDay, UNIT } from '../../format.ts';
 import type { ExerciseProgressDto, SessionPointDto } from '../../../shared/dto/index.ts';
+import type { ExerciseId } from '../../../shared/flavors.ts';
 import type { GzChart } from '../gz-chart/gz-chart.ts';
 import { toastError } from '../gz-toast/gz-toast.ts';
 import '../gz-chart/gz-chart.ts';
@@ -61,13 +62,16 @@ class GzExerciseDetail extends GzElement {
    * attributeChangedCallback has always run by the time anything asks for it.
    * Reading it through here states that invariant once, in the one place that
    * would notice it being broken, instead of at every call site.
+   *
+   * The attribute mirrors a route parameter `router.ts` matches as `(\d+)`, so it is always
+   * digits and the conversion cannot produce a NaN.
    */
-  get #id(): string {
+  get #id(): ExerciseId {
     const id = this.#exerciseId;
     if (id === null) {
       throw new Error('gz-exercise-detail needs an exercise-id attribute');
     }
-    return id;
+    return Number(id);
   }
 
   connectedCallback(): void {

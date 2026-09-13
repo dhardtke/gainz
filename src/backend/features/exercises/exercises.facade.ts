@@ -1,4 +1,5 @@
 import type { CreateExerciseDto, EditExerciseDto } from '../../../shared/dto';
+import type { ExerciseId, Iso8601Date } from '../../../shared/flavors.ts';
 import type { DB } from '../../db/db.ts';
 import { isPresent, MAX_NAME, MAX_NOTES, optionalString, requiredString } from '../../shared/validate.ts';
 import { translateDtoToCreateExercise, translateDtoToEditExercise } from './internal/exercise.translator.ts';
@@ -18,7 +19,7 @@ export class ExerciseFacade {
     return this.exercises.list();
   }
 
-  require(id: number): Exercise {
+  require(id: ExerciseId): Exercise {
     return this.exercises.require(id);
   }
 
@@ -26,19 +27,19 @@ export class ExerciseFacade {
     return this.exercises.create(translateDtoToCreateExercise(this.validateCreate(dto)));
   }
 
-  update(id: number, dto: EditExerciseDto): Exercise {
+  update(id: ExerciseId, dto: EditExerciseDto): Exercise {
     return this.exercises.update(id, translateDtoToEditExercise(this.validateEdit(dto)));
   }
 
-  delete(id: number): void {
+  delete(id: ExerciseId): void {
     this.exercises.delete(id);
   }
 
-  progress(id: number): SessionPoint[] {
+  progress(id: ExerciseId): SessionPoint[] {
     return this.exercises.progress(id);
   }
 
-  bestSet(id: number): (LiftSet & { performed_on: string }) | null {
+  bestSet(id: ExerciseId): (LiftSet & { performed_on: Iso8601Date }) | null {
     return this.exercises.bestSet(id);
   }
 

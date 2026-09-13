@@ -16,6 +16,7 @@ import type {
   WorkoutPageDto,
   WorkoutWithSetsDto,
 } from '../shared/dto/index.ts';
+import type { ExerciseId, LiftSetId, WorkoutId } from '../shared/flavors.ts';
 
 export class ApiError extends Error {
   /** The HTTP status, or 0 when the request never left. */
@@ -104,35 +105,35 @@ export const api = {
   exercises: {
     list: (): Promise<ExerciseWithStatsDto[]> => get('/exercises'),
 
-    get: (id: number | string): Promise<ExerciseDto> => get(`/exercises/${id}`),
+    get: (id: ExerciseId): Promise<ExerciseDto> => get(`/exercises/${id}`),
 
-    progress: (id: number | string): Promise<ExerciseProgressDto> => get(`/exercises/${id}/progress`),
+    progress: (id: ExerciseId): Promise<ExerciseProgressDto> => get(`/exercises/${id}/progress`),
 
     create: (input: CreateExerciseDto): Promise<ExerciseDto> => post('/exercises', input),
 
-    update: (id: number | string, patchBody: EditExerciseDto): Promise<ExerciseDto> => patch(`/exercises/${id}`, patchBody),
+    update: (id: ExerciseId, patchBody: EditExerciseDto): Promise<ExerciseDto> => patch(`/exercises/${id}`, patchBody),
 
-    remove: (id: number | string): Promise<null> => remove(`/exercises/${id}`),
+    remove: (id: ExerciseId): Promise<null> => remove(`/exercises/${id}`),
   },
 
   workouts: {
     list: ({ limit = 50, offset = 0 }: { limit?: number; offset?: number } = {}): Promise<WorkoutPageDto> => get(`/workouts?limit=${limit}&offset=${offset}`),
 
-    get: (id: number | string): Promise<WorkoutWithSetsDto> => get(`/workouts/${id}`),
+    get: (id: WorkoutId): Promise<WorkoutWithSetsDto> => get(`/workouts/${id}`),
 
     create: (input: CreateWorkoutDto): Promise<WorkoutWithSetsDto> => post('/workouts', input),
 
     /** Updates the header only — the response carries no `sets`. */
-    update: (id: number | string, patchBody: EditWorkoutDto): Promise<WorkoutDto> => patch(`/workouts/${id}`, patchBody),
+    update: (id: WorkoutId, patchBody: EditWorkoutDto): Promise<WorkoutDto> => patch(`/workouts/${id}`, patchBody),
 
-    remove: (id: number | string): Promise<null> => remove(`/workouts/${id}`),
+    remove: (id: WorkoutId): Promise<null> => remove(`/workouts/${id}`),
 
-    addSet: (id: number | string, input: CreateSetDto): Promise<LiftSetDto> => post(`/workouts/${id}/sets`, input),
+    addSet: (id: WorkoutId, input: CreateSetDto): Promise<LiftSetDto> => post(`/workouts/${id}/sets`, input),
   },
 
   sets: {
-    update: (id: number | string, patchBody: EditSetDto): Promise<LiftSetDto> => patch(`/sets/${id}`, patchBody),
+    update: (id: LiftSetId, patchBody: EditSetDto): Promise<LiftSetDto> => patch(`/sets/${id}`, patchBody),
 
-    remove: (id: number | string): Promise<null> => remove(`/sets/${id}`),
+    remove: (id: LiftSetId): Promise<null> => remove(`/sets/${id}`),
   },
 };

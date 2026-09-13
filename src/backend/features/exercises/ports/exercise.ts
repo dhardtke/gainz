@@ -1,24 +1,25 @@
 import type { ExerciseDto, ExerciseProgressDto, ExerciseWithStatsDto, SessionPointDto } from '../../../../shared/dto';
+import type { ExerciseId, Iso8601Date, Iso8601DateTime, WorkoutId } from '../../../../shared/flavors.ts';
 import { type LiftSet, toBestSet } from '../../workouts/ports/set.ts';
 
 export interface Exercise {
-  id: number;
+  id: ExerciseId;
   name: string;
   muscle_group: string | null;
   notes: string | null;
-  created_at: string;
+  created_at: Iso8601DateTime;
 }
 
 export interface ExerciseWithStats extends Exercise {
   set_count: number;
   workout_count: number;
-  last_performed_on: string | null;
+  last_performed_on: Iso8601Date | null;
   best_weight: number | null;
 }
 
 export interface SessionPoint {
-  workout_id: number;
-  performed_on: string;
+  workout_id: WorkoutId;
+  performed_on: Iso8601Date;
   set_count: number;
   total_reps: number;
   total_volume: number;
@@ -62,7 +63,11 @@ export function toSessionPoint(row: SessionPoint): SessionPointDto {
   };
 }
 
-export function toExerciseProgress(exercise: Exercise, sessions: SessionPoint[], bestSet: (LiftSet & { performed_on: string }) | null): ExerciseProgressDto {
+export function toExerciseProgress(
+  exercise: Exercise,
+  sessions: SessionPoint[],
+  bestSet: (LiftSet & { performed_on: Iso8601Date }) | null,
+): ExerciseProgressDto {
   return {
     exercise: toExercise(exercise),
     sessions: sessions.map(toSessionPoint),

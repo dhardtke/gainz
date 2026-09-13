@@ -29,13 +29,22 @@ wire format, and both halves of the app import it with a type-only import — th
 `'../shared/dto/index.ts'` from `api.ts`, `'../../../shared/dto/index.ts'` from a component. The
 transpiler strips such an import whole, so the module is never fetched at runtime, and that is
 load-bearing: `src/shared/` sits **outside the web root**, so a surviving specifier would be a 404.
-Everything under `src/shared/dto/` must therefore stay free of runtime code, which
-`src/shared/dto/index.test.ts` holds in place by asserting every file there transpiles to nothing.
+Everything under `src/shared/` must therefore stay free of runtime code — `flavors.ts` as much as
+the DTOs — which `src/shared/shared.test.ts` holds in place by walking the directory recursively
+and asserting every file there transpiles to nothing.
 
 What the frontend is pinned to is still the wire format rather than the server's row types: the
 backend translates its rows into these DTOs in each feature's `ports/` and the wire is camelCase
 where the database is snake_case, so a renamed column cannot arrive here as a silent refactor. It
 just no longer costs a hand-written second copy to say so.
+
+That wire format also names its ids and dates: `WorkoutId`, `ExerciseId`, `LiftSetId`,
+`Iso8601Date` and `Iso8601DateTime`, declared in `src/shared/flavors.ts` and used by the frontend's
+own signatures too — `api.ts`'s parameters, `format.ts`'s date helpers, and the id-shaped state in
+`gz-workout-detail`, `gz-exercise-detail` and `gz-exercise-list`. So the API client cannot be handed
+the wrong entity's id, and a `createdAt` cannot reach a formatter that expects a `YYYY-MM-DD` day.
+A plain `number` still assigns into a flavor, which is why `Number(element.dataset.id)` needs no
+cast on the way in.
 
 Shapes local to one module — a view's `#state` union, the chart's points — are declared in that
 module. `GzChart` and `GzSetRow` are exported so a view can type the element it drives; the
