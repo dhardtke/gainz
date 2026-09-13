@@ -2,11 +2,12 @@ import type { DB } from '../../../db/db.ts';
 import { badRequest, notFound } from '../../../http/errors.ts';
 import { buildUpdate, isForeignKeyViolation } from '../../../db/sql.ts';
 import type { WorkoutRepository } from './workout.repository.ts';
+import type { ExerciseId, LiftSetId, WorkoutId } from '../../../../shared/flavors.ts';
 import type { LiftSet } from '../ports/set.ts';
 import { SET_COLUMNS } from '../ports/sql.ts';
 
 export interface CreateSet {
-  exercise_id: number;
+  exercise_id: ExerciseId;
   reps: number;
   weight: number;
   notes: string | null;
@@ -29,9 +30,9 @@ export class SetRepository {
     private readonly workouts: WorkoutRepository,
   ) {}
 
-  list(workoutId: number): LiftSet[] {
+  list(workoutId: WorkoutId): LiftSet[] {
     return this.db
-      .query<LiftSet, [number]>(
+      .query<LiftSet, [WorkoutId]>(
         `SELECT ${SET_COLUMNS}
            FROM sets s
            JOIN exercises e ON e.id = s.exercise_id
@@ -41,11 +42,11 @@ export class SetRepository {
       .all(workoutId);
   }
 
-  get(id: number): LiftSet | null {
-    return this.db.query<LiftSet, [number]>(`SELECT ${SET_COLUMNS} FROM sets s JOIN exercises e ON e.id = s.exercise_id WHERE s.id = ?`).get(id);
+  get(id: LiftSetId): LiftSet | null {
+    return this.db.query<LiftSet, [LiftSetId]>(`SELECT ${SET_COLUMNS} FROM sets s JOIN exercises e ON e.id = s.exercise_id WHERE s.id = ?`).get(id);
   }
 
-  require(id: number): LiftSet {
+  require(id: LiftSetId): LiftSet {
     const set = this.get(id);
     if (!set) {
       throw notFound('Set');
@@ -57,17 +58,17 @@ export class SetRepository {
    * The workout id comes from the path, so an unknown one is a 404. The exercise id comes from the
    * body, and the foreign key is left to catch an unknown one — hence the 400 rather than a 404.
    */
-  create(workoutId: number, input: CreateSet): LiftSet {
+  create(workoutId: WorkoutId, input: CreateSet): LiftSet {
     this.workouts.require(workoutId);
 
     const position =
       input.position ??
-      this.db.query<{ next: number }, [number]>('SELECT COALESCE(MAX(position), 0) + 1 AS next FROM sets WHERE workout_id = ?').get(workoutId)?.next ??
+      this.db.query<{ next: number }, [WorkoutId]>('SELECT COALESCE(MAX(position), 0) + 1 AS next FROM sets WHERE workout_id = ?').get(workoutId)?.next ??
       1;
 
     try {
       const inserted = this.db
-        .query<{ id: number }, [number, number, number, number, string | null, number]>(
+        .query<{ id: LiftSetId }, [WorkoutId, ExerciseId, number, number, string | null, number]>(
           `INSERT INTO sets (workout_id, exercise_id, reps, weight, notes, position)
            VALUES (?, ?, ?, ?, ?, ?)
            RETURNING id`,
@@ -85,7 +86,7 @@ export class SetRepository {
     }
   }
 
-  update(id: number, patch: EditSet): LiftSet {
+  update(id: LiftSetId, patch: EditSet): LiftSet {
     this.require(id);
 
     const update = buildUpdate('sets', FIELDS, patch);
@@ -102,7 +103,7 @@ export class SetRepository {
     return this.require(id);
   }
 
-  delete(id: number): void {
+  delete(id: LiftSetId): void {
     this.require(id);
     this.db.query('DELETE FROM sets WHERE id = ?').run(id);
   }

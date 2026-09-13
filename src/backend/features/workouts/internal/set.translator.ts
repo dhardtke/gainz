@@ -1,9 +1,10 @@
 import type { CreateSetDto, EditSetDto } from '../../../../shared/dto';
+import type { ExerciseId } from '../../../../shared/flavors.ts';
 import type { CreateSet, EditSet } from './set.repository.ts';
 
 export function translateToCreateSetDto(body: Record<string, unknown>): CreateSetDto {
   return {
-    exerciseId: body.exerciseId as number,
+    exerciseId: body.exerciseId as ExerciseId,
     reps: body.reps as number,
     weight: body.weight as number,
     notes: body.notes as string | null | undefined,
@@ -13,7 +14,7 @@ export function translateToCreateSetDto(body: Record<string, unknown>): CreateSe
 
 export function translateToEditSetDto(body: Record<string, unknown>): EditSetDto {
   return {
-    exerciseId: body.exerciseId as number | undefined,
+    exerciseId: body.exerciseId as ExerciseId | undefined,
     reps: body.reps as number | undefined,
     weight: body.weight as number | undefined,
     notes: body.notes as string | null | undefined,

@@ -1,12 +1,13 @@
 import type { WorkoutDto, WorkoutPageDto, WorkoutWithSetsDto, WorkoutWithStatsDto } from '../../../../shared/dto';
+import type { Iso8601Date, Iso8601DateTime, WorkoutId } from '../../../../shared/flavors.ts';
 import { type LiftSet, toLiftSet } from './set.ts';
 
 export interface Workout {
-  id: number;
-  performed_on: string;
+  id: WorkoutId;
+  performed_on: Iso8601Date;
   title: string | null;
   notes: string | null;
-  created_at: string;
+  created_at: Iso8601DateTime;
 }
 
 export interface WorkoutWithStats extends Workout {

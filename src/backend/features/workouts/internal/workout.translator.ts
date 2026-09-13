@@ -1,19 +1,20 @@
 import type { CreateWorkoutDto, EditWorkoutDto } from '../../../../shared/dto';
+import type { Iso8601Date, WorkoutId } from '../../../../shared/flavors.ts';
 import { today } from '../../../shared/validate.ts';
 import type { CreateWorkout, EditWorkout } from './workout.repository.ts';
 
 export function translateToCreateWorkoutDto(body: Record<string, unknown>): CreateWorkoutDto {
   return {
-    performedOn: body.performedOn as string | undefined,
+    performedOn: body.performedOn as Iso8601Date | undefined,
     title: body.title as string | null | undefined,
     notes: body.notes as string | null | undefined,
-    copyFromWorkoutId: body.copyFromWorkoutId as number | undefined,
+    copyFromWorkoutId: body.copyFromWorkoutId as WorkoutId | undefined,
   };
 }
 
 export function translateToEditWorkoutDto(body: Record<string, unknown>): EditWorkoutDto {
   return {
-    performedOn: body.performedOn as string | undefined,
+    performedOn: body.performedOn as Iso8601Date | undefined,
     title: body.title as string | null | undefined,
     notes: body.notes as string | null | undefined,
   };

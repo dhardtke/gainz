@@ -1,4 +1,5 @@
 import type { DB } from '../../../db/db.ts';
+import type { Iso8601Date } from '../../../../shared/flavors.ts';
 import type { Summary } from '../ports/stats.ts';
 
 /** The whole-log totals half of a summary. */
@@ -8,7 +9,7 @@ interface SummaryTotals {
   total_reps: number;
   total_volume: number;
   exercise_count: number;
-  last_performed_on: string | null;
+  last_performed_on: Iso8601Date | null;
 }
 
 /** The rolling-window half of a summary. */

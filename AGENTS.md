@@ -45,8 +45,8 @@ it exercises
 `src/frontend/` -> a **no-build-step** frontend: TypeScript ES modules and custom elements,
 transpiled on request by `src/backend/features/static` — no bundler, no output directory
 `src/shared/` -> the wire contract both halves import: `dto/` declares every request and response
-shape, **types only**, because it is not web-served and reaches the browser only as an erased
-`import type`
+shape and `flavors.ts` the flavored ids and dates those shapes are written in — both **types
+only**, because it is not web-served and reaches the browser only as an erased `import type`
 `src/scripts/` -> the `migrate` and `seed` entry points
 `docs/` -> the documents below
 

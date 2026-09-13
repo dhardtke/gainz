@@ -2,6 +2,7 @@ import type { DB } from '../../../db/db.ts';
 import { conflict, notFound } from '../../../http/errors.ts';
 import { buildUpdate, isUniqueViolation } from '../../../db/sql.ts';
 import { EST_1RM_SQL, SET_COLUMNS } from '../../workouts/ports/sql.ts';
+import type { ExerciseId, Iso8601Date } from '../../../../shared/flavors.ts';
 import type { Exercise, ExerciseWithStats, SessionPoint } from '../ports/exercise.ts';
 import type { LiftSet } from '../../workouts/ports/set.ts';
 
@@ -36,11 +37,11 @@ export class ExerciseRepository {
       .all();
   }
 
-  get(id: number): Exercise | null {
-    return this.db.query<Exercise, [number]>(`SELECT ${EXERCISE_COLUMNS} FROM exercises e WHERE e.id = ?`).get(id);
+  get(id: ExerciseId): Exercise | null {
+    return this.db.query<Exercise, [ExerciseId]>(`SELECT ${EXERCISE_COLUMNS} FROM exercises e WHERE e.id = ?`).get(id);
   }
 
-  require(id: number): Exercise {
+  require(id: ExerciseId): Exercise {
     const exercise = this.get(id);
     if (!exercise) {
       throw notFound('Exercise');
@@ -68,7 +69,7 @@ export class ExerciseRepository {
     }
   }
 
-  update(id: number, patch: EditExercise): Exercise {
+  update(id: ExerciseId, patch: EditExercise): Exercise {
     this.require(id);
 
     const update = buildUpdate('exercises', FIELDS, patch);
@@ -85,9 +86,9 @@ export class ExerciseRepository {
     return this.require(id);
   }
 
-  delete(id: number): void {
+  delete(id: ExerciseId): void {
     this.require(id);
-    const used = this.db.query<{ n: number }, [number]>('SELECT COUNT(*) AS n FROM sets WHERE exercise_id = ?').get(id);
+    const used = this.db.query<{ n: number }, [ExerciseId]>('SELECT COUNT(*) AS n FROM sets WHERE exercise_id = ?').get(id);
     if (used && used.n > 0) {
       throw conflict(`Exercise is used by ${used.n} logged set(s); delete those sets first to keep your history intact`);
     }
@@ -95,9 +96,9 @@ export class ExerciseRepository {
   }
 
   /** Per-session aggregates for one exercise, oldest first — the progress curve. */
-  progress(id: number): SessionPoint[] {
+  progress(id: ExerciseId): SessionPoint[] {
     return this.db
-      .query<SessionPoint, [number]>(
+      .query<SessionPoint, [ExerciseId]>(
         `SELECT w.id                   AS workout_id,
                 w.performed_on         AS performed_on,
                 COUNT(s.id)            AS set_count,
@@ -115,9 +116,9 @@ export class ExerciseRepository {
   }
 
   /** The single best set ever recorded for an exercise, by estimated 1RM. */
-  bestSet(id: number): (LiftSet & { performed_on: string }) | null {
+  bestSet(id: ExerciseId): (LiftSet & { performed_on: Iso8601Date }) | null {
     return this.db
-      .query<LiftSet & { performed_on: string }, [number]>(
+      .query<LiftSet & { performed_on: Iso8601Date }, [ExerciseId]>(
         `SELECT ${SET_COLUMNS}, w.performed_on
            FROM sets s
            JOIN exercises e ON e.id = s.exercise_id

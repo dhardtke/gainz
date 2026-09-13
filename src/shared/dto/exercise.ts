@@ -1,25 +1,26 @@
+import type { ExerciseId, Iso8601Date, Iso8601DateTime, WorkoutId } from '../flavors.ts';
 import type { BestSetDto } from './set.ts';
 
 export interface ExerciseDto {
-  id: number;
+  id: ExerciseId;
   name: string;
   muscleGroup: string | null;
   notes: string | null;
-  createdAt: string;
+  createdAt: Iso8601DateTime;
 }
 
 export interface ExerciseWithStatsDto extends ExerciseDto {
   setCount: number;
   workoutCount: number;
-  lastPerformedOn: string | null;
+  lastPerformedOn: Iso8601Date | null;
   bestWeight: number | null;
 }
 
 /** One session on an exercise's progress line. */
 export interface SessionPointDto {
-  workoutId: number;
+  workoutId: WorkoutId;
   /** ISO date, `YYYY-MM-DD`. */
-  performedOn: string;
+  performedOn: Iso8601Date;
   setCount: number;
   totalReps: number;
   totalVolume: number;

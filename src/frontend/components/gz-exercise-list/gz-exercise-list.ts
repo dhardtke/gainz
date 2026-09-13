@@ -3,6 +3,7 @@ import type { RawHtml } from '../../base.ts';
 import { define, GzElement, html } from '../../base.ts';
 import { formatWeight, plural, relativeDay } from '../../format.ts';
 import type { ExerciseWithStatsDto } from '../../../shared/dto/index.ts';
+import type { ExerciseId } from '../../../shared/flavors.ts';
 import { toast, toastError } from '../gz-toast/gz-toast.ts';
 
 type ExerciseListState = { status: 'loading' } | { status: 'ready'; items: ExerciseWithStatsDto[] } | { status: 'error'; message: string };
@@ -11,7 +12,7 @@ type ExerciseListState = { status: 'loading' } | { status: 'ready'; items: Exerc
 class GzExerciseList extends GzElement {
   #state: ExerciseListState = { status: 'loading' };
 
-  #editingId: number | null = null;
+  #editingId: ExerciseId | null = null;
 
   connectedCallback(): void {
     super.connectedCallback();

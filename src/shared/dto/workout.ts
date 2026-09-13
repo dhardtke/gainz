@@ -1,12 +1,13 @@
+import type { Iso8601Date, Iso8601DateTime, WorkoutId } from '../flavors.ts';
 import type { LiftSetDto } from './set.ts';
 
 export interface WorkoutDto {
-  id: number;
+  id: WorkoutId;
   /** ISO date, `YYYY-MM-DD`. */
-  performedOn: string;
+  performedOn: Iso8601Date;
   title: string | null;
   notes: string | null;
-  createdAt: string;
+  createdAt: Iso8601DateTime;
 }
 
 export interface WorkoutWithStatsDto extends WorkoutDto {
@@ -39,11 +40,11 @@ export interface WorkoutPageDto {
  */
 export interface CreateWorkoutDto {
   /** Defaults to today on the server. */
-  performedOn?: string;
+  performedOn?: Iso8601Date;
   title?: string | null;
   notes?: string | null;
   /** Copies that workout's sets into the new one. */
-  copyFromWorkoutId?: number;
+  copyFromWorkoutId?: WorkoutId;
 }
 
 /**
@@ -51,7 +52,7 @@ export interface CreateWorkoutDto {
  * `copyFromWorkoutId` here — copying belongs to creating a session, not to editing one.
  */
 export interface EditWorkoutDto {
-  performedOn?: string;
+  performedOn?: Iso8601Date;
   title?: string | null;
   notes?: string | null;
 }

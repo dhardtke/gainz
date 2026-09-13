@@ -1,4 +1,5 @@
 import { badRequest } from '../http/errors.ts';
+import type { Iso8601Date } from '../../shared/flavors.ts';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -71,7 +72,7 @@ export function requiredNumber<T extends object>(dto: T, field: keyof T & string
   return Math.round(num * 100) / 100;
 }
 
-export function requiredDate<T extends object>(dto: T, field: keyof T & string): string {
+export function requiredDate<T extends object>(dto: T, field: keyof T & string): Iso8601Date {
   const value = requiredString(dto, field, 10);
   if (!ISO_DATE.test(value) || Number.isNaN(Date.parse(value))) {
     throw badRequest(`"${field}" must be a date in YYYY-MM-DD format`);
@@ -79,6 +80,6 @@ export function requiredDate<T extends object>(dto: T, field: keyof T & string):
   return value;
 }
 
-export function today(): string {
+export function today(): Iso8601Date {
   return new Date().toISOString().slice(0, 10);
 }

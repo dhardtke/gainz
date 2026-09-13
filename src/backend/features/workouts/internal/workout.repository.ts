@@ -1,10 +1,11 @@
 import type { DB } from '../../../db/db.ts';
 import { notFound } from '../../../http/errors.ts';
 import { buildUpdate } from '../../../db/sql.ts';
+import type { Iso8601Date, WorkoutId } from '../../../../shared/flavors.ts';
 import type { Workout, WorkoutWithStats } from '../ports/workout.ts';
 
 export interface CreateWorkout {
-  performed_on: string;
+  performed_on: Iso8601Date;
   title: string | null;
   notes: string | null;
 }
@@ -37,11 +38,11 @@ export class WorkoutRepository {
     return this.db.query<{ n: number }, []>('SELECT COUNT(*) AS n FROM workouts').get()?.n ?? 0;
   }
 
-  get(id: number): Workout | null {
-    return this.db.query<Workout, [number]>('SELECT id, performed_on, title, notes, created_at FROM workouts WHERE id = ?').get(id);
+  get(id: WorkoutId): Workout | null {
+    return this.db.query<Workout, [WorkoutId]>('SELECT id, performed_on, title, notes, created_at FROM workouts WHERE id = ?').get(id);
   }
 
-  require(id: number): Workout {
+  require(id: WorkoutId): Workout {
     const workout = this.get(id);
     if (!workout) {
       throw notFound('Workout');
@@ -54,7 +55,7 @@ export class WorkoutRepository {
    * session". The insert and the copy commit together, so an unknown `copyFrom` fails without
    * leaving an empty workout behind.
    */
-  create(input: CreateWorkout, options: { copyFrom?: number } = {}): Workout {
+  create(input: CreateWorkout, options: { copyFrom?: WorkoutId } = {}): Workout {
     return this.db.transaction(() => {
       const { copyFrom } = options;
       if (copyFrom !== undefined) {
@@ -62,7 +63,7 @@ export class WorkoutRepository {
       }
 
       const row = this.db
-        .query<Workout, [string, string | null, string | null]>(
+        .query<Workout, [Iso8601Date, string | null, string | null]>(
           `INSERT INTO workouts (performed_on, title, notes) VALUES (?, ?, ?)
            RETURNING id, performed_on, title, notes, created_at`,
         )
@@ -73,7 +74,7 @@ export class WorkoutRepository {
 
       if (copyFrom !== undefined) {
         this.db
-          .query<unknown, [number, number]>(
+          .query<unknown, [WorkoutId, WorkoutId]>(
             `INSERT INTO sets (workout_id, exercise_id, reps, weight, notes, position)
              SELECT ?, exercise_id, reps, weight, notes, position
                FROM sets WHERE workout_id = ?`,
@@ -85,7 +86,7 @@ export class WorkoutRepository {
     })();
   }
 
-  update(id: number, patch: EditWorkout): Workout {
+  update(id: WorkoutId, patch: EditWorkout): Workout {
     this.require(id);
 
     const update = buildUpdate('workouts', FIELDS, patch);
@@ -95,7 +96,7 @@ export class WorkoutRepository {
     return this.require(id);
   }
 
-  delete(id: number): void {
+  delete(id: WorkoutId): void {
     this.require(id);
     this.db.query('DELETE FROM workouts WHERE id = ?').run(id);
   }

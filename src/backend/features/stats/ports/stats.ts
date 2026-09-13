@@ -1,4 +1,5 @@
 import type { SummaryDto } from '../../../../shared/dto';
+import type { Iso8601Date } from '../../../../shared/flavors.ts';
 
 /**
  * The published shape of a whole-log summary. The repository assembles it from two queries — a
@@ -11,7 +12,7 @@ export interface Summary {
   total_reps: number;
   total_volume: number;
   exercise_count: number;
-  last_performed_on: string | null;
+  last_performed_on: Iso8601Date | null;
   workouts_last_30_days: number;
   volume_last_30_days: number;
 }

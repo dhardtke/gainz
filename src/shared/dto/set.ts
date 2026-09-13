@@ -1,24 +1,26 @@
+import type { ExerciseId, Iso8601Date, Iso8601DateTime, LiftSetId, WorkoutId } from '../flavors.ts';
+
 export interface LiftSetDto {
-  id: number;
-  workoutId: number;
-  exerciseId: number;
+  id: LiftSetId;
+  workoutId: WorkoutId;
+  exerciseId: ExerciseId;
   exerciseName: string;
   reps: number;
   weight: number;
   notes: string | null;
   position: number;
-  createdAt: string;
+  createdAt: Iso8601DateTime;
 }
 
 /** The heaviest set ever logged for an exercise, carrying the day it happened. */
 export interface BestSetDto extends LiftSetDto {
   /** ISO date, `YYYY-MM-DD`. */
-  performedOn: string;
+  performedOn: Iso8601Date;
 }
 
 /** The body of `POST /workouts/:id/sets`. */
 export interface CreateSetDto {
-  exerciseId: number;
+  exerciseId: ExerciseId;
   reps: number;
   weight: number;
   notes?: string | null;
@@ -32,7 +34,7 @@ export interface CreateSetDto {
  * `CreateSetDto`, so the contract reads straight off this file.
  */
 export interface EditSetDto {
-  exerciseId?: number;
+  exerciseId?: ExerciseId;
   reps?: number;
   weight?: number;
   notes?: string | null;
