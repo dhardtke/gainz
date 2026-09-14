@@ -7,7 +7,7 @@ import type { SummaryDto, WorkoutWithStatsDto } from '../../../shared/dto/index.
 import { toastError } from '../../ui/gz-toast.ts';
 import { workoutFacade } from '../workouts/workouts.facade.ts';
 import { statsFacade } from './stats.facade.ts';
-import '../../ui/gz-stat-tile.ts';
+import '../../ui/gz-tile.ts';
 
 type DashboardState = { status: 'loading' } | { status: 'ready'; summary: SummaryDto; workouts: WorkoutWithStatsDto[] } | { status: 'error'; message: string };
 
@@ -66,10 +66,10 @@ export class GzDashboard extends GzElement {
         </div>
 
         <div class="tiles">
-          <gz-stat-tile label="Workouts" value="${summary.workoutCount}" hint="${plural(summary.setCount, 'set')} total"></gz-stat-tile>
-          <gz-stat-tile label="Total volume" value="${formatVolume(summary.totalVolume)}" hint="reps × weight, all time"></gz-stat-tile>
-          <gz-stat-tile label="Last 30 days" value="${summary.workoutsLast30Days}" hint="${formatVolume(summary.volumeLast30Days)} moved"></gz-stat-tile>
-          <gz-stat-tile label="Exercises" value="${summary.exerciseCount}" hint="${plural(summary.totalReps, 'rep')} lifted"></gz-stat-tile>
+          <gz-tile label="Workouts" value="${summary.workoutCount}" hint="${plural(summary.setCount, 'set')} total"></gz-tile>
+          <gz-tile label="Total volume" value="${formatVolume(summary.totalVolume)}" hint="reps × weight, all time"></gz-tile>
+          <gz-tile label="Last 30 days" value="${summary.workoutsLast30Days}" hint="${formatVolume(summary.volumeLast30Days)} moved"></gz-tile>
+          <gz-tile label="Exercises" value="${summary.exerciseCount}" hint="${plural(summary.totalReps, 'rep')} lifted"></gz-tile>
         </div>
 
         <article class="stack-sm">

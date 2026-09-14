@@ -15,7 +15,7 @@
    * value is a percentage. It is written to apply once, at the document root —
    * but every component adopts Pico, so the percentage re-applies at each
    * shadow host and multiplies with nesting: gz-app > gz-dashboard >
-   * gz-stat-tile turned a 20px root into 39px text. Inheriting instead means
+   * gz-tile turned a 20px root into 39px text. Inheriting instead means
    * the root sets the size and every component simply keeps it.
    */
   font-size: inherit;
