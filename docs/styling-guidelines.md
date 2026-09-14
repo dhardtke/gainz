@@ -16,7 +16,7 @@
   `131.25%`; and `shared.css` sets `font-size: inherit` on `:host`, because Pico applies
   `font-size: var(--pico-font-size)` to `:host, :root` — written to land once at the document
   root, but every component adopts Pico, so the percentage re-applied at each shadow host and
-  _multiplied_ with nesting. `gz-app > gz-dashboard > gz-stat-tile` reached 39px from a 20px root.
+  _multiplied_ with nesting. `gz-app > gz-dashboard > gz-tile` reached 39px from a 20px root.
   For the same reason `gz-chart` draws only geometry in SVG and positions its axis labels as HTML
   over the plot: a font size inside a `viewBox` is measured in user units, so the browser would
   scale the lettering with the chart instead of matching the page.

@@ -10,7 +10,7 @@ src/frontend/
 ├── index.html  main.ts
 ├── app/        gz-app, gz-theme-toggle, router.ts, routes.ts
 ├── http/       http.ts (get/post/patch/remove), errors.ts (ApiError, errorMessage)
-├── ui/         base.ts, styles.ts, theme.ts, format.ts, app.css, shared.css, gz-toast, gz-stat-tile
+├── ui/         base.ts, styles.ts, theme.ts, format.ts, app.css, shared.css, gz-toast, gz-tile
 └── features/
     ├── exercises/  exercises.routes.ts, exercises.facade.ts, gz-exercise-list, gz-exercise-detail
     │   └── internal/  exercise.api.ts, gz-chart
@@ -29,7 +29,7 @@ able to make a request. `ui/` is what any component may use: `base.ts` with `GzE
 shadow root, `data-action` click/submit delegation, `template()`/`render()`), the escaping `html`
 tagged template and `define()`; `styles.ts`, `theme.ts` and `format.ts`; the document stylesheet
 `app.css` and the utilities in `shared.css`; and the two widgets several views use, `gz-toast` and
-`gz-stat-tile`.
+`gz-tile`.
 
 A component is a pair of files side by side, `gz-<name>.ts` and `gz-<name>.css`, in whichever
 directory owns it. A component module ends with `await define('<tag>', TheClass, import.meta.url)`,

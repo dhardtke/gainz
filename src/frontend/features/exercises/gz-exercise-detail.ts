@@ -8,7 +8,7 @@ import { exerciseFacade } from './exercises.facade.ts';
 import type { GzChart } from './internal/gz-chart.ts';
 import { toastError } from '../../ui/gz-toast.ts';
 import './internal/gz-chart.ts';
-import '../../ui/gz-stat-tile.ts';
+import '../../ui/gz-tile.ts';
 
 /** The `SessionPointDto` fields that can be plotted. */
 type MetricKey = 'estOneRepMax' | 'topWeight' | 'totalVolume';
@@ -128,22 +128,18 @@ export class GzExerciseDetail extends GzElement {
 
     return html`
       <div class="tiles">
-        <gz-stat-tile
-          label="Sessions"
-          value="${sessions.length}"
-          hint="${latest ? `last ${relativeDay(latest.performedOn)}` : 'not trained yet'}"
-        ></gz-stat-tile>
-        <gz-stat-tile
+        <gz-tile label="Sessions" value="${sessions.length}" hint="${latest ? `last ${relativeDay(latest.performedOn)}` : 'not trained yet'}"></gz-tile>
+        <gz-tile
           label="Best set"
           value="${bestSet ? `${formatNumber(bestSet.weight)} ${UNIT} × ${bestSet.reps}` : '–'}"
           hint="${bestSet ? formatDate(bestSet.performedOn) : 'no sets logged'}"
-        ></gz-stat-tile>
-        <gz-stat-tile
+        ></gz-tile>
+        <gz-tile
           label="Estimated 1RM"
           value="${latest ? `${formatNumber(latest.estOneRepMax, 1)} ${UNIT}` : '–'}"
           hint="${delta ? `${delta} ${UNIT} vs. previous session` : 'needs two sessions'}"
-        ></gz-stat-tile>
-        <gz-stat-tile label="Total volume" value="${formatVolume(totalVolume)}" hint="across all sessions"></gz-stat-tile>
+        ></gz-tile>
+        <gz-tile label="Total volume" value="${formatVolume(totalVolume)}" hint="across all sessions"></gz-tile>
       </div>
     `;
   }

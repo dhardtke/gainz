@@ -2,7 +2,7 @@ import type { RawHtml } from './base.ts';
 import { define, GzElement, html } from './base.ts';
 
 /** A single headline number with a label and optional sub-line. */
-class GzStatTile extends GzElement {
+class GzTile extends GzElement {
   static observedAttributes = ['label', 'value', 'hint'];
 
   attributeChangedCallback(): void {
@@ -23,4 +23,4 @@ class GzStatTile extends GzElement {
   }
 }
 
-await define('gz-stat-tile', GzStatTile, import.meta.url);
+await define('gz-tile', GzTile, import.meta.url);
