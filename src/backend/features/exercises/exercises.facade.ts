@@ -1,17 +1,15 @@
 import type { CreateExerciseDto, EditExerciseDto } from '../../../shared/dto';
 import type { ExerciseId, Iso8601Date } from '../../../shared/flavors.ts';
 import type { DB } from '../../db/db.ts';
-import { MAX_NAME, MAX_NOTES, optionalString, requiredString } from '../../shared/validate.ts';
+import { optionalString, requiredString } from '../../shared/validate.ts';
 import { translateDtoToCreateExercise, translateDtoToEditExercise } from './internal/exercise.translator.ts';
 import { ExerciseRepository } from './internal/exercise.repository.ts';
 import type { Exercise, ExerciseWithStats, SessionPoint } from './ports/exercise.ts';
 import type { LiftSet } from '../workouts/ports/set.ts';
 
-/**
- * The exercises feature's front door. Controllers hold this rather than the repository, so the SQL,
- * the CreateExercise shape and the nullable get() stay inside the feature. Rows cross the boundary
- * unchanged: mapping a row to a DTO is the controller's job, and the compiler is what enforces it.
- */
+const MAX_EXERCISE_NAME_LENGTH = 120;
+const MAX_EXERCISE_NOTES_LENGTH = 2000;
+
 export class ExerciseFacade {
   constructor(private readonly exercises: ExerciseRepository) {}
 
@@ -45,22 +43,22 @@ export class ExerciseFacade {
 
   private validateCreate(dto: CreateExerciseDto): CreateExerciseDto {
     return {
-      name: requiredString(dto, 'name', MAX_NAME),
+      name: requiredString(dto, 'name', MAX_EXERCISE_NAME_LENGTH),
       muscleGroup: optionalString(dto, 'muscleGroup', 60),
-      notes: optionalString(dto, 'notes', MAX_NOTES),
+      notes: optionalString(dto, 'notes', MAX_EXERCISE_NOTES_LENGTH),
     };
   }
 
   private validateEdit(dto: EditExerciseDto): EditExerciseDto {
     const valid: EditExerciseDto = {};
     if (dto.name !== undefined) {
-      valid.name = requiredString(dto, 'name', MAX_NAME);
+      valid.name = requiredString(dto, 'name', MAX_EXERCISE_NAME_LENGTH);
     }
     if (dto.muscleGroup !== undefined) {
       valid.muscleGroup = optionalString(dto, 'muscleGroup', 60);
     }
     if (dto.notes !== undefined) {
-      valid.notes = optionalString(dto, 'notes', MAX_NOTES);
+      valid.notes = optionalString(dto, 'notes', MAX_EXERCISE_NOTES_LENGTH);
     }
     return valid;
   }
