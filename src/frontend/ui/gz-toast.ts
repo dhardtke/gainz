@@ -1,6 +1,6 @@
-import { errorMessage } from '../../api.ts';
-import type { RawHtml } from '../../base.ts';
-import { define, GzElement, html } from '../../base.ts';
+import { errorMessage } from '../http/errors.ts';
+import type { RawHtml } from './base.ts';
+import { define, GzElement, html } from './base.ts';
 
 export type ToastKind = 'info' | 'success' | 'error';
 
@@ -96,4 +96,4 @@ class GzToast extends GzElement {
   }
 }
 
-await define('gz-toast', GzToast);
+await define('gz-toast', GzToast, import.meta.url);

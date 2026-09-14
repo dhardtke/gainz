@@ -1,10 +1,11 @@
-import { api, errorMessage } from '../../api.ts';
-import type { RawHtml } from '../../base.ts';
-import { define, GzElement, html } from '../../base.ts';
-import { formatDate, formatVolume, plural, relativeDay, todayIso } from '../../format.ts';
-import { navigate } from '../../router.ts';
+import { errorMessage } from '../../http/errors.ts';
+import type { RawHtml } from '../../ui/base.ts';
+import { define, GzElement, html } from '../../ui/base.ts';
+import { formatDate, formatVolume, plural, relativeDay, todayIso } from '../../ui/format.ts';
+import { navigate } from '../../app/router.ts';
 import type { WorkoutWithStatsDto } from '../../../shared/dto/index.ts';
-import { toast, toastError } from '../gz-toast/gz-toast.ts';
+import { toast, toastError } from '../../ui/gz-toast.ts';
+import { workoutFacade } from './workouts.facade.ts';
 
 /**
  * The list keeps the pages it has already loaded, so `items` and `total` live
@@ -30,7 +31,7 @@ class GzWorkoutList extends GzElement {
 
   async #load(offset: number): Promise<void> {
     try {
-      const page = await api.workouts.list({ limit: PAGE_SIZE, offset });
+      const page = await workoutFacade.list({ limit: PAGE_SIZE, offset });
       const items = offset === 0 ? page.items : [...this.#state.items, ...page.items];
       this.#state = { status: 'ready', items, total: page.total };
     } catch (error) {
@@ -46,7 +47,7 @@ class GzWorkoutList extends GzElement {
     }
     const values = this.formData(form);
     try {
-      const workout = await api.workouts.create({
+      const workout = await workoutFacade.create({
         // The date field is pre-filled and `required`, so an empty value means it
         // was cleared. The API defaults a missing date but rejects an empty one.
         performedOn: values.performedOn === '' ? todayIso() : values.performedOn,
@@ -69,7 +70,7 @@ class GzWorkoutList extends GzElement {
 
     if (action === 'repeat') {
       try {
-        const workout = await api.workouts.create({
+        const workout = await workoutFacade.create({
           performedOn: todayIso(),
           title: element.dataset.title,
           copyFromWorkoutId: id,
@@ -88,7 +89,7 @@ class GzWorkoutList extends GzElement {
         return;
       }
       try {
-        await api.workouts.remove(id);
+        await workoutFacade.delete(id);
         toast('Workout deleted', 'success');
         await this.#load(0);
       } catch (error) {
@@ -187,4 +188,4 @@ class GzWorkoutList extends GzElement {
   }
 }
 
-await define('gz-workout-list', GzWorkoutList);
+await define('gz-workout-list', GzWorkoutList, import.meta.url);

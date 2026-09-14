@@ -1,6 +1,6 @@
-import type { RawHtml } from '../../base.ts';
-import { define, GzElement, html, raw } from '../../base.ts';
-import { formatNumber } from '../../format.ts';
+import type { RawHtml } from '../../../ui/base.ts';
+import { define, GzElement, html, raw } from '../../../ui/base.ts';
+import { formatNumber } from '../../../ui/format.ts';
 
 /** Plot area in SVG user units. Only geometry lives in here — never text. */
 const W = 600;
@@ -158,4 +158,4 @@ export class GzChart extends GzElement {
   }
 }
 
-await define('gz-chart', GzChart);
+await define('gz-chart', GzChart, import.meta.url);

@@ -4,7 +4,7 @@ git_commit: 3a90d298b63f9bd2bc8dd7ccdfe7f1dc15618f5d
 branch: main
 topic: 'Organise the frontend by feature, with facades in front of per-feature API clients'
 tags: [plan, frontend, features, facades, components, styles, oxlint, refactor]
-status: ready
+status: complete
 ---
 
 # PLAN: A feature-organised frontend
@@ -220,14 +220,14 @@ and two child components stay in `components/` for now, and `api.ts` keeps only 
 
 **Tasks**:
 
-- [ ] `git mv` `src/frontend/{base,styles,theme,format}.ts` → `src/frontend/ui/`
-- [ ] `git mv` `src/frontend/css/app.css` and `css/shared.css` → `src/frontend/ui/`; remove `css/`
-- [ ] `git mv` `components/gz-toast/gz-toast.{ts,css}` and `components/gz-stat-tile/gz-stat-tile.{ts,css}` → `ui/`
-- [ ] `git mv` `components/gz-app/gz-app.{ts,css}`, `components/gz-theme-toggle/gz-theme-toggle.{ts,css}` and `src/frontend/router.ts` → `app/`
-- [ ] Create `src/frontend/http/errors.ts` with `ApiError` and `errorMessage` from `api.ts:21-44`
-- [ ] Create `src/frontend/http/http.ts` with `request<T>` (private) and exported `get`, `post`, `patch`, `remove` from `api.ts:57-100`, importing `ApiError` from `./errors.ts`; reword the two comments that point at "the methods on `api` below" (`api.ts:50`, `api.ts:87`) to point at the API classes' method declarations
-- [ ] Reduce `src/frontend/api.ts` to its DTO/flavor type imports plus the `api` object, importing `get`/`post`/`patch`/`remove` from `./http/http.ts`
-- [ ] `ui/styles.ts`: replace `componentHref` with a `hrefs: Map<string, string>` filled by `loadStyles(tagName, moduleUrl)`; `stylesFor(tagName)` reads `sheets.get(hrefs.get(tagName))`; `BASE_HREFS` → `'/ui/shared.css'`; update the module doc comment
+- [x] `git mv` `src/frontend/{base,styles,theme,format}.ts` → `src/frontend/ui/`
+- [x] `git mv` `src/frontend/css/app.css` and `css/shared.css` → `src/frontend/ui/`; remove `css/`
+- [x] `git mv` `components/gz-toast/gz-toast.{ts,css}` and `components/gz-stat-tile/gz-stat-tile.{ts,css}` → `ui/`
+- [x] `git mv` `components/gz-app/gz-app.{ts,css}`, `components/gz-theme-toggle/gz-theme-toggle.{ts,css}` and `src/frontend/router.ts` → `app/`
+- [x] Create `src/frontend/http/errors.ts` with `ApiError` and `errorMessage` from `api.ts:21-44`
+- [x] Create `src/frontend/http/http.ts` with `request<T>` (private) and exported `get`, `post`, `patch`, `remove` from `api.ts:57-100`, importing `ApiError` from `./errors.ts`; reword the two comments that point at "the methods on `api` below" (`api.ts:50`, `api.ts:87`) to point at the API classes' method declarations
+- [x] Reduce `src/frontend/api.ts` to its DTO/flavor type imports plus the `api` object, importing `get`/`post`/`patch`/`remove` from `./http/http.ts`
+- [x] `ui/styles.ts`: replace `componentHref` with a `hrefs: Map<string, string>` filled by `loadStyles(tagName, moduleUrl)`; `stylesFor(tagName)` reads `sheets.get(hrefs.get(tagName))`; `BASE_HREFS` → `'/ui/shared.css'`; update the module doc comment
       ```ts
       export function loadStyles(tagName: string, moduleUrl: string): Promise<void> {
         const href = moduleUrl.replace(/\.ts$/, '.css');
@@ -235,13 +235,13 @@ and two child components stay in `components/` for now, and `api.ts` keeps only 
         …
       }
       ```
-- [ ] `ui/base.ts`: `define(name, ctor, moduleUrl: string)` calls `loadStyles(name, moduleUrl)`; update the `GzElement` doc comment example to `ui/gz-stat-tile.css` beside `ui/gz-stat-tile.ts`
-- [ ] Change all eleven `await define('<tag>', Class)` calls to `await define('<tag>', Class, import.meta.url)`
-- [ ] Rewrite imports in every moved module and every remaining `components/*/*.ts`: `base`/`format`/`theme` → `ui/`, `router` → `app/router.ts`, `gz-toast`/`gz-stat-tile` → `ui/`, `ApiError`/`errorMessage` → `http/errors.ts` (`gz-toast` included); `ui/format.ts` imports `../../shared/flavors.ts`
-- [ ] `app/gz-app.ts`: `./gz-theme-toggle.ts`, `../ui/gz-toast.ts`; `VIEWS` specifiers become `../components/<tag>/<tag>.ts` for now
-- [ ] `main.ts`: `import './app/gz-app.ts'`
-- [ ] `index.html`: `<link rel="stylesheet" href="/ui/app.css" />`; comments name `src/frontend/ui/theme.ts` and `src/frontend/ui/styles.ts`
-- [ ] `.oxlintrc.json`: append these overrides, in this order (later entries replace earlier ones for files both match):
+- [x] `ui/base.ts`: `define(name, ctor, moduleUrl: string)` calls `loadStyles(name, moduleUrl)`; update the `GzElement` doc comment example to `ui/gz-stat-tile.css` beside `ui/gz-stat-tile.ts`
+- [x] Change all eleven `await define('<tag>', Class)` calls to `await define('<tag>', Class, import.meta.url)`
+- [x] Rewrite imports in every moved module and every remaining `components/*/*.ts`: `base`/`format`/`theme` → `ui/`, `router` → `app/router.ts`, `gz-toast`/`gz-stat-tile` → `ui/`, `ApiError`/`errorMessage` → `http/errors.ts` (`gz-toast` included); `ui/format.ts` imports `../../shared/flavors.ts`
+- [x] `app/gz-app.ts`: `./gz-theme-toggle.ts`, `../ui/gz-toast.ts`; `VIEWS` specifiers become `../components/<tag>/<tag>.ts` for now
+- [x] `main.ts`: `import './app/gz-app.ts'`
+- [x] `index.html`: `<link rel="stylesheet" href="/ui/app.css" />`; comments name `src/frontend/ui/theme.ts` and `src/frontend/ui/styles.ts`
+- [x] `.oxlintrc.json`: append these overrides, in this order (later entries replace earlier ones for files both match):
       ```jsonc
       { "files": ["src/frontend/features/**/*.ts"],
         "patterns": ["../**/internal/**"],
@@ -263,25 +263,25 @@ and two child components stay in `components/` for now, and `api.ts` keeps only 
         "message": "ui/ components are foundation and read no data." }
       ```
       (shorthand: each entry is `"rules": { "no-restricted-imports": ["error", { "patterns": [{ "group": [...], "message": "..." }] }] }`, as the existing backend overrides are written)
-- [ ] `static.routes.test.ts`: stylesheet test paths → `/ui/app.css`, `/ui/shared.css`, `/app/gz-app.css`; HEAD test → `/ui/format.ts`; 405 test → `/ui/app.css`; trailing-slash test → `['/ui/', '/app/']` and the no-slash case → `/ui`
-- [ ] `static.routes.test.ts`: add `test('serves a stylesheet beside every component module', …)` — `new Bun.Glob('**/gz-*.ts').scan(FRONTEND_DIR)` (import `FRONTEND_DIR` from `./internal/paths.ts`), and for each file request `'/' + file.replaceAll('\\', '/').replace(/\.ts$/, '.css')` (scan yields backslashes on Windows), expecting 200 and `text/css`; also expect at least eleven files were found
-- [ ] `internal/transpile.test.ts`: `/format.ts` → `/ui/format.ts`; `main.ts` assertion → `./app/gz-app.ts`; the specifier assertion on `gz-chart.ts` → `from "../../ui/format.ts"`
-- [ ] `docs/frontend.md`: rewrite the opening two paragraphs and the component-directory paragraph for `app/`, `http/`, `ui/` and `define(tag, ctor, import.meta.url)` (the CSS sits beside the module and is found from its URL — still no manifest); update the Loading example URL to `src/frontend/app/gz-app.ts` → `/app/gz-app.ts`; "Only the shell … and Pico plus `ui/shared.css` load up front"; Theming names `src/frontend/ui/theme.ts` and `ui/base.ts`; add a paragraph describing the four import boundaries `bun run lint` enforces
-- [ ] `docs/backend.md:84`: "The `overrides` block in `.oxlintrc.json` holds three rules" → says the backend's three and points to `docs/frontend.md` for the frontend's
-- [ ] `docs/backend.md:176`: the cited `static.routes.test.ts:39` → the HEAD test's new line number after the edits above
-- [ ] `docs/styling-guidelines.md:6-7`: `css/app.css` / `css/shared.css` → `ui/app.css` / `ui/shared.css`, and a component's `.css` sits beside its `.ts`
+- [x] `static.routes.test.ts`: stylesheet test paths → `/ui/app.css`, `/ui/shared.css`, `/app/gz-app.css`; HEAD test → `/ui/format.ts`; 405 test → `/ui/app.css`; trailing-slash test → `['/ui/', '/app/']` and the no-slash case → `/ui`
+- [x] `static.routes.test.ts`: add `test('serves a stylesheet beside every component module', …)` — `new Bun.Glob('**/gz-*.ts').scan(FRONTEND_DIR)` (import `FRONTEND_DIR` from `./internal/paths.ts`), and for each file request `'/' + file.replaceAll('\\', '/').replace(/\.ts$/, '.css')` (scan yields backslashes on Windows), expecting 200 and `text/css`; also expect at least eleven files were found
+- [x] `internal/transpile.test.ts`: `/format.ts` → `/ui/format.ts`; `main.ts` assertion → `./app/gz-app.ts`; the specifier assertion on `gz-chart.ts` → `from "../../ui/format.ts"`
+- [x] `docs/frontend.md`: rewrite the opening two paragraphs and the component-directory paragraph for `app/`, `http/`, `ui/` and `define(tag, ctor, import.meta.url)` (the CSS sits beside the module and is found from its URL — still no manifest); update the Loading example URL to `src/frontend/app/gz-app.ts` → `/app/gz-app.ts`; "Only the shell … and Pico plus `ui/shared.css` load up front"; Theming names `src/frontend/ui/theme.ts` and `ui/base.ts`; add a paragraph describing the four import boundaries `bun run lint` enforces
+- [x] `docs/backend.md:84`: "The `overrides` block in `.oxlintrc.json` holds three rules" → says the backend's three and points to `docs/frontend.md` for the frontend's
+- [x] `docs/backend.md:176`: the cited `static.routes.test.ts:39` → the HEAD test's new line number after the edits above
+- [x] `docs/styling-guidelines.md:6-7`: `css/app.css` / `css/shared.css` → `ui/app.css` / `ui/shared.css`, and a component's `.css` sits beside its `.ts`
 
 **Automated Verification**:
 
-- [ ] `bun test src/backend/features/static` passes, including the new stylesheet-beside-module test
-- [ ] `bun test` passes
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
+- [x] `bun test src/backend/features/static` passes, including the new stylesheet-beside-module test
+- [x] `bun test` passes
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
 
 **Manual Verification**:
 
-- [ ] `bun start`, open `/`: header, theme toggle, dashboard stat tiles and toasts render styled on first paint; switching theme and every nav link still work
+- [x] `bun start`, open `/`: header, theme toggle, dashboard stat tiles and toasts render styled on first paint; switching theme and every nav link still work
 
 ### Phase 2: Workouts feature
 
@@ -292,9 +292,9 @@ into the feature. Other components switch their workout and set calls to the fac
 
 **Tasks**:
 
-- [ ] Create `features/workouts/internal/workout.api.ts` — `export class WorkoutApi` with `list({ limit, offset })`, `get(id)`, `create(dto)`, `update(id, dto)`, `delete(id)`, `createSet(workoutId, dto)`, bodies taken from `api.workouts` (`api.ts:120-133`); keep the `update` doc comment about the missing `sets`
-- [ ] Create `features/workouts/internal/set.api.ts` — `export class SetApi` with `update(id, dto)`, `delete(id)` from `api.sets` (`api.ts:135-139`)
-- [ ] Create `features/workouts/workouts.facade.ts`
+- [x] Create `features/workouts/internal/workout.api.ts` — `export class WorkoutApi` with `list({ limit, offset })`, `get(id)`, `create(dto)`, `update(id, dto)`, `delete(id)`, `createSet(workoutId, dto)`, bodies taken from `api.workouts` (`api.ts:120-133`); keep the `update` doc comment about the missing `sets`
+- [x] Create `features/workouts/internal/set.api.ts` — `export class SetApi` with `update(id, dto)`, `delete(id)` from `api.sets` (`api.ts:135-139`)
+- [x] Create `features/workouts/workouts.facade.ts`
       ```ts
       export class WorkoutFacade {
         constructor(private readonly api: WorkoutApi) {}
@@ -310,27 +310,27 @@ into the feature. Other components switch their workout and set calls to the fac
       export const workoutFacade = new WorkoutFacade(workoutApi);
       export const setFacade = new SetFacade(workoutApi, new SetApi());
       ```
-- [ ] `git mv` `components/gz-workout-list/gz-workout-list.{ts,css}` and `components/gz-workout-detail/gz-workout-detail.{ts,css}` → `features/workouts/`
-- [ ] `git mv` `components/gz-set-row/gz-set-row.{ts,css}` → `features/workouts/internal/`
-- [ ] `gz-workout-list.ts`: `api.workouts.list/create/remove` → `workoutFacade.list/create/delete` from `./workouts.facade.ts` (same depth as before, so only sibling imports change)
-- [ ] `gz-workout-detail.ts`: `api.workouts.get/update/remove` → `workoutFacade.get/update/delete`, `api.workouts.addSet` → `setFacade.create`; `api.exercises.*` still from `../../api.ts` until Phase 3; `GzSetRow` type and side-effect import from `./internal/gz-set-row.ts`
-- [ ] `internal/gz-set-row.ts`: `api.workouts.addSet` → `setFacade.create`, `api.sets.update/remove` → `setFacade.update/delete`, imported from `../workouts.facade.ts`; it is one level deeper, so the rest become `../../../ui/base.ts`, `../../../ui/format.ts`, `../../../ui/gz-toast.ts`, `../../../../shared/dto/index.ts`
-- [ ] `components/gz-dashboard/gz-dashboard.ts`: `api.workouts.list/create` → `workoutFacade.list/create` from `../../features/workouts/workouts.facade.ts`; `api.summary` unchanged
-- [ ] `app/gz-app.ts` `VIEWS`: `workouts` → `../features/workouts/gz-workout-list.ts`, `workout` → `../features/workouts/gz-workout-detail.ts`
-- [ ] `api.ts`: remove the `workouts` and `sets` groups and their now-unused type imports
-- [ ] `internal/transpile.test.ts`: the strip-type-imports test requests `/features/workouts/internal/gz-set-row.ts`
-- [ ] `docs/frontend.md`: describe a feature — facade at the root, views beside it, API classes (one per URL prefix) and child components in `internal/`, facades exported as instances with no composition root — using workouts as the example; the "a component a view renders inside itself must stay a static import" rule now names `internal/`
+- [x] `git mv` `components/gz-workout-list/gz-workout-list.{ts,css}` and `components/gz-workout-detail/gz-workout-detail.{ts,css}` → `features/workouts/`
+- [x] `git mv` `components/gz-set-row/gz-set-row.{ts,css}` → `features/workouts/internal/`
+- [x] `gz-workout-list.ts`: `api.workouts.list/create/remove` → `workoutFacade.list/create/delete` from `./workouts.facade.ts` (same depth as before, so only sibling imports change)
+- [x] `gz-workout-detail.ts`: `api.workouts.get/update/remove` → `workoutFacade.get/update/delete`, `api.workouts.addSet` → `setFacade.create`; `api.exercises.*` still from `../../api.ts` until Phase 3; `GzSetRow` type and side-effect import from `./internal/gz-set-row.ts`
+- [x] `internal/gz-set-row.ts`: `api.workouts.addSet` → `setFacade.create`, `api.sets.update/remove` → `setFacade.update/delete`, imported from `../workouts.facade.ts`; it is one level deeper, so the rest become `../../../ui/base.ts`, `../../../ui/format.ts`, `../../../ui/gz-toast.ts`, `../../../../shared/dto/index.ts`
+- [x] `components/gz-dashboard/gz-dashboard.ts`: `api.workouts.list/create` → `workoutFacade.list/create` from `../../features/workouts/workouts.facade.ts`; `api.summary` unchanged
+- [x] `app/gz-app.ts` `VIEWS`: `workouts` → `../features/workouts/gz-workout-list.ts`, `workout` → `../features/workouts/gz-workout-detail.ts`
+- [x] `api.ts`: remove the `workouts` and `sets` groups and their now-unused type imports
+- [x] `internal/transpile.test.ts`: the strip-type-imports test requests `/features/workouts/internal/gz-set-row.ts`
+- [x] `docs/frontend.md`: describe a feature — facade at the root, views beside it, API classes (one per URL prefix) and child components in `internal/`, facades exported as instances with no composition root — using workouts as the example; the "a component a view renders inside itself must stay a static import" rule now names `internal/`
 
 **Automated Verification**:
 
-- [ ] `bun test` passes
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
+- [x] `bun test` passes
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
 
 **Manual Verification**:
 
-- [ ] On `#/workouts`: create, repeat, load more and delete a workout; on `#/workouts/:id`: edit the header, log a set, `+1`, edit and delete a set, delete the workout; start a workout from the dashboard
+- [x] On `#/workouts`: create, repeat, load more and delete a workout; on `#/workouts/:id`: edit the header, log a set, `+1`, edit and delete a set, delete the workout; start a workout from the dashboard
 
 ### Phase 3: Exercises feature
 
@@ -340,29 +340,29 @@ Same treatment for exercises: API client, facade, two views and the chart.
 
 **Tasks**:
 
-- [ ] Create `features/exercises/internal/exercise.api.ts` — `export class ExerciseApi` with `list()`, `get(id)`, `progress(id)`, `create(dto)`, `update(id, dto)`, `delete(id)` from `api.exercises` (`api.ts:106-118`)
-- [ ] Create `features/exercises/exercises.facade.ts` — `ExerciseFacade` delegating each method, and `export const exerciseFacade = new ExerciseFacade(new ExerciseApi())`
-- [ ] `git mv` `components/gz-exercise-list/gz-exercise-list.{ts,css}` and `components/gz-exercise-detail/gz-exercise-detail.{ts,css}` → `features/exercises/`
-- [ ] `git mv` `components/gz-chart/gz-chart.{ts,css}` → `features/exercises/internal/`
-- [ ] `internal/gz-chart.ts`: one level deeper, so its imports become `../../../ui/base.ts` (both lines) and `../../../ui/format.ts`
-- [ ] `gz-exercise-list.ts`: `api.exercises.list/create/update/remove` → `exerciseFacade.list/create/update/delete`
-- [ ] `gz-exercise-detail.ts`: `api.exercises.progress` → `exerciseFacade.progress`; `GzChart` type and side-effect import from `./internal/gz-chart.ts`
-- [ ] `features/workouts/gz-workout-detail.ts`: `api.exercises.list/create` → `exerciseFacade.list/create` from `../exercises/exercises.facade.ts`; drop the `api.ts` import
-- [ ] `app/gz-app.ts` `VIEWS`: `exercises` and `exercise` → `../features/exercises/…`
-- [ ] `api.ts`: remove the `exercises` group, its unused type imports, and the now-unused `post`/`patch`/`remove` imports
-- [ ] `internal/transpile.test.ts`: both `gz-chart` requests → `/features/exercises/internal/gz-chart.ts`, specifier assertion → `from "../../../ui/format.ts"`
-- [ ] `docs/frontend.md`: note the cross-feature case — workout detail reads exercises through `exerciseFacade`, never `exercises/internal/`
+- [x] Create `features/exercises/internal/exercise.api.ts` — `export class ExerciseApi` with `list()`, `get(id)`, `progress(id)`, `create(dto)`, `update(id, dto)`, `delete(id)` from `api.exercises` (`api.ts:106-118`)
+- [x] Create `features/exercises/exercises.facade.ts` — `ExerciseFacade` delegating each method, and `export const exerciseFacade = new ExerciseFacade(new ExerciseApi())`
+- [x] `git mv` `components/gz-exercise-list/gz-exercise-list.{ts,css}` and `components/gz-exercise-detail/gz-exercise-detail.{ts,css}` → `features/exercises/`
+- [x] `git mv` `components/gz-chart/gz-chart.{ts,css}` → `features/exercises/internal/`
+- [x] `internal/gz-chart.ts`: one level deeper, so its imports become `../../../ui/base.ts` (both lines) and `../../../ui/format.ts`
+- [x] `gz-exercise-list.ts`: `api.exercises.list/create/update/remove` → `exerciseFacade.list/create/update/delete`
+- [x] `gz-exercise-detail.ts`: `api.exercises.progress` → `exerciseFacade.progress`; `GzChart` type and side-effect import from `./internal/gz-chart.ts`
+- [x] `features/workouts/gz-workout-detail.ts`: `api.exercises.list/create` → `exerciseFacade.list/create` from `../exercises/exercises.facade.ts`; drop the `api.ts` import
+- [x] `app/gz-app.ts` `VIEWS`: `exercises` and `exercise` → `../features/exercises/…`
+- [x] `api.ts`: remove the `exercises` group, its unused type imports, and the now-unused `post`/`patch`/`remove` imports
+- [x] `internal/transpile.test.ts`: both `gz-chart` requests → `/features/exercises/internal/gz-chart.ts`, specifier assertion → `from "../../../ui/format.ts"`
+- [x] `docs/frontend.md`: note the cross-feature case — workout detail reads exercises through `exerciseFacade`, never `exercises/internal/`
 
 **Automated Verification**:
 
-- [ ] `bun test` passes
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
+- [x] `bun test` passes
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
 
 **Manual Verification**:
 
-- [ ] On `#/exercises`: create, edit, cancel and delete an exercise; on `#/exercises/:id`: the chart draws and each metric switch redraws it; on `#/workouts/:id`: the exercise select lists exercises and "new exercise" creates one inline
+- [x] On `#/exercises`: create, edit, cancel and delete an exercise; on `#/exercises/:id`: the chart draws and each metric switch redraws it; on `#/workouts/:id`: the exercise select lists exercises and "new exercise" creates one inline
 
 ### Phase 4: Stats feature and cleanup
 
@@ -372,28 +372,28 @@ Move the dashboard into `stats`, delete what is left of the old layout, and fini
 
 **Tasks**:
 
-- [ ] Create `features/stats/internal/stats.api.ts` — `export class StatsApi { summary(): Promise<SummaryDto> }` from `api.ts:104`
-- [ ] Create `features/stats/stats.facade.ts` — `StatsFacade.summary()` and `export const statsFacade = new StatsFacade(new StatsApi())`
-- [ ] `git mv` `components/gz-dashboard/gz-dashboard.{ts,css}` → `features/stats/`
-- [ ] `gz-dashboard.ts`: `api.summary` → `statsFacade.summary`; `workoutFacade` from `../workouts/workouts.facade.ts`; `gz-stat-tile` from `../../ui/gz-stat-tile.ts`
-- [ ] `app/gz-app.ts` `VIEWS`: `dashboard` → `../features/stats/gz-dashboard.ts`
-- [ ] Delete `src/frontend/api.ts` and the now-empty `src/frontend/components/`
-- [ ] `docs/frontend.md`: final pass — a tree of `app/`, `http/`, `ui/`, `features/`; the type-import paragraph's example specifiers become those from a feature view (`'../../../shared/dto/index.ts'`) and an API class (`'../../../../shared/dto/index.ts'`), leaving its `shared.test.ts` sentence as is; the flavored-ids paragraph names the `*.api.ts` classes and facades instead of `api.ts`, and `format.ts` as `ui/format.ts`; "GzChart and GzSetRow are exported" unchanged; no remaining mention of `components/`, `css/` or `api.ts`
-- [ ] `AGENTS.md`: extend the `src/frontend/` entry — organised like the backend: `features/<feature>/` owns its route views and a `<feature>.facade.ts` at its root and keeps its `*.api.ts` classes and child components in `internal/`; `app/` is the shell and router, `http/` the request helpers, `ui/` the component foundation and widgets several features use; `bun run lint` fails if a feature reaches another's `internal/` or a component reaches an `*.api.ts` or `http/http.ts`; the index line for `docs/frontend.md` becomes "features and facades, components, import boundaries, loading, theming, and why a module's URL is its path"
+- [x] Create `features/stats/internal/stats.api.ts` — `export class StatsApi { summary(): Promise<SummaryDto> }` from `api.ts:104`
+- [x] Create `features/stats/stats.facade.ts` — `StatsFacade.summary()` and `export const statsFacade = new StatsFacade(new StatsApi())`
+- [x] `git mv` `components/gz-dashboard/gz-dashboard.{ts,css}` → `features/stats/`
+- [x] `gz-dashboard.ts`: `api.summary` → `statsFacade.summary`; `workoutFacade` from `../workouts/workouts.facade.ts`; `gz-stat-tile` from `../../ui/gz-stat-tile.ts`
+- [x] `app/gz-app.ts` `VIEWS`: `dashboard` → `../features/stats/gz-dashboard.ts`
+- [x] Delete `src/frontend/api.ts` and the now-empty `src/frontend/components/`
+- [x] `docs/frontend.md`: final pass — a tree of `app/`, `http/`, `ui/`, `features/`; the type-import paragraph's example specifiers become those from a feature view (`'../../../shared/dto/index.ts'`) and an API class (`'../../../../shared/dto/index.ts'`), leaving its `shared.test.ts` sentence as is; the flavored-ids paragraph names the `*.api.ts` classes and facades instead of `api.ts`, and `format.ts` as `ui/format.ts`; "GzChart and GzSetRow are exported" unchanged; no remaining mention of `components/`, `css/` or `api.ts`
+- [x] `AGENTS.md`: extend the `src/frontend/` entry — organised like the backend: `features/<feature>/` owns its route views and a `<feature>.facade.ts` at its root and keeps its `*.api.ts` classes and child components in `internal/`; `app/` is the shell and router, `http/` the request helpers, `ui/` the component foundation and widgets several features use; `bun run lint` fails if a feature reaches another's `internal/` or a component reaches an `*.api.ts` or `http/http.ts`; the index line for `docs/frontend.md` becomes "features and facades, components, import boundaries, loading, theming, and why a module's URL is its path"
 
 **Automated Verification**:
 
-- [ ] `src/frontend/components/` and `src/frontend/api.ts` do not exist: `Test-Path src/frontend/components, src/frontend/api.ts` prints `False` twice
-- [ ] No source or doc outside `docs/agents/` names the old layout: in PowerShell, ``git grep -nE 'frontend/components|/components/gz-|css/(app|shared)\.css|frontend/(api|base|styles|theme|router|format)\.ts|[./]/api\.ts|`api\.ts`' -- src docs AGENTS.md ':!docs/agents'`` prints nothing
-- [ ] `bun test` passes
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
+- [x] `src/frontend/components/` and `src/frontend/api.ts` do not exist: `Test-Path src/frontend/components, src/frontend/api.ts` prints `False` twice
+- [x] No source or doc outside `docs/agents/` names the old layout: in PowerShell, ``git grep -nE 'frontend/components|/components/gz-|css/(app|shared)\.css|frontend/(api|base|styles|theme|router|format)\.ts|[./]/api\.ts|`api\.ts`' -- src docs AGENTS.md ':!docs/agents'`` prints nothing
+- [x] `bun test` passes
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
 
 **Manual Verification**:
 
-- [ ] With the browser's network tab open, load `/` fresh: the dashboard paints styled with no flash, and `gz-chart.ts`/`.css` are not fetched until an exercise is opened
-- [ ] Click through `#/`, `#/workouts`, a workout, `#/exercises`, an exercise and an unknown hash (`#/nope`); stop the server and navigate to an unvisited route to see the failed-import toast while the old view stays
+- [x] With the browser's network tab open, load `/` fresh: the dashboard paints styled with no flash, and `gz-chart.ts`/`.css` are not fetched until an exercise is opened
+- [x] Click through `#/`, `#/workouts`, a workout, `#/exercises`, an exercise and an unknown hash (`#/nope`); stop the server and navigate to an unvisited route to see the failed-import toast while the old view stays
 
 ## Implementation Notes
 

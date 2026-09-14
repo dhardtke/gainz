@@ -9,18 +9,20 @@
  *
  * Pico and the shared utilities are fetched up front, behind the top-level
  * await below, because every component adopts both. A component's own sheet is
- * fetched when its module loads: `define()` in base.ts awaits `loadStyles`
+ * fetched when its module loads, from the `.css` file beside that module's own
+ * URL: `define()` in base.ts awaits `loadStyles`
  * before registering the element, so by the time an instance can exist,
  * `stylesFor` can answer synchronously. That is what lets a route be loaded on
  * demand without ever painting it unstyled.
  */
 
 /** Adopted by every component, in this order, before its own sheet. */
-const BASE_HREFS = ['/vendor/pico.css', '/css/shared.css'];
-
-const componentHref = (tagName: string): string => `/components/${tagName}/${tagName}.css`;
+const BASE_HREFS = ['/vendor/pico.css', '/ui/shared.css'];
 
 const sheets = new Map<string, CSSStyleSheet>();
+
+/** Tag name → the stylesheet beside the module that defined it. */
+const hrefs = new Map<string, string>();
 
 const pending = new Map<string, Promise<void>>();
 
@@ -49,9 +51,12 @@ await Promise.all(BASE_HREFS.map(load));
  * Fetches one component's stylesheet, at most once. Repeat and concurrent calls
  * share the first fetch, so a component that two routes have in common — a stat
  * tile, say — is still loaded a single time.
+ *
+ * @param moduleUrl the defining module's `import.meta.url`; its `.css` sibling is the sheet.
  */
-export function loadStyles(tagName: string): Promise<void> {
-  const href = componentHref(tagName);
+export function loadStyles(tagName: string, moduleUrl: string): Promise<void> {
+  const href = moduleUrl.replace(/\.ts$/, '.css');
+  hrefs.set(tagName, href);
   if (sheets.has(href)) {
     return Promise.resolve();
   }
@@ -67,7 +72,8 @@ export function loadStyles(tagName: string): Promise<void> {
  * safe because `define()` awaits `loadStyles` before registering the element.
  */
 export function stylesFor(tagName: string): CSSStyleSheet[] {
-  const own = sheets.get(componentHref(tagName));
+  const href = hrefs.get(tagName);
+  const own = href === undefined ? undefined : sheets.get(href);
   const base = BASE_HREFS.flatMap((href) => {
     const sheet = sheets.get(href);
     return sheet ? [sheet] : [];

@@ -1,5 +1,5 @@
-import type { RawHtml } from '../../base.ts';
-import { define, GzElement, html } from '../../base.ts';
+import type { RawHtml } from './base.ts';
+import { define, GzElement, html } from './base.ts';
 
 /** A single headline number with a label and optional sub-line. */
 class GzStatTile extends GzElement {
@@ -23,4 +23,4 @@ class GzStatTile extends GzElement {
   }
 }
 
-await define('gz-stat-tile', GzStatTile);
+await define('gz-stat-tile', GzStatTile, import.meta.url);

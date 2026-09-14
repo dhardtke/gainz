@@ -3,8 +3,9 @@
 - Pico CSS provides typography, colours, form controls, tables and both themes. Hand-written CSS
   is a thin layer built from Pico's own `--pico-*` custom properties, so it follows the active
   theme.
-- **No CSS in JavaScript.** Every rule lives in an external `.css` file — `css/app.css` for the
-  document, `css/shared.css` for utilities adopted by every component, `<tag>.css` for a component.
+- **No CSS in JavaScript.** Every rule lives in an external `.css` file — `ui/app.css` for the
+  document, `ui/shared.css` for utilities adopted by every component, and a component's `<tag>.css`
+  beside its `<tag>.ts`.
 - **Selectors nest.** A rule that would repeat a prefix — `.workout`, `.workout:hover`,
   `.workout a` — nests instead, so each block reads as one component and the media queries that
   only adjust it sit inside it. There is no preprocessor: this is the browser's own nesting, and

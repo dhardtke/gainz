@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { useServer } from '../../testing.ts';
+import { FRONTEND_DIR } from './internal/paths.ts';
 
 const { api } = useServer();
 
@@ -17,8 +18,19 @@ describe('static files', () => {
   });
 
   test('serves the app stylesheets', async () => {
-    for (const path of ['/css/app.css', '/css/shared.css', '/components/gz-app/gz-app.css']) {
+    for (const path of ['/ui/app.css', '/ui/shared.css', '/app/gz-app.css']) {
       const res = await api(path);
+      expect(res.status).toBe(200);
+      expect(res.headers.get('content-type')).toContain('text/css');
+    }
+  });
+
+  test('serves a stylesheet beside every component module', async () => {
+    const modules = await Array.fromAsync(new Bun.Glob('**/gz-*.ts').scan(FRONTEND_DIR));
+    expect(modules.length).toBeGreaterThanOrEqual(11);
+    for (const file of modules) {
+      // scan() yields backslashes on Windows.
+      const res = await api(`/${file.replaceAll('\\', '/').replace(/\.ts$/, '.css')}`);
       expect(res.status).toBe(200);
       expect(res.headers.get('content-type')).toContain('text/css');
     }
@@ -37,7 +49,7 @@ describe('static files', () => {
   });
 
   test('answers HEAD with the headers and no body', async () => {
-    const res = await api('/format.ts', { method: 'HEAD' });
+    const res = await api('/ui/format.ts', { method: 'HEAD' });
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toContain('text/javascript');
     expect(await res.text()).toBe('');
@@ -50,7 +62,7 @@ describe('static files', () => {
   test('answers a verb other than GET or HEAD with 405', async () => {
     // `/vendor/pico.css` is the load-bearing case: it has its own { GET, HEAD } route, so the
     // 405 can only come from an unmatched verb falling through to `/*`.
-    for (const path of ['/', '/css/app.css', '/vendor/pico.css']) {
+    for (const path of ['/', '/ui/app.css', '/vendor/pico.css']) {
       const res = await api(path, { method: 'POST' });
       expect(res.status).toBe(405);
       expect(await res.text()).toBe('Method not allowed');
@@ -64,11 +76,11 @@ describe('static files', () => {
   });
 
   test('a trailing-slash directory with no index is a 404, but the path without one is not', async () => {
-    for (const path of ['/css/', '/components/']) {
+    for (const path of ['/ui/', '/app/']) {
       expect((await api(path)).status).toBe(404);
     }
     // No trailing slash: still an extension-less client route for the single-page app.
-    const res = await api('/css');
+    const res = await api('/ui');
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toContain('text/html');
   });

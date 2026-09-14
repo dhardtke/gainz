@@ -1,13 +1,15 @@
-import { api, ApiError, errorMessage } from '../../api.ts';
-import type { RawHtml } from '../../base.ts';
-import { define, GzElement, html } from '../../base.ts';
-import { formatDate, formatNumber, formatVolume, plural, relativeDay, UNIT } from '../../format.ts';
-import { navigate } from '../../router.ts';
+import { ApiError, errorMessage } from '../../http/errors.ts';
+import type { RawHtml } from '../../ui/base.ts';
+import { define, GzElement, html } from '../../ui/base.ts';
+import { formatDate, formatNumber, formatVolume, plural, relativeDay, UNIT } from '../../ui/format.ts';
+import { navigate } from '../../app/router.ts';
 import type { ExerciseDto, LiftSetDto, WorkoutWithSetsDto } from '../../../shared/dto';
 import type { ExerciseId, WorkoutId } from '../../../shared/flavors.ts';
-import type { GzSetRow } from '../gz-set-row/gz-set-row.ts';
-import { toast, toastError } from '../gz-toast/gz-toast.ts';
-import '../gz-set-row/gz-set-row.ts';
+import type { GzSetRow } from './internal/gz-set-row.ts';
+import { toast, toastError } from '../../ui/gz-toast.ts';
+import { exerciseFacade } from '../exercises/exercises.facade.ts';
+import { setFacade, workoutFacade } from './workouts.facade.ts';
+import './internal/gz-set-row.ts';
 
 type WorkoutDetailState = { status: 'loading' } | { status: 'ready'; workout: WorkoutWithSetsDto } | { status: 'error'; message: string };
 
@@ -86,7 +88,7 @@ class GzWorkoutDetail extends GzElement {
 
   async #load(): Promise<void> {
     try {
-      const [workout, exercises] = await Promise.all([api.workouts.get(this.#id), api.exercises.list()]);
+      const [workout, exercises] = await Promise.all([workoutFacade.get(this.#id), exerciseFacade.list()]);
       this.#exercises = exercises;
       this.#state = { status: 'ready', workout };
       if (this.#draft.exerciseId === null) {
@@ -114,7 +116,7 @@ class GzWorkoutDetail extends GzElement {
         return;
       }
       try {
-        await api.workouts.remove(this.#id);
+        await workoutFacade.delete(this.#id);
         toast('Workout deleted', 'success');
         navigate('/workouts');
       } catch (error) {
@@ -134,7 +136,7 @@ class GzWorkoutDetail extends GzElement {
         return;
       }
       try {
-        await api.workouts.addSet(this.#id, {
+        await setFacade.create(this.#id, {
           exerciseId: last.exerciseId,
           reps: last.reps,
           weight: last.weight,
@@ -152,7 +154,7 @@ class GzWorkoutDetail extends GzElement {
 
     if (action === 'save-workout') {
       try {
-        await api.workouts.update(this.#id, {
+        await workoutFacade.update(this.#id, {
           performedOn: values.performedOn,
           title: values.title,
           notes: values.notes,
@@ -175,11 +177,11 @@ class GzWorkoutDetail extends GzElement {
             toast('Give the new exercise a name', 'error');
             return;
           }
-          const created = await api.exercises.create({ name: values.newExercise });
+          const created = await exerciseFacade.create({ name: values.newExercise });
           exerciseId = created.id;
         }
 
-        await api.workouts.addSet(this.#id, {
+        await setFacade.create(this.#id, {
           exerciseId: Number(exerciseId),
           reps: Number(values.reps),
           weight: Number(values.weight),
@@ -436,4 +438,4 @@ class GzWorkoutDetail extends GzElement {
   }
 }
 
-await define('gz-workout-detail', GzWorkoutDetail);
+await define('gz-workout-detail', GzWorkoutDetail, import.meta.url);

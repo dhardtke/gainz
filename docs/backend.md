@@ -81,7 +81,9 @@ holds the facades. A repository is named only by its own feature's facade, and c
 that facade's factory, so `features/workouts/internal/` is the whole world in which `SetRepository`
 exists as a name. That is what a facade buys: a published surface narrower than the repository
 behind it (no `get()`, which only `require()` ever called), one place a repository is built, and a
-boundary a linter can check. The `overrides` block in `.oxlintrc.json` holds three rules. Two
+boundary a linter can check. The `overrides` block in `.oxlintrc.json` holds three rules for the
+backend; the frontend's own import boundaries follow them there and are described in
+`docs/frontend.md`. Two
 restrict imports, type imports included: no `*.routes.ts` — `static.routes.ts` among them — may
 import anything under `internal/` except its controller, anything under `ports/`, a
 `*.repository.ts`, or the request and response helpers (`http/http.ts`, `http/errors.ts`,
@@ -173,7 +175,7 @@ off a complete MIME database (`.svg` → `image/svg+xml`, `.woff2` → `font/wof
 `image/png`, `.webp` → `image/webp`, no extension → `application/octet-stream`, all measured on
 Bun 1.4.2), so a hand-written map would be a subset that drifts. And it does not special-case
 HEAD beyond letting it past the method check — Bun strips the body itself and leaves the headers
-alone, which `src/backend/features/static/static.routes.test.ts:39` holds in place. What it does do is
+alone, which `src/backend/features/static/static.routes.test.ts:51` holds in place. What it does do is
 own the `405 Method not allowed` for the whole server, answered by `StaticController.frontend`: `/*` is declared as a bare handler function
 rather than a `{ GET, HEAD }` map, because a map answers an unmatched verb with an empty-bodied 404
 and there is no `fetch` behind it to say otherwise. An unmatched verb on a vendor route falls

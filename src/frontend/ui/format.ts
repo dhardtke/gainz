@@ -2,7 +2,7 @@
  * Display helpers. Weights are stored as plain numbers, so switching the whole
  * app to pounds is a matter of changing UNIT here.
  */
-import type { Iso8601Date } from '../shared/flavors.ts';
+import type { Iso8601Date } from '../../shared/flavors.ts';
 
 export const UNIT = 'kg';
 

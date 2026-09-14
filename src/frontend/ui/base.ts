@@ -49,8 +49,8 @@ export function html(strings: TemplateStringsArray, ...values: unknown[]): RawHt
  * the shared utilities and the element's own stylesheet, a render hook, and
  * click/submit delegation driven by `data-action` attributes.
  *
- * The component's CSS file sits next to its module and is found by convention —
- * `<gz-chart>` is styled by `src/frontend/components/gz-chart/gz-chart.css` — so a
+ * The component's CSS file sits next to its module and is found from the
+ * module's URL — `ui/gz-stat-tile.ts` is styled by `ui/gz-stat-tile.css` — so a
  * component never carries CSS in JavaScript.
  */
 export class GzElement extends HTMLElement {
@@ -180,11 +180,11 @@ export class GzElement extends HTMLElement {
  * Registering only after the sheet is cached is also what lets `stylesFor` stay
  * synchronous, as the constructor needs it to be.
  */
-export async function define(name: string, ctor: CustomElementConstructor): Promise<void> {
+export async function define(name: string, ctor: CustomElementConstructor, moduleUrl: string): Promise<void> {
   if (customElements.get(name)) {
     return;
   }
-  await loadStyles(name);
+  await loadStyles(name, moduleUrl);
   if (!customElements.get(name)) {
     customElements.define(name, ctor);
   }
