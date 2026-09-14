@@ -2,7 +2,7 @@ import { api, errorMessage } from '../../api.ts';
 import type { RawHtml } from '../../base.ts';
 import { define, GzElement, html } from '../../base.ts';
 import { formatWeight, plural, relativeDay } from '../../format.ts';
-import type { ExerciseWithStatsDto } from '../../../shared/dto/index.ts';
+import type { ExerciseWithStatsDto } from '../../../shared/dto';
 import type { ExerciseId } from '../../../shared/flavors.ts';
 import { toast, toastError } from '../gz-toast/gz-toast.ts';
 

@@ -5,6 +5,7 @@
 - Import maps to have hashed filenames
 - Have DTOs that are shared between FE / BE
 - Logging
+- Have features/ architecture in FE as well
 
 ## Features
 
