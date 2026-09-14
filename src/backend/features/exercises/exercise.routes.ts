@@ -4,6 +4,7 @@ import { ExerciseController } from './internal/exercise.controller.ts';
 
 export function exerciseRoutes(exercises: ExerciseFacade): RouteTable {
   const controller = new ExerciseController(exercises);
+
   return {
     '/api/exercises': {
       GET: () => controller.list(),
