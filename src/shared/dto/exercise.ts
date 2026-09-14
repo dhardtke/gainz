@@ -19,7 +19,6 @@ export interface ExerciseWithStatsDto extends ExerciseDto {
 /** One session on an exercise's progress line. */
 export interface SessionPointDto {
   workoutId: WorkoutId;
-  /** ISO date, `YYYY-MM-DD`. */
   performedOn: Iso8601Date;
   setCount: number;
   totalReps: number;
@@ -37,17 +36,12 @@ export interface ExerciseProgressDto {
   bestSet: BestSetDto | null;
 }
 
-/**
- * The body of `POST /exercises`. The optional fields may be left out entirely —
- * the server normalises a missing value, an empty string and null all to null.
- */
 export interface CreateExerciseDto {
   name: string;
   muscleGroup?: string | null;
   notes?: string | null;
 }
 
-/** The body of `PATCH /exercises/:id`: only the fields present are written. */
 export interface EditExerciseDto {
   name?: string;
   muscleGroup?: string | null;

@@ -17,7 +17,6 @@ export interface BestSetDto extends LiftSetDto {
   performedOn: Iso8601Date;
 }
 
-/** The body of `POST /workouts/:id/sets`. */
 export interface CreateSetDto {
   exerciseId: ExerciseId;
   reps: number;
@@ -27,11 +26,6 @@ export interface CreateSetDto {
   position?: number;
 }
 
-/**
- * The body of `PATCH /sets/:id`. Every field is optional and only the ones
- * present are written; written out in full rather than derived from
- * `CreateSetDto`, so the contract reads straight off this file.
- */
 export interface EditSetDto {
   exerciseId?: ExerciseId;
   reps?: number;

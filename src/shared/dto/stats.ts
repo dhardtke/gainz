@@ -1,6 +1,5 @@
 import type { Iso8601Date } from '../flavors.ts';
 
-/** `GET /stats/summary`: the whole log in eight numbers. */
 export interface SummaryDto {
   workoutCount: number;
   setCount: number;
