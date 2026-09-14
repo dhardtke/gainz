@@ -93,24 +93,53 @@ function discover(dir: string): Migration[] {
  * The applied versions must form an unbroken prefix of the files on disk. Anything else means the
  * database and the checkout disagree in a way that silently skipping migrations would hide.
  */
-function assertConsistent(files: Migration[], applied: AppliedRow[], dir: string): void {
-  const known = new Set(files.map((migration) => migration.version));
-  for (const row of applied) {
-    if (!known.has(row.version)) {
+function pendingMigrations(files: Migration[], applied: AppliedRow[], dir: string): Migration[] {
+  const highest = applied.at(-1)?.version ?? 0;
+  for (const [i, row] of applied.entries()) {
+    const file = files[i];
+    if (!file || file.version > row.version) {
       throw new Error(
         `Database has migration ${row.version} (${row.name}) applied, but no matching file exists in ${dir} — the database is newer than this checkout`,
       );
     }
-  }
-
-  const highest = applied.reduce((max, row) => Math.max(max, row.version), 0);
-  const done = new Set(applied.map((row) => row.version));
-  for (const migration of files) {
-    if (migration.version <= highest && !done.has(migration.version)) {
+    if (file.version < row.version) {
       throw new Error(
-        `Migration ${basename(migration.file)} is numbered at or below the highest applied version (${highest}) but has never run — renumber it above ${highest}`,
+        `Migration ${basename(file.file)} is numbered at or below the highest applied version (${highest}) but has never run — renumber it above ${highest}`,
       );
     }
+  }
+  return files.slice(applied.length);
+}
+
+function apply(db: DB, migration: Migration): void {
+  try {
+    db.transaction(() => {
+      db.run(readFileSync(migration.file, 'utf8'));
+
+      // prepare() rather than query(): the schema just changed under us, so this must not come
+      // from the statement cache.
+      const orphan = db.prepare<{ table: string }, []>('PRAGMA foreign_key_check').get();
+      if (orphan) {
+        throw new Error(`it left orphaned rows in "${orphan.table}"`);
+      }
+
+      db.query('INSERT INTO schema_migrations (version, name) VALUES (?, ?)').run(migration.version, migration.name);
+    })();
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    throw new Error(`Migration ${basename(migration.file)} failed and was rolled back: ${reason}`, { cause: err });
+  }
+}
+
+// Changing an existing column means SQLite's 12-step table rebuild, which requires foreign keys
+// off — and `PRAGMA foreign_keys` is a silent no-op inside a transaction, so it has to be toggled
+// out here. `foreign_key_check` in `apply` is what keeps that from hiding a broken migration.
+function withForeignKeysOff(db: DB, fn: () => void): void {
+  db.run('PRAGMA foreign_keys = OFF;');
+  try {
+    fn();
+  } finally {
+    db.run('PRAGMA foreign_keys = ON;');
   }
 }
 
@@ -119,48 +148,18 @@ export function migrate(db: DB, options: MigrateOptions = {}): MigrateResult {
   const dir = options.dir ?? MIGRATIONS_DIR;
 
   db.run(LEDGER);
-  const files = discover(dir);
   const previous = db.query<AppliedRow, []>('SELECT version, name FROM schema_migrations ORDER BY version').all();
-  assertConsistent(files, previous, dir);
-
-  const done = new Set(previous.map((row) => row.version));
-  const pending = files.filter((migration) => !done.has(migration.version));
+  const pending = pendingMigrations(discover(dir), previous, dir);
   if (pending.length === 0) {
     return { version: schemaVersion(db), applied: [] };
   }
 
-  const applied: Migration[] = [];
-
-  // Changing an existing column means SQLite's 12-step table rebuild, which requires foreign keys
-  // off — and `PRAGMA foreign_keys` is a silent no-op inside a transaction, so it has to be toggled
-  // out here. `foreign_key_check` below is what keeps that from hiding a broken migration.
-  db.run('PRAGMA foreign_keys = OFF;');
-  try {
+  withForeignKeysOff(db, () => {
     for (const migration of pending) {
-      try {
-        db.transaction(() => {
-          db.run(readFileSync(migration.file, 'utf8'));
-
-          // prepare() rather than query(): the schema just changed under us, so this must not come
-          // from the statement cache.
-          const orphan = db.prepare<{ table: string }, []>('PRAGMA foreign_key_check').get();
-          if (orphan) {
-            throw new Error(`it left orphaned rows in "${orphan.table}"`);
-          }
-
-          db.query('INSERT INTO schema_migrations (version, name) VALUES (?, ?)').run(migration.version, migration.name);
-        })();
-      } catch (err) {
-        const reason = err instanceof Error ? err.message : String(err);
-        throw new Error(`Migration ${basename(migration.file)} failed and was rolled back: ${reason}`, { cause: err });
-      }
-
-      applied.push(migration);
+      apply(db, migration);
       options.onMigration?.(migration);
     }
-  } finally {
-    db.run('PRAGMA foreign_keys = ON;');
-  }
+  });
 
-  return { version: schemaVersion(db), applied };
+  return { version: schemaVersion(db), applied: pending };
 }

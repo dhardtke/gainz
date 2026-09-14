@@ -4,7 +4,7 @@ git_commit: 7223100c1a34a0eed39ac6025a574812df8fcf82
 branch: main
 topic: 'Simplify migrate() in migrations.ts'
 tags: [plan, db, migrations, refactor]
-status: ready
+status: complete
 ---
 
 # PLAN: Simplify migrate() in migrations.ts
@@ -148,8 +148,8 @@ starting to confirm the baseline is green.
 
 **Tasks**:
 
-- [ ] Run `bun test src/backend/db` and confirm it passes before any change
-- [ ] In `migrations.ts`, replace `assertConsistent` with `pendingMigrations(files, applied, dir): Migration[]`:
+- [x] Run `bun test src/backend/db` and confirm it passes before any change
+- [x] In `migrations.ts`, replace `assertConsistent` with `pendingMigrations(files, applied, dir): Migration[]`:
   ```ts
   function pendingMigrations(files: Migration[], applied: AppliedRow[], dir: string): Migration[] {
     const highest = applied.at(-1)?.version ?? 0;
@@ -165,26 +165,26 @@ starting to confirm the baseline is green.
     return files.slice(applied.length);
   }
   ```
-- [ ] In `migrations.ts`, add `apply(db, migration): void`. Move the `db.transaction(...)()` body
+- [x] In `migrations.ts`, add `apply(db, migration): void`. Move the `db.transaction(...)()` body
       (read and run the file, `PRAGMA foreign_key_check` through `prepare()`, ledger insert) and its
       `catch` wrapping (`Migration <file> failed and was rolled back: <reason>`, `{ cause }`) out of `migrate`
-- [ ] In `migrations.ts`, add `withForeignKeysOff(db, fn: () => void): void`: set `PRAGMA foreign_keys = OFF`,
+- [x] In `migrations.ts`, add `withForeignKeysOff(db, fn: () => void): void`: set `PRAGMA foreign_keys = OFF`,
       then `try { fn(); } finally { PRAGMA foreign_keys = ON }`, carrying the existing why-comment
-- [ ] In `migrations.ts`, rewrite `migrate` as shown in Desired End State: drop the `done` set, the
+- [x] In `migrations.ts`, rewrite `migrate` as shown in Desired End State: drop the `done` set, the
       `applied` accumulator and both `try` blocks, and return `pending` as `applied`
-- [ ] In `migrations.test.ts`, add `refuses a database whose ledger has a version between two files`:
+- [x] In `migrations.test.ts`, add `refuses a database whose ledger has a version between two files`:
       write `001-…` and `003-…`, run, insert a ledger row `(2, 'removed-file')`, and expect `run()` to
       throw `/2 \(removed-file\)/`. This covers the `file.version > row.version` branch, which the
       existing "newer than the checkout" test (row 99, past every file) does not reach
 
 **Automated Verification**:
 
-- [ ] `bun test src/backend/db/migrations.test.ts` passes, including the new test and every existing test unchanged
-- [ ] `bun test src/backend/db/db.test.ts` passes
-- [ ] `bun test` passes
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
+- [x] `bun test src/backend/db/migrations.test.ts` passes, including the new test and every existing test unchanged
+- [x] `bun test src/backend/db/db.test.ts` passes
+- [x] `bun test` passes
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
 
 ## Implementation Notes
 

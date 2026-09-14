@@ -110,6 +110,16 @@ describe('migration runner', () => {
     expect(() => run()).toThrow(/99 \(add-programs\)/);
   });
 
+  test('refuses a database whose ledger has a version between two files', () => {
+    write('001-create-widgets.sql', 'CREATE TABLE widgets (id INTEGER PRIMARY KEY);');
+    write('003-create-gadgets.sql', 'CREATE TABLE gadgets (id INTEGER PRIMARY KEY);');
+    run();
+
+    db.query('INSERT INTO schema_migrations (version, name) VALUES (?, ?)').run(2, 'removed-file');
+
+    expect(() => run()).toThrow(/2 \(removed-file\)/);
+  });
+
   test('rolls back a migration that leaves orphaned rows', () => {
     write(
       '001-create-widgets.sql',
