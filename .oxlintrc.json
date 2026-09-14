@@ -206,6 +206,22 @@
       }
     },
     {
+      "files": ["src/frontend/features/**/*.routes.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/internal/**", "**/*.api.ts", "**/*.facade.ts", "**/http/**", "**/ui/**"],
+                "message": "A route file only lazily imports its own feature's views."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "files": ["src/frontend/main.ts", "src/frontend/app/**/*.ts"],
       "rules": {
         "no-restricted-imports": [

@@ -12,7 +12,7 @@ import '../../ui/gz-stat-tile.ts';
 type DashboardState = { status: 'loading' } | { status: 'ready'; summary: SummaryDto; workouts: WorkoutWithStatsDto[] } | { status: 'error'; message: string };
 
 /** Landing view: the numbers that answer "am I actually progressing?". */
-class GzDashboard extends GzElement {
+export class GzDashboard extends GzElement {
   #state: DashboardState = { status: 'loading' };
 
   connectedCallback(): void {

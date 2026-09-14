@@ -4,7 +4,7 @@ git_commit: 275e356361e1dbb0cace56e944bba780d97b5518
 branch: main
 topic: 'Per-feature route modules'
 tags: [plan, frontend, router, gz-app, features, oxlint]
-status: draft
+status: complete
 ---
 
 # PLAN: Per-feature route modules
@@ -204,7 +204,7 @@ generic, and point `gz-app` at `ROUTES`. `NAV` stays for now.
 
 **Tasks**:
 
-- [ ] `src/frontend/app/router.ts`: remove `ViewName`, `RouteName`, `Route`, `ROUTES` and
+- [x] `src/frontend/app/router.ts`: remove `ViewName`, `RouteName`, `Route`, `ROUTES` and
       `currentRoute`; add `RouteDef` (without `nav` yet), `RouteMatch`, `matchRoute(routes, path)`
       and `currentPath()`; make `isActive` read `currentPath()`. Keep the file's header comment on
       hash routing.
@@ -224,80 +224,80 @@ generic, and point `gz-app` at `ROUTES`. `NAV` stays for now.
         return null;
       }
       ```
-- [ ] `src/frontend/features/stats/gz-dashboard.ts`: `export class GzDashboard`.
-- [ ] `src/frontend/features/workouts/gz-workout-list.ts`: `export class GzWorkoutList`.
-- [ ] `src/frontend/features/workouts/gz-workout-detail.ts`: `export class GzWorkoutDetail`; in the
+- [x] `src/frontend/features/stats/gz-dashboard.ts`: `export class GzDashboard`.
+- [x] `src/frontend/features/workouts/gz-workout-list.ts`: `export class GzWorkoutList`.
+- [x] `src/frontend/features/workouts/gz-workout-detail.ts`: `export class GzWorkoutDetail`; in the
       `#id` doc comment, replace "`router.ts` matches as `(\d+)`" with "`workouts.routes.ts`
       matches as `(\d+)`" and "gz-app sets the attribute" with "its route sets the attribute".
-- [ ] `src/frontend/features/exercises/gz-exercise-list.ts`: `export class GzExerciseList`.
-- [ ] `src/frontend/features/exercises/gz-exercise-detail.ts`: `export class GzExerciseDetail`;
+- [x] `src/frontend/features/exercises/gz-exercise-list.ts`: `export class GzExerciseList`.
+- [x] `src/frontend/features/exercises/gz-exercise-detail.ts`: `export class GzExerciseDetail`;
       same two comment edits, naming `exercises.routes.ts`.
-- [ ] `src/frontend/features/stats/stats.routes.ts`: new, `statsRoutes` with `/^\/?$/` →
+- [x] `src/frontend/features/stats/stats.routes.ts`: new, `statsRoutes` with `/^\/?$/` →
       `new GzDashboard()`.
-- [ ] `src/frontend/features/workouts/workouts.routes.ts`: new, `workoutsRoutes` with
+- [x] `src/frontend/features/workouts/workouts.routes.ts`: new, `workoutsRoutes` with
       `/^\/workouts\/?$/` → `GzWorkoutList` and `/^\/workouts\/(\d+)\/?$/` (`keys: ['id']`) →
       `GzWorkoutDetail` with `workout-id` set before return (see Desired End State).
-- [ ] `src/frontend/features/exercises/exercises.routes.ts`: new, `exercisesRoutes` with
+- [x] `src/frontend/features/exercises/exercises.routes.ts`: new, `exercisesRoutes` with
       `/^\/exercises\/?$/` → `GzExerciseList` and `/^\/exercises\/(\d+)\/?$/` (`keys: ['id']`) →
       `GzExerciseDetail` with `exercise-id` set before return.
-- [ ] `src/frontend/app/routes.ts`: new, `export const ROUTES: readonly RouteDef[] = [...statsRoutes,
+- [x] `src/frontend/app/routes.ts`: new, `export const ROUTES: readonly RouteDef[] = [...statsRoutes,
       ...workoutsRoutes, ...exercisesRoutes];`. Carry over, in one short comment, the reason the
       `import()` specifiers in the feature files are literals (statically analysable) and that a
       view statically imports its own children, from the current `VIEWS` doc comment.
-- [ ] `src/frontend/app/gz-app.ts`: delete `VIEWS` and its comment; replace `#viewElement(route)`
+- [x] `src/frontend/app/gz-app.ts`: delete `VIEWS` and its comment; replace `#viewElement(route)`
       with `#viewElement(path)` that returns `match.route.view(match.params)` for a match, or the
       not-found `<p class="empty">` for `null`; `#renderView` reads `currentPath()` and passes the
       path to `#swapView`. Remove the now-meaningless exhaustiveness comments and the
       `throw new Error('Unhandled route')`. Keep the render token, `toastError`, the
       re-query of `main` and the synchronous nav update.
-- [ ] `.oxlintrc.json`: add, after the `src/frontend/features/**/gz-*.ts` override, an override
+- [x] `.oxlintrc.json`: add, after the `src/frontend/features/**/gz-*.ts` override, an override
       for `src/frontend/features/**/*.routes.ts` with `no-restricted-imports` patterns
       `["**/internal/**", "**/*.api.ts", "**/*.facade.ts", "**/http/**", "**/ui/**"]` and the
       message `"A route file only lazily imports its own feature's views."`.
-- [ ] `src/frontend/app/routes.test.ts`: new, `describe('routes', …)` using `matchRoute(ROUTES, …)`:
-  - [ ] `'/'` and `''` resolve to the same route as each other, with no params (the dashboard).
-  - [ ] `/workouts` and `/workouts/` match one route with no params.
-  - [ ] `/workouts/12` matches with `params.id === '12'`; `/exercises/7` with `params.id === '7'`.
-  - [ ] `/workouts/12` and `/exercises/7` resolve to different routes, and neither to the list routes.
-  - [ ] `/workouts/abc`, `/nope` and `/exercises/7/extra` return `null`.
+- [x] `src/frontend/app/routes.test.ts`: new, `describe('routes', …)` using `matchRoute(ROUTES, …)`:
+  - [x] `'/'` and `''` resolve to the same route as each other, with no params (the dashboard).
+  - [x] `/workouts` and `/workouts/` match one route with no params.
+  - [x] `/workouts/12` matches with `params.id === '12'`; `/exercises/7` with `params.id === '7'`.
+  - [x] `/workouts/12` and `/exercises/7` resolve to different routes, and neither to the list routes.
+  - [x] `/workouts/abc`, `/nope` and `/exercises/7/extra` return `null`.
   - The test never calls a route's `view`: that would import a module extending `HTMLElement`,
     which `bun test` does not provide.
-- [ ] `docs/frontend.md`:
-  - [ ] tree (lines 8-21): `app/` gains `routes.ts`; each feature lists its `<f>.routes.ts`.
-  - [ ] `app/` paragraph (23-24): `router.ts` is a generic hash matcher, `routes.ts` spreads the
+- [x] `docs/frontend.md`:
+  - [x] tree (lines 8-21): `app/` gains `routes.ts`; each feature lists its `<f>.routes.ts`.
+  - [x] `app/` paragraph (23-24): `router.ts` is a generic hash matcher, `routes.ts` spreads the
         feature route lists.
-  - [ ] feature paragraph (43-58): a feature's routes live in `<f>.routes.ts` beside its facade,
+  - [x] feature paragraph (43-58): a feature's routes live in `<f>.routes.ts` beside its facade,
         each a pattern, param keys and a `view(params)` that `import()`s the view module and
         returns `new GzX()`; mirrors the backend's per-feature `*.routes.ts`.
-  - [ ] boundaries (60-66): "five import boundaries", adding that a feature route file may not
+  - [x] boundaries (60-66): "five import boundaries", adding that a feature route file may not
         import `internal/`, `*.api.ts`, `*.facade.ts`, `http/` or `ui/`, because it loads on every
         page.
-  - [ ] line 68: "Only the five route views listed in `VIEWS` in `gz-app.ts`" → the route views
+  - [x] line 68: "Only the five route views listed in `VIEWS` in `gz-app.ts`" → the route views
         reached through the features' `*.routes.ts`.
-  - [ ] lines 100-102: the five route views are exported so their route file can construct them;
+  - [x] lines 100-102: the five route views are exported so their route file can construct them;
         `GzChart` and `GzSetRow` are exported for typing; the other four components stay private.
-  - [ ] Loading (118-128): `gz-app`'s `await import(…)` becomes a route's `view()`; the up-front
+  - [x] Loading (118-128): `gz-app`'s `await import(…)` becomes a route's `view()`; the up-front
         load list adds `app/routes.ts` and the three feature route files.
 
 **Automated Verification**:
 
-- [ ] `bun test src/frontend/app/routes.test.ts` passes.
-- [ ] `bun test` passes (including `serves a stylesheet beside every component module`).
-- [ ] `bun run typecheck` passes.
-- [ ] `bun run lint` passes.
-- [ ] `bun run fmt:check` passes.
-- [ ] `ViewName`, `RouteName`, `VIEWS` and `currentRoute` no longer occur under `src/`.
-- [ ] No `createElement('gz-` remains in `src/frontend/app/gz-app.ts`.
+- [x] `bun test src/frontend/app/routes.test.ts` passes.
+- [x] `bun test` passes (including `serves a stylesheet beside every component module`).
+- [x] `bun run typecheck` passes.
+- [x] `bun run lint` passes.
+- [x] `bun run fmt:check` passes.
+- [x] `ViewName`, `RouteName`, `VIEWS` and `currentRoute` no longer occur under `src/`.
+- [x] No `createElement('gz-` remains in `src/frontend/app/gz-app.ts`.
 
 **Manual Verification**:
 
-- [ ] With `bun start`, open `#/`, `#/workouts`, a workout, `#/exercises` and an exercise: each
+- [x] With `bun start`, open `#/`, `#/workouts`, a workout, `#/exercises` and an exercise: each
       renders styled on first paint, and the network panel shows each view's script and
       stylesheet fetched only on its first visit.
-- [ ] `#/nope` shows "Nothing lives at /nope."
-- [ ] On a workout detail, adding a set still refreshes the view; the dashboard's recent-workout
+- [x] `#/nope` shows "Nothing lives at /nope."
+- [x] On a workout detail, adding a set still refreshes the view; the dashboard's recent-workout
       links still navigate.
-- [ ] With the server stopped after the shell loaded, clicking a not-yet-visited nav link keeps the
+- [x] With the server stopped after the shell loaded, clicking a not-yet-visited nav link keeps the
       current view and shows an error toast.
 
 ### Phase 2: Header built from routes
@@ -308,45 +308,53 @@ Routes that belong in the header say so, and `gz-app` renders the nav from `ROUT
 
 **Tasks**:
 
-- [ ] `src/frontend/app/router.ts`: add `nav?: { path: string; label: string }` to `RouteDef`.
-- [ ] `src/frontend/features/stats/stats.routes.ts`: `nav: { path: '/', label: 'Dashboard' }`.
-- [ ] `src/frontend/features/workouts/workouts.routes.ts`: list route gets
+- [x] `src/frontend/app/router.ts`: add `nav?: { path: string; label: string }` to `RouteDef`.
+- [x] `src/frontend/features/stats/stats.routes.ts`: `nav: { path: '/', label: 'Dashboard' }`.
+- [x] `src/frontend/features/workouts/workouts.routes.ts`: list route gets
       `nav: { path: '/workouts', label: 'Workouts' }`.
-- [ ] `src/frontend/features/exercises/exercises.routes.ts`: list route gets
+- [x] `src/frontend/features/exercises/exercises.routes.ts`: list route gets
       `nav: { path: '/exercises', label: 'Exercises' }`.
-- [ ] `src/frontend/app/routes.ts`: note in the existing comment that spread order is the header
+- [x] `src/frontend/app/routes.ts`: note in the existing comment that spread order is the header
       order.
-- [ ] `src/frontend/app/gz-app.ts`: delete `NAV`; in `template()`, map
+- [x] `src/frontend/app/gz-app.ts`: delete `NAV`; in `template()`, map
       `ROUTES.flatMap((route) => (route.nav ? [route.nav] : []))` into the same
       `<li><a role="button" class="secondary outline" href="#${path}" data-path="${path}">` markup.
       `#renderView`'s `aria-current`/`outline` loop is unchanged.
-- [ ] `src/frontend/app/routes.test.ts`: add a test that the nav entries of `ROUTES`, in order, are
+- [x] `src/frontend/app/routes.test.ts`: add a test that the nav entries of `ROUTES`, in order, are
       exactly `[{ path: '/', label: 'Dashboard' }, { path: '/workouts', label: 'Workouts' },
       { path: '/exercises', label: 'Exercises' }]`, and that each `nav.path` matches its own route
       through `matchRoute(ROUTES, nav.path)`.
-- [ ] `docs/frontend.md`: in the feature/route-file paragraph, a route may carry
+- [x] `docs/frontend.md`: in the feature/route-file paragraph, a route may carry
       `nav: { path, label }`; `gz-app` builds its header from those, in the order `app/routes.ts`
       spreads the features, so adding a list page needs no edit in `app/` beyond a new feature's
       spread.
 
 **Automated Verification**:
 
-- [ ] `bun test src/frontend/app/routes.test.ts` passes, including the nav order test.
-- [ ] `bun test` passes.
-- [ ] `bun run typecheck` passes.
-- [ ] `bun run lint` passes.
-- [ ] `bun run fmt:check` passes.
-- [ ] `NAV` no longer occurs in `src/frontend/app/gz-app.ts`.
+- [x] `bun test src/frontend/app/routes.test.ts` passes, including the nav order test.
+- [x] `bun test` passes.
+- [x] `bun run typecheck` passes.
+- [x] `bun run lint` passes.
+- [x] `bun run fmt:check` passes.
+- [x] `NAV` no longer occurs in `src/frontend/app/gz-app.ts`.
 
 **Manual Verification**:
 
-- [ ] The header shows Dashboard, Workouts, Exercises in that order; the active page's button is
+- [x] The header shows Dashboard, Workouts, Exercises in that order; the active page's button is
       solid on each of `#/`, `#/workouts`, `#/workouts/<id>`, `#/exercises`, `#/exercises/<id>`,
       and the theme toggle still sits last.
 
 ## Implementation Notes
 
 During implementation, document user feedback, problems, and decisions here.
+
+- A pre-implementation review suggested adding `**/gz-*.ts` to the route-file lint override, so a
+  static import of a view would fail lint. oxlint's `no-restricted-imports` also checks
+  `import()` calls, so that pattern flagged the lazy imports themselves; the override keeps the
+  plan's pattern list, and `docs/frontend.md` says why.
+- Per the same review, `docs/frontend.md` also had its sentence on the load-bearing top-level
+  `await` (which named `gz-app`) and its last-match-override sentence updated.
+- Phase 1 left `nav` out of the route files, since `RouteDef` gains it only in phase 2.
 
 ## References
 

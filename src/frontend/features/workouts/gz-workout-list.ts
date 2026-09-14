@@ -21,7 +21,7 @@ interface WorkoutListState {
 const PAGE_SIZE = 25;
 
 /** The training log: every session, newest first. */
-class GzWorkoutList extends GzElement {
+export class GzWorkoutList extends GzElement {
   #state: WorkoutListState = { status: 'loading', items: [], total: 0 };
 
   connectedCallback(): void {

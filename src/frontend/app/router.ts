@@ -3,31 +3,24 @@
  * server can hand out, and survives a manual reload of a deep link.
  */
 
-export type ViewName = 'dashboard' | 'workouts' | 'workout' | 'exercises' | 'exercise';
-
-export type RouteName = ViewName | 'notfound';
-
-export interface Route {
-  name: RouteName;
-  /** Captured from the path, e.g. `{ id: "12" }`. */
-  params: Record<string, string>;
-  /** The hash without its leading `#`. */
-  path: string;
+export interface RouteDef {
+  pattern: RegExp;
+  /** Names for the pattern's capture groups, in order. */
+  keys: string[];
+  view: (params: Record<string, string>) => Promise<Element>;
+  /** A header link; `path` is explicit because a regex cannot be turned back into an href. */
+  nav?: { path: string; label: string };
 }
 
-const ROUTES: { pattern: RegExp; name: RouteName; keys: string[] }[] = [
-  { pattern: /^\/?$/, name: 'dashboard', keys: [] },
-  { pattern: /^\/workouts\/?$/, name: 'workouts', keys: [] },
-  { pattern: /^\/workouts\/(\d+)\/?$/, name: 'workout', keys: ['id'] },
-  { pattern: /^\/exercises\/?$/, name: 'exercises', keys: [] },
-  { pattern: /^\/exercises\/(\d+)\/?$/, name: 'exercise', keys: ['id'] },
-];
+export interface RouteMatch {
+  route: RouteDef;
+  /** Captured from the path, e.g. `{ id: "12" }`. */
+  params: Record<string, string>;
+}
 
-export function currentRoute(): Route {
-  const path = location.hash.replace(/^#/, '') || '/';
-
-  for (const route of ROUTES) {
-    const match = path.match(route.pattern);
+export function matchRoute(routes: readonly RouteDef[], path: string): RouteMatch | null {
+  for (const route of routes) {
+    const match = route.pattern.exec(path);
     if (!match) {
       continue;
     }
@@ -35,9 +28,14 @@ export function currentRoute(): Route {
     route.keys.forEach((key, index) => {
       params[key] = match[index + 1] ?? '';
     });
-    return { name: route.name, params, path };
+    return { route, params };
   }
-  return { name: 'notfound', params: {}, path };
+  return null;
+}
+
+/** The hash without its leading `#`. */
+export function currentPath(): string {
+  return location.hash.replace(/^#/, '') || '/';
 }
 
 export function navigate(path: string): void {
@@ -60,6 +58,6 @@ export function onRouteChange(listener: () => void): () => void {
 
 /** True when `path` is the active route or one of its children. */
 export function isActive(path: string): boolean {
-  const current = currentRoute().path;
+  const current = currentPath();
   return path === '/' ? current === '/' : current.startsWith(path);
 }

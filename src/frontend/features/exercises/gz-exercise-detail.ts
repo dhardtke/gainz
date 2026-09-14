@@ -40,7 +40,7 @@ const METRICS: [Metric, ...Metric[]] = [
 ];
 
 /** Progress view for a single exercise. */
-class GzExerciseDetail extends GzElement {
+export class GzExerciseDetail extends GzElement {
   #exerciseId: string | null = null;
 
   #state: ExerciseDetailState = { status: 'loading' };
@@ -59,12 +59,12 @@ class GzExerciseDetail extends GzElement {
   /**
    * The id this view is showing.
    *
-   * gz-app sets the attribute before the element is connected, so
+   * its route sets the attribute before the element is connected, so
    * attributeChangedCallback has always run by the time anything asks for it.
    * Reading it through here states that invariant once, in the one place that
    * would notice it being broken, instead of at every call site.
    *
-   * The attribute mirrors a route parameter `router.ts` matches as `(\d+)`, so it is always
+   * The attribute mirrors a route parameter `exercises.routes.ts` matches as `(\d+)`, so it is always
    * digits and the conversion cannot produce a NaN.
    */
   get #id(): ExerciseId {
