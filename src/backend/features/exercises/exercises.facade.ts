@@ -1,7 +1,7 @@
 import type { CreateExerciseDto, EditExerciseDto } from '../../../shared/dto';
 import type { ExerciseId, Iso8601Date } from '../../../shared/flavors.ts';
 import type { DB } from '../../db/db.ts';
-import { isPresent, MAX_NAME, MAX_NOTES, optionalString, requiredString } from '../../shared/validate.ts';
+import { MAX_NAME, MAX_NOTES, optionalString, requiredString } from '../../shared/validate.ts';
 import { translateDtoToCreateExercise, translateDtoToEditExercise } from './internal/exercise.translator.ts';
 import { ExerciseRepository } from './internal/exercise.repository.ts';
 import type { Exercise, ExerciseWithStats, SessionPoint } from './ports/exercise.ts';
@@ -53,13 +53,13 @@ export class ExerciseFacade {
 
   private validateEdit(dto: EditExerciseDto): EditExerciseDto {
     const valid: EditExerciseDto = {};
-    if (isPresent(dto, 'name')) {
+    if (dto.name !== undefined) {
       valid.name = requiredString(dto, 'name', MAX_NAME);
     }
-    if (isPresent(dto, 'muscleGroup')) {
+    if (dto.muscleGroup !== undefined) {
       valid.muscleGroup = optionalString(dto, 'muscleGroup', 60);
     }
-    if (isPresent(dto, 'notes')) {
+    if (dto.notes !== undefined) {
       valid.notes = optionalString(dto, 'notes', MAX_NOTES);
     }
     return valid;

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { isPresent, optionalString, requiredDate, requiredInt, requiredNumber, requiredString } from './validate.ts';
+import { optionalString, requiredDate, requiredInt, requiredNumber, requiredString } from './validate.ts';
 
 describe('requiredString', () => {
   test('trims the value', () => {
@@ -59,12 +59,5 @@ describe('requiredDate', () => {
   test('accepts an ISO date and rejects any other format', () => {
     expect(requiredDate({ performedOn: '2026-09-12' }, 'performedOn')).toBe('2026-09-12');
     expect(() => requiredDate({ performedOn: '12.09.2026' }, 'performedOn')).toThrow('"performedOn" must be a date in YYYY-MM-DD format');
-  });
-});
-
-describe('isPresent', () => {
-  test('treats an undefined value as absent', () => {
-    expect(isPresent({ notes: undefined }, 'notes')).toBe(false);
-    expect(isPresent({ notes: null }, 'notes')).toBe(true);
   });
 });
