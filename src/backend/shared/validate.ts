@@ -3,10 +3,6 @@ import type { Iso8601Date } from '../../shared/flavors.ts';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** The two length bounds the facades share: a name-ish field and a free-text one. */
-export const MAX_NAME = 120;
-export const MAX_NOTES = 2000;
-
 export function requiredString<T extends object>(dto: T, field: keyof T & string, maxLength = 200): string {
   const value: unknown = dto[field];
   if (typeof value !== 'string' || value.trim() === '') {

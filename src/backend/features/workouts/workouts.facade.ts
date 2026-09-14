@@ -1,13 +1,16 @@
 import type { CreateSetDto, CreateWorkoutDto, EditSetDto, EditWorkoutDto } from '../../../shared/dto';
 import type { LiftSetId, WorkoutId } from '../../../shared/flavors.ts';
 import type { DB } from '../../db/db.ts';
-import { MAX_NAME, MAX_NOTES, optionalString, requiredDate, requiredInt, requiredNumber } from '../../shared/validate.ts';
+import { optionalString, requiredDate, requiredInt, requiredNumber } from '../../shared/validate.ts';
 import { SetRepository } from './internal/set.repository.ts';
 import { translateDtoToCreateSet, translateDtoToEditSet } from './internal/set.translator.ts';
 import { WorkoutRepository } from './internal/workout.repository.ts';
 import { translateDtoToCreateWorkout, translateDtoToEditWorkout } from './internal/workout.translator.ts';
 import type { LiftSet } from './ports/set.ts';
 import type { Workout, WorkoutWithStats } from './ports/workout.ts';
+
+const MAX_WORKOUT_NAME_LENGTH = 120;
+const MAX_WORKOUT_NOTES_LENGTH = 2000;
 
 /**
  * The workouts half of the feature's front door. Controllers hold this rather than the repository,
@@ -44,8 +47,8 @@ export class WorkoutFacade {
   private validateCreate(dto: CreateWorkoutDto): CreateWorkoutDto {
     return {
       ...(dto.performedOn !== undefined ? { performedOn: requiredDate(dto, 'performedOn') } : {}),
-      title: optionalString(dto, 'title', MAX_NAME),
-      notes: optionalString(dto, 'notes', MAX_NOTES),
+      title: optionalString(dto, 'title', MAX_WORKOUT_NAME_LENGTH),
+      notes: optionalString(dto, 'notes', MAX_WORKOUT_NOTES_LENGTH),
       ...(dto.copyFromWorkoutId !== undefined ? { copyFromWorkoutId: requiredInt(dto, 'copyFromWorkoutId', { min: 1 }) } : {}),
     };
   }
@@ -56,10 +59,10 @@ export class WorkoutFacade {
       valid.performedOn = requiredDate(dto, 'performedOn');
     }
     if (dto.title !== undefined) {
-      valid.title = optionalString(dto, 'title', MAX_NAME);
+      valid.title = optionalString(dto, 'title', MAX_WORKOUT_NAME_LENGTH);
     }
     if (dto.notes !== undefined) {
-      valid.notes = optionalString(dto, 'notes', MAX_NOTES);
+      valid.notes = optionalString(dto, 'notes', MAX_WORKOUT_NOTES_LENGTH);
     }
     return valid;
   }
@@ -98,7 +101,7 @@ export class SetFacade {
       exerciseId: requiredInt(dto, 'exerciseId', { min: 1 }),
       reps: requiredInt(dto, 'reps', { min: 1, max: 1000 }),
       weight: requiredNumber(dto, 'weight', { min: 0, max: 100000 }),
-      notes: optionalString(dto, 'notes', MAX_NOTES),
+      notes: optionalString(dto, 'notes', MAX_WORKOUT_NOTES_LENGTH),
       ...(dto.position !== undefined ? { position: requiredInt(dto, 'position', { min: 0 }) } : {}),
     };
   }
@@ -115,7 +118,7 @@ export class SetFacade {
       valid.weight = requiredNumber(dto, 'weight', { min: 0, max: 100000 });
     }
     if (dto.notes !== undefined) {
-      valid.notes = optionalString(dto, 'notes', MAX_NOTES);
+      valid.notes = optionalString(dto, 'notes', MAX_WORKOUT_NOTES_LENGTH);
     }
     if (dto.position !== undefined) {
       valid.position = requiredInt(dto, 'position', { min: 0 });
