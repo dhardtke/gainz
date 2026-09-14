@@ -7,11 +7,6 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 export const MAX_NAME = 120;
 export const MAX_NOTES = 2000;
 
-export function isPresent<T extends object>(dto: T, field: keyof T & string): boolean {
-  const value: unknown = dto[field];
-  return Object.prototype.hasOwnProperty.call(dto, field) && value !== undefined;
-}
-
 export function requiredString<T extends object>(dto: T, field: keyof T & string, maxLength = 200): string {
   const value: unknown = dto[field];
   if (typeof value !== 'string' || value.trim() === '') {

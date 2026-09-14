@@ -4,7 +4,7 @@ git_commit: d1c5ce7391fa5377dec24e227d8d08f858c043f2
 branch: main
 topic: 'Remove isPresent() and inline its calls'
 tags: [plan, validate, facades]
-status: ready
+status: complete
 ---
 
 # PLAN: Remove isPresent() and inline its calls
@@ -98,36 +98,36 @@ This is a single phase because the export can only be removed once no caller imp
 
 **Tasks**:
 
-- [ ] In `workouts.facade.ts`, `WorkoutFacade.validateCreate`, replace
+- [x] In `workouts.facade.ts`, `WorkoutFacade.validateCreate`, replace
       `isPresent(dto, 'performedOn')` with `dto.performedOn !== undefined` and
       `isPresent(dto, 'copyFromWorkoutId')` with `dto.copyFromWorkoutId !== undefined`
-- [ ] In `workouts.facade.ts`, `WorkoutFacade.validateEdit`, replace the three `isPresent` checks
+- [x] In `workouts.facade.ts`, `WorkoutFacade.validateEdit`, replace the three `isPresent` checks
       (`performedOn`, `title`, `notes`) with `dto.<field> !== undefined`
-- [ ] In `workouts.facade.ts`, `SetFacade.validateCreate`, replace `isPresent(dto, 'position')` with
+- [x] In `workouts.facade.ts`, `SetFacade.validateCreate`, replace `isPresent(dto, 'position')` with
       `dto.position !== undefined`
-- [ ] In `workouts.facade.ts`, `SetFacade.validateEdit`, replace the five `isPresent` checks
+- [x] In `workouts.facade.ts`, `SetFacade.validateEdit`, replace the five `isPresent` checks
       (`exerciseId`, `reps`, `weight`, `notes`, `position`) with `dto.<field> !== undefined`
-- [ ] Remove `isPresent` from the `validate.ts` import in `workouts.facade.ts`
-- [ ] In `exercises.facade.ts`, `ExerciseFacade.validateEdit`, replace the three `isPresent` checks
+- [x] Remove `isPresent` from the `validate.ts` import in `workouts.facade.ts`
+- [x] In `exercises.facade.ts`, `ExerciseFacade.validateEdit`, replace the three `isPresent` checks
       (`name`, `muscleGroup`, `notes`) with `dto.<field> !== undefined`, and remove `isPresent` from
       the import
-- [ ] Delete `isPresent` from `src/backend/shared/validate.ts`
-- [ ] Delete the `describe('isPresent', …)` block from `src/backend/shared/validate.test.ts` and
+- [x] Delete `isPresent` from `src/backend/shared/validate.ts`
+- [x] Delete the `describe('isPresent', …)` block from `src/backend/shared/validate.test.ts` and
       remove `isPresent` from its import
 
 **Automated Verification**:
 
-- [ ] `git grep isPresent -- src` returns no matches
-- [ ] `bun test src/backend/features/exercises/exercises.facade.test.ts` passes, including the case
+- [x] `git grep isPresent -- src` returns no matches
+- [x] `bun test src/backend/features/exercises/exercises.facade.test.ts` passes, including the case
       where `null` clears `notes` and the omitted `name` is kept
-- [ ] `bun test src/backend/features/workouts/workouts.facade.test.ts` passes, including the cases
+- [x] `bun test src/backend/features/workouts/workouts.facade.test.ts` passes, including the cases
       where an omitted `performedOn` means today, an omitted `position` appends the set, and a
       blank `notes` clears the field
-- [ ] `bun test src/backend/features/workouts/set.routes.test.ts src/backend/features/exercises/exercise.routes.test.ts` passes (partial PATCH bodies over HTTP)
-- [ ] `bun test` passes
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
+- [x] `bun test src/backend/features/workouts/set.routes.test.ts src/backend/features/exercises/exercise.routes.test.ts` passes (partial PATCH bodies over HTTP)
+- [x] `bun test` passes
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
 
 ## Implementation Notes
 
