@@ -27,7 +27,7 @@ interface ExerciseTotals {
 const NEW_EXERCISE = '__new__';
 
 /** The logging screen for one session: edit the header, add sets, see totals. */
-class GzWorkoutDetail extends GzElement {
+export class GzWorkoutDetail extends GzElement {
   #workoutId: string | null = null;
 
   #state: WorkoutDetailState = { status: 'loading' };
@@ -62,12 +62,12 @@ class GzWorkoutDetail extends GzElement {
   /**
    * The id this view is showing.
    *
-   * gz-app sets the attribute before the element is connected, so
+   * its route sets the attribute before the element is connected, so
    * attributeChangedCallback has always run by the time anything asks for it.
    * Reading it through here states that invariant once, in the one place that
    * would notice it being broken, instead of at every call site.
    *
-   * The attribute mirrors a route parameter `router.ts` matches as `(\d+)`, so it is always
+   * The attribute mirrors a route parameter `workouts.routes.ts` matches as `(\d+)`, so it is always
    * digits and the conversion cannot produce a NaN.
    */
   get #id(): WorkoutId {
