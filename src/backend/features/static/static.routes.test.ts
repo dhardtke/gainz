@@ -18,7 +18,7 @@ describe('static files', () => {
   });
 
   test('serves the app stylesheets', async () => {
-    for (const path of ['/ui/app.css', '/ui/shared.css', '/app/gz-app.css']) {
+    for (const path of ['/ui/app.css', '/ui/shared.css', '/app/gz-app.component.css']) {
       const res = await api(path);
       expect(res.status).toBe(200);
       expect(res.headers.get('content-type')).toContain('text/css');
@@ -26,7 +26,7 @@ describe('static files', () => {
   });
 
   test('serves a stylesheet beside every component module', async () => {
-    const modules = await Array.fromAsync(new Bun.Glob('**/gz-*.ts').scan(FRONTEND_DIR));
+    const modules = await Array.fromAsync(new Bun.Glob('**/gz-*.component.ts').scan(FRONTEND_DIR));
     expect(modules.length).toBeGreaterThanOrEqual(11);
     for (const file of modules) {
       // scan() yields backslashes on Windows.

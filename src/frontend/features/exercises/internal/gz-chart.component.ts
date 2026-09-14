@@ -38,7 +38,7 @@ interface ChartScale {
  *
  * Usage: `chart.series = [{ label: "5 Jan", value: 82.5, hint: "3 sets" }]`
  */
-export class GzChart extends GzElement {
+export class GzChartComponent extends GzElement {
   #series: ChartPoint[] = [];
   #unit = '';
 
@@ -158,4 +158,4 @@ export class GzChart extends GzElement {
   }
 }
 
-await define('gz-chart', GzChart, import.meta.url);
+await define('gz-chart', GzChartComponent, import.meta.url);

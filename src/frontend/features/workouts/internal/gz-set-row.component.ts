@@ -2,14 +2,14 @@ import type { RawHtml } from '../../../ui/base.ts';
 import { define, GzElement, html } from '../../../ui/base.ts';
 import { formatNumber, formatVolume, UNIT } from '../../../ui/format.ts';
 import type { ExerciseDto, LiftSetDto } from '../../../../shared/dto/index.ts';
-import { toast, toastError } from '../../../ui/gz-toast.ts';
+import { toast, toastError } from '../../../ui/gz-toast.component.ts';
 import { setFacade } from '../workouts.facade.ts';
 
 /**
  * One logged set. Reads in place, edits in place, and tells its parent to
  * reload with a `sets-changed` event rather than trying to patch the list.
  */
-export class GzSetRow extends GzElement {
+export class GzSetRowComponent extends GzElement {
   #editing = false;
 
   #set: LiftSetDto | null = null;
@@ -157,4 +157,4 @@ export class GzSetRow extends GzElement {
   }
 }
 
-await define('gz-set-row', GzSetRow, import.meta.url);
+await define('gz-set-row', GzSetRowComponent, import.meta.url);

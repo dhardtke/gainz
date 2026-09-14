@@ -34,7 +34,7 @@ export function toastError(error: unknown): void {
   toast(errorMessage(error), 'error');
 }
 
-class GzToast extends GzElement {
+class GzToastComponent extends GzElement {
   #items: { id: number; message: string; kind: ToastKind }[] = [];
 
   #onToast: ((event: WindowEventMap[typeof EVENT]) => void) | null = null;
@@ -96,4 +96,4 @@ class GzToast extends GzElement {
   }
 }
 
-await define('gz-toast', GzToast, import.meta.url);
+await define('gz-toast', GzToastComponent, import.meta.url);

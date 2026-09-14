@@ -2,8 +2,8 @@ import type { RawHtml } from '../ui/base.ts';
 import { define, GzElement, html } from '../ui/base.ts';
 import { currentPath, isActive, matchRoute, onRouteChange } from './router.ts';
 import { ROUTES } from './routes.ts';
-import { toastError } from '../ui/gz-toast.ts';
-import './gz-theme-toggle.ts';
+import { toastError } from '../ui/gz-toast.component.ts';
+import './gz-theme-toggle.component.ts';
 
 /**
  * Application shell: a persistent header plus a view slot.
@@ -11,7 +11,7 @@ import './gz-theme-toggle.ts';
  * The shell renders once; route changes only swap the element inside <main>,
  * so the header and the toast stack survive navigation.
  */
-class GzApp extends GzElement {
+class GzAppComponent extends GzElement {
   #unsubscribe: (() => void) | null = null;
   #renderToken = 0;
 
@@ -60,7 +60,7 @@ class GzApp extends GzElement {
     // re-entrantly.
     const token = ++this.#renderToken;
 
-    // aria-current marks the active page for assistive tech, and gz-app.css
+    // aria-current marks the active page for assistive tech, and gz-app.component.css
     // keys the solid button off it — one attribute does both jobs.
     const links = this.$$<HTMLAnchorElement>('nav a[data-path]');
     for (const link of links) {
@@ -132,4 +132,4 @@ class GzApp extends GzElement {
   }
 }
 
-await define('gz-app', GzApp, import.meta.url);
+await define('gz-app', GzAppComponent, import.meta.url);

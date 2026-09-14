@@ -5,11 +5,11 @@ import { formatDate, formatNumber, formatVolume, plural, relativeDay, UNIT } fro
 import { navigate } from '../../app/router.ts';
 import type { ExerciseDto, LiftSetDto, WorkoutWithSetsDto } from '../../../shared/dto';
 import type { ExerciseId, WorkoutId } from '../../../shared/flavors.ts';
-import type { GzSetRow } from './internal/gz-set-row.ts';
-import { toast, toastError } from '../../ui/gz-toast.ts';
+import type { GzSetRowComponent } from './internal/gz-set-row.component.ts';
+import { toast, toastError } from '../../ui/gz-toast.component.ts';
 import { exerciseFacade } from '../exercises/exercises.facade.ts';
 import { setFacade, workoutFacade } from './workouts.facade.ts';
-import './internal/gz-set-row.ts';
+import './internal/gz-set-row.component.ts';
 
 type WorkoutDetailState = { status: 'loading' } | { status: 'ready'; workout: WorkoutWithSetsDto } | { status: 'error'; message: string };
 
@@ -27,7 +27,7 @@ interface ExerciseTotals {
 const NEW_EXERCISE = '__new__';
 
 /** The logging screen for one session: edit the header, add sets, see totals. */
-export class GzWorkoutDetail extends GzElement {
+export class GzWorkoutDetailComponent extends GzElement {
   #workoutId: string | null = null;
 
   #state: WorkoutDetailState = { status: 'loading' };
@@ -203,7 +203,7 @@ export class GzWorkoutDetail extends GzElement {
     }
     const workout = this.#state.workout;
 
-    const rows = this.$$<GzSetRow>('gz-set-row');
+    const rows = this.$$<GzSetRowComponent>('gz-set-row');
     for (const row of rows) {
       const set = workout.sets.find((candidate) => candidate.id === Number(row.dataset.id));
       row.exercises = this.#exercises;
@@ -438,4 +438,4 @@ export class GzWorkoutDetail extends GzElement {
   }
 }
 
-await define('gz-workout-detail', GzWorkoutDetail, import.meta.url);
+await define('gz-workout-detail', GzWorkoutDetailComponent, import.meta.url);
