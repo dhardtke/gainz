@@ -4,7 +4,7 @@ import { define, GzElement, html } from '../../ui/base.ts';
 import { formatDate, formatVolume, plural, relativeDay, todayIso } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
 import type { WorkoutWithStatsDto } from '../../../shared/dto/index.ts';
-import { toast, toastError } from '../../ui/gz-toast.ts';
+import { toast, toastError } from '../../ui/gz-toast.component.ts';
 import { workoutFacade } from './workouts.facade.ts';
 
 /**
@@ -21,7 +21,7 @@ interface WorkoutListState {
 const PAGE_SIZE = 25;
 
 /** The training log: every session, newest first. */
-export class GzWorkoutList extends GzElement {
+export class GzWorkoutListComponent extends GzElement {
   #state: WorkoutListState = { status: 'loading', items: [], total: 0 };
 
   connectedCallback(): void {
@@ -188,4 +188,4 @@ export class GzWorkoutList extends GzElement {
   }
 }
 
-await define('gz-workout-list', GzWorkoutList, import.meta.url);
+await define('gz-workout-list', GzWorkoutListComponent, import.meta.url);

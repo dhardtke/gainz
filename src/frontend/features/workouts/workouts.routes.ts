@@ -5,8 +5,8 @@ export const workoutsRoutes: RouteDef[] = [
     pattern: /^\/workouts\/?$/,
     keys: [],
     view: async () => {
-      const { GzWorkoutList } = await import('./gz-workout-list.ts');
-      return new GzWorkoutList();
+      const { GzWorkoutListComponent } = await import('./gz-workout-list.component.ts');
+      return new GzWorkoutListComponent();
     },
     nav: { path: '/workouts', label: 'Workouts' },
   },
@@ -14,8 +14,8 @@ export const workoutsRoutes: RouteDef[] = [
     pattern: /^\/workouts\/(\d+)\/?$/,
     keys: ['id'],
     view: async ({ id }) => {
-      const { GzWorkoutDetail } = await import('./gz-workout-detail.ts');
-      const view = new GzWorkoutDetail();
+      const { GzWorkoutDetailComponent } = await import('./gz-workout-detail.component.ts');
+      const view = new GzWorkoutDetailComponent();
       view.setAttribute('workout-id', id ?? '');
       return view;
     },

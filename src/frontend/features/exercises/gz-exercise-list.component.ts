@@ -4,13 +4,13 @@ import { define, GzElement, html } from '../../ui/base.ts';
 import { formatWeight, plural, relativeDay } from '../../ui/format.ts';
 import type { ExerciseWithStatsDto } from '../../../shared/dto';
 import type { ExerciseId } from '../../../shared/flavors.ts';
-import { toast, toastError } from '../../ui/gz-toast.ts';
+import { toast, toastError } from '../../ui/gz-toast.component.ts';
 import { exerciseFacade } from './exercises.facade.ts';
 
 type ExerciseListState = { status: 'loading' } | { status: 'ready'; items: ExerciseWithStatsDto[] } | { status: 'error'; message: string };
 
 /** The exercise catalogue — the vocabulary the rest of the log is written in. */
-export class GzExerciseList extends GzElement {
+export class GzExerciseListComponent extends GzElement {
   #state: ExerciseListState = { status: 'loading' };
 
   #editingId: ExerciseId | null = null;
@@ -209,4 +209,4 @@ export class GzExerciseList extends GzElement {
   }
 }
 
-await define('gz-exercise-list', GzExerciseList, import.meta.url);
+await define('gz-exercise-list', GzExerciseListComponent, import.meta.url);

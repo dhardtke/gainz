@@ -3,7 +3,7 @@ import { define, GzElement, html } from '../ui/base.ts';
 import { currentTheme, onThemeChange, setTheme } from '../ui/theme.ts';
 
 /** Switch for the colour theme: off is light, on is dark. */
-class GzThemeToggle extends GzElement {
+class GzThemeToggleComponent extends GzElement {
   #stopThemeSync: (() => void) | null = null;
 
   connectedCallback(): void {
@@ -55,4 +55,4 @@ class GzThemeToggle extends GzElement {
   }
 }
 
-await define('gz-theme-toggle', GzThemeToggle, import.meta.url);
+await define('gz-theme-toggle', GzThemeToggleComponent, import.meta.url);

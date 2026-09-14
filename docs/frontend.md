@@ -2,7 +2,7 @@
 
 `index.html` is the only page: it links Pico and `ui/app.css`, applies a stored theme in a small
 inline script before the first paint, and loads `main.ts` as a module. `main.ts` imports the
-`app/gz-app.ts` shell and redirects a hashless visit to `#/`, so the address bar always shows a
+`app/gz-app.component.ts` shell and redirects a hashless visit to `#/`, so the address bar always shows a
 real route.
 
 ```
@@ -31,12 +31,12 @@ tagged template and `define()`; `styles.ts`, `theme.ts` and `format.ts`; the doc
 `app.css` and the utilities in `shared.css`; and the two widgets several views use, `gz-toast` and
 `gz-tile`.
 
-A component is a pair of files side by side, `gz-<name>.ts` and `gz-<name>.css`, in whichever
+A component is a pair of files side by side, `gz-<name>.component.ts` and `gz-<name>.component.css`, in whichever
 directory owns it. A component module ends with `await define('<tag>', TheClass, import.meta.url)`,
 and `styles.ts` swaps the module URL's `.ts` for `.css` to find the stylesheet, fetches it once
 into a `CSSStyleSheet`, and every instance adopts it by reference — there is no manifest, and a tag
 name implies no path. A test in `static.routes.test.ts` requests the `.css` beside every
-`gz-*.ts`, so a component without its stylesheet fails the suite rather than painting unstyled.
+`gz-*.component.ts`, so a component without its stylesheet fails the suite rather than painting unstyled.
 **That top-level `await` is load-bearing**: it makes "module loaded" also mean "stylesheet loaded",
 which is what lets a route's `view()` lazily `import()` its view and still have it paint styled on
 the first frame.
@@ -61,7 +61,7 @@ summary from `statsFacade` and its recent workouts from `workoutFacade`.
 A feature's routes live in `<f>.routes.ts` beside its facade, the way the backend keeps one
 `*.routes.ts` per feature and spreads them in `src/backend/http/routes.ts`. Each route is a regex
 `pattern`, the `keys` naming its capture groups, and a `view(params)` that `import()`s the view
-module and returns `new GzX()`, setting any id attribute before handing it back. `gz-app` matches
+module and returns `new GzXComponent()`, setting any id attribute before handing it back. `gz-app` matches
 the current path against `ROUTES` and awaits the matching route's `view()` without knowing which
 route it is; when nothing matches it shows its own not-found message. A route may also carry
 `nav: { path, label }`, and `gz-app` builds its header from those, in the order `app/routes.ts`
@@ -71,13 +71,13 @@ its views only through `import()`.
 
 `bun run lint` holds five import boundaries in `.oxlintrc.json`. A module under `features/<a>/` may
 not import `features/<b>/internal/`. Nothing under `app/`, `ui/`, `http/` or `main.ts` may import
-any `internal/`. No `gz-*.ts` component may import an `*.api.ts` module or `http/http.ts`. Nothing
+any `internal/`. No component may import an `*.api.ts` module or `http/http.ts`. Nothing
 under `ui/` or `http/` may import `features/` or `app/`, because they are the foundation the rest is
 built on. And a feature's `*.routes.ts` may not import `internal/`, an `*.api.ts`, a `*.facade.ts`,
 `http/` or `ui/`, because it loads on every page. oxlint applies only the last matching override's
 `no-restricted-imports` options rather than merging them, so an override for components or route
 files repeats the patterns of its directory's override. The rule also checks `import()` calls,
-which is why it cannot forbid a route file's static import of a `gz-*.ts` view without forbidding
+which is why it cannot forbid a route file's static import of a `gz-*.component.ts` view without forbidding
 the lazy one too.
 
 Only the route views reached through the features' `*.routes.ts` are dynamically imported. **A component
@@ -114,7 +114,7 @@ cast on the way in.
 
 Shapes local to one module — a view's `#state` union, the chart's points — are declared in that
 module. The five route views are exported so their route file can construct them with `new`, which
-keeps each tag name written only in its `define()`. `GzChart` and `GzSetRow` are exported so a
+keeps each tag name written only in its `define()`. `GzChartComponent` and `GzSetRowComponent` are exported so a
 view can type the element it drives; the other four components stay private to their module.
 
 ## Loading
@@ -125,7 +125,7 @@ frontend in under two milliseconds — and hands the result back as `text/javasc
 written to disk and nothing is bundled: specifiers are left untouched, so a module imports
 `'../../ui/format.ts'` and the browser fetches the file of that name, and editing a module and reloading
 is the whole edit loop. `src/frontend/` is the web root, so a module's URL is its path below it:
-`src/frontend/app/gz-app.ts` is served at `/app/gz-app.ts`.
+`src/frontend/app/gz-app.component.ts` is served at `/app/gz-app.component.ts`.
 
 The transpiler **erases types without checking them**, and throws only when a file will not parse.
 A type error transpiles happily and ships; `bun run typecheck` is the only gate that catches it. A
@@ -135,7 +135,7 @@ A route's script and stylesheet arrive the first time that route is opened, and 
 Opening the dashboard fetches five component scripts and five stylesheets; the chart is downloaded
 only once you open an exercise. Two pieces make that safe: `define()` awaits the component's
 stylesheet before registering the element, and a top-level `await` blocks the modules that import
-it — so the `await import('./gz-exercise-detail.ts')` in the exercise route's `view()` resolves
+it — so the `await import('./gz-exercise-detail.component.ts')` in the exercise route's `view()` resolves
 only when that view _and_ everything it renders have their scripts and their CSS. A lazily loaded
 page is fully styled on its first paint; there is no flash to guard against.
 

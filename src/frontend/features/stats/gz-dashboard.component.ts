@@ -4,15 +4,15 @@ import { define, GzElement, html } from '../../ui/base.ts';
 import { formatDate, formatVolume, plural, relativeDay, todayIso } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
 import type { SummaryDto, WorkoutWithStatsDto } from '../../../shared/dto/index.ts';
-import { toastError } from '../../ui/gz-toast.ts';
+import { toastError } from '../../ui/gz-toast.component.ts';
 import { workoutFacade } from '../workouts/workouts.facade.ts';
 import { statsFacade } from './stats.facade.ts';
-import '../../ui/gz-tile.ts';
+import '../../ui/gz-tile.component.ts';
 
 type DashboardState = { status: 'loading' } | { status: 'ready'; summary: SummaryDto; workouts: WorkoutWithStatsDto[] } | { status: 'error'; message: string };
 
 /** Landing view: the numbers that answer "am I actually progressing?". */
-export class GzDashboard extends GzElement {
+export class GzDashboardComponent extends GzElement {
   #state: DashboardState = { status: 'loading' };
 
   connectedCallback(): void {
@@ -98,4 +98,4 @@ export class GzDashboard extends GzElement {
   }
 }
 
-await define('gz-dashboard', GzDashboard, import.meta.url);
+await define('gz-dashboard', GzDashboardComponent, import.meta.url);

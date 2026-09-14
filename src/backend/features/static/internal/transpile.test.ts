@@ -19,7 +19,7 @@ describe('typescript modules', () => {
   });
 
   test('leaves import specifiers alone, so a URL names a real file', async () => {
-    const body = await (await api('/features/exercises/internal/gz-chart.ts')).text();
+    const body = await (await api('/features/exercises/internal/gz-chart.component.ts')).text();
     expect(body).toContain('from "../../../ui/format.ts"');
   });
 
@@ -30,18 +30,18 @@ describe('typescript modules', () => {
     const res = await api('/main.ts');
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toContain('text/javascript');
-    expect(await res.text()).toContain('./app/gz-app.ts');
+    expect(await res.text()).toContain('./app/gz-app.component.ts');
   });
 
   test('strips type-only imports, so src/shared/ is never fetched at runtime', async () => {
-    const body = await (await api('/features/workouts/internal/gz-set-row.ts')).text();
+    const body = await (await api('/features/workouts/internal/gz-set-row.component.ts')).text();
     // `src/shared/` is outside the web root: a surviving specifier would be a 404 on
     // every page load. That the module erases to nothing is pinned by src/shared/shared.test.ts.
     expect(body).not.toContain('shared/dto');
   });
 
   test('keeps the load-bearing top-level await that pairs a module with its CSS', async () => {
-    const body = await (await api('/features/exercises/internal/gz-chart.ts')).text();
+    const body = await (await api('/features/exercises/internal/gz-chart.component.ts')).text();
     expect(body).toContain('await define("gz-chart"');
   });
 

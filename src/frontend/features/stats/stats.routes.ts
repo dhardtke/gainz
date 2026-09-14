@@ -5,8 +5,8 @@ export const statsRoutes: RouteDef[] = [
     pattern: /^\/?$/,
     keys: [],
     view: async () => {
-      const { GzDashboard } = await import('./gz-dashboard.ts');
-      return new GzDashboard();
+      const { GzDashboardComponent } = await import('./gz-dashboard.component.ts');
+      return new GzDashboardComponent();
     },
     nav: { path: '/', label: 'Dashboard' },
   },

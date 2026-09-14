@@ -5,10 +5,10 @@ import { formatDate, formatDelta, formatNumber, formatShortDate, formatVolume, p
 import type { ExerciseProgressDto, SessionPointDto } from '../../../shared/dto/index.ts';
 import type { ExerciseId } from '../../../shared/flavors.ts';
 import { exerciseFacade } from './exercises.facade.ts';
-import type { GzChart } from './internal/gz-chart.ts';
-import { toastError } from '../../ui/gz-toast.ts';
-import './internal/gz-chart.ts';
-import '../../ui/gz-tile.ts';
+import type { GzChartComponent } from './internal/gz-chart.component.ts';
+import { toastError } from '../../ui/gz-toast.component.ts';
+import './internal/gz-chart.component.ts';
+import '../../ui/gz-tile.component.ts';
 
 /** The `SessionPointDto` fields that can be plotted. */
 type MetricKey = 'estOneRepMax' | 'topWeight' | 'totalVolume';
@@ -40,7 +40,7 @@ const METRICS: [Metric, ...Metric[]] = [
 ];
 
 /** Progress view for a single exercise. */
-export class GzExerciseDetail extends GzElement {
+export class GzExerciseDetailComponent extends GzElement {
   #exerciseId: string | null = null;
 
   #state: ExerciseDetailState = { status: 'loading' };
@@ -104,7 +104,7 @@ export class GzExerciseDetail extends GzElement {
   }
 
   afterRender(): void {
-    const chart = this.$<GzChart>('gz-chart');
+    const chart = this.$<GzChartComponent>('gz-chart');
     if (!chart || this.#state.status !== 'ready') {
       return;
     }
@@ -242,4 +242,4 @@ export class GzExerciseDetail extends GzElement {
   }
 }
 
-await define('gz-exercise-detail', GzExerciseDetail, import.meta.url);
+await define('gz-exercise-detail', GzExerciseDetailComponent, import.meta.url);
