@@ -15,7 +15,7 @@ import type {
   WorkoutDto,
   WorkoutPageDto,
   WorkoutWithSetsDto,
-} from '../shared/dto/index.ts';
+} from '../shared/dto';
 import type { ExerciseId, LiftSetId, WorkoutId } from '../shared/flavors.ts';
 
 export class ApiError extends Error {
@@ -99,6 +99,7 @@ const patch = <T>(path: string, body?: unknown): Promise<T> => request<T>('PATCH
 
 const remove = (path: string): Promise<null> => request<null>('DELETE', path);
 
+// TODO split up object into separate services
 export const api = {
   summary: (): Promise<SummaryDto> => get('/stats/summary'),
 

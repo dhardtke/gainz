@@ -15,6 +15,7 @@
  * The backend translates its repository rows into these shapes in each feature's `ports/`; the
  * rows themselves stay snake_case and never leave the feature that owns the table.
  */
+// TODO remove barrel imports
 export type { ErrorDto } from './error.ts';
 export type { CreateExerciseDto, EditExerciseDto, ExerciseDto, ExerciseProgressDto, ExerciseWithStatsDto, SessionPointDto } from './exercise.ts';
 export type { HealthDto } from './meta.ts';

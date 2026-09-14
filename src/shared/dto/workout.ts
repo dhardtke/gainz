@@ -3,7 +3,6 @@ import type { LiftSetDto } from './set.ts';
 
 export interface WorkoutDto {
   id: WorkoutId;
-  /** ISO date, `YYYY-MM-DD`. */
   performedOn: Iso8601Date;
   title: string | null;
   notes: string | null;
