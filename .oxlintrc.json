@@ -172,6 +172,102 @@
       "rules": {
         "typescript/no-unsafe-type-assertion": "off"
       }
+    },
+    {
+      "files": ["src/frontend/features/**/*.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["../**/internal/**"],
+                "message": "A feature reaches another feature through its facade, never its internal/."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/frontend/features/**/gz-*.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["../**/internal/**", "**/*.api.ts", "**/http/http.ts"],
+                "message": "Components read data through a facade."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/frontend/main.ts", "src/frontend/app/**/*.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/internal/**"],
+                "message": "Only a feature may reach its own internal/."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/frontend/app/**/gz-*.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/internal/**", "**/*.api.ts", "**/http/http.ts"],
+                "message": "Components read data through a facade."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/frontend/ui/**/*.ts", "src/frontend/http/**/*.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/internal/**", "**/features/**", "**/app/**"],
+                "message": "ui/ and http/ are the foundation; they may not depend on what uses them."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/frontend/ui/**/gz-*.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/internal/**", "**/features/**", "**/app/**", "**/*.api.ts", "**/http/http.ts"],
+                "message": "ui/ components are foundation and read no data."
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

@@ -1,9 +1,9 @@
-import type { RawHtml } from '../../base.ts';
-import { define, GzElement, html } from '../../base.ts';
-import type { Route, ViewName } from '../../router.ts';
-import { currentRoute, isActive, onRouteChange } from '../../router.ts';
-import { toastError } from '../gz-toast/gz-toast.ts';
-import '../gz-theme-toggle/gz-theme-toggle.ts';
+import type { RawHtml } from '../ui/base.ts';
+import { define, GzElement, html } from '../ui/base.ts';
+import type { Route, ViewName } from './router.ts';
+import { currentRoute, isActive, onRouteChange } from './router.ts';
+import { toastError } from '../ui/gz-toast.ts';
+import './gz-theme-toggle.ts';
 
 const NAV = [
   { path: '/', label: 'Dashboard' },
@@ -22,11 +22,11 @@ const NAV = [
  * screen.
  */
 const VIEWS: Record<ViewName, () => Promise<unknown>> = {
-  dashboard: () => import('../gz-dashboard/gz-dashboard.ts'),
-  workouts: () => import('../gz-workout-list/gz-workout-list.ts'),
-  workout: () => import('../gz-workout-detail/gz-workout-detail.ts'),
-  exercises: () => import('../gz-exercise-list/gz-exercise-list.ts'),
-  exercise: () => import('../gz-exercise-detail/gz-exercise-detail.ts'),
+  dashboard: () => import('../features/stats/gz-dashboard.ts'),
+  workouts: () => import('../features/workouts/gz-workout-list.ts'),
+  workout: () => import('../features/workouts/gz-workout-detail.ts'),
+  exercises: () => import('../features/exercises/gz-exercise-list.ts'),
+  exercise: () => import('../features/exercises/gz-exercise-detail.ts'),
 };
 
 /**
@@ -187,4 +187,4 @@ class GzApp extends GzElement {
   }
 }
 
-await define('gz-app', GzApp);
+await define('gz-app', GzApp, import.meta.url);

@@ -1,6 +1,6 @@
-import type { RawHtml } from '../../base.ts';
-import { define, GzElement, html } from '../../base.ts';
-import { currentTheme, onThemeChange, setTheme } from '../../theme.ts';
+import type { RawHtml } from '../ui/base.ts';
+import { define, GzElement, html } from '../ui/base.ts';
+import { currentTheme, onThemeChange, setTheme } from '../ui/theme.ts';
 
 /** Switch for the colour theme: off is light, on is dark. */
 class GzThemeToggle extends GzElement {
@@ -55,4 +55,4 @@ class GzThemeToggle extends GzElement {
   }
 }
 
-await define('gz-theme-toggle', GzThemeToggle);
+await define('gz-theme-toggle', GzThemeToggle, import.meta.url);

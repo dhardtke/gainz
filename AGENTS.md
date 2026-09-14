@@ -43,7 +43,12 @@ no feature sits outside — `db/` (connection, migrations, statement helpers), `
 registry, the server), `shared/validate.ts` and `main.ts`. Every `*.test.ts` sits beside the module
 it exercises
 `src/frontend/` -> a **no-build-step** frontend: TypeScript ES modules and custom elements,
-transpiled on request by `src/backend/features/static` — no bundler, no output directory
+transpiled on request by `src/backend/features/static` — no bundler, no output directory. It is
+organised like the backend: `features/<feature>/` owns its route views and a `<feature>.facade.ts`
+at its root and keeps its `*.api.ts` classes and child components in `internal/`; `app/` is the
+shell and router, `http/` the request helpers, `ui/` the component foundation and the widgets
+several features use. `bun run lint` fails if a feature reaches another's `internal/` or a
+component reaches an `*.api.ts` or `http/http.ts`
 `src/shared/` -> the wire contract both halves import: `dto/` declares every request and response
 shape and `flavors.ts` the flavored ids and dates those shapes are written in — both **types
 only**, because it is not web-served and reaches the browser only as an erased `import type`
@@ -54,7 +59,8 @@ The REST surface has no reference document: each feature holds one `*.routes.ts`
 group, and a route belongs to the file its URL prefix names.
 
 - `docs/backend.md` — features, ports/internal, routes, repositories, migrations, the data model, tests
-- `docs/frontend.md` — components, loading, theming, and why a module's URL is its path
+- `docs/frontend.md` — features and facades, components, import boundaries, loading, theming, and
+  why a module's URL is its path
 - `docs/coding-guidelines.md` — pinning, quote style, commits on `main`
 - `docs/styling-guidelines.md` — Pico, no CSS in JavaScript, no font sizes
 

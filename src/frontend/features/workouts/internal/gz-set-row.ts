@@ -1,9 +1,9 @@
-import { api } from '../../api.ts';
-import type { RawHtml } from '../../base.ts';
-import { define, GzElement, html } from '../../base.ts';
-import { formatNumber, formatVolume, UNIT } from '../../format.ts';
-import type { ExerciseDto, LiftSetDto } from '../../../shared/dto/index.ts';
-import { toast, toastError } from '../gz-toast/gz-toast.ts';
+import type { RawHtml } from '../../../ui/base.ts';
+import { define, GzElement, html } from '../../../ui/base.ts';
+import { formatNumber, formatVolume, UNIT } from '../../../ui/format.ts';
+import type { ExerciseDto, LiftSetDto } from '../../../../shared/dto/index.ts';
+import { toast, toastError } from '../../../ui/gz-toast.ts';
+import { setFacade } from '../workouts.facade.ts';
 
 /**
  * One logged set. Reads in place, edits in place, and tells its parent to
@@ -56,7 +56,7 @@ export class GzSetRow extends GzElement {
 
     if (action === 'duplicate') {
       try {
-        await api.workouts.addSet(set.workoutId, {
+        await setFacade.create(set.workoutId, {
           exerciseId: set.exerciseId,
           reps: set.reps,
           weight: set.weight,
@@ -74,7 +74,7 @@ export class GzSetRow extends GzElement {
         return;
       }
       try {
-        await api.sets.remove(set.id);
+        await setFacade.delete(set.id);
         toast('Set deleted', 'success');
         this.emit('sets-changed');
       } catch (error) {
@@ -89,7 +89,7 @@ export class GzSetRow extends GzElement {
     }
     const values = this.formData(form);
     try {
-      await api.sets.update(this.#set.id, {
+      await setFacade.update(this.#set.id, {
         exerciseId: Number(values.exerciseId),
         reps: Number(values.reps),
         weight: Number(values.weight),
@@ -157,4 +157,4 @@ export class GzSetRow extends GzElement {
   }
 }
 
-await define('gz-set-row', GzSetRow);
+await define('gz-set-row', GzSetRow, import.meta.url);

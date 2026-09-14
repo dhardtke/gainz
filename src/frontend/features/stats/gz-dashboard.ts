@@ -1,11 +1,13 @@
-import { api, errorMessage } from '../../api.ts';
-import type { RawHtml } from '../../base.ts';
-import { define, GzElement, html } from '../../base.ts';
-import { formatDate, formatVolume, plural, relativeDay, todayIso } from '../../format.ts';
-import { navigate } from '../../router.ts';
+import { errorMessage } from '../../http/errors.ts';
+import type { RawHtml } from '../../ui/base.ts';
+import { define, GzElement, html } from '../../ui/base.ts';
+import { formatDate, formatVolume, plural, relativeDay, todayIso } from '../../ui/format.ts';
+import { navigate } from '../../app/router.ts';
 import type { SummaryDto, WorkoutWithStatsDto } from '../../../shared/dto/index.ts';
-import { toastError } from '../gz-toast/gz-toast.ts';
-import '../gz-stat-tile/gz-stat-tile.ts';
+import { toastError } from '../../ui/gz-toast.ts';
+import { workoutFacade } from '../workouts/workouts.facade.ts';
+import { statsFacade } from './stats.facade.ts';
+import '../../ui/gz-stat-tile.ts';
 
 type DashboardState = { status: 'loading' } | { status: 'ready'; summary: SummaryDto; workouts: WorkoutWithStatsDto[] } | { status: 'error'; message: string };
 
@@ -20,7 +22,7 @@ class GzDashboard extends GzElement {
 
   async #load(): Promise<void> {
     try {
-      const [summary, page] = await Promise.all([api.summary(), api.workouts.list({ limit: 5 })]);
+      const [summary, page] = await Promise.all([statsFacade.summary(), workoutFacade.list({ limit: 5 })]);
       this.#state = { status: 'ready', summary, workouts: page.items };
     } catch (error) {
       this.#state = { status: 'error', message: errorMessage(error) };
@@ -34,7 +36,7 @@ class GzDashboard extends GzElement {
       return;
     }
     try {
-      const workout = await api.workouts.create({ performedOn: todayIso() });
+      const workout = await workoutFacade.create({ performedOn: todayIso() });
       navigate(`/workouts/${workout.id}`);
     } catch (error) {
       toastError(error);
@@ -96,4 +98,4 @@ class GzDashboard extends GzElement {
   }
 }
 
-await define('gz-dashboard', GzDashboard);
+await define('gz-dashboard', GzDashboard, import.meta.url);

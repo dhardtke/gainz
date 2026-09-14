@@ -1,13 +1,14 @@
-import { api, ApiError, errorMessage } from '../../api.ts';
-import type { RawHtml } from '../../base.ts';
-import { define, GzElement, html } from '../../base.ts';
-import { formatDate, formatDelta, formatNumber, formatShortDate, formatVolume, plural, relativeDay, UNIT } from '../../format.ts';
+import { ApiError, errorMessage } from '../../http/errors.ts';
+import type { RawHtml } from '../../ui/base.ts';
+import { define, GzElement, html } from '../../ui/base.ts';
+import { formatDate, formatDelta, formatNumber, formatShortDate, formatVolume, plural, relativeDay, UNIT } from '../../ui/format.ts';
 import type { ExerciseProgressDto, SessionPointDto } from '../../../shared/dto/index.ts';
 import type { ExerciseId } from '../../../shared/flavors.ts';
-import type { GzChart } from '../gz-chart/gz-chart.ts';
-import { toastError } from '../gz-toast/gz-toast.ts';
-import '../gz-chart/gz-chart.ts';
-import '../gz-stat-tile/gz-stat-tile.ts';
+import { exerciseFacade } from './exercises.facade.ts';
+import type { GzChart } from './internal/gz-chart.ts';
+import { toastError } from '../../ui/gz-toast.ts';
+import './internal/gz-chart.ts';
+import '../../ui/gz-stat-tile.ts';
 
 /** The `SessionPointDto` fields that can be plotted. */
 type MetricKey = 'estOneRepMax' | 'topWeight' | 'totalVolume';
@@ -81,7 +82,7 @@ class GzExerciseDetail extends GzElement {
 
   async #load(): Promise<void> {
     try {
-      this.#state = { status: 'ready', ...(await api.exercises.progress(this.#id)) };
+      this.#state = { status: 'ready', ...(await exerciseFacade.progress(this.#id)) };
     } catch (error) {
       this.#state = { status: 'error', message: errorMessage(error) };
       if (!(error instanceof ApiError) || error.status !== 404) {
@@ -245,4 +246,4 @@ class GzExerciseDetail extends GzElement {
   }
 }
 
-await define('gz-exercise-detail', GzExerciseDetail);
+await define('gz-exercise-detail', GzExerciseDetail, import.meta.url);

@@ -1,10 +1,11 @@
-import { api, errorMessage } from '../../api.ts';
-import type { RawHtml } from '../../base.ts';
-import { define, GzElement, html } from '../../base.ts';
-import { formatWeight, plural, relativeDay } from '../../format.ts';
+import { errorMessage } from '../../http/errors.ts';
+import type { RawHtml } from '../../ui/base.ts';
+import { define, GzElement, html } from '../../ui/base.ts';
+import { formatWeight, plural, relativeDay } from '../../ui/format.ts';
 import type { ExerciseWithStatsDto } from '../../../shared/dto';
 import type { ExerciseId } from '../../../shared/flavors.ts';
-import { toast, toastError } from '../gz-toast/gz-toast.ts';
+import { toast, toastError } from '../../ui/gz-toast.ts';
+import { exerciseFacade } from './exercises.facade.ts';
 
 type ExerciseListState = { status: 'loading' } | { status: 'ready'; items: ExerciseWithStatsDto[] } | { status: 'error'; message: string };
 
@@ -21,7 +22,7 @@ class GzExerciseList extends GzElement {
 
   async #load(): Promise<void> {
     try {
-      this.#state = { status: 'ready', items: await api.exercises.list() };
+      this.#state = { status: 'ready', items: await exerciseFacade.list() };
     } catch (error) {
       this.#state = { status: 'error', message: errorMessage(error) };
       toastError(error);
@@ -37,7 +38,7 @@ class GzExerciseList extends GzElement {
 
     if (action === 'create') {
       try {
-        await api.exercises.create({
+        await exerciseFacade.create({
           name,
           muscleGroup: values.muscleGroup,
           notes: values.notes,
@@ -53,7 +54,7 @@ class GzExerciseList extends GzElement {
 
     if (action === 'save') {
       try {
-        await api.exercises.update(Number(form.dataset.id), {
+        await exerciseFacade.update(Number(form.dataset.id), {
           name,
           muscleGroup: values.muscleGroup,
           notes: values.notes,
@@ -87,7 +88,7 @@ class GzExerciseList extends GzElement {
         return;
       }
       try {
-        await api.exercises.remove(Number(element.dataset.id));
+        await exerciseFacade.delete(Number(element.dataset.id));
         toast(`Deleted ${name}`, 'success');
         await this.#load();
       } catch (error) {
@@ -208,4 +209,4 @@ class GzExerciseList extends GzElement {
   }
 }
 
-await define('gz-exercise-list', GzExerciseList);
+await define('gz-exercise-list', GzExerciseList, import.meta.url);
