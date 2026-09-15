@@ -168,3 +168,31 @@ describe('setTheme', () => {
     expect(host.attributes.get('data-theme')).toBe('dark');
   });
 });
+
+describe('toggleTheme', () => {
+  test('from light stores and applies dark, and tells listeners once', async () => {
+    const theme = await load();
+    let heard = 0;
+    theme.onThemeChange(() => {
+      heard++;
+    });
+
+    theme.toggleTheme();
+
+    expect(theme.currentTheme()).toBe('dark');
+    expect(stored.get('gainz:theme')).toBe('dark');
+    expect(htmlTheme()).toBe('dark');
+    expect(heard).toBe(1);
+  });
+
+  test('toggling twice returns to light and stores it', async () => {
+    const theme = await load();
+
+    theme.toggleTheme();
+    theme.toggleTheme();
+
+    expect(theme.currentTheme()).toBe('light');
+    expect(stored.get('gainz:theme')).toBe('light');
+    expect(htmlTheme()).toBe('light');
+  });
+});
