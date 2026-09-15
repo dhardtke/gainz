@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'bun:test';
+import { unlink } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { useServer } from '../../testing.ts';
 import { FRONTEND_DIR } from './internal/paths.ts';
 
@@ -90,5 +92,74 @@ describe('static files', () => {
     // resolveStaticPath sees it.
     expect((await api('/%2e%2e/backend/http/server.ts')).status).toBe(404);
     expect((await api('/%2e%2e/backend/features/static/internal/transpile.ts')).status).toBe(404);
+  });
+});
+
+describe('revalidation', () => {
+  const tagOf = async (path: string): Promise<string> => {
+    const res = await api(path);
+    expect(res.status).toBe(200);
+    return res.headers.get('etag') ?? '';
+  };
+
+  test('every served file carries a strong ETag and no-cache', async () => {
+    for (const path of ['/', '/workouts', '/ui/app.css', '/vendor/pico.css', '/main.ts']) {
+      const res = await api(path);
+      expect(res.status).toBe(200);
+      expect(res.headers.get('etag')).toMatch(/^"[0-9a-z]+"$/);
+      expect(res.headers.get('cache-control')).toBe('no-cache');
+    }
+  });
+
+  test('the root and a client route share the index page tag', async () => {
+    expect(await tagOf('/workouts')).toBe(await tagOf('/'));
+  });
+
+  test('a matching If-None-Match gets an empty 304', async () => {
+    for (const path of ['/ui/app.css', '/vendor/pico.css', '/workouts']) {
+      const etag = await tagOf(path);
+      for (const method of ['GET', 'HEAD']) {
+        const res = await api(path, { method, headers: { 'If-None-Match': etag } });
+        expect(res.status).toBe(304);
+        expect(await res.text()).toBe('');
+        expect(res.headers.get('etag')).toBe(etag);
+        expect(res.headers.get('cache-control')).toBe('no-cache');
+      }
+    }
+  });
+
+  test('a list, a weak tag and * all match', async () => {
+    const etag = await tagOf('/ui/app.css');
+    for (const header of [`"stale", ${etag}`, `W/${etag}`, '*']) {
+      const res = await api('/ui/app.css', { headers: { 'If-None-Match': header } });
+      expect(res.status).toBe(304);
+    }
+  });
+
+  test('a stale tag gets the full body', async () => {
+    const res = await api('/ui/app.css', { headers: { 'If-None-Match': '"stale"' } });
+    expect(res.status).toBe(200);
+    expect((await res.text()).length).toBeGreaterThan(0);
+  });
+
+  test('editing a file changes its tag', async () => {
+    const path = resolve(FRONTEND_DIR, '__etag.css');
+    await Bun.write(path, 'a { color: red; }\n');
+    try {
+      const before = await tagOf('/__etag.css');
+      await Bun.write(path, 'a { color: blue; }\n');
+      const res = await api('/__etag.css', { headers: { 'If-None-Match': before } });
+      expect(res.status).toBe(200);
+      expect(res.headers.get('etag')).not.toBe(before);
+    } finally {
+      await unlink(path);
+    }
+  });
+
+  test('error responses carry no ETag', async () => {
+    for (const res of [await api('/nope.css'), await api('/vendor/pico.scss'), await api('/', { method: 'POST' })]) {
+      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect(res.headers.get('etag')).toBeNull();
+    }
   });
 });
