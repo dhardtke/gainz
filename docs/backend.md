@@ -12,13 +12,15 @@ the `RouteTable` and `ParamRequest` types, `routes.ts` for the registry,
 through `startServer`. There is no `fetch` fallback — every URL the server answers is a declared pattern.
 
 **Inside a feature, `ports/` is public and `internal/` is private.** `ports/` declares the row
-types other features may read and the `to*` mappers that turn them into DTOs; `internal/` holds
+types other features may read, and nothing that turns them into DTOs; `internal/` holds
 everything about how the feature talks to its own table — the repository, its `Create<Entity>` and `Edit<Entity>` (a `Partial` of it), the
-translator, which casts a body onto its request DTO and translates a DTO into that input — and the controllers, one `<x>.controller.ts` per route file and
+translator, which translates in both directions (a body onto its request DTO, a request DTO into that
+input, and a row into its response DTO) — and the controllers, one `<x>.controller.ts` per route file and
 named after it. No module under `features/<a>/` may import from `features/<b>/internal/`, and the
 arrows in production code that do cross a feature line all land on a `ports/`: the exercises
 repository queries the sets table, so it takes `SET_COLUMNS` and `EST_1RM_SQL` from
-`features/workouts/ports/sql.ts` and `LiftSet` from `features/workouts/ports/set.ts`. The third place
+`features/workouts/ports/sql.ts`, and both it and `exercise.translator.ts` take `LiftSet` from
+`features/workouts/ports/set.ts`. The third place
 a feature keeps code is its root, beside those two directories: the `*.routes.ts` files named after
 the URL groups they answer, the `<feature>.facade.ts` named after the feature itself — the front
 door described below — and, for a feature whose data other tests need, a test-only
@@ -28,16 +30,19 @@ A route file is only a table: each handler is one line that passes the request t
 and returns what comes back. The controller does the rest. It takes the
 request and returns a `Response`, reading it with `pathId`, `queryInt` and `readJsonObject` and
 answering with `json()` or `noContent()` and the status code, and in between it runs
-`body → translateTo<X>Dto → <X>Dto → facade → row → to<X> → DTO`. The facade's write methods in
+`body → translateTo<X>Dto → <X>Dto → facade → row → translateTo<X>Dto → DTO`. The facade's write methods in
 turn run `validate → <X>Dto → translateDtoTo<Create|Edit><Entity> → <Create|Edit><Entity> → repository`. The
-translator's body-to-DTO half only casts, so a request DTO is unchecked until the facade has
-validated and normalised it, which happens before anything touches the database; its DTO-to-input
-half is where renaming happens. Neither half, nor the facade, does another's job.
+translator has three parts. Its body-to-DTO part only casts, so a request DTO is unchecked until the
+facade has validated and normalised it, which happens before anything touches the database; its
+DTO-to-input part and its row-to-DTO part are where renaming happens. No part, nor the facade, does
+another's job.
 
 **A controller answers with a DTO, never a row.** The wire format is declared once in `src/shared/dto/` —
 camelCase, type-only, imported by the frontend as well — and each feature holds one function per
-shape in each direction (the `toLiftSet(row)` mapper in `ports/`, called by the controller, and
-`translateDtoToCreateSet(dto)` in `internal/set.translator.ts`, called by the facade). Those
+shape in each direction, both in `internal/<entity>.translator.ts` (`translateToLiftSetDto(row)`,
+called by the controller, and `translateDtoToCreateSet(dto)`, called by the facade). A translator
+never imports another feature's `internal/`, which is why `exercise.translator.ts` names
+`BestSetDto`'s fields itself rather than reusing the workouts feature's set translation. Those
 functions are the only place that reads a row's fields outside the repository that produced it, and
 each one names every field it maps: a spread would compile and would ship `workout_id` and
 `created_at` to the browser with nothing to catch it. The camelCase rename is what keeps that
@@ -81,22 +86,24 @@ holds the facades. A repository is named only by its own feature's facade, and c
 that facade's factory, so `features/workouts/internal/` is the whole world in which `SetRepository`
 exists as a name. That is what a facade buys: a published surface narrower than the repository
 behind it (no `get()`, which only `require()` ever called), one place a repository is built, and a
-boundary a linter can check. The `overrides` block in `.oxlintrc.json` holds three rules for the
+boundary a linter can check. The `overrides` block in `.oxlintrc.json` holds four rules for the
 backend; the frontend's own import boundaries follow them there and are described in
-`docs/frontend.md`. Two
+`docs/frontend.md`. Three
 restrict imports, type imports included: no `*.routes.ts` — `static.routes.ts` among them — may
 import anything under `internal/` except its controller, anything under `ports/`, a
 `*.repository.ts`, or the request and response helpers (`http/http.ts`, `http/errors.ts`,
-`shared/validate.ts`), which is what keeps its handlers one line long; and no `*.controller.ts` may
-import a `*.repository.ts`. The third exempts `*.translator.ts` from
-`typescript/no-unsafe-type-assertion`, since casting a body onto a DTO is half of a translator's job.
+`shared/validate.ts`), which is what keeps its handlers one line long; no `*.controller.ts` may
+import a `*.repository.ts` or anything under `ports/`, so a controller cannot even name a row type
+and has to translate through its translator; and nothing under `ports/` may import `shared/dto`, so
+a DTO is never built there. The fourth exempts `*.translator.ts` from
+`typescript/no-unsafe-type-assertion`, since casting a body onto a DTO is part of a translator's job.
 The facades are not pure delegation: their write methods validate and map the request with the
 facade's own private `validateCreate` / `validateEdit` methods before calling the repository.
 Composition across facades, like `GET /api/workouts/:id` reading a workout and its sets, still
 lives in the controller, and the facade is where it goes if it ever needs to move further down.
 
 The facades take request DTOs and publish rows, so the rule above it is unchanged: the controller
-maps what the facade returns through a `to*` mapper, and the camelCase rename is still what the
+translates what the facade returns through its feature's translator, and the camelCase rename is still what the
 compiler checks.
 `features/facades.ts` is the single composition root — it declares `Facades` (a parameter object
 with no methods of its own) and `createFacades(db)` over the three per-feature factories, and it is

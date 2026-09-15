@@ -1,4 +1,3 @@
-import type { SummaryDto } from '../../../../shared/dto';
 import type { Iso8601Date } from '../../../../shared/flavors.ts';
 
 /**
@@ -15,17 +14,4 @@ export interface Summary {
   last_performed_on: Iso8601Date | null;
   workouts_last_30_days: number;
   volume_last_30_days: number;
-}
-
-export function toSummary(row: Summary): SummaryDto {
-  return {
-    workoutCount: row.workout_count,
-    setCount: row.set_count,
-    totalReps: row.total_reps,
-    totalVolume: row.total_volume,
-    exerciseCount: row.exercise_count,
-    lastPerformedOn: row.last_performed_on,
-    workoutsLast30Days: row.workouts_last_30_days,
-    volumeLast30Days: row.volume_last_30_days,
-  };
 }

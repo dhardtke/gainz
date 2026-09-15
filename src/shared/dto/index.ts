@@ -12,7 +12,8 @@
  * workout id cannot stand in for an exercise id and a `createdAt` cannot stand in for a
  * `YYYY-MM-DD` date.
  *
- * The backend translates its repository rows into these shapes in each feature's `ports/`; the
+ * The backend translates its repository rows into these shapes in each feature's
+ * `internal/*.translator.ts`; the
  * rows themselves stay snake_case and never leave the feature that owns the table.
  */
 // TODO remove barrel imports

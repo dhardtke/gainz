@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { ErrorDto, ExerciseProgressDto, ExerciseWithStatsDto, WorkoutWithSetsDto } from '../../../shared/dto';
+import type { ErrorDto, ExerciseProgressDto, ExerciseWithStatsDto, LiftSetDto, WorkoutWithSetsDto } from '../../../shared/dto';
 import { at, body, useServer } from '../../testing.ts';
 import { createExercise } from './exercises.fixtures.ts';
 import { createWorkout } from '../workouts/workouts.fixtures.ts';
@@ -58,13 +58,14 @@ describe('exercises', () => {
 describe('progress', () => {
   test('aggregates one line per session and reports the best set', async () => {
     const exercise = await createExercise(post);
+    const topSets: LiftSetDto[] = [];
 
     for (const [date, weight] of [
       ['2026-01-05', 60],
       ['2026-01-12', 65],
     ] as const) {
       const workout = await body<WorkoutWithSetsDto>(await post('/api/workouts', { performedOn: date }));
-      await post(`/api/workouts/${workout.id}/sets`, { exerciseId: exercise.id, reps: 5, weight });
+      topSets.push(await body<LiftSetDto>(await post(`/api/workouts/${workout.id}/sets`, { exerciseId: exercise.id, reps: 5, weight })));
       await post(`/api/workouts/${workout.id}/sets`, { exerciseId: exercise.id, reps: 5, weight: weight - 5 });
     }
 
@@ -74,7 +75,18 @@ describe('progress', () => {
     expect(progress.sessions[0]).toMatchObject({ performedOn: '2026-01-05', setCount: 2, topWeight: 60 });
     expect(at(progress.sessions, 1).topWeight).toBe(65);
     // Epley: 65 * (1 + 5/30) ~= 75.83
-    expect(progress.bestSet?.weight).toBe(65);
+    expect(progress.bestSet).toEqual({
+      id: at(topSets, 1).id,
+      workoutId: at(topSets, 1).workoutId,
+      exerciseId: exercise.id,
+      exerciseName: 'Bench Press',
+      reps: 5,
+      weight: 65,
+      notes: null,
+      position: 1,
+      createdAt: at(topSets, 1).createdAt,
+      performedOn: '2026-01-12',
+    });
     expect(at(progress.sessions, 1).estOneRepMax).toBeCloseTo(75.83, 1);
   });
 });

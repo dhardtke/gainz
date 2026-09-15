@@ -98,7 +98,7 @@ Everything under `src/shared/` must therefore stay free of runtime code — `fla
 the DTOs.
 
 What the frontend is pinned to is still the wire format rather than the server's row types: the
-backend translates its rows into these DTOs in each feature's `ports/` and the wire is camelCase
+backend translates its rows into these DTOs in each feature's translator and the wire is camelCase
 where the database is snake_case, so a renamed column cannot arrive here as a silent refactor. It
 just no longer costs a hand-written second copy to say so.
 
