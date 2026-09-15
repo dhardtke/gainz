@@ -4,7 +4,7 @@ git_commit: 167d91a5e54de5151dc6637b0ec16e1ccf8cc513
 branch: main
 topic: 'Enforce the override modifier'
 tags: [plan, typescript, tsconfig, frontend, components, coding-guidelines]
-status: ready
+status: complete
 ---
 
 # PLAN: Enforce the override modifier
@@ -125,41 +125,45 @@ Turn on the flag, satisfy it everywhere, and record the convention.
 
 **Tasks**:
 
-- [ ] `tsconfig.json`: add `"noImplicitOverride": true` to `compilerOptions`, after
+- [x] `tsconfig.json`: add `"noImplicitOverride": true` to `compilerOptions`, after
       `"noFallthroughCasesInSwitch": true`.
-- [ ] Run `bun run typecheck` and confirm it reports exactly the 41 TS4114 errors listed above,
+- [x] Run `bun run typecheck` and confirm it reports exactly the 41 TS4114 errors listed above,
       and nothing else.
-- [ ] `src/frontend/app/`: add `override` to the flagged members of `gz-app.component.ts`,
+- [x] `src/frontend/app/`: add `override` to the flagged members of `gz-app.component.ts`,
       `gz-header.component.ts` and `gz-theme-toggle.component.ts`.
-- [ ] `src/frontend/features/exercises/`: add `override` to the flagged members of
+- [x] `src/frontend/features/exercises/`: add `override` to the flagged members of
       `gz-exercise-detail.component.ts`, `gz-exercise-list.component.ts` and
       `internal/gz-chart.component.ts`, writing `override async` for the async handlers.
-- [ ] `src/frontend/features/stats/gz-dashboard.component.ts`: add `override` to the flagged
+- [x] `src/frontend/features/stats/gz-dashboard.component.ts`: add `override` to the flagged
       members (`override async handleAction`).
-- [ ] `src/frontend/features/workouts/`: add `override` to the flagged members of
+- [x] `src/frontend/features/workouts/`: add `override` to the flagged members of
       `gz-workout-detail.component.ts`, `gz-workout-list.component.ts` and
       `internal/gz-set-row.component.ts`, writing `override async` for the async handlers.
-- [ ] `src/frontend/ui/`: add `override` to the flagged members of `gz-tile.component.ts` and
+- [x] `src/frontend/ui/`: add `override` to the flagged members of `gz-tile.component.ts` and
       `gz-toast.component.ts`.
-- [ ] `docs/coding-guidelines.md`: after the quote-style line, add a paragraph along the lines of:
+- [x] `docs/coding-guidelines.md`: after the quote-style line, add a paragraph along the lines of:
       "A member that overrides one from its base class is marked `override`. `noImplicitOverride`
       makes `bun run typecheck` enforce it both ways, so a renamed or misspelled `GzElement` hook
       fails the check instead of silently never running."
 
 **Automated Verification**:
 
-- [ ] `bun run typecheck` passes.
-- [ ] `bun run lint` passes.
-- [ ] `bun run fmt:check` passes.
-- [ ] `bun test` passes, including
+- [x] `bun run typecheck` passes.
+- [x] `bun run lint` passes.
+- [x] `bun run fmt:check` passes.
+- [x] `bun test` passes, including
       `src/backend/features/static/internal/transpile.test.ts` and
       `src/backend/features/static/static.routes.test.ts`.
-- [ ] `(Get-ChildItem src -Recurse -Filter *.ts | Select-String '\boverride (async )?\w+\(').Count`
+- [x] `(Get-ChildItem src -Recurse -Filter *.ts | Select-String '\boverride (async )?\w+\(').Count`
       is 41, spread across the 13 component files.
 
 ## Implementation Notes
 
 During implementation, document user feedback, problems, and decisions here.
+
+- The 41 `override` sites span 12 component files, not 13: the file list above names 12, and the
+  "13" in the acceptance criteria and verification step was a miscount. Nothing was missed — typecheck
+  reported exactly the 41 listed sites and now passes.
 
 ## References
 
