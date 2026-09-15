@@ -7,7 +7,7 @@ import { currentTheme, onThemeChange, toggleTheme } from '../ui/theme.ts';
 class GzThemeToggleComponent extends GzElement {
   #stopThemeSync: (() => void) | null = null;
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
     // The base class keeps this element's own colours in sync; this keeps the
     // icon and label in sync, so they agree with a change made anywhere.
@@ -16,7 +16,7 @@ class GzThemeToggleComponent extends GzElement {
     });
   }
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.#stopThemeSync?.();
     this.#stopThemeSync = null;
@@ -33,13 +33,13 @@ class GzThemeToggleComponent extends GzElement {
     this.$('button.theme-toggle')?.setAttribute('aria-label', dark ? 'Turn off dark mode' : 'Turn on dark mode');
   }
 
-  handleAction(action: string): void {
+  override handleAction(action: string): void {
     if (action === 'toggle-theme') {
       toggleTheme();
     }
   }
 
-  template(): RawHtml {
+  override template(): RawHtml {
     const dark = currentTheme() === 'dark';
     return html`
       <button type="button" class="theme-toggle" data-action="toggle-theme" aria-label="${dark ? 'Turn off dark mode' : 'Turn on dark mode'}">

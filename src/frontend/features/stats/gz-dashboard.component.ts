@@ -17,7 +17,7 @@ type DashboardState = { status: 'loading' } | { status: 'ready'; summary: Summar
 export class GzDashboardComponent extends GzElement {
   #state: DashboardState = { status: 'loading' };
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
     void this.#load();
   }
@@ -33,7 +33,7 @@ export class GzDashboardComponent extends GzElement {
     this.render();
   }
 
-  async handleAction(action: string): Promise<void> {
+  override async handleAction(action: string): Promise<void> {
     if (action !== 'start-workout') {
       return;
     }
@@ -45,7 +45,7 @@ export class GzDashboardComponent extends GzElement {
     }
   }
 
-  template(): RawHtml {
+  override template(): RawHtml {
     if (this.#state.status === 'loading') {
       return html`<p aria-busy="true">Loading your log…</p>`;
     }

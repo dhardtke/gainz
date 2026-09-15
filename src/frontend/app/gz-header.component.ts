@@ -9,20 +9,20 @@ import './gz-theme-toggle.component.ts';
 class GzHeaderComponent extends GzElement {
   #unsubscribe: (() => void) | null = null;
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
     this.#unsubscribe = onRouteChange(() => {
       this.#syncLinks();
     });
   }
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.#unsubscribe?.();
     this.#unsubscribe = null;
   }
 
-  afterRender(): void {
+  override afterRender(): void {
     this.#syncLinks();
   }
 
@@ -46,7 +46,7 @@ class GzHeaderComponent extends GzElement {
     }
   }
 
-  template(): RawHtml {
+  override template(): RawHtml {
     const navItems = ROUTES.flatMap((route) => (route.nav ? [route.nav] : []));
     return html`
       <header>

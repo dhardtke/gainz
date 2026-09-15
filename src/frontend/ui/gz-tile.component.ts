@@ -12,7 +12,7 @@ class GzTileComponent extends GzElement {
     }
   }
 
-  template(): RawHtml {
+  override template(): RawHtml {
     const hint = this.getAttribute('hint');
     return html`
       <article>

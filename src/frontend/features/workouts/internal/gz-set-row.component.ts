@@ -36,7 +36,7 @@ export class GzSetRowComponent extends GzElement {
     this.#index = Number.isFinite(value) ? value : 0;
   }
 
-  async handleAction(action: string): Promise<void> {
+  override async handleAction(action: string): Promise<void> {
     if (action === 'edit') {
       this.#editing = true;
       this.render();
@@ -85,7 +85,7 @@ export class GzSetRowComponent extends GzElement {
     }
   }
 
-  async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
+  override async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
     if (action !== 'save' || !this.#set) {
       return;
     }
@@ -133,7 +133,7 @@ export class GzSetRowComponent extends GzElement {
     `;
   }
 
-  template(): RawHtml {
+  override template(): RawHtml {
     const set = this.#set;
     if (!set) {
       return html``;

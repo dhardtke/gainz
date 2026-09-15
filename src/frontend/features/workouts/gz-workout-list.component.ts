@@ -25,7 +25,7 @@ const PAGE_SIZE = 25;
 export class GzWorkoutListComponent extends GzElement {
   #state: WorkoutListState = { status: 'loading', items: [], total: 0 };
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
     void this.#load(0);
   }
@@ -42,7 +42,7 @@ export class GzWorkoutListComponent extends GzElement {
     this.render();
   }
 
-  async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
+  override async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
     if (action !== 'create') {
       return;
     }
@@ -61,7 +61,7 @@ export class GzWorkoutListComponent extends GzElement {
     }
   }
 
-  async handleAction(action: string, element: HTMLElement): Promise<void> {
+  override async handleAction(action: string, element: HTMLElement): Promise<void> {
     const id = Number(element.dataset.id);
 
     if (action === 'load-more') {
@@ -124,7 +124,7 @@ export class GzWorkoutListComponent extends GzElement {
     `;
   }
 
-  template(): RawHtml {
+  override template(): RawHtml {
     if (this.#state.status === 'loading') {
       return html`<p aria-busy="true">Loading workouts…</p>`;
     }

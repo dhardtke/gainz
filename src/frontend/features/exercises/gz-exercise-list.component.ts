@@ -16,7 +16,7 @@ export class GzExerciseListComponent extends GzElement {
 
   #editingId: ExerciseId | null = null;
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
     void this.#load();
   }
@@ -31,7 +31,7 @@ export class GzExerciseListComponent extends GzElement {
     this.render();
   }
 
-  async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
+  override async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
     const values = this.formData(form);
     // The name input is `required`, so an empty one only reaches here if the
     // browser's own validation was bypassed; the API rejects it either way.
@@ -68,7 +68,7 @@ export class GzExerciseListComponent extends GzElement {
     }
   }
 
-  async handleAction(action: string, element: HTMLElement): Promise<void> {
+  override async handleAction(action: string, element: HTMLElement): Promise<void> {
     if (action === 'edit') {
       this.#editingId = Number(element.dataset.id);
       this.render();
@@ -142,7 +142,7 @@ export class GzExerciseListComponent extends GzElement {
     `;
   }
 
-  template(): RawHtml {
+  override template(): RawHtml {
     if (this.#state.status === 'loading') {
       return html`<p aria-busy="true">Loading exercises…</p>`;
     }

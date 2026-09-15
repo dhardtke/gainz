@@ -34,7 +34,7 @@ class GzToastComponent extends GzElement {
 
   #onToast: ((event: WindowEventMap[typeof EVENT]) => void) | null = null;
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     this.#onToast = (event): void => {
       this.#add(event.detail);
     };
@@ -42,7 +42,7 @@ class GzToastComponent extends GzElement {
     super.connectedCallback();
   }
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
     super.disconnectedCallback();
     if (this.#onToast !== null) {
       window.removeEventListener(EVENT, this.#onToast);
@@ -71,13 +71,13 @@ class GzToastComponent extends GzElement {
     this.render();
   }
 
-  handleAction(action: string, element: HTMLElement): void {
+  override handleAction(action: string, element: HTMLElement): void {
     if (action === 'dismiss') {
       this.#dismiss(Number(element.dataset.id));
     }
   }
 
-  template(): RawHtml {
+  override template(): RawHtml {
     return html`
       ${this.#items.map(
         (item) => html`
