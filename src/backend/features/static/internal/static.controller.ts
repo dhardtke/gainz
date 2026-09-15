@@ -1,12 +1,8 @@
 import { basename, extname, resolve } from 'node:path';
-import { FRONTEND_DIR, VENDOR_FILES, resolveStaticPath, resolveVendorPath } from './paths.ts';
+import { FRONTEND_DIR, resolveStaticPath, resolveVendorPath } from './paths.ts';
 import { transpileModule } from './transpile.ts';
 
 export class StaticController {
-  vendorUrls(): string[] {
-    return Object.keys(VENDOR_FILES);
-  }
-
   async vendor(req: Request): Promise<Response> {
     const vendor = resolveVendorPath(new URL(req.url).pathname);
     if (!vendor) {

@@ -86,16 +86,13 @@ holds the facades. A repository is named only by its own feature's facade, and c
 that facade's factory, so `features/workouts/internal/` is the whole world in which `SetRepository`
 exists as a name. That is what a facade buys: a published surface narrower than the repository
 behind it (no `get()`, which only `require()` ever called), one place a repository is built, and a
-boundary a linter can check. The `overrides` block in `.oxlintrc.json` holds four rules for the
+boundary a linter can check. The `overrides` block in `.oxlintrc.json` holds three rules for the
 backend; the frontend's own import boundaries follow them there and are described in
-`docs/frontend.md`. Three
-restrict imports, type imports included: no `*.routes.ts` — `static.routes.ts` among them — may
-import anything under `internal/` except its controller, anything under `ports/`, a
-`*.repository.ts`, or the request and response helpers (`http/http.ts`, `http/errors.ts`,
-`shared/validate.ts`), which is what keeps its handlers one line long; no `*.controller.ts` may
+`docs/frontend.md`. Two
+restrict imports, type imports included: no `*.controller.ts` may
 import a `*.repository.ts` or anything under `ports/`, so a controller cannot even name a row type
 and has to translate through its translator; and nothing under `ports/` may import `shared/dto`, so
-a DTO is never built there. The fourth exempts `*.translator.ts` from
+a DTO is never built there. The third exempts `*.translator.ts` from
 `typescript/no-unsafe-type-assertion`, since casting a body onto a DTO is part of a translator's job.
 The facades are not pure delegation: their write methods validate and map the request with the
 facade's own `#validateCreate` / `#validateEdit` methods before calling the repository.

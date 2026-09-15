@@ -12,9 +12,13 @@ export const FRONTEND_DIR = resolve(REPO_ROOT, 'src', 'frontend');
  * An explicit allowlist of single files rather than a served directory, so
  * installing a package never exposes anything the app did not ask to publish.
  */
-export const VENDOR_FILES: Record<string, string> = {
+const VENDOR_FILES: Record<string, string> = {
   '/vendor/pico.css': '@picocss/pico/css/pico.min.css',
 };
+
+export function vendorUrls(): string[] {
+  return Object.keys(VENDOR_FILES);
+}
 
 export function resolveVendorPath(pathname: string): string | null {
   const specifier = VENDOR_FILES[pathname];
