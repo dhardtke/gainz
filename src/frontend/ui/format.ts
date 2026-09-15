@@ -1,7 +1,3 @@
-/**
- * Display helpers. Weights are stored as plain numbers, so switching the whole
- * app to pounds is a matter of changing UNIT here.
- */
 import type { Iso8601Date } from '../../shared/flavors.ts';
 
 export const UNIT = 'kg';
@@ -42,7 +38,6 @@ export function formatVolume(value: number | null | undefined): string {
   return `${formatNumber(num, 0)} ${UNIT}`;
 }
 
-/** @param iso a `YYYY-MM-DD` date. */
 export function formatDate(iso: Iso8601Date | null | undefined): string {
   if (!iso) {
     return '–';
@@ -51,7 +46,6 @@ export function formatDate(iso: Iso8601Date | null | undefined): string {
   return Number.isNaN(date.getTime()) ? iso : DATE_FORMAT.format(date);
 }
 
-/** @param iso a `YYYY-MM-DD` date. */
 export function formatShortDate(iso: Iso8601Date | null | undefined): string {
   if (!iso) {
     return '–';

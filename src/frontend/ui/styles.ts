@@ -30,6 +30,7 @@ async function load(href: string): Promise<void> {
   try {
     const response = await fetch(href);
     if (!response.ok) {
+      // noinspection ExceptionCaughtLocallyJS
       throw new Error(`HTTP ${response.status}`);
     }
 

@@ -1,10 +1,5 @@
 /*
  * Adopted into every component's shadow root, right after Pico.
- *
- * Deliberately small: Pico already styles buttons, form controls, tables,
- * <article> cards and headings. What is left are layout utilities and the few
- * things Pico has no opinion about, all built from Pico's own custom
- * properties so they follow the active theme.
  */
 
 :host {

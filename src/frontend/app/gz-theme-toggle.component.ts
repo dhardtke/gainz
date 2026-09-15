@@ -9,8 +9,8 @@ class GzThemeToggleComponent extends GzElement {
 
   connectedCallback(): void {
     super.connectedCallback();
-    // The base class keeps this element's own colours in step; this keeps the
-    // icon and label in step, so they agree with a change made anywhere.
+    // The base class keeps this element's own colours in sync; this keeps the
+    // icon and label in sync, so they agree with a change made anywhere.
     this.#stopThemeSync = onThemeChange(() => {
       this.#syncIcon();
     });
