@@ -95,8 +95,7 @@ API class. The
 transpiler strips such an import whole, so the module is never fetched at runtime, and that is
 load-bearing: `src/shared/` sits **outside the web root**, so a surviving specifier would be a 404.
 Everything under `src/shared/` must therefore stay free of runtime code — `flavors.ts` as much as
-the DTOs — which `src/shared/shared.test.ts` holds in place by walking the directory recursively
-and asserting every file there transpiles to nothing.
+the DTOs.
 
 What the frontend is pinned to is still the wire format rather than the server's row types: the
 backend translates its rows into these DTOs in each feature's `ports/` and the wire is camelCase

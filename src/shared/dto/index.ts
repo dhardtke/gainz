@@ -5,8 +5,8 @@
  * web-served — `resolveStaticPath` in `src/backend/features/static/internal/paths.ts` refuses
  * anything resolving outside it — so the frontend reaches these declarations with `import type`,
  * which `Bun.Transpiler` erases whole. The browser therefore never asks for the module. A single
- * runtime statement in here would turn that erased import into a 404, which is why
- * `src/shared/shared.test.ts` pins the rule for the whole of `src/shared/`.
+ * runtime statement in here would turn that erased import into a 404, and the same holds for the
+ * whole of `src/shared/`.
  *
  * The ids and dates in these shapes are the flavored primitives from `../flavors.ts`, so a
  * workout id cannot stand in for an exercise id and a `createdAt` cannot stand in for a
