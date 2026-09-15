@@ -1,12 +1,5 @@
-import type {
-  CreateSetDto,
-  CreateWorkoutDto,
-  EditWorkoutDto,
-  LiftSetDto,
-  WorkoutDto,
-  WorkoutPageDto,
-  WorkoutWithSetsDto,
-} from '../../../../shared/dto/index.ts';
+import type { CreateSetDto, LiftSetDto } from '../../../../shared/dto/set.ts';
+import type { CreateWorkoutDto, EditWorkoutDto, WorkoutDto, WorkoutPageDto, WorkoutWithSetsDto } from '../../../../shared/dto/workout.ts';
 import type { WorkoutId } from '../../../../shared/flavors.ts';
 import { get, patch, post, remove } from '../../../http/http.ts';
 

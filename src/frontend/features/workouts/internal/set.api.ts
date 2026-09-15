@@ -1,4 +1,4 @@
-import type { EditSetDto, LiftSetDto } from '../../../../shared/dto/index.ts';
+import type { EditSetDto, LiftSetDto } from '../../../../shared/dto/set.ts';
 import type { LiftSetId } from '../../../../shared/flavors.ts';
 import { patch, remove } from '../../../http/http.ts';
 

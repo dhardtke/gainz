@@ -1,4 +1,4 @@
-import type { HealthDto } from '../../../../shared/dto';
+import type { HealthDto } from '../../../../shared/dto/meta.ts';
 import { errorResponse, notFound } from '../../../http/errors.ts';
 import { json } from '../../../http/http.ts';
 

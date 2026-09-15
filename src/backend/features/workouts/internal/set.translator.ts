@@ -1,4 +1,4 @@
-import type { CreateSetDto, EditSetDto, LiftSetDto } from '../../../../shared/dto';
+import type { CreateSetDto, EditSetDto, LiftSetDto } from '../../../../shared/dto/set.ts';
 import type { ExerciseId } from '../../../../shared/flavors.ts';
 import type { LiftSet } from '../ports/set.ts';
 import type { CreateSet, EditSet } from './set.repository.ts';

@@ -1,4 +1,5 @@
-import type { CreateSetDto, CreateWorkoutDto, EditSetDto, EditWorkoutDto } from '../../../shared/dto';
+import type { CreateSetDto, EditSetDto } from '../../../shared/dto/set.ts';
+import type { CreateWorkoutDto, EditWorkoutDto } from '../../../shared/dto/workout.ts';
 import type { LiftSetId, WorkoutId } from '../../../shared/flavors.ts';
 import type { DB } from '../../db/db.ts';
 import { optionalString, requiredDate, requiredInt, requiredNumber } from '../../shared/validate.ts';

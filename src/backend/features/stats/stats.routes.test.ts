@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { SummaryDto } from '../../../shared/dto';
+import type { SummaryDto } from '../../../shared/dto/stats.ts';
 import { body, useServer } from '../../testing.ts';
 import { createExercise } from '../exercises/exercises.fixtures.ts';
 import { createWorkout } from '../workouts/workouts.fixtures.ts';

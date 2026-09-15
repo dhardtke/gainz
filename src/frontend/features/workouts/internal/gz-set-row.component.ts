@@ -1,7 +1,8 @@
 import type { RawHtml } from '../../../ui/base.ts';
 import { define, GzElement, html } from '../../../ui/base.ts';
 import { formatNumber, formatVolume, UNIT } from '../../../ui/format.ts';
-import type { ExerciseDto, LiftSetDto } from '../../../../shared/dto/index.ts';
+import type { ExerciseDto } from '../../../../shared/dto/exercise.ts';
+import type { LiftSetDto } from '../../../../shared/dto/set.ts';
 import { toast, toastError } from '../../../ui/gz-toast.component.ts';
 import { setFacade } from '../workouts.facade.ts';
 

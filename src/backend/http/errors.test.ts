@@ -1,5 +1,5 @@
 import { describe, expect, spyOn, test } from 'bun:test';
-import type { ErrorDto } from '../../shared/dto';
+import type { ErrorDto } from '../../shared/dto/error.ts';
 import { HttpError, errorResponse } from './errors.ts';
 import { body } from '../testing.ts';
 

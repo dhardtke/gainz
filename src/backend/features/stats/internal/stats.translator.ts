@@ -1,4 +1,4 @@
-import type { SummaryDto } from '../../../../shared/dto';
+import type { SummaryDto } from '../../../../shared/dto/stats.ts';
 import type { Summary } from '../ports/stats.ts';
 
 export function translateToSummaryDto(row: Summary): SummaryDto {
