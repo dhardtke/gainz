@@ -1,5 +1,5 @@
+import type { DB } from '../db/db.ts';
 import { exerciseRoutes } from '../features/exercises/exercise.routes.ts';
-import type { Facades } from '../features/facades.ts';
 import { metaRoutes } from '../features/meta/meta.routes.ts';
 import { setRoutes } from '../features/workouts/set.routes.ts';
 import type { RouteTable } from './routing.ts';
@@ -17,13 +17,13 @@ import { workoutRoutes } from '../features/workouts/workout.routes.ts';
  * router matches by specificity, so /api/health wins over /api/* and /api/* over
  * /* wherever they are declared. Least specific last reads the way it dispatches.
  */
-export function allRoutes(facades: Facades): RouteTable {
+export function allRoutes(db: DB): RouteTable {
   return {
     ...metaRoutes(),
-    ...statsRoutes(facades.stats),
-    ...exerciseRoutes(facades.exercises),
-    ...workoutRoutes(facades.workouts, facades.sets),
-    ...setRoutes(facades.sets),
+    ...statsRoutes(db),
+    ...exerciseRoutes(db),
+    ...workoutRoutes(db),
+    ...setRoutes(db),
     ...staticRoutes(),
   };
 }
