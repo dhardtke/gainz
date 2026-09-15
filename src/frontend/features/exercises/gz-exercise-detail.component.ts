@@ -76,7 +76,7 @@ export class GzExerciseDetailComponent extends GzElement {
     return Number(id);
   }
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
     void this.#load();
   }
@@ -93,7 +93,7 @@ export class GzExerciseDetailComponent extends GzElement {
     this.render();
   }
 
-  handleAction(action: string, element: HTMLElement): void {
+  override handleAction(action: string, element: HTMLElement): void {
     if (action === 'metric') {
       const chosen = METRICS.find((candidate) => candidate.key === element.dataset.metric);
       if (!chosen) {
@@ -104,7 +104,7 @@ export class GzExerciseDetailComponent extends GzElement {
     }
   }
 
-  afterRender(): void {
+  override afterRender(): void {
     const chart = this.$<GzChartComponent>('gz-chart');
     if (!chart || this.#state.status !== 'ready') {
       return;
@@ -186,7 +186,7 @@ export class GzExerciseDetailComponent extends GzElement {
     `;
   }
 
-  template(): RawHtml {
+  override template(): RawHtml {
     if (this.#state.status === 'loading') {
       return html`<p aria-busy="true">Loading progress…</p>`;
     }

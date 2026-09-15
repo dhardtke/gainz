@@ -95,7 +95,7 @@ export class GzChartComponent extends GzElement {
     return this.#series.map((_, index) => index).filter((index) => index % stride === 0 || index === total - 1);
   }
 
-  template(): RawHtml {
+  override template(): RawHtml {
     if (this.#series.length === 0) {
       return html`<p class="empty">No sessions logged yet — add a set to start the curve.</p>`;
     }

@@ -34,19 +34,19 @@ class GzAppComponent extends GzElement {
     });
   }
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
     this.#unsubscribe = onRouteChange(() => {
       this.#renderView();
     });
   }
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.#unsubscribe?.();
   }
 
-  afterRender(): void {
+  override afterRender(): void {
     this.#renderView();
   }
 
@@ -105,7 +105,7 @@ class GzAppComponent extends GzElement {
     }
   }
 
-  template(): RawHtml {
+  override template(): RawHtml {
     return html`
       <gz-header></gz-header>
 

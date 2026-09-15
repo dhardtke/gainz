@@ -81,7 +81,7 @@ export class GzWorkoutDetailComponent extends GzElement {
     return Number(id);
   }
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
     this.root.addEventListener('sets-changed', () => {
       void this.#load();
@@ -107,7 +107,7 @@ export class GzWorkoutDetailComponent extends GzElement {
     this.render();
   }
 
-  async handleAction(action: string, element: HTMLElement): Promise<void> {
+  override async handleAction(action: string, element: HTMLElement): Promise<void> {
     if (action === 'toggle-header') {
       this.#editingHeader = !this.#editingHeader;
       this.render();
@@ -152,7 +152,7 @@ export class GzWorkoutDetailComponent extends GzElement {
     }
   }
 
-  async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
+  override async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
     const values = this.formData(form);
 
     if (action === 'save-workout') {
@@ -200,7 +200,7 @@ export class GzWorkoutDetailComponent extends GzElement {
     }
   }
 
-  afterRender(): void {
+  override afterRender(): void {
     if (this.#state.status !== 'ready') {
       return;
     }
@@ -356,7 +356,7 @@ export class GzWorkoutDetailComponent extends GzElement {
     return [...byExercise.values()];
   }
 
-  template(): RawHtml {
+  override template(): RawHtml {
     if (this.#state.status === 'loading') {
       return html`<p aria-busy="true">Loading workout…</p>`;
     }

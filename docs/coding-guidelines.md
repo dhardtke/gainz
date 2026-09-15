@@ -8,6 +8,10 @@ rather than gating it.
 
 TypeScript and JavaScript use single quotes, CSS double; `bun run fmt` enforces both.
 
+A member that overrides one from its base class is marked `override`. `noImplicitOverride` makes
+`bun run typecheck` enforce it both ways, so a renamed or misspelled `GzElement` hook fails the
+check instead of silently never running.
+
 Code carries no comments unless one records something the code cannot: a non-obvious constraint, an
 external quirk, a reason a surprising choice is deliberate. Never a restatement of what the next
 lines do — if that is what a comment would say, the fix is a clearer name or a smaller function.
