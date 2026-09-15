@@ -4,7 +4,7 @@ git_commit: 9e86b873d6445644d0ff547d0b746b8725a969e4
 branch: main
 topic: 'Pico nav header and sun/moon theme toggle'
 tags: [plan, frontend, gz-app, gz-theme-toggle, theme, pico]
-status: ready
+status: complete
 ---
 
 # PLAN: Pico nav header and sun/moon theme toggle
@@ -245,9 +245,9 @@ this phase.
 
 **Manual Verification**:
 
-- [ ] At `/`, `/workouts/…` and `/exercises/…` the matching link is full-contrast and the others grey,
+- [x] At `/`, `/workouts/…` and `/exercises/…` the matching link is full-contrast and the others grey,
       including after Back/Forward.
-- [ ] The divider sits between Exercises and the switch, vertically centred, in both themes.
+- [x] The divider sits between Exercises and the switch, vertically centred, in both themes.
 
 ### Phase 2: Sun/moon theme toggle
 
@@ -382,15 +382,15 @@ Replace the switch with picocss.com's animated icon button.
 
 **Manual Verification**:
 
-- [ ] Clicking the icon switches theme and morphs sun → moon → sun in Chrome/Firefox; in Safari the
+- [x] Clicking the icon switches theme and morphs sun → moon → sun in Chrome/Firefox; in Safari the
       end state is correct.
-- [ ] In Chrome, Firefox and Safari the moon shows its crescent cutout, i.e. the shadow-root
+- [x] In Chrome, Firefox and Safari the moon shows its crescent cutout, i.e. the shadow-root
       `clip-path="url(#theme-toggle-cutout)"` reference resolves.
-- [ ] Reloading in dark mode shows the moon immediately with no animation; the stored choice and a
+- [x] Reloading in dark mode shows the moon immediately with no animation; the stored choice and a
       first visit on a dark system still behave as before.
-- [ ] Tab to the icon, press Space and Enter: theme flips, focus ring stays on the button, and a
+- [x] Tab to the icon, press Space and Enter: theme flips, focus ring stays on the button, and a
       screen reader announces "Turn on/off dark mode, button".
-- [ ] With reduced motion enabled in the OS, the icon swaps instantly.
+- [x] With reduced motion enabled in the OS, the icon swaps instantly.
 
 ### Phase 3: Narrow-screen dropdown
 
@@ -465,13 +465,13 @@ Fold the page links into a hamburger dropdown at ≤ 560 px.
 
 **Manual Verification**:
 
-- [ ] At ≤ 560 px width only the hamburger shows; above it only the inline links show.
-- [ ] The hamburger has no border, background or chevron, matches the theme icon's colour and hover,
+- [x] At ≤ 560 px width only the hamburger shows; above it only the inline links show.
+- [x] The hamburger has no border, background or chevron, matches the theme icon's colour and hover,
       and shows a focus ring only for keyboard focus.
-- [ ] Opening the menu lists Dashboard, Workouts, Exercises right-aligned, with the current page
+- [x] Opening the menu lists Dashboard, Workouts, Exercises right-aligned, with the current page
       highlighted; picking one navigates and closes the menu.
-- [ ] Back/Forward with the menu open closes it and updates the highlight.
-- [ ] Brand, hamburger, divider and theme icon fit one row at 360 px in both themes.
+- [x] Back/Forward with the menu open closes it and updates the highlight.
+- [x] Brand, hamburger, divider and theme icon fit one row at 360 px in both themes.
 
 ## Implementation Notes
 
