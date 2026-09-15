@@ -1,5 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import type { ErrorDto, ExerciseProgressDto, ExerciseWithStatsDto, LiftSetDto, WorkoutWithSetsDto } from '../../../shared/dto';
+import type { ErrorDto } from '../../../shared/dto/error.ts';
+import type { ExerciseProgressDto, ExerciseWithStatsDto } from '../../../shared/dto/exercise.ts';
+import type { LiftSetDto } from '../../../shared/dto/set.ts';
+import type { WorkoutWithSetsDto } from '../../../shared/dto/workout.ts';
 import { at, body, useServer } from '../../testing.ts';
 import { createExercise } from './exercises.fixtures.ts';
 import { createWorkout } from '../workouts/workouts.fixtures.ts';

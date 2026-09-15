@@ -1,4 +1,4 @@
-import type { SummaryDto } from '../../../shared/dto/index.ts';
+import type { SummaryDto } from '../../../shared/dto/stats.ts';
 import { StatsApi } from './internal/stats.api.ts';
 
 export class StatsFacade {

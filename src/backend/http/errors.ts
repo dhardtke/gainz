@@ -1,5 +1,5 @@
 import { json } from './http.ts';
-import type { ErrorDto } from '../../shared/dto';
+import type { ErrorDto } from '../../shared/dto/error.ts';
 
 /** An error carrying an HTTP status code; turned into a JSON error body by the server. */
 export class HttpError extends Error {

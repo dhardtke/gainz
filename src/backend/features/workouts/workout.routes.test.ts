@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import type { LiftSetDto, WorkoutDto, WorkoutPageDto, WorkoutWithSetsDto } from '../../../shared/dto';
+import type { LiftSetDto } from '../../../shared/dto/set.ts';
+import type { WorkoutDto, WorkoutPageDto, WorkoutWithSetsDto } from '../../../shared/dto/workout.ts';
 import { at, body, useServer } from '../../testing.ts';
 import { createExercise } from '../exercises/exercises.fixtures.ts';
 import { createWorkout } from './workouts.fixtures.ts';

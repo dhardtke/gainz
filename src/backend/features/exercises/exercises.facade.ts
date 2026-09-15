@@ -1,4 +1,4 @@
-import type { CreateExerciseDto, EditExerciseDto } from '../../../shared/dto';
+import type { CreateExerciseDto, EditExerciseDto } from '../../../shared/dto/exercise.ts';
 import type { ExerciseId, Iso8601Date } from '../../../shared/flavors.ts';
 import type { DB } from '../../db/db.ts';
 import { optionalString, requiredString } from '../../shared/validate.ts';

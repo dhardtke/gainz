@@ -3,7 +3,7 @@ import type { RawHtml } from '../../ui/base.ts';
 import { define, GzElement, html } from '../../ui/base.ts';
 import { formatDate, formatVolume, plural, relativeDay, todayIso } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
-import type { WorkoutWithStatsDto } from '../../../shared/dto/index.ts';
+import type { WorkoutWithStatsDto } from '../../../shared/dto/workout.ts';
 import { toast, toastError } from '../../ui/gz-toast.component.ts';
 import { workoutFacade } from './workouts.facade.ts';
 

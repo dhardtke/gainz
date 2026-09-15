@@ -2,7 +2,7 @@ import { errorMessage } from '../../http/errors.ts';
 import type { RawHtml } from '../../ui/base.ts';
 import { define, GzElement, html } from '../../ui/base.ts';
 import { formatWeight, plural, relativeDay } from '../../ui/format.ts';
-import type { ExerciseWithStatsDto } from '../../../shared/dto';
+import type { ExerciseWithStatsDto } from '../../../shared/dto/exercise.ts';
 import type { ExerciseId } from '../../../shared/flavors.ts';
 import { toast, toastError } from '../../ui/gz-toast.component.ts';
 import { exerciseFacade } from './exercises.facade.ts';

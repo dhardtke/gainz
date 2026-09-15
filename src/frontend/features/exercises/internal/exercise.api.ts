@@ -1,4 +1,4 @@
-import type { CreateExerciseDto, EditExerciseDto, ExerciseDto, ExerciseProgressDto, ExerciseWithStatsDto } from '../../../../shared/dto/index.ts';
+import type { CreateExerciseDto, EditExerciseDto, ExerciseDto, ExerciseProgressDto, ExerciseWithStatsDto } from '../../../../shared/dto/exercise.ts';
 import type { ExerciseId } from '../../../../shared/flavors.ts';
 import { get, patch, post, remove } from '../../../http/http.ts';
 

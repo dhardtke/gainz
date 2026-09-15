@@ -1,13 +1,5 @@
-import type {
-  CreateSetDto,
-  CreateWorkoutDto,
-  EditSetDto,
-  EditWorkoutDto,
-  LiftSetDto,
-  WorkoutDto,
-  WorkoutPageDto,
-  WorkoutWithSetsDto,
-} from '../../../shared/dto/index.ts';
+import type { CreateSetDto, EditSetDto, LiftSetDto } from '../../../shared/dto/set.ts';
+import type { CreateWorkoutDto, EditWorkoutDto, WorkoutDto, WorkoutPageDto, WorkoutWithSetsDto } from '../../../shared/dto/workout.ts';
 import type { LiftSetId, WorkoutId } from '../../../shared/flavors.ts';
 import { SetApi } from './internal/set.api.ts';
 import { WorkoutApi } from './internal/workout.api.ts';

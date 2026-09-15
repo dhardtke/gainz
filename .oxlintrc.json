@@ -179,7 +179,7 @@
           {
             "patterns": [
               {
-                "group": ["**/shared/dto/**", "**/shared/dto"],
+                "group": ["**/shared/dto/**"],
                 "message": "ports/ declares rows; translating them into DTOs happens in a feature's *.translator.ts."
               }
             ]

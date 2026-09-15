@@ -1,12 +1,12 @@
 import type {
-  BestSetDto,
   CreateExerciseDto,
   EditExerciseDto,
   ExerciseDto,
   ExerciseProgressDto,
   ExerciseWithStatsDto,
   SessionPointDto,
-} from '../../../../shared/dto';
+} from '../../../../shared/dto/exercise.ts';
+import type { BestSetDto } from '../../../../shared/dto/set.ts';
 import type { Iso8601Date } from '../../../../shared/flavors.ts';
 import type { LiftSet } from '../../workouts/ports/set.ts';
 import type { Exercise, ExerciseWithStats, SessionPoint } from '../ports/exercise.ts';

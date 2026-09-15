@@ -1,4 +1,4 @@
-import type { CreateWorkoutDto, EditWorkoutDto, WorkoutDto, WorkoutPageDto, WorkoutWithSetsDto, WorkoutWithStatsDto } from '../../../../shared/dto';
+import type { CreateWorkoutDto, EditWorkoutDto, WorkoutDto, WorkoutPageDto, WorkoutWithSetsDto, WorkoutWithStatsDto } from '../../../../shared/dto/workout.ts';
 import type { Iso8601Date, WorkoutId } from '../../../../shared/flavors.ts';
 import { today } from '../../../shared/validate.ts';
 import type { LiftSet } from '../ports/set.ts';

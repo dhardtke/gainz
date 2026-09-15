@@ -89,10 +89,9 @@ All interpolation goes through the `html` template, which escapes, so notes and 
 safe to display; use `raw()` only for markup another `html` call produced.
 
 The shapes the API returns are declared once in `src/shared/dto/`, the single declaration of the
-wire format, and both halves of the app import it with a type-only import — the frontend as
-`'../../../shared/dto/index.ts'` from a feature view, `'../../../../shared/dto/index.ts'` from an
-API class. The
-transpiler strips such an import whole, so the module is never fetched at runtime, and that is
+wire format, one file per feature and no barrel, and both halves of the app import the file that
+declares a shape with a type-only import — the frontend as `'../../../shared/dto/workout.ts'` from
+a feature view, `'../../../../shared/dto/workout.ts'` from an API class. The transpiler strips such an import whole, so the module is never fetched at runtime, and that is
 load-bearing: `src/shared/` sits **outside the web root**, so a surviving specifier would be a 404.
 Everything under `src/shared/` must therefore stay free of runtime code — `flavors.ts` as much as
 the DTOs.

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { ErrorDto } from '../../../shared/dto';
+import type { ErrorDto } from '../../../shared/dto/error.ts';
 import { body, useServer } from '../../testing.ts';
 
 const { api } = useServer();
