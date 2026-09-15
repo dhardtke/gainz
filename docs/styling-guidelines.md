@@ -21,7 +21,11 @@
   over the plot: a font size inside a `viewBox` is measured in user units, so the browser would
   scale the lettering with the chart instead of matching the page.
 - **Colour buttons with Pico's own variant classes** (`secondary`, `contrast`, `outline`, …), never
-  with custom CSS or `--pico-*` overrides on the button.
+  with custom CSS or `--pico-*` overrides on the button. The one exception is an icon-only control
+  in the header nav, which resets Pico's button or dropdown-summary styling so it reads as a nav
+  link: an action belongs in a `<button>`, and Pico has no link-look button variant. There are two
+  instances: `gz-theme-toggle`'s sun/moon button, and the hamburger `<summary>` of the narrow-screen
+  menu in `gz-app`.
 - Shadow roots don't inherit document styles, so Pico is adopted into each one _and_ linked in
   `index.html`. Theme is mirrored onto every host as `data-theme` because Pico reaches a shadow
   root only via `:host`.

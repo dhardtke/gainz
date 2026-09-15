@@ -200,7 +200,7 @@ this phase.
 
 **Tasks**:
 
-- [ ] `app/gz-app.component.ts` `template()` — replace the second `<ul>` with a `<ul class="links">`
+- [x] `app/gz-app.component.ts` `template()` — replace the second `<ul>` with a `<ul class="links">`
       of plain links and a `<ul class="icons">` holding `<gz-theme-toggle>`:
   ```ts
   const navItems = ROUTES.flatMap((route) => (route.nav ? [route.nav] : []));
@@ -212,10 +212,10 @@ this phase.
     <li><gz-theme-toggle></gz-theme-toggle></li>
   </ul>
   ```
-- [ ] `app/gz-app.component.ts` `#renderView` — replace the `outline` toggle with
+- [x] `app/gz-app.component.ts` `#renderView` — replace the `outline` toggle with
       `link.classList.toggle('contrast', active)` and `link.classList.toggle('secondary', !active)`;
       keep the `aria-current` handling and update the comment above the loop to name the classes.
-- [ ] `app/gz-app.component.css` — delete the `& ul`, `& li` and `& a[role="button"]` blocks and the
+- [x] `app/gz-app.component.css` — delete the `& ul`, `& li` and `& a[role="button"]` blocks and the
       `padding-block` on `nav`; keep `header` (sticky, background, border), `.brand`, `main`,
       `footer`. Pico's `nav { justify-content: space-between }` would centre a middle `<ul>`, so
       push the links against the divider; and add the divider, both nested under `header nav`:
@@ -232,16 +232,16 @@ this phase.
     content: "";
   }
   ```
-- [ ] `docs/frontend.md` — in the paragraph on `nav: { path, label }`, describe the header: a Pico
+- [x] `docs/frontend.md` — in the paragraph on `nav: { path, label }`, describe the header: a Pico
       `<nav>` whose links are `secondary`, with `contrast` and `aria-current="page"` on the current
       page, followed by a divider and the theme toggle.
 
 **Automated Verification**:
 
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
-- [ ] `bun test` passes
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
+- [x] `bun test` passes
 
 **Manual Verification**:
 
@@ -257,16 +257,16 @@ Replace the switch with picocss.com's animated icon button.
 
 **Tasks**:
 
-- [ ] `ui/theme.ts` — add:
+- [x] `ui/theme.ts` — add:
   ```ts
   export function toggleTheme(): void {
     setTheme(current === 'dark' ? 'light' : 'dark');
   }
   ```
-- [ ] `ui/theme.test.ts` — in the `setTheme` describe (or a new `toggleTheme` describe): toggling from
+- [x] `ui/theme.test.ts` — in the `setTheme` describe (or a new `toggleTheme` describe): toggling from
       light stores and applies `dark` and notifies listeners once; toggling twice returns to `light`
       with `gainz:theme` stored as `light`.
-- [ ] `app/gz-theme-toggle.component.ts` `template()` — render the button with the icon in the
+- [x] `app/gz-theme-toggle.component.ts` `template()` — render the button with the icon in the
       current state, SVG copied from picocss.com:
   ```ts
   const dark = currentTheme() === 'dark';
@@ -286,17 +286,17 @@ Replace the switch with picocss.com's animated icon button.
   ```
       The `clipPath` id lives in this element's shadow root; fragment references inside shadow trees
       have had engine bugs, hence the cross-browser manual check below.
-- [ ] `app/gz-theme-toggle.component.ts` — rename `#syncSwitch` to `#syncIcon`: toggle `moon` on the
+- [x] `app/gz-theme-toggle.component.ts` — rename `#syncSwitch` to `#syncIcon`: toggle `moon` on the
       `svg` and set the button's `aria-label` from `currentTheme()`, without re-rendering (keep the
       existing comment's point about focus). Keep the `onThemeChange` subscription; `afterRender` no
       longer needs to sync because the template already paints the current state.
-- [ ] `app/gz-theme-toggle.component.ts` `handleAction` — `if (action === 'toggle-theme') toggleTheme();`;
+- [x] `app/gz-theme-toggle.component.ts` `handleAction` — `if (action === 'toggle-theme') toggleTheme();`;
       import `toggleTheme` and drop the `setTheme` import.
-- [ ] `app/gz-theme-toggle.component.ts` — rewrite the comments that describe the old switch: the
+- [x] `app/gz-theme-toggle.component.ts` — rewrite the comments that describe the old switch: the
       class JSDoc ("Switch for the colour theme: off is light, on is dark."), the `connectedCallback`
       comment ("switch position"), and the template comment about the duplicated `aria-label`
       (delete it; the label is now the only name the button has).
-- [ ] `app/gz-theme-toggle.component.css` — replace the switch rules. The button lives in this
+- [x] `app/gz-theme-toggle.component.css` — replace the switch rules. The button lives in this
       shadow root, out of reach of Pico's `nav li button` rule, so it sets its own nav-link spacing:
   ```css
   .theme-toggle {
@@ -363,22 +363,22 @@ Replace the switch with picocss.com's animated icon button.
   ```
       Remove the `label`, `input[role="switch"]` and `.label` rules, and change the file's header
       comment from "Colour-theme switch" to describe the icon button.
-- [ ] `docs/styling-guidelines.md` — extend the button-colour bullet: the one exception is an
+- [x] `docs/styling-guidelines.md` — extend the button-colour bullet: the one exception is an
       icon-only control in the header nav, which resets Pico's button or dropdown-summary styling so
       it reads as a nav link, because an action belongs in a `<button>` and Pico has no link-look
       button variant. Name `gz-theme-toggle` as the instance (Phase 3 adds the hamburger).
-- [ ] `docs/frontend.md` — in Theming, describe the toggle button: it shows a sun in light mode and a
+- [x] `docs/frontend.md` — in Theming, describe the toggle button: it shows a sun in light mode and a
       moon in dark mode, morphs between them by toggling a class in place so focus survives, flips its
       `aria-label`, and calls `toggleTheme()`. Reword "A visitor who has never touched the switch"
       to name the theme toggle.
 
 **Automated Verification**:
 
-- [ ] New `toggleTheme` tests in `src/frontend/ui/theme.test.ts` pass: `bun test src/frontend/ui/theme.test.ts`
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
-- [ ] `bun test` passes (including the `static.routes.test.ts` check that every component has its `.css`)
+- [x] New `toggleTheme` tests in `src/frontend/ui/theme.test.ts` pass: `bun test src/frontend/ui/theme.test.ts`
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
+- [x] `bun test` passes (including the `static.routes.test.ts` check that every component has its `.css`)
 
 **Manual Verification**:
 
@@ -400,7 +400,7 @@ Fold the page links into a hamburger dropdown at ≤ 560 px.
 
 **Tasks**:
 
-- [ ] `app/gz-app.component.ts` `template()` — between `links` and `icons`, add the menu, rendering
+- [x] `app/gz-app.component.ts` `template()` — between `links` and `icons`, add the menu, rendering
       the same `navItems` with the same classes and `data-path`:
   ```ts
   <ul class="menu">
@@ -419,13 +419,13 @@ Fold the page links into a hamburger dropdown at ≤ 560 px.
     </li>
   </ul>
   ```
-- [ ] `app/gz-app.component.ts` `#renderView` — after the link loop, close the menu:
+- [x] `app/gz-app.component.ts` `#renderView` — after the link loop, close the menu:
       `const menu = this.$<HTMLDetailsElement>('details.dropdown'); if (menu) menu.open = false;`
-- [ ] `app/gz-app.component.css` — nested under `header nav`: size the hamburger svg
+- [x] `app/gz-app.component.css` — nested under `header nav`: size the hamburger svg
       (`height: 1.125rem; width: auto;`), give `ul.menu` the same `margin-inline-start: auto` as
       `ul.links`, hide `ul.menu` by default, and at `max-width: 560px` hide `ul.links` and show
       `ul.menu` (same breakpoint as `.brand .tag`).
-- [ ] `app/gz-app.component.css` — reset the summary to a bare icon, nested under `header nav`. The
+- [x] `app/gz-app.component.css` — reset the summary to a bare icon, nested under `header nav`. The
       `header nav` prefix outranks Pico's `details.dropdown > summary:not([role]):focus` and
       `nav details.dropdown > summary:not([role]):focus-visible`:
   ```css
@@ -450,18 +450,18 @@ Fold the page links into a hamburger dropdown at ≤ 560 px.
     }
   }
   ```
-- [ ] `docs/styling-guidelines.md` — add the header's hamburger summary as the second instance of the
+- [x] `docs/styling-guidelines.md` — add the header's hamburger summary as the second instance of the
       nav icon-control exception.
-- [ ] `docs/frontend.md` — add to the header description: below 560 px the links render a second
+- [x] `docs/frontend.md` — add to the header description: below 560 px the links render a second
       time inside a Pico dropdown behind a hamburger, CSS shows one list at a time, the
       `nav a[data-path]` loop highlights both, and `gz-app` closes the dropdown on route change.
 
 **Automated Verification**:
 
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
-- [ ] `bun test` passes
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
+- [x] `bun test` passes
 
 **Manual Verification**:
 

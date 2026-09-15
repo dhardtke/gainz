@@ -78,6 +78,10 @@ export function setTheme(theme: Theme): void {
   window.dispatchEvent(new CustomEvent(EVENT, { detail: { theme } }));
 }
 
+export function toggleTheme(): void {
+  setTheme(current === 'dark' ? 'light' : 'dark');
+}
+
 /** @returns call it to stop listening. */
 export function onThemeChange(listener: () => void): () => void {
   window.addEventListener(EVENT, listener);

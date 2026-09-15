@@ -65,7 +65,15 @@ module and returns `new GzXComponent()`, setting any id attribute before handing
 the current path against `ROUTES` and awaits the matching route's `view()` without knowing which
 route it is; when nothing matches it shows its own not-found message. A route may also carry
 `nav: { path, label }`, and `gz-app` builds its header from those, in the order `app/routes.ts`
-spreads the features — so adding a list page needs no edit in `app/` beyond a new feature's spread. A route file only
+spreads the features — so adding a list page needs no edit in `app/` beyond a new feature's spread.
+The header is a Pico `<nav>`: the brand on the left, then the page links as plain `secondary`
+links, with `contrast` and `aria-current="page"` on the current page, then a thin divider and the
+theme toggle. Both classes are Pico's own; the swap is there because Pico's nav hides the underline
+its `aria-current` styling relies on, so the attribute alone barely shows. Below 560 px the links
+render a second time inside a Pico `<details class="dropdown">` behind a hamburger, and CSS shows
+one list at a time rather than a resize listener choosing. The `nav a[data-path]` loop highlights
+both lists, and `gz-app` closes the dropdown on every route change. Inside the dropdown Pico sets
+the link colour itself, so there the current page shows through Pico's `aria-current` background. A route file only
 `import type`s `RouteDef` from `app/router.ts`, so it loads up front at almost no cost and reaches
 its views only through `import()`.
 
@@ -165,7 +173,14 @@ The second row works because custom properties inherit and Pico's base `:host,:r
 colours, only typography and spacing. Any component added later gets this for free from
 `GzElement`.
 
-A visitor who has never touched the switch is seeded from `prefers-color-scheme` once, at load.
+The control is `gz-theme-toggle`, an icon-only `<button>` in the header that calls `toggleTheme()`.
+It shows a sun in light mode and a moon in dark mode, and its `aria-label` flips between "Turn on
+dark mode" and "Turn off dark mode". The template paints the current state, so a dark page loads as
+a moon with nothing to animate; after that a theme change toggles the SVG's `moon` class and the
+label in place, letting its stylesheet morph one icon into the other without re-rendering the button
+and dropping its focus.
+
+A visitor who has never touched the theme toggle is seeded from `prefers-color-scheme` once, at load.
 The first flip stores an explicit choice that wins from then on, so the page does not follow the
 operating system around afterwards.
 

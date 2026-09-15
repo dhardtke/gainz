@@ -14,25 +14,61 @@ header {
   border-bottom: 1px solid var(--pico-muted-border-color);
 
   & nav {
-    padding-block: 0.35rem;
-
-    /* Pico pads nav items generously; the header is a single compact row. */
-    & ul {
-      gap: 0.15rem;
+    /* Pico's space-between would otherwise centre the middle list. */
+    & ul.links,
+    & ul.menu {
+      margin-inline-start: auto;
     }
 
-    & li {
-      padding-block: 0;
+    & ul.menu {
+      display: none;
     }
 
-    /* The nav entries are Pico buttons. Every colour — resting, hover and the
-       solid fill on the active page — comes from Pico's own variants, so the
-       only thing left to say here is the sizing: Pico sizes buttons for touch,
-       and the header is a single compact row. */
-    & a[role="button"] {
-      padding: 0.35rem 0.75rem;
-      margin-bottom: 0;
-      white-space: nowrap;
+    /* The same width at which the brand drops its tag line. */
+    @media (max-width: 560px) {
+      & ul.links {
+        display: none;
+      }
+
+      & ul.menu {
+        display: flex;
+      }
+    }
+
+    & summary svg {
+      width: auto;
+      height: 1.125rem;
+    }
+
+    /* Pico draws a role-less summary as a form field; this one is a bare icon like the theme toggle.
+       The `header nav` prefix outranks Pico's own focus rules. */
+    & details.dropdown > summary:not([role]) {
+      border-color: transparent;
+      background-color: transparent;
+      color: var(--pico-contrast);
+
+      &::after {
+        display: none;
+      }
+
+      &:is(:hover, :active, :focus) {
+        border-color: transparent;
+        background-color: transparent;
+        color: var(--pico-contrast-hover);
+        box-shadow: none;
+      }
+
+      &:focus-visible {
+        box-shadow: 0 0 0 var(--pico-outline-width) var(--pico-contrast-focus);
+      }
+    }
+
+    & ul.icons::before {
+      display: block;
+      height: 1.125rem;
+      margin-inline: var(--pico-nav-element-spacing-horizontal);
+      border-left: var(--pico-border-width) solid var(--pico-form-element-border-color);
+      content: "";
     }
   }
 }
