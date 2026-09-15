@@ -1,6 +1,7 @@
 import { errorMessage } from '../../http/errors.ts';
-import type { RawHtml } from '../../ui/base.ts';
-import { define, GzElement, html } from '../../ui/base.ts';
+import type { RawHtml } from '../../ui/html.ts';
+import { define, GzElement } from '../../ui/base.ts';
+import { html } from '../../ui/html.ts';
 import { formatDate, formatVolume, plural, relativeDay, todayIso } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
 import type { WorkoutWithStatsDto } from '../../../shared/dto/workout.ts';

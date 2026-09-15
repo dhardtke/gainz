@@ -1,5 +1,6 @@
-import type { RawHtml } from '../ui/base.ts';
-import { define, GzElement, html } from '../ui/base.ts';
+import type { RawHtml } from '../ui/html.ts';
+import { define, GzElement } from '../ui/base.ts';
+import { html } from '../ui/html.ts';
 import { currentPath, isActive, matchRoute, onRouteChange } from './router.ts';
 import { ROUTES } from './routes.ts';
 import { toastError } from '../ui/gz-toast.component.ts';

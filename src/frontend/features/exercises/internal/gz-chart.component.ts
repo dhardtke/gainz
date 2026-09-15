@@ -1,5 +1,6 @@
-import type { RawHtml } from '../../../ui/base.ts';
-import { define, GzElement, html, raw } from '../../../ui/base.ts';
+import type { RawHtml } from '../../../ui/html.ts';
+import { define, GzElement } from '../../../ui/base.ts';
+import { html, raw } from '../../../ui/html.ts';
 import { formatNumber } from '../../../ui/format.ts';
 
 /** Plot area in SVG user units. Only geometry lives in here — never text. */

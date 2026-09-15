@@ -10,7 +10,7 @@ src/frontend/
 ├── index.html  main.ts
 ├── app/        gz-app, gz-theme-toggle, router.ts, routes.ts
 ├── http/       http.ts (get/post/patch/remove), errors.ts (ApiError, errorMessage)
-├── ui/         base.ts, styles.ts, theme.ts, format.ts, app.css, shared.css, gz-toast, gz-tile
+├── ui/         base.ts, html.ts, styles.ts, theme.ts, format.ts, app.css, shared.css, gz-toast, gz-tile
 └── features/
     ├── exercises/  exercises.routes.ts, exercises.facade.ts, gz-exercise-list, gz-exercise-detail
     │   └── internal/  exercise.api.ts, gz-chart
@@ -26,8 +26,8 @@ What belongs to no feature sits in three directories. `app/` is the shell: `gz-a
 plumbing: `http.ts` holds the `get`/`post`/`patch`/`remove` helpers over `fetch`, and `errors.ts`
 holds `ApiError` and `errorMessage`, kept apart so a component can catch an error without being
 able to make a request. `ui/` is what any component may use: `base.ts` with `GzElement` (open
-shadow root, `data-action` click/submit delegation, `template()`/`render()`), the escaping `html`
-tagged template and `define()`; `styles.ts`, `theme.ts` and `format.ts`; the document stylesheet
+shadow root, `data-action` click/submit delegation, `template()`/`render()`) and `define()`;
+`html.ts` with the escaping `html` tagged template and `raw()`; `styles.ts`, `theme.ts` and `format.ts`; the document stylesheet
 `app.css` and the utilities in `shared.css`; and the two widgets several views use, `gz-toast` and
 `gz-tile`.
 

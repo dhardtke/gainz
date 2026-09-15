@@ -1,5 +1,6 @@
-import type { RawHtml } from '../../../ui/base.ts';
-import { define, GzElement, html } from '../../../ui/base.ts';
+import type { RawHtml } from '../../../ui/html.ts';
+import { define, GzElement } from '../../../ui/base.ts';
+import { html } from '../../../ui/html.ts';
 import { formatNumber, formatVolume, UNIT } from '../../../ui/format.ts';
 import type { ExerciseDto } from '../../../../shared/dto/exercise.ts';
 import type { LiftSetDto } from '../../../../shared/dto/set.ts';

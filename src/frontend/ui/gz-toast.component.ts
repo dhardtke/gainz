@@ -1,6 +1,7 @@
 import { errorMessage } from '../http/errors.ts';
-import type { RawHtml } from './base.ts';
-import { define, GzElement, html } from './base.ts';
+import type { RawHtml } from './html.ts';
+import { define, GzElement } from './base.ts';
+import { html } from './html.ts';
 
 export type ToastKind = 'info' | 'success' | 'error';
 

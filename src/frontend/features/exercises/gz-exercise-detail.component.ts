@@ -1,6 +1,7 @@
 import { ApiError, errorMessage } from '../../http/errors.ts';
-import type { RawHtml } from '../../ui/base.ts';
-import { define, GzElement, html } from '../../ui/base.ts';
+import type { RawHtml } from '../../ui/html.ts';
+import { define, GzElement } from '../../ui/base.ts';
+import { html } from '../../ui/html.ts';
 import { formatDate, formatDelta, formatNumber, formatShortDate, formatVolume, plural, relativeDay, UNIT } from '../../ui/format.ts';
 import type { ExerciseProgressDto, SessionPointDto } from '../../../shared/dto/exercise.ts';
 import type { ExerciseId } from '../../../shared/flavors.ts';
