@@ -13,7 +13,7 @@ export const FRONTEND_DIR = resolve(REPO_ROOT, 'src', 'frontend');
  * installing a package never exposes anything the app did not ask to publish.
  */
 export const VENDOR_FILES: Record<string, string> = {
-  '/vendor/pico.css': '@picocss/pico/css/pico.orange.min.css',
+  '/vendor/pico.css': '@picocss/pico/css/pico.min.css',
 };
 
 export function resolveVendorPath(pathname: string): string | null {
