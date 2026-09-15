@@ -186,7 +186,7 @@ operating system around afterwards.
 
 Pico is served from `node_modules` at `/vendor/pico.css` through an explicit one-file allowlist in
 `src/backend/features/static` — installing a package never publishes anything the app did not ask to
-serve. The build is the `pico.orange` theme; swapping themes is a one-line change to
+serve. The build is the pico default theme; swapping themes is a one-line change to
 `VENDOR_FILES`.
 
 ## Tests
