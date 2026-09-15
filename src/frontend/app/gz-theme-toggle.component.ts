@@ -1,5 +1,6 @@
-import type { RawHtml } from '../ui/base.ts';
-import { define, GzElement, html } from '../ui/base.ts';
+import type { RawHtml } from '../ui/html.ts';
+import { define, GzElement } from '../ui/base.ts';
+import { html } from '../ui/html.ts';
 import { currentTheme, onThemeChange, setTheme } from '../ui/theme.ts';
 
 /** Switch for the colour theme: off is light, on is dark. */
