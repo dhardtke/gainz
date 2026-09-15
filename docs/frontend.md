@@ -164,3 +164,22 @@ Pico is served from `node_modules` at `/vendor/pico.css` through an explicit one
 `src/backend/features/static` — installing a package never publishes anything the app did not ask to
 serve. The build is the `pico.orange` theme; swapping themes is a one-line change to
 `VENDOR_FILES`.
+
+## Tests
+
+The frontend's tests run under `bun test` with the backend's, and there is no DOM there: no
+`HTMLElement`, `document`, `window` or `localStorage`. So they cover what does not need one — the
+`html` template's escaping, `format.ts`, the router, the theme preference, the HTTP client and the
+URL each facade method requests — and nothing yet mounts a component. That is also why `html.ts`
+is its own module rather than part of `base.ts`: importing `base.ts` evaluates `class extends
+HTMLElement` and, through `styles.ts`, a top-level `fetch` of the stylesheets.
+
+`src/frontend/testing.ts` holds the two stubs they use. `useFetch()` replaces `fetch` with one that
+records each request and answers `200 {}` unless told otherwise. `useGlobals()` installs whatever
+browser global a test needs and puts back what was there after every test — which matters because
+bun test runs every file in one process, and the backend's route tests make real requests. A module
+that reads the browser when it loads, as `theme.ts` reads the stored choice, is imported with a
+query string (`./theme.ts?3`) so each test gets a fresh instance evaluated against its own stubs.
+
+oxfmt formats the markup inside an `html` tagged template, so a test that compares exact output
+keeps its template free of markup and interpolates the parts it needs instead.
