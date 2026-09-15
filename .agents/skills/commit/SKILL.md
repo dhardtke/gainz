@@ -79,7 +79,9 @@ type(scope): Capitalized imperative summary
 ```
 
 `feat:` for new behaviour, `fix:` for a defect, `refactor:` for a change that
-rearranges code without changing what it does, `docs:` for documentation content
+rearranges code without changing what it does, `test:` for a commit whose change
+is the tests themselves — a test that accompanies the code it exercises stays in
+that code's commit — `docs:` for documentation content
 — `README.md` and anything under `docs/` — `ci:` for the build and automation
 pipeline, and `chore:` for the rest of the housekeeping: tooling, config,
 dependency and editor upkeep, and instruction files like `AGENTS.md`.
