@@ -51,9 +51,31 @@ describe('typescript modules', () => {
     try {
       const res = await api('/__broken.ts');
       expect(res.status).toBe(500);
+      expect(res.headers.get('etag')).toBeNull();
       expect(await res.text()).toContain('__broken.ts');
     } finally {
       await unlink(broken);
+    }
+  });
+
+  test('answers a module revalidation with 304', async () => {
+    const etag = (await api('/ui/format.ts')).headers.get('etag') ?? '';
+    const res = await api('/ui/format.ts', { headers: { 'If-None-Match': etag } });
+    expect(res.status).toBe(304);
+    expect(await res.text()).toBe('');
+  });
+
+  test('changes a module tag when its source changes', async () => {
+    const module = resolve(import.meta.dir, '..', '..', '..', '..', 'frontend', '__etag.ts');
+    await Bun.write(module, 'export const a = 1;\n');
+    try {
+      const before = (await api('/__etag.ts')).headers.get('etag');
+      await Bun.write(module, 'export const b = 2;\n');
+      const after = (await api('/__etag.ts')).headers.get('etag');
+      expect(after).not.toBeNull();
+      expect(after).not.toBe(before);
+    } finally {
+      await unlink(module);
     }
   });
 });

@@ -176,15 +176,26 @@ that — the path-escape guard, the vendor allowlist, the directory index, the s
 and transpiling — lives in `internal/static.controller.ts`, and `static.routes.ts` only declares
 the URLs that reach it.
 
-Two things the static feature deliberately does not do. It sets a `Content-Type` only on responses
-whose body is not a file on disk with a telling extension — the vendor stylesheet and transpiled
-modules — and otherwise leaves it to `new Response(Bun.file(x))`, which already carries the type Bun infers from the extension,
-off a complete MIME database (`.svg` → `image/svg+xml`, `.woff2` → `font/woff2`, `.png` →
-`image/png`, `.webp` → `image/webp`, no extension → `application/octet-stream`, all measured on
-Bun 1.4.2), so a hand-written map would be a subset that drifts. And it does not special-case
-HEAD beyond letting it past the method check — Bun strips the body itself and leaves the headers
-alone, which `src/backend/features/static/static.routes.test.ts:51` holds in place. What it does do is
+The static feature keeps no map of content types. The vendor stylesheet and transpiled modules get
+a fixed `Content-Type`, and every plain file takes `Bun.file(x).type` — the same lookup
+`new Response(Bun.file(x))` uses, off a complete MIME database (`.svg` → `image/svg+xml`, `.woff2` →
+`font/woff2`, `.png` → `image/png`, `.webp` → `image/webp`, no extension →
+`application/octet-stream`, all measured on Bun 1.4.2), so a hand-written map would be a subset
+that drifts. It also does not special-case HEAD beyond letting it past the method check — Bun strips the body itself and leaves the headers
+alone, which `src/backend/features/static/static.routes.test.ts:53` holds in place. What it does do is
 own the `405 Method not allowed` for the whole server, answered by `StaticController.frontend`: `/*` is declared as a bare handler function
 rather than a `{ GET, HEAD }` map, because a map answers an unmatched verb with an empty-bodied 404
 and there is no `fetch` behind it to say otherwise. An unmatched verb on a vendor route falls
 through to `/*` and is answered there.
+
+Assets carry hash-free URLs, so every static `200` — files, transpiled modules, the index page and
+the vendor stylesheet alike — is sent `Cache-Control: no-cache` with a strong `ETag` hashed from the
+exact body with `Bun.hash`. A `GET` or `HEAD` whose `If-None-Match` matches (in a comma-separated
+list, as `*`, or with a `W/` prefix, per RFC 9110 weak comparison) gets an empty `304`. Bun does
+neither of these itself: measured on 1.4.2, a `Bun.file` response has no validator, and a response
+that sets `ETag` is still a full `200` when the tag matches. The tag is a content hash rather than
+mtime and size because it changes exactly when the bytes do, it covers transpiler output that
+depends on the Bun version, and hashing files of this app's size costs well under a millisecond.
+A `304` still reads or transpiles the file; only the transfer is saved. The vendor stylesheet used
+to be cached for an hour, which let a browser keep a stale Pico after `bun install`; it is now
+revalidated like everything else. Error responses carry no `ETag`.

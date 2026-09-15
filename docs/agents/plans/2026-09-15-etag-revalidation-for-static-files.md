@@ -4,7 +4,7 @@ git_commit: b030f0e13196c716285bcd6d7b76a956d5dd0977
 branch: main
 topic: 'Revalidate static responses with content-hash ETags'
 tags: [plan, backend, static, caching, http]
-status: draft
+status: complete
 ---
 
 # PLAN: Revalidate static responses with content-hash ETags
@@ -179,73 +179,76 @@ the behaviour with HTTP tests, and update `docs/backend.md`.
 
 **Tasks**:
 
-- [ ] `static.controller.ts`: add the module-level `matchesEtag(header, etag)` function.
-- [ ] `static.controller.ts`: add `#respond(req, body, headers)` as sketched above.
-- [ ] `static.controller.ts`: `vendor()` reads `await file.bytes()`, returns it through `#respond`
+- [x] `static.controller.ts`: add the module-level `matchesEtag(header, etag)` function.
+- [x] `static.controller.ts`: add `#respond(req, body, headers)` as sketched above.
+- [x] `static.controller.ts`: `vendor()` reads `await file.bytes()`, returns it through `#respond`
       with `Content-Type: text/css;charset=utf-8`, and the `max-age` comment is deleted. The
       missing-file `500` stays as it is.
-- [ ] `static.controller.ts`: in `frontend()`, the existing non-`.ts` file branch returns
+- [x] `static.controller.ts`: in `frontend()`, the existing non-`.ts` file branch returns
       `this.#respond(req, await file.bytes(), { 'Content-Type': file.type })`, and the
       `Content-Type` comment is removed or cut down to one line.
-- [ ] `static.controller.ts`: in `frontend()`, the single-page fallback returns
+- [x] `static.controller.ts`: in `frontend()`, the single-page fallback returns
       `this.#respond(req, await index.bytes(), { 'Content-Type': index.type })`.
-- [ ] `static.controller.ts`: `#module(path)` becomes `#module(req, path)`, its call site passes
+- [x] `static.controller.ts`: `#module(path)` becomes `#module(req, path)`, its call site passes
       `req`, and its `200` goes through `#respond` with `Content-Type: text/javascript;charset=utf-8`.
       The transpile-failure `500` stays as it is.
-- [ ] `static.routes.test.ts`: append a new `describe('revalidation', …)` block after the existing
+- [x] `static.routes.test.ts`: append a new `describe('revalidation', …)` block after the existing
       one, so the `static.routes.test.ts:51` reference in `docs/backend.md` stays valid. It covers:
-  - [ ] `/`, `/workouts`, `/ui/app.css`, `/vendor/pico.css` and `/main.ts` each answer `200` with
+  - [x] `/`, `/workouts`, `/ui/app.css`, `/vendor/pico.css` and `/main.ts` each answer `200` with
         an `ETag` matching `/^"[0-9a-z]+"$/` and `Cache-Control: no-cache`.
-  - [ ] `/` and `/workouts` carry the same `ETag`, because both serve `index.html`.
-  - [ ] For `/ui/app.css`, `/vendor/pico.css` and `/workouts`, sending the received tag as
+  - [x] `/` and `/workouts` carry the same `ETag`, because both serve `index.html`.
+  - [x] For `/ui/app.css`, `/vendor/pico.css` and `/workouts`, sending the received tag as
         `If-None-Match` gets a `304` with an empty body, the same `ETag` and
         `Cache-Control: no-cache`; the same holds for a `HEAD`.
-  - [ ] `If-None-Match` set to `"stale", <tag>`, to `W/<tag>` and to `*` each get a `304`.
-  - [ ] `If-None-Match: "stale"` gets a `200` with the full body.
-  - [ ] Editing a file changes its tag: write `src/frontend/__etag.css`, read its `ETag`, rewrite
+  - [x] `If-None-Match` set to `"stale", <tag>`, to `W/<tag>` and to `*` each get a `304`.
+  - [x] `If-None-Match: "stale"` gets a `200` with the full body.
+  - [x] Editing a file changes its tag: write `src/frontend/__etag.css`, read its `ETag`, rewrite
         it with different content, then check the tag has changed and that the old tag now gets a
         `200`. Remove the file in `finally`, as `transpile.test.ts` does with `__broken.ts`.
-  - [ ] `/nope.css` (404), `/vendor/pico.scss` (404) and `POST /` (405) carry no `ETag`. The
+  - [x] `/nope.css` (404), `/vendor/pico.scss` (404) and `POST /` (405) carry no `ETag`. The
         vendor-missing `500` cannot be provoked while Pico is installed and gets no test.
-- [ ] `transpile.test.ts`: add tests that:
-  - [ ] a `304` comes back for `/ui/format.ts` when its tag is sent back;
-  - [ ] a module's tag changes when its source changes (write `src/frontend/__etag.ts` twice with
+- [x] `transpile.test.ts`: add tests that:
+  - [x] a `304` comes back for `/ui/format.ts` when its tag is sent back;
+  - [x] a module's tag changes when its source changes (write `src/frontend/__etag.ts` twice with
         different exports, clean up in `finally`);
-  - [ ] the unparsable-module `500` in the existing `__broken.ts` test carries no `ETag`.
-- [ ] `docs/backend.md`, static-serving paragraphs (currently lines 170–190):
-  - [ ] restructure the paragraph that begins "Two things the static feature deliberately does not
+  - [x] the unparsable-module `500` in the existing `__broken.ts` test carries no `ETag`.
+- [x] `docs/backend.md`, static-serving paragraphs (currently lines 170–190):
+  - [x] restructure the paragraph that begins "Two things the static feature deliberately does not
         do" (line 179). Its first point, leaving `Content-Type` unset, is no longer true: every
         `200` now sets it. Say instead that plain files take `Bun.file(x).type`, the same MIME
         database lookup `new Response(Bun.file(x))` uses, so there is still no hand-written map;
         keep the measured examples. The HEAD and 405 points stay, and so does the
         `static.routes.test.ts:51` reference.
-  - [ ] add a paragraph on caching: every `200` is `no-cache` with a strong `ETag` hashed from the
+  - [x] add a paragraph on caching: every `200` is `no-cache` with a strong `ETag` hashed from the
         body, a matching `If-None-Match` (list, `*`, weak comparison) gets an empty `304`, Bun does
         neither of these itself (measured on 1.4.2), and the vendor stylesheet is revalidated like
         everything else rather than cached for an hour. Say why a content hash rather than mtime:
         it is exact, it covers transpiler output, and it is cheap at this app's sizes.
-- [ ] `docs/frontend.md` "Loading": if it mentions caching after the change, keep it consistent. At
+- [x] `docs/frontend.md` "Loading": if it mentions caching after the change, keep it consistent. At
       the time of writing it says nothing about caching, so no edit is expected.
 
 **Automated Verification**:
 
-- [ ] `bun test src/backend/features/static` passes, including the new revalidation tests.
-- [ ] `bun test` passes.
-- [ ] `bun run typecheck` passes.
-- [ ] `bun run lint` passes.
-- [ ] `bun run fmt:check` passes.
+- [x] `bun test src/backend/features/static` passes, including the new revalidation tests.
+- [x] `bun test` passes.
+- [x] `bun run typecheck` passes.
+- [x] `bun run lint` passes.
+- [x] `bun run fmt:check` passes.
 
 **Manual Verification**:
 
-- [ ] With `bun start` running, open the app in a browser with DevTools → Network ("Disable cache"
+- [x] With `bun start` running, open the app in a browser with DevTools → Network ("Disable cache"
       off) and reload: modules, stylesheets, `/vendor/pico.css` and the document show `304` with
       no transferred body.
-- [ ] Edit a component stylesheet, reload, and check that file comes back `200` with the change
+- [x] Edit a component stylesheet, reload, and check that file comes back `200` with the change
       applied while the untouched files stay `304`.
 
 ## Implementation Notes
 
 During implementation, document user feedback, problems, and decisions here.
+
+- The two imports added to `static.routes.test.ts` moved the HEAD test from line 51 to 53, so the reference in `docs/backend.md` now points at `:53`.
+- `oxlint` forbids non-null assertions, so the tests read a missing `ETag` as `''` instead of `!`.
 
 ## References
 
