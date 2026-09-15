@@ -3,30 +3,34 @@ import type { ExerciseId } from '../../../shared/flavors.ts';
 import { ExerciseApi } from './internal/exercise.api.ts';
 
 export class ExerciseFacade {
-  constructor(private readonly api: ExerciseApi) {}
+  readonly #api: ExerciseApi;
+
+  constructor(api: ExerciseApi) {
+    this.#api = api;
+  }
 
   list(): Promise<ExerciseWithStatsDto[]> {
-    return this.api.list();
+    return this.#api.list();
   }
 
   get(id: ExerciseId): Promise<ExerciseDto> {
-    return this.api.get(id);
+    return this.#api.get(id);
   }
 
   progress(id: ExerciseId): Promise<ExerciseProgressDto> {
-    return this.api.progress(id);
+    return this.#api.progress(id);
   }
 
   create(dto: CreateExerciseDto): Promise<ExerciseDto> {
-    return this.api.create(dto);
+    return this.#api.create(dto);
   }
 
   update(id: ExerciseId, dto: EditExerciseDto): Promise<ExerciseDto> {
-    return this.api.update(id, dto);
+    return this.#api.update(id, dto);
   }
 
   delete(id: ExerciseId): Promise<null> {
-    return this.api.delete(id);
+    return this.#api.delete(id);
   }
 }
 

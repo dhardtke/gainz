@@ -1,6 +1,10 @@
 /** Marks a string as already-safe HTML so `html` will not escape it again. */
 export class RawHtml {
-  constructor(readonly value: string) {}
+  readonly value: string;
+
+  constructor(value: string) {
+    this.value = value;
+  }
 
   toString(): string {
     return this.value;

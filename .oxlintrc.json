@@ -85,7 +85,7 @@
     "typescript/parameter-properties": [
       "error",
       {
-        "prefer": "parameter-property"
+        "prefer": "class-property"
       }
     ],
     "typescript/prefer-as-const": "error",

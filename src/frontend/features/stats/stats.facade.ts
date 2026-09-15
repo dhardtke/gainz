@@ -2,10 +2,14 @@ import type { SummaryDto } from '../../../shared/dto/stats.ts';
 import { StatsApi } from './internal/stats.api.ts';
 
 export class StatsFacade {
-  constructor(private readonly api: StatsApi) {}
+  readonly #api: StatsApi;
+
+  constructor(api: StatsApi) {
+    this.#api = api;
+  }
 
   summary(): Promise<SummaryDto> {
-    return this.api.summary();
+    return this.#api.summary();
   }
 }
 

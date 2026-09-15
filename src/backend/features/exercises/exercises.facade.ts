@@ -11,37 +11,41 @@ const MAX_EXERCISE_NAME_LENGTH = 120;
 const MAX_EXERCISE_NOTES_LENGTH = 2000;
 
 export class ExerciseFacade {
-  constructor(private readonly exercises: ExerciseRepository) {}
+  readonly #exercises: ExerciseRepository;
+
+  constructor(exercises: ExerciseRepository) {
+    this.#exercises = exercises;
+  }
 
   list(): ExerciseWithStats[] {
-    return this.exercises.list();
+    return this.#exercises.list();
   }
 
   require(id: ExerciseId): Exercise {
-    return this.exercises.require(id);
+    return this.#exercises.require(id);
   }
 
   create(dto: CreateExerciseDto): Exercise {
-    return this.exercises.create(translateDtoToCreateExercise(this.validateCreate(dto)));
+    return this.#exercises.create(translateDtoToCreateExercise(this.#validateCreate(dto)));
   }
 
   update(id: ExerciseId, dto: EditExerciseDto): Exercise {
-    return this.exercises.update(id, translateDtoToEditExercise(this.validateEdit(dto)));
+    return this.#exercises.update(id, translateDtoToEditExercise(this.#validateEdit(dto)));
   }
 
   delete(id: ExerciseId): void {
-    this.exercises.delete(id);
+    this.#exercises.delete(id);
   }
 
   progress(id: ExerciseId): SessionPoint[] {
-    return this.exercises.progress(id);
+    return this.#exercises.progress(id);
   }
 
   bestSet(id: ExerciseId): (LiftSet & { performed_on: Iso8601Date }) | null {
-    return this.exercises.bestSet(id);
+    return this.#exercises.bestSet(id);
   }
 
-  private validateCreate(dto: CreateExerciseDto): CreateExerciseDto {
+  #validateCreate(dto: CreateExerciseDto): CreateExerciseDto {
     return {
       name: requiredString(dto, 'name', MAX_EXERCISE_NAME_LENGTH),
       muscleGroup: optionalString(dto, 'muscleGroup', 60),
@@ -49,7 +53,7 @@ export class ExerciseFacade {
     };
   }
 
-  private validateEdit(dto: EditExerciseDto): EditExerciseDto {
+  #validateEdit(dto: EditExerciseDto): EditExerciseDto {
     const valid: EditExerciseDto = {};
     if (dto.name !== undefined) {
       valid.name = requiredString(dto, 'name', MAX_EXERCISE_NAME_LENGTH);

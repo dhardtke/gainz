@@ -18,10 +18,14 @@ const EXERCISE_COLUMNS = 'e.id, e.name, e.muscle_group, e.notes, e.created_at';
 const FIELDS = ['name', 'muscle_group', 'notes'] as const;
 
 export class ExerciseRepository {
-  constructor(private readonly db: DB) {}
+  readonly #db: DB;
+
+  constructor(db: DB) {
+    this.#db = db;
+  }
 
   list(): ExerciseWithStats[] {
-    return this.db
+    return this.#db
       .query<ExerciseWithStats, []>(
         `SELECT ${EXERCISE_COLUMNS},
                 COUNT(s.id)                  AS set_count,
@@ -38,7 +42,7 @@ export class ExerciseRepository {
   }
 
   get(id: ExerciseId): Exercise | null {
-    return this.db.query<Exercise, [ExerciseId]>(`SELECT ${EXERCISE_COLUMNS} FROM exercises e WHERE e.id = ?`).get(id);
+    return this.#db.query<Exercise, [ExerciseId]>(`SELECT ${EXERCISE_COLUMNS} FROM exercises e WHERE e.id = ?`).get(id);
   }
 
   require(id: ExerciseId): Exercise {
@@ -51,7 +55,7 @@ export class ExerciseRepository {
 
   create(input: CreateExercise): Exercise {
     try {
-      const row = this.db
+      const row = this.#db
         .query<Exercise, [string, string | null, string | null]>(
           `INSERT INTO exercises (name, muscle_group, notes) VALUES (?, ?, ?)
            RETURNING id, name, muscle_group, notes, created_at`,
@@ -75,7 +79,7 @@ export class ExerciseRepository {
     const update = buildUpdate('exercises', FIELDS, patch);
     if (update) {
       try {
-        this.db.query(update.sql).run(...update.values, id);
+        this.#db.query(update.sql).run(...update.values, id);
       } catch (err) {
         if (isUniqueViolation(err)) {
           throw conflict(`An exercise named "${patch.name}" already exists`);
@@ -88,16 +92,16 @@ export class ExerciseRepository {
 
   delete(id: ExerciseId): void {
     this.require(id);
-    const used = this.db.query<{ n: number }, [ExerciseId]>('SELECT COUNT(*) AS n FROM sets WHERE exercise_id = ?').get(id);
+    const used = this.#db.query<{ n: number }, [ExerciseId]>('SELECT COUNT(*) AS n FROM sets WHERE exercise_id = ?').get(id);
     if (used && used.n > 0) {
       throw conflict(`Exercise is used by ${used.n} logged set(s); delete those sets first to keep your history intact`);
     }
-    this.db.query('DELETE FROM exercises WHERE id = ?').run(id);
+    this.#db.query('DELETE FROM exercises WHERE id = ?').run(id);
   }
 
   /** Per-session aggregates for one exercise, oldest first — the progress curve. */
   progress(id: ExerciseId): SessionPoint[] {
-    return this.db
+    return this.#db
       .query<SessionPoint, [ExerciseId]>(
         `SELECT w.id                   AS workout_id,
                 w.performed_on         AS performed_on,
@@ -117,7 +121,7 @@ export class ExerciseRepository {
 
   /** The single best set ever recorded for an exercise, by estimated 1RM. */
   bestSet(id: ExerciseId): (LiftSet & { performed_on: Iso8601Date }) | null {
-    return this.db
+    return this.#db
       .query<LiftSet & { performed_on: Iso8601Date }, [ExerciseId]>(
         `SELECT ${SET_COLUMNS}, w.performed_on
            FROM sets s

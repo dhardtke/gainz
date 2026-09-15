@@ -3,9 +3,13 @@ import type { StatsFacade } from '../stats.facade.ts';
 import { translateToSummaryDto } from './stats.translator.ts';
 
 export class StatsController {
-  constructor(private readonly stats: StatsFacade) {}
+  readonly #stats: StatsFacade;
+
+  constructor(stats: StatsFacade) {
+    this.#stats = stats;
+  }
 
   summary(): Response {
-    return json(translateToSummaryDto(this.stats.summary()));
+    return json(translateToSummaryDto(this.#stats.summary()));
   }
 }

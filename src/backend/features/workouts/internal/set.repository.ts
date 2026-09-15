@@ -19,19 +19,23 @@ export type EditSet = Partial<CreateSet>;
 const FIELDS = ['exercise_id', 'reps', 'weight', 'notes', 'position'] as const;
 
 export class SetRepository {
+  readonly #db: DB;
+
+  readonly #workouts: WorkoutRepository;
+
   /**
    * `workouts` is injected rather than imported as a value because both repositories live in this
    * feature and either import would be as good as the other; taking it as an argument keeps
    * `createWorkoutFacades` the one place that decides which workout repository a set repository
    * reads.
    */
-  constructor(
-    private readonly db: DB,
-    private readonly workouts: WorkoutRepository,
-  ) {}
+  constructor(db: DB, workouts: WorkoutRepository) {
+    this.#db = db;
+    this.#workouts = workouts;
+  }
 
   list(workoutId: WorkoutId): LiftSet[] {
-    return this.db
+    return this.#db
       .query<LiftSet, [WorkoutId]>(
         `SELECT ${SET_COLUMNS}
            FROM sets s
@@ -43,7 +47,7 @@ export class SetRepository {
   }
 
   get(id: LiftSetId): LiftSet | null {
-    return this.db.query<LiftSet, [LiftSetId]>(`SELECT ${SET_COLUMNS} FROM sets s JOIN exercises e ON e.id = s.exercise_id WHERE s.id = ?`).get(id);
+    return this.#db.query<LiftSet, [LiftSetId]>(`SELECT ${SET_COLUMNS} FROM sets s JOIN exercises e ON e.id = s.exercise_id WHERE s.id = ?`).get(id);
   }
 
   require(id: LiftSetId): LiftSet {
@@ -59,15 +63,15 @@ export class SetRepository {
    * body, and the foreign key is left to catch an unknown one — hence the 400 rather than a 404.
    */
   create(workoutId: WorkoutId, input: CreateSet): LiftSet {
-    this.workouts.require(workoutId);
+    this.#workouts.require(workoutId);
 
     const position =
       input.position ??
-      this.db.query<{ next: number }, [WorkoutId]>('SELECT COALESCE(MAX(position), 0) + 1 AS next FROM sets WHERE workout_id = ?').get(workoutId)?.next ??
+      this.#db.query<{ next: number }, [WorkoutId]>('SELECT COALESCE(MAX(position), 0) + 1 AS next FROM sets WHERE workout_id = ?').get(workoutId)?.next ??
       1;
 
     try {
-      const inserted = this.db
+      const inserted = this.#db
         .query<{ id: LiftSetId }, [WorkoutId, ExerciseId, number, number, string | null, number]>(
           `INSERT INTO sets (workout_id, exercise_id, reps, weight, notes, position)
            VALUES (?, ?, ?, ?, ?, ?)
@@ -92,7 +96,7 @@ export class SetRepository {
     const update = buildUpdate('sets', FIELDS, patch);
     if (update) {
       try {
-        this.db.query(update.sql).run(...update.values, id);
+        this.#db.query(update.sql).run(...update.values, id);
       } catch (err) {
         if (isForeignKeyViolation(err)) {
           throw badRequest('"exerciseId" must name an existing exercise');
@@ -105,6 +109,6 @@ export class SetRepository {
 
   delete(id: LiftSetId): void {
     this.require(id);
-    this.db.query('DELETE FROM sets WHERE id = ?').run(id);
+    this.#db.query('DELETE FROM sets WHERE id = ?').run(id);
   }
 }

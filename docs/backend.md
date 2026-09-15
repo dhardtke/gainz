@@ -98,7 +98,7 @@ and has to translate through its translator; and nothing under `ports/` may impo
 a DTO is never built there. The fourth exempts `*.translator.ts` from
 `typescript/no-unsafe-type-assertion`, since casting a body onto a DTO is part of a translator's job.
 The facades are not pure delegation: their write methods validate and map the request with the
-facade's own private `validateCreate` / `validateEdit` methods before calling the repository.
+facade's own `#validateCreate` / `#validateEdit` methods before calling the repository.
 Composition across facades, like `GET /api/workouts/:id` reading a workout and its sets, still
 lives in the controller, and the facade is where it goes if it ever needs to move further down.
 

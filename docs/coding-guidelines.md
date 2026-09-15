@@ -12,6 +12,12 @@ A member that overrides one from its base class is marked `override`. `noImplici
 `bun run typecheck` enforce it both ways, so a renamed or misspelled `GzElement` hook fails the
 check instead of silently never running.
 
+Private class members use `#` names, never TypeScript's `private` modifier. A `#` name is private
+at runtime as well as to the compiler, and it cannot collide with a member a class inherits — which
+matters for components, whose base is `HTMLElement`. Since a `#` name cannot be a parameter
+property, `bun run lint` bans parameter properties altogether (`typescript/parameter-properties`);
+a `private` method or field in a class body is not caught by any rule.
+
 Code carries no comments unless one records something the code cannot: a non-obvious constraint, an
 external quirk, a reason a surprising choice is deliberate. Never a restatement of what the next
 lines do — if that is what a comment would say, the fix is a clearer name or a smaller function.

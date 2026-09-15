@@ -19,10 +19,14 @@ interface SummaryRecentActivity {
 }
 
 export class StatsRepository {
-  constructor(private readonly db: DB) {}
+  readonly #db: DB;
+
+  constructor(db: DB) {
+    this.#db = db;
+  }
 
   summary(): Summary {
-    const totals = this.db
+    const totals = this.#db
       .query<SummaryTotals, []>(
         `SELECT (SELECT COUNT(*) FROM workouts)                    AS workout_count,
                 (SELECT COUNT(*) FROM sets)                        AS set_count,
@@ -33,7 +37,7 @@ export class StatsRepository {
       )
       .get();
 
-    const recent = this.db
+    const recent = this.#db
       .query<SummaryRecentActivity, []>(
         `SELECT COUNT(DISTINCT w.id)                AS workouts_last_30_days,
                 COALESCE(SUM(s.reps * s.weight), 0) AS volume_last_30_days

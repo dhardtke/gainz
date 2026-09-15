@@ -18,34 +18,38 @@ const MAX_WORKOUT_NOTES_LENGTH = 2000;
  * so the SQL, the CreateWorkout shape and the nullable get() stay inside the feature.
  */
 export class WorkoutFacade {
-  constructor(private readonly workouts: WorkoutRepository) {}
+  readonly #workouts: WorkoutRepository;
+
+  constructor(workouts: WorkoutRepository) {
+    this.#workouts = workouts;
+  }
 
   list(limit: number, offset: number): WorkoutWithStats[] {
-    return this.workouts.list(limit, offset);
+    return this.#workouts.list(limit, offset);
   }
 
   count(): number {
-    return this.workouts.count();
+    return this.#workouts.count();
   }
 
   require(id: WorkoutId): Workout {
-    return this.workouts.require(id);
+    return this.#workouts.require(id);
   }
 
   create(dto: CreateWorkoutDto): Workout {
-    const valid = this.validateCreate(dto);
-    return this.workouts.create(translateDtoToCreateWorkout(valid), { copyFrom: valid.copyFromWorkoutId });
+    const valid = this.#validateCreate(dto);
+    return this.#workouts.create(translateDtoToCreateWorkout(valid), { copyFrom: valid.copyFromWorkoutId });
   }
 
   update(id: WorkoutId, dto: EditWorkoutDto): Workout {
-    return this.workouts.update(id, translateDtoToEditWorkout(this.validateEdit(dto)));
+    return this.#workouts.update(id, translateDtoToEditWorkout(this.#validateEdit(dto)));
   }
 
   delete(id: WorkoutId): void {
-    this.workouts.delete(id);
+    this.#workouts.delete(id);
   }
 
-  private validateCreate(dto: CreateWorkoutDto): CreateWorkoutDto {
+  #validateCreate(dto: CreateWorkoutDto): CreateWorkoutDto {
     return {
       ...(dto.performedOn !== undefined ? { performedOn: requiredDate(dto, 'performedOn') } : {}),
       title: optionalString(dto, 'title', MAX_WORKOUT_NAME_LENGTH),
@@ -54,7 +58,7 @@ export class WorkoutFacade {
     };
   }
 
-  private validateEdit(dto: EditWorkoutDto): EditWorkoutDto {
+  #validateEdit(dto: EditWorkoutDto): EditWorkoutDto {
     const valid: EditWorkoutDto = {};
     if (dto.performedOn !== undefined) {
       valid.performedOn = requiredDate(dto, 'performedOn');
@@ -75,29 +79,33 @@ export class WorkoutFacade {
  * renaming every one of them.
  */
 export class SetFacade {
-  constructor(private readonly sets: SetRepository) {}
+  readonly #sets: SetRepository;
+
+  constructor(sets: SetRepository) {
+    this.#sets = sets;
+  }
 
   list(workoutId: WorkoutId): LiftSet[] {
-    return this.sets.list(workoutId);
+    return this.#sets.list(workoutId);
   }
 
   require(id: LiftSetId): LiftSet {
-    return this.sets.require(id);
+    return this.#sets.require(id);
   }
 
   create(workoutId: WorkoutId, dto: CreateSetDto): LiftSet {
-    return this.sets.create(workoutId, translateDtoToCreateSet(this.validateCreate(dto)));
+    return this.#sets.create(workoutId, translateDtoToCreateSet(this.#validateCreate(dto)));
   }
 
   update(id: LiftSetId, dto: EditSetDto): LiftSet {
-    return this.sets.update(id, translateDtoToEditSet(this.validateEdit(dto)));
+    return this.#sets.update(id, translateDtoToEditSet(this.#validateEdit(dto)));
   }
 
   delete(id: LiftSetId): void {
-    this.sets.delete(id);
+    this.#sets.delete(id);
   }
 
-  private validateCreate(dto: CreateSetDto): CreateSetDto {
+  #validateCreate(dto: CreateSetDto): CreateSetDto {
     return {
       exerciseId: requiredInt(dto, 'exerciseId', { min: 1 }),
       reps: requiredInt(dto, 'reps', { min: 1, max: 1000 }),
@@ -107,7 +115,7 @@ export class SetFacade {
     };
   }
 
-  private validateEdit(dto: EditSetDto): EditSetDto {
+  #validateEdit(dto: EditSetDto): EditSetDto {
     const valid: EditSetDto = {};
     if (dto.exerciseId !== undefined) {
       valid.exerciseId = requiredInt(dto, 'exerciseId', { min: 1 });
