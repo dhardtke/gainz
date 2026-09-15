@@ -2,10 +2,14 @@ import { json, noContent, pathId, queryInt, readJsonObject } from '../../../http
 import type { ParamRequest } from '../../../http/routing.ts';
 import type { WorkoutId } from '../../../../shared/flavors.ts';
 import type { SetFacade, WorkoutFacade } from '../workouts.facade.ts';
-import { toWorkout, toWorkoutPage, toWorkoutWithSets } from '../ports/workout.ts';
-import { toLiftSet } from '../ports/set.ts';
-import { translateToCreateWorkoutDto, translateToEditWorkoutDto } from './workout.translator.ts';
-import { translateToCreateSetDto } from './set.translator.ts';
+import {
+  translateToCreateWorkoutDto,
+  translateToEditWorkoutDto,
+  translateToWorkoutDto,
+  translateToWorkoutPageDto,
+  translateToWorkoutWithSetsDto,
+} from './workout.translator.ts';
+import { translateToCreateSetDto, translateToLiftSetDto } from './set.translator.ts';
 
 export class WorkoutController {
   constructor(
@@ -17,23 +21,23 @@ export class WorkoutController {
     const params = new URL(req.url).searchParams;
     const limit = queryInt(params, 'limit', 50, { min: 1, max: 200 });
     const offset = queryInt(params, 'offset', 0, { min: 0, max: 100000 });
-    return json(toWorkoutPage(this.workouts.list(limit, offset), this.workouts.count(), limit, offset));
+    return json(translateToWorkoutPageDto(this.workouts.list(limit, offset), this.workouts.count(), limit, offset));
   }
 
   async create(req: Request): Promise<Response> {
     const workout = this.workouts.create(translateToCreateWorkoutDto(await readJsonObject(req)));
-    return json(toWorkoutWithSets(workout, this.sets.list(workout.id)), 201);
+    return json(translateToWorkoutWithSetsDto(workout, this.sets.list(workout.id)), 201);
   }
 
   show(req: ParamRequest): Response {
     const id: WorkoutId = pathId(req.params.id, 'workout');
-    return json(toWorkoutWithSets(this.workouts.require(id), this.sets.list(id)));
+    return json(translateToWorkoutWithSetsDto(this.workouts.require(id), this.sets.list(id)));
   }
 
   async update(req: ParamRequest): Promise<Response> {
     const id: WorkoutId = pathId(req.params.id, 'workout');
     const dto = translateToEditWorkoutDto(await readJsonObject(req));
-    return json(toWorkout(this.workouts.update(id, dto)));
+    return json(translateToWorkoutDto(this.workouts.update(id, dto)));
   }
 
   delete(req: ParamRequest): Response {
@@ -44,12 +48,12 @@ export class WorkoutController {
   listSets(req: ParamRequest): Response {
     const id: WorkoutId = pathId(req.params.id, 'workout');
     this.workouts.require(id);
-    return json(this.sets.list(id).map(toLiftSet));
+    return json(this.sets.list(id).map(translateToLiftSetDto));
   }
 
   async addSet(req: ParamRequest): Promise<Response> {
     const id: WorkoutId = pathId(req.params.id, 'workout');
     const dto = translateToCreateSetDto(await readJsonObject(req));
-    return json(toLiftSet(this.sets.create(id, dto)), 201);
+    return json(translateToLiftSetDto(this.sets.create(id, dto)), 201);
   }
 }

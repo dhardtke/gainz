@@ -161,6 +161,26 @@
               {
                 "group": ["**/*.repository.ts"],
                 "message": "Controllers reach the database through their feature's facade."
+              },
+              {
+                "group": ["**/ports/**"],
+                "message": "Controllers translate rows through their feature's translator."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/backend/features/**/ports/**/*.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/shared/dto/**", "**/shared/dto"],
+                "message": "ports/ declares rows; translating them into DTOs happens in a feature's *.translator.ts."
               }
             ]
           }

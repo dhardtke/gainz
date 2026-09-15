@@ -1,6 +1,9 @@
-import type { CreateWorkoutDto, EditWorkoutDto } from '../../../../shared/dto';
+import type { CreateWorkoutDto, EditWorkoutDto, WorkoutDto, WorkoutPageDto, WorkoutWithSetsDto, WorkoutWithStatsDto } from '../../../../shared/dto';
 import type { Iso8601Date, WorkoutId } from '../../../../shared/flavors.ts';
 import { today } from '../../../shared/validate.ts';
+import type { LiftSet } from '../ports/set.ts';
+import type { Workout, WorkoutWithStats } from '../ports/workout.ts';
+import { translateToLiftSetDto } from './set.translator.ts';
 import type { CreateWorkout, EditWorkout } from './workout.repository.ts';
 
 export function translateToCreateWorkoutDto(body: Record<string, unknown>): CreateWorkoutDto {
@@ -46,4 +49,36 @@ export function translateDtoToEditWorkout(dto: EditWorkoutDto): EditWorkout {
     patch.notes = dto.notes;
   }
   return patch;
+}
+
+export function translateToWorkoutDto(row: Workout): WorkoutDto {
+  return {
+    id: row.id,
+    performedOn: row.performed_on,
+    title: row.title,
+    notes: row.notes,
+    createdAt: row.created_at,
+  };
+}
+
+function translateToWorkoutWithStatsDto(row: WorkoutWithStats): WorkoutWithStatsDto {
+  return {
+    id: row.id,
+    performedOn: row.performed_on,
+    title: row.title,
+    notes: row.notes,
+    createdAt: row.created_at,
+    setCount: row.set_count,
+    exerciseCount: row.exercise_count,
+    totalReps: row.total_reps,
+    totalVolume: row.total_volume,
+  };
+}
+
+export function translateToWorkoutWithSetsDto(row: Workout, sets: LiftSet[]): WorkoutWithSetsDto {
+  return { ...translateToWorkoutDto(row), sets: sets.map(translateToLiftSetDto) };
+}
+
+export function translateToWorkoutPageDto(rows: WorkoutWithStats[], total: number, limit: number, offset: number): WorkoutPageDto {
+  return { items: rows.map(translateToWorkoutWithStatsDto), total, limit, offset };
 }
