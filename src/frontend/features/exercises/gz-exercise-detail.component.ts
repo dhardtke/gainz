@@ -169,7 +169,7 @@ export class GzExerciseDetailComponent extends GzElement {
                 return html`
                   <tr>
                     <td class="name nowrap">
-                      <a href="#/workouts/${session.workoutId}">${formatDate(session.performedOn)}</a>
+                      <a href="/workouts/${session.workoutId}">${formatDate(session.performedOn)}</a>
                     </td>
                     <td class="num">${session.setCount}</td>
                     <td class="num">${session.totalReps}</td>
@@ -194,7 +194,7 @@ export class GzExerciseDetailComponent extends GzElement {
       return html`
         <div class="stack">
           <p class="error-text">${this.#state.message}</p>
-          <p><a href="#/exercises">Back to all exercises</a></p>
+          <p><a href="/exercises">Back to all exercises</a></p>
         </div>
       `;
     }
@@ -206,7 +206,7 @@ export class GzExerciseDetailComponent extends GzElement {
     return html`
       <div class="stack">
         <div>
-          <p><a href="#/exercises">← Exercises</a></p>
+          <p><a href="/exercises">← Exercises</a></p>
           <hgroup>
             <h1>${exercise.name}</h1>
             <p>${exercise.muscleGroup ?? 'No muscle group set'}${exercise.notes ? html` · ${exercise.notes}` : ''}</p>

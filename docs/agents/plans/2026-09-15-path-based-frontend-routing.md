@@ -192,12 +192,12 @@ templates, and document the result. The app works end to end on real paths when 
 
 **Tasks**:
 
-- [ ] `src/frontend/app/router.ts` — rewrite the header comment: the router works on real paths
+- [x] `src/frontend/app/router.ts` — rewrite the header comment: the router works on real paths
       through the History API; the server hands `index.html` to any extension-less path, which is
       what makes a deep link survive a reload.
-- [ ] `src/frontend/app/router.ts` — `currentPath()` returns `location.pathname`; update its doc
+- [x] `src/frontend/app/router.ts` — `currentPath()` returns `location.pathname`; update its doc
       comment ("The path the page is at").
-- [ ] `src/frontend/app/router.ts` — `navigate(path)`:
+- [x] `src/frontend/app/router.ts` — `navigate(path)`:
 
       ```ts
       export function navigate(path: string): void {
@@ -209,9 +209,9 @@ templates, and document the result. The app works end to end on real paths when 
       }
       ```
 
-- [ ] `src/frontend/app/router.ts` — `onRouteChange` adds and removes a `popstate` listener
+- [x] `src/frontend/app/router.ts` — `onRouteChange` adds and removes a `popstate` listener
       instead of `hashchange`.
-- [ ] `src/frontend/app/router.ts` — add the link rule:
+- [x] `src/frontend/app/router.ts` — add the link rule:
 
       ```ts
       /** The parts of a click that decide whether it is a plain in-page navigation; a MouseEvent fits. */
@@ -242,7 +242,7 @@ templates, and document the result. The app works end to end on real paths when 
       `''`/`_self` or `download` → null; `new URL(link.href, origin)` with a different `origin`
       → null; `search` or `hash` non-empty → null; pathname `/api` or starting `/api/` → null;
       last path segment containing a `.` → null; otherwise the pathname.
-- [ ] `src/frontend/app/gz-app.component.ts` — add a constructor that calls `super()` and adds a
+- [x] `src/frontend/app/gz-app.component.ts` — add a constructor that calls `super()` and adds a
       click listener on the host with `this.addEventListener('click', (event) => { … })` — not on
       `this.root`, whose click listener the DOM types give a plain `Event` without `button` or
       modifier keys. The arrow has a block body with early returns (lint's
@@ -271,30 +271,30 @@ templates, and document the result. The app works end to end on real paths when 
 
       A short comment says why `composedPath()` rather than `event.target` (retargeting across the
       views' shadow roots). Import `linkPath` and `navigate` from `./router.ts`.
-- [ ] `src/frontend/app/gz-app.component.ts` — brand link `href="/"`; nav links
+- [x] `src/frontend/app/gz-app.component.ts` — brand link `href="/"`; nav links
       `href="${item.path}"`; reword the `#renderView` comment to "navigate() dispatches popstate
       for the current path on purpose, so this runs re-entrantly".
-- [ ] `src/frontend/main.ts` — remove the hash redirect and its comment, leaving the doc comment
+- [x] `src/frontend/main.ts` — remove the hash redirect and its comment, leaving the doc comment
       and the shell import.
-- [ ] Replace `href="#/` with `href="/` in `gz-dashboard.component.ts` (2), `gz-workout-list.component.ts`
+- [x] Replace `href="#/` with `href="/` in `gz-dashboard.component.ts` (2), `gz-workout-list.component.ts`
       (1), `gz-workout-detail.component.ts` (2), `gz-set-row.component.ts` (1),
       `gz-exercise-list.component.ts` (1) and `gz-exercise-detail.component.ts` (3).
-- [ ] `src/frontend/app/router.test.ts` — replace the stubs in `beforeEach`: `location` as
+- [x] `src/frontend/app/router.test.ts` — replace the stubs in `beforeEach`: `location` as
       `{ pathname: '/', origin: 'http://gainz.test' }`; `history` as an object whose method is
       fully annotated, because `useGlobals()` takes `unknown` and gives it no contextual types
       (strict mode and `explicit-function-return-type` would reject it otherwise):
       `pushState(_state: unknown, _title: string, url: string): void { pushes++; location.pathname = url; }`;
       `window` as an `EventTarget` counting
       `popstate` events; `PopStateEvent` as `class extends Event {}`. Keep the `matchRoute` suite.
-- [ ] `src/frontend/app/router.test.ts` — `currentPath` is `location.pathname`; `isActive` suite
+- [x] `src/frontend/app/router.test.ts` — `currentPath` is `location.pathname`; `isActive` suite
       retargeted from `location.hash = '#/…'` to `location.pathname = '/…'`, same assertions.
-- [ ] `src/frontend/app/router.test.ts` — `navigate` suite:
+- [x] `src/frontend/app/router.test.ts` — `navigate` suite:
   - to another route pushes that path once and dispatches `popstate` once;
   - to the current route pushes nothing and dispatches `popstate` once;
   - a `popstate` the browser fires (dispatched on the stub `window`) reaches an `onRouteChange`
     listener;
   - `onRouteChange` returns a function that stops listening.
-- [ ] `src/frontend/app/router.test.ts` — `linkPath` suite, with a plain left click on
+- [x] `src/frontend/app/router.test.ts` — `linkPath` suite, with a plain left click on
       `http://gainz.test/workouts/3` as the baseline; every `href` below is written absolute
       (`http://gainz.test/api`, …), as `LinkTarget` documents:
   - the baseline routes to `/workouts/3`, and `/` routes to `/`;
@@ -305,10 +305,10 @@ templates, and document the result. The app works end to end on real paths when 
   - `/api`, `/api/health` → null, while `/apiary` routes;
   - `/vendor/pico.css` → null;
   - `/workouts?x=1` and `/workouts#top` → null.
-- [ ] `docs/frontend.md` — opening paragraph: drop the `#/` redirect sentence; say `main.ts`
+- [x] `docs/frontend.md` — opening paragraph: drop the `#/` redirect sentence; say `main.ts`
       imports the shell, and that routes are real paths the server answers with `index.html`
       because they carry no extension.
-- [ ] `docs/frontend.md` — in the `app/` description, "a generic hash matcher" → "a generic path
+- [x] `docs/frontend.md` — in the `app/` description, "a generic hash matcher" → "a generic path
       router"; after the paragraph on `nav` (ending "…reaches its views only through `import()`."),
       add a paragraph: links are plain `<a href="/…">`; `gz-app` listens for clicks on its shadow
       root, finds the anchor through `composedPath()` because the views' shadow roots retarget
@@ -320,29 +320,29 @@ templates, and document the result. The app works end to end on real paths when 
 
 **Automated Verification**:
 
-- [ ] `bun test src/frontend/app/router.test.ts` passes, including the new `linkPath` suite
-- [ ] `bun test` passes (including the unchanged `routes.test.ts` and `static.routes.test.ts`)
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
-- [ ] `Get-ChildItem -Recurse -File src/frontend, docs/frontend.md | Select-String -Pattern '#/|hashchange|location\.hash'`
+- [x] `bun test src/frontend/app/router.test.ts` passes, including the new `linkPath` suite
+- [x] `bun test` passes (including the unchanged `routes.test.ts` and `static.routes.test.ts`)
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
+- [x] `Get-ChildItem -Recurse -File src/frontend, docs/frontend.md | Select-String -Pattern '#/|hashchange|location\.hash'`
       prints nothing
 
 **Manual Verification**:
 
-- [ ] With `bun start`, `/` shows the dashboard and the address bar reads `/`, not `/#/`
-- [ ] Clicking Workouts, a workout, an exercise link in it, Exercises and an exercise swaps the
+- [x] With `bun start`, `/` shows the dashboard and the address bar reads `/`, not `/#/`
+- [x] Clicking Workouts, a workout, an exercise link in it, Exercises and an exercise swaps the
       view without a full reload (the header stays, no white flash) and the address bar shows each
       path; the active nav button follows
-- [ ] Reloading on `/workouts/<id>` and `/exercises/<id>` renders that page
-- [ ] Back and Forward walk through the visited pages and the nav highlight follows
-- [ ] Ctrl/Cmd-click and middle-click on a workout link open it in a new tab, which renders the
+- [x] Reloading on `/workouts/<id>` and `/exercises/<id>` renders that page
+- [x] Back and Forward walk through the visited pages and the nav highlight follows
+- [x] Ctrl/Cmd-click and middle-click on a workout link open it in a new tab, which renders the
       workout
-- [ ] Creating a workout and repeating one from the list land on the new workout's path;
+- [x] Creating a workout and repeating one from the list land on the new workout's path;
       deleting a workout from its detail page lands on `/workouts`
-- [ ] Clicking the Workouts nav button while already on `/workouts` reloads the list without
+- [x] Clicking the Workouts nav button while already on `/workouts` reloads the list without
       adding a history entry (one Back leaves the page)
-- [ ] `/nope` shows "Nothing lives at /nope."
+- [x] `/nope` shows "Nothing lives at /nope."
 
 ## Implementation Notes
 
@@ -352,6 +352,11 @@ During implementation, document user feedback, problems, and decisions here.
   `Loading…` and fetch after connecting, so a position cannot be restored right after the swap,
   and waiting on page height or per-view ready signals was not worth it.
 - Planning: old `#/…` URLs are deliberately not redirected.
+- Implementation: the last `docs/frontend.md` task said `gz-app` listens "on its shadow root", but
+  decision 1 and the `gz-app` task put the listener on the host; the doc says "on its host" to match
+  the code.
+- Implementation: oxfmt keeps the `composedPath()` and `linkPath(...)` calls in `gz-app` on one line
+  each rather than the wrapped form shown in the plan.
 
 ## References
 

@@ -145,7 +145,7 @@ export class GzSetRowComponent extends GzElement {
     return html`
       <div class="row-view">
         <span class="index">${this.#index}</span>
-        <a class="exercise" href="#/exercises/${set.exerciseId}">${set.exerciseName}</a>
+        <a class="exercise" href="/exercises/${set.exerciseId}">${set.exerciseName}</a>
         <span class="load">${formatNumber(set.weight)} ${UNIT} × ${set.reps}</span>
         <span class="note">${set.notes ?? ''}</span>
         <span class="actions">

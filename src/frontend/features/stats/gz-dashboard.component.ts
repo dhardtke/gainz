@@ -77,14 +77,14 @@ export class GzDashboardComponent extends GzElement {
         <article class="stack-sm">
           <div class="row-between">
             <h2>Recent workouts</h2>
-            <a href="#/workouts">See all</a>
+            <a href="/workouts">See all</a>
           </div>
           ${
             workouts.length === 0
               ? html`<p class="empty">No workouts yet. Log one and it will show up here.</p>`
               : workouts.map(
                   (workout) => html`
-                    <a class="workout-link" href="#/workouts/${workout.id}">
+                    <a class="workout-link" href="/workouts/${workout.id}">
                       <span class="grow">
                         <span class="title">${workout.title ?? formatDate(workout.performedOn)}</span>
                         <span class="muted"> · ${relativeDay(workout.performedOn)}</span>

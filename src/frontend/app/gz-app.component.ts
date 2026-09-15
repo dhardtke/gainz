@@ -1,7 +1,7 @@
 import type { RawHtml } from '../ui/html.ts';
 import { define, GzElement } from '../ui/base.ts';
 import { html } from '../ui/html.ts';
-import { currentPath, isActive, matchRoute, onRouteChange } from './router.ts';
+import { currentPath, isActive, linkPath, matchRoute, navigate, onRouteChange } from './router.ts';
 import { ROUTES } from './routes.ts';
 import { toastError } from '../ui/gz-toast.component.ts';
 import './gz-theme-toggle.component.ts';
@@ -15,6 +15,24 @@ import './gz-theme-toggle.component.ts';
 class GzAppComponent extends GzElement {
   #unsubscribe: (() => void) | null = null;
   #renderToken = 0;
+
+  constructor() {
+    super();
+    this.addEventListener('click', (event) => {
+      // Links sit in the views' shadow roots, which retarget event.target to the view's host by the
+      // time the click reaches here; composedPath() still holds the anchor itself.
+      const anchor = event.composedPath().find((target): target is HTMLAnchorElement => target instanceof HTMLAnchorElement);
+      if (!anchor) {
+        return;
+      }
+      const path = linkPath(event, { href: anchor.href, target: anchor.target, download: anchor.hasAttribute('download') }, location.origin);
+      if (path === null) {
+        return;
+      }
+      event.preventDefault();
+      navigate(path);
+    });
+  }
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -57,7 +75,7 @@ class GzAppComponent extends GzElement {
     const path = currentPath();
 
     // Bumped on every entry, not just on a genuine route change: navigate()
-    // re-dispatches hashchange for the current path on purpose, so this runs
+    // dispatches popstate for the current path on purpose, so this runs
     // re-entrantly.
     const token = ++this.#renderToken;
 
@@ -108,14 +126,14 @@ class GzAppComponent extends GzElement {
         <nav class="container">
           <ul>
             <li>
-              <a class="brand" href="#/"><strong>gainz</strong><span class="tag">lifting log</span></a>
+              <a class="brand" href="/"><strong>gainz</strong><span class="tag">lifting log</span></a>
             </li>
           </ul>
           <ul>
             ${ROUTES.flatMap((route) => (route.nav ? [route.nav] : [])).map(
               (item) => html`
                 <li>
-                  <a role="button" class="secondary outline" href="#${item.path}" data-path="${item.path}">${item.label}</a>
+                  <a role="button" class="secondary outline" href="${item.path}" data-path="${item.path}">${item.label}</a>
                 </li>
               `,
             )}

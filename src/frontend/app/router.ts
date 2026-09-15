@@ -1,6 +1,6 @@
 /**
- * Hash-based router. Hash routing keeps the app a single static file that any
- * server can hand out, and survives a manual reload of a deep link.
+ * Path-based router over the History API. The server hands `index.html` to any
+ * extension-less path, which is what makes a deep link survive a reload.
  */
 
 export interface RouteDef {
@@ -33,26 +33,24 @@ export function matchRoute(routes: readonly RouteDef[], path: string): RouteMatc
   return null;
 }
 
-/** The hash without its leading `#`. */
+/** The path the page is at. */
 export function currentPath(): string {
-  return location.hash.replace(/^#/, '') || '/';
+  return location.pathname;
 }
 
 export function navigate(path: string): void {
-  const target = `#${path}`;
-  if (location.hash === target) {
-    // Same route: force the listeners to run so the view refreshes.
-    window.dispatchEvent(new HashChangeEvent('hashchange'));
-  } else {
-    location.hash = target;
+  if (location.pathname !== path) {
+    history.pushState(null, '', path);
   }
+  // pushState fires no event, and the same route must refresh too: tell the listeners.
+  window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
 /** @returns call it to stop listening. */
 export function onRouteChange(listener: () => void): () => void {
-  window.addEventListener('hashchange', listener);
+  window.addEventListener('popstate', listener);
   return () => {
-    window.removeEventListener('hashchange', listener);
+    window.removeEventListener('popstate', listener);
   };
 }
 
@@ -60,4 +58,50 @@ export function onRouteChange(listener: () => void): () => void {
 export function isActive(path: string): boolean {
   const current = currentPath();
   return path === '/' ? current === '/' : current.startsWith(path);
+}
+
+/** The parts of a click that decide whether it is a plain in-page navigation; a MouseEvent fits. */
+export interface LinkClick {
+  button: number;
+  ctrlKey: boolean;
+  metaKey: boolean;
+  shiftKey: boolean;
+  altKey: boolean;
+  defaultPrevented: boolean;
+}
+
+export interface LinkTarget {
+  /** Absolute, as `HTMLAnchorElement.href` reports it. */
+  href: string;
+  target: string;
+  download: boolean;
+}
+
+/**
+ * The path to route a link click to, or null when the browser should handle it: a new-tab
+ * or save gesture, another origin, the API, a file, or a URL with a query or fragment.
+ */
+export function linkPath(click: LinkClick, link: LinkTarget, origin: string): string | null {
+  if (click.defaultPrevented || click.button !== 0) {
+    return null;
+  }
+  if (click.ctrlKey || click.metaKey || click.shiftKey || click.altKey) {
+    return null;
+  }
+  if ((link.target !== '' && link.target !== '_self') || link.download) {
+    return null;
+  }
+  const url = new URL(link.href, origin);
+  if (url.origin !== origin || url.search !== '' || url.hash !== '') {
+    return null;
+  }
+  const path = url.pathname;
+  if (path === '/api' || path.startsWith('/api/')) {
+    return null;
+  }
+  // The server's fallback serves index.html only for extension-less paths; anything else is a file.
+  if (path.slice(path.lastIndexOf('/') + 1).includes('.')) {
+    return null;
+  }
+  return path;
 }

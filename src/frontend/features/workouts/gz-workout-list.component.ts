@@ -148,7 +148,7 @@ export class GzWorkoutListComponent extends GzElement {
                   (workout) => html`
                     <div class="workout">
                       <div class="grow">
-                        <a href="#/workouts/${workout.id}">${workout.title ?? formatDate(workout.performedOn)}</a>
+                        <a href="/workouts/${workout.id}">${workout.title ?? formatDate(workout.performedOn)}</a>
                         <div class="date">${formatDate(workout.performedOn)} · ${relativeDay(workout.performedOn)}</div>
                       </div>
                       <span class="badge">
