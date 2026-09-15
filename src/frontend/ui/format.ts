@@ -17,11 +17,10 @@ const SHORT_DATE_FORMAT = new Intl.DateTimeFormat(undefined, { day: 'numeric', m
 
 /** Drops trailing zeros: 62.50 -> "62.5", 60.00 -> "60". */
 export function formatNumber(value: number | null | undefined, maxDecimals = 2): string {
-  const num = Number(value);
-  if (!Number.isFinite(num)) {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
     return '–';
   }
-  return num.toLocaleString(undefined, { maximumFractionDigits: maxDecimals });
+  return value.toLocaleString(undefined, { maximumFractionDigits: maxDecimals });
 }
 
 export function formatWeight(value: number | null | undefined): string {
