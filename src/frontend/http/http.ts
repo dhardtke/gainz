@@ -1,15 +1,8 @@
-/** Thin client for the gainz REST API. No dependencies, just fetch. */
+/** Thin client for the gainz REST API. */
 
 import { ApiError } from './errors.ts';
 
 /**
- * One request against the API.
- *
- * The response body is whatever the server sent, so `T` is a promise the caller
- * makes rather than one this function keeps — every method on the API classes
- * declares the shape its own endpoint returns, and those declarations are the
- * single place the frontend states what it expects.
- *
  * @returns the parsed body, or `null` when there is no body — a 204, say.
  * @throws {ApiError} on a transport failure or a non-2xx response.
  */
@@ -35,17 +28,11 @@ async function request<T>(method: 'GET' | 'POST' | 'PATCH' | 'DELETE', path: str
   }
 
   if (!response.ok) {
-    // The shape being narrowed toward is `ErrorDto`, but it is narrowed rather than claimed:
-    // every other endpoint's DTO is asserted below, and an error body is the one response the
-    // client cannot assume arrived well-formed — a 502 from a proxy carries no JSON at all.
     const errorBody = typeof data === 'object' && data !== null ? data : {};
     const message = 'error' in errorBody && typeof errorBody.error === 'string' ? errorBody.error : `Request failed (${response.status})`;
     throw new ApiError(message, response.status, 'details' in errorBody ? errorBody.details : undefined);
   }
 
-  // The methods on the API classes declare what each endpoint returns. This is
-  // the one place that declaration is asserted rather than proven — validating
-  // it would mean a schema library, and this app deliberately has none.
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the server contract boundary
   return data as T;
 }
