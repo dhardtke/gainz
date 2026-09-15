@@ -27,7 +27,7 @@ describe('static files', () => {
 
   test('serves a stylesheet beside every component module', async () => {
     const modules = await Array.fromAsync(new Bun.Glob('**/gz-*.component.ts').scan(FRONTEND_DIR));
-    expect(modules.length).toBeGreaterThanOrEqual(11);
+    expect(modules.length).toBeGreaterThanOrEqual(12);
     for (const file of modules) {
       // scan() yields backslashes on Windows.
       const res = await api(`/${file.replaceAll('\\', '/').replace(/\.ts$/, '.css')}`);

@@ -8,7 +8,7 @@ each with `index.html` because it carries no extension.
 ```
 src/frontend/
 ├── index.html  main.ts
-├── app/        gz-app, gz-theme-toggle, router.ts, routes.ts
+├── app/        gz-app, gz-header, gz-theme-toggle, router.ts, routes.ts
 ├── http/       http.ts (get/post/patch/remove), errors.ts (ApiError, errorMessage)
 ├── ui/         base.ts, html.ts, styles.ts, theme.ts, format.ts, app.css, shared.css, gz-toast, gz-tile
 └── features/
@@ -21,7 +21,7 @@ src/frontend/
 ```
 
 What belongs to no feature sits in three directories. `app/` is the shell: `gz-app`, the
-`gz-theme-toggle` in its header, `router.ts`, a generic path router that names no route, and
+`gz-header` it renders at the top with the `gz-theme-toggle` inside it, `router.ts`, a generic path router that names no route, and
 `routes.ts`, which spreads the features' route lists into the one `ROUTES` table. `http/` is the request
 plumbing: `http.ts` holds the `get`/`post`/`patch`/`remove` helpers over `fetch`, and `errors.ts`
 holds `ApiError` and `errorMessage`, kept apart so a component can catch an error without being
@@ -64,26 +64,28 @@ A feature's routes live in `<f>.routes.ts` beside its facade, the way the backen
 module and returns `new GzXComponent()`, setting any id attribute before handing it back. `gz-app` matches
 the current path against `ROUTES` and awaits the matching route's `view()` without knowing which
 route it is; when nothing matches it shows its own not-found message. A route may also carry
-`nav: { path, label }`, and `gz-app` builds its header from those, in the order `app/routes.ts`
+`nav: { path, label }`, and `gz-header` builds the header from those, in the order `app/routes.ts`
 spreads the features — so adding a list page needs no edit in `app/` beyond a new feature's spread.
+`gz-app` renders `gz-header` above its `<main>`; the header's host is the sticky element, because a
+`<header>` inside its shadow root would be only as tall as its host and could never stick.
 The header is a Pico `<nav>`: the brand on the left, then the page links as plain `secondary`
 links, with `contrast` and `aria-current="page"` on the current page, then a thin divider and the
 theme toggle. Both classes are Pico's own; the swap is there because Pico's nav hides the underline
 its `aria-current` styling relies on, so the attribute alone barely shows. Below 560 px the links
 render a second time inside a Pico `<details class="dropdown">` behind a hamburger, and CSS shows
-one list at a time rather than a resize listener choosing. The `nav a[data-path]` loop highlights
-both lists, and `gz-app` closes the dropdown on every route change. Inside the dropdown Pico sets
+one list at a time rather than a resize listener choosing. `gz-header` subscribes to `onRouteChange` itself, and
+on every route change its `nav a[data-path]` loop highlights both lists and it closes the dropdown. Inside the dropdown Pico sets
 the link colour itself, so there the current page shows through Pico's `aria-current` background. A route file only
 `import type`s `RouteDef` from `app/router.ts`, so it loads up front at almost no cost and reaches
 its views only through `import()`.
 
 Links are plain `<a href="/…">`. `gz-app` listens for clicks on its host, finds the anchor through
-`composedPath()` because the views' shadow roots retarget the event, and routes it through
+`composedPath()` because the views' and the header's shadow roots retarget the event, and routes it through
 `navigate()` when `router.ts`'s `linkPath` says it is a plain same-origin click on an
 extension-less, non-`/api` path without query or fragment; anything else — a modifier click, a
 `target`, `download` — is left to the browser. `navigate()` pushes a history entry (none when
 already on that path) and dispatches `popstate`, so links, `navigate()` and Back/Forward all reach
-`gz-app` through the one `onRouteChange` listener. A route path must therefore stay extension-less
+`gz-app` and `gz-header` through `onRouteChange`. A route path must therefore stay extension-less
 and must not name a file under `src/frontend/`.
 
 `bun run lint` holds five import boundaries in `.oxlintrc.json`. A module under `features/<a>/` may
@@ -130,7 +132,7 @@ cast on the way in.
 Shapes local to one module — a view's `#state` union, the chart's points — are declared in that
 module. The five route views are exported so their route file can construct them with `new`, which
 keeps each tag name written only in its `define()`. `GzChartComponent` and `GzSetRowComponent` are exported so a
-view can type the element it drives; the other four components stay private to their module.
+view can type the element it drives; the other five components stay private to their module.
 
 ## Loading
 
@@ -154,7 +156,7 @@ it — so the `await import('./gz-exercise-detail.component.ts')` in the exercis
 only when that view _and_ everything it renders have their scripts and their CSS. A lazily loaded
 page is fully styled on its first paint; there is no flash to guard against.
 
-Only the shell (`gz-app`, `gz-toast`, `gz-theme-toggle`), `app/routes.ts` with the three feature
+Only the shell (`gz-app`, `gz-header`, `gz-toast`, `gz-theme-toggle`), `app/routes.ts` with the three feature
 route files, and Pico plus `ui/shared.css` load up front. `gz-app` keeps the outgoing view on screen while the next one loads, guards against two
 navigations resolving out of order, and reports a failed import through the toast.
 
