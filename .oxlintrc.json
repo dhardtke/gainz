@@ -128,30 +128,6 @@
   },
   "overrides": [
     {
-      "files": ["src/backend/features/**/*.routes.ts"],
-      "rules": {
-        "no-restricted-imports": [
-          "error",
-          {
-            "patterns": [
-              {
-                "group": [
-                  "**/internal/**",
-                  "!**/internal/*.controller.ts",
-                  "**/ports/**",
-                  "**/*.repository.ts",
-                  "**/http/http.ts",
-                  "**/http/errors.ts",
-                  "**/shared/validate.ts"
-                ],
-                "message": "Route handlers pass the request to their controller and return its response."
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
       "files": ["src/backend/features/**/*.controller.ts"],
       "rules": {
         "no-restricted-imports": [

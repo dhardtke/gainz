@@ -8,13 +8,14 @@
  * unmatched verb with an empty 404, and this route owns the 405 for the whole server.
  */
 import type { RouteTable } from '../../http/routing.ts';
+import { vendorUrls } from './internal/paths.ts';
 import { StaticController } from './internal/static.controller.ts';
 
 export function staticRoutes(): RouteTable {
   const controller = new StaticController();
   const vendor = (req: Request): Promise<Response> => controller.vendor(req);
   return {
-    ...Object.fromEntries(controller.vendorUrls().map((url) => [url, { GET: vendor, HEAD: vendor }])),
+    ...Object.fromEntries(vendorUrls().map((url) => [url, { GET: vendor, HEAD: vendor }])),
     '/*': (req: Request): Promise<Response> => controller.frontend(req),
   };
 }
