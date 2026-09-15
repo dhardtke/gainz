@@ -36,7 +36,7 @@ describe('typescript modules', () => {
   test('strips type-only imports, so src/shared/ is never fetched at runtime', async () => {
     const body = await (await api('/features/workouts/internal/gz-set-row.component.ts')).text();
     // `src/shared/` is outside the web root: a surviving specifier would be a 404 on
-    // every page load. That the module erases to nothing is pinned by src/shared/shared.test.ts.
+    // every page load.
     expect(body).not.toContain('shared/dto');
   });
 
