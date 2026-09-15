@@ -101,7 +101,6 @@ class GzAppComponent extends GzElement {
     void this.#swapView(path, token);
   }
 
-  /** Nothing awaits this, so it has to own its failures. */
   async #swapView(path: string, token: number): Promise<void> {
     let view: Element;
     try {

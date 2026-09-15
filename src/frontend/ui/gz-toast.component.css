@@ -1,5 +1,3 @@
-/* Transient messages, stacked in the bottom-right corner. */
-
 :host {
   position: fixed;
   inset: auto 1rem 1rem auto;

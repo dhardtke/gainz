@@ -1,6 +1,5 @@
 /**
- * Path-based router over the History API. The server hands `index.html` to any
- * extension-less path, which is what makes a deep link survive a reload.
+ * Path-based router over the History API.
  */
 
 export interface RouteDef {
@@ -82,26 +81,25 @@ export interface LinkTarget {
  * or save gesture, another origin, the API, a file, or a URL with a query or fragment.
  */
 export function linkPath(click: LinkClick, link: LinkTarget, origin: string): string | null {
-  if (click.defaultPrevented || click.button !== 0) {
+  const isHandledElsewhere = click.defaultPrevented;
+  const isPrimaryButton = click.button === 0;
+  const hasModifierKey = click.ctrlKey || click.metaKey || click.shiftKey || click.altKey;
+  const opensInOtherContext = link.target !== '' && link.target !== '_self';
+  const isDownload = link.download;
+  if (isHandledElsewhere || !isPrimaryButton || hasModifierKey || opensInOtherContext || isDownload) {
     return null;
   }
-  if (click.ctrlKey || click.metaKey || click.shiftKey || click.altKey) {
-    return null;
-  }
-  if ((link.target !== '' && link.target !== '_self') || link.download) {
-    return null;
-  }
+
   const url = new URL(link.href, origin);
-  if (url.origin !== origin || url.search !== '' || url.hash !== '') {
-    return null;
-  }
   const path = url.pathname;
-  if (path === '/api' || path.startsWith('/api/')) {
-    return null;
-  }
+  const isOtherOrigin = url.origin !== origin;
+  const hasQueryOrFragment = url.search !== '' || url.hash !== '';
+  const isApiPath = path === '/api' || path.startsWith('/api/');
   // The server's fallback serves index.html only for extension-less paths; anything else is a file.
-  if (path.slice(path.lastIndexOf('/') + 1).includes('.')) {
+  const isFilePath = path.slice(path.lastIndexOf('/') + 1).includes('.');
+  if (isOtherOrigin || hasQueryOrFragment || isApiPath || isFilePath) {
     return null;
   }
+
   return path;
 }

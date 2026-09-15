@@ -13,12 +13,6 @@ export interface ToastDetail {
 const EVENT = 'gz-toast';
 let nextId = 0;
 
-/**
- * Teaches the DOM types about this module's own event, so a listener's
- * `event.detail` arrives as a `ToastDetail` rather than as `any`. The
- * declaration is erased at transpile time; nothing about it reaches the
- * browser.
- */
 declare global {
   interface WindowEventMap {
     'gz-toast': CustomEvent<ToastDetail>;

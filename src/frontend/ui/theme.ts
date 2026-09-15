@@ -1,5 +1,5 @@
 /**
- * Colour theme preference: light or dark.
+ * Color theme preference: light or dark.
  *
  * Pico themes an element through a `data-theme` attribute, and its rules only
  * reach a shadow root through `:host`. So the choice is mirrored onto the
@@ -18,7 +18,7 @@
 
 export type Theme = 'light' | 'dark';
 
-/** Also read by the inline no-flash script in index.html — keep them in step. */
+/** Also read by the inline no-flash script in index.html — keep them in sync. */
 const STORAGE_KEY = 'gainz:theme';
 const EVENT = 'gz-theme-change';
 
@@ -43,10 +43,8 @@ function readStoredTheme(): Theme {
     if (isTheme(stored)) {
       return stored;
     }
-    // Anything else — nothing stored, or the "system" an earlier version wrote
-    // — means no choice has been made, so start where the system points.
   } catch {
-    // Private mode or blocked site data: nothing was remembered.
+    // ignore errors
   }
   return systemTheme();
 }
@@ -63,7 +61,7 @@ export function applyThemeTo(element: Element): void {
 }
 
 export function setTheme(theme: Theme): void {
-  if (!THEMES.includes(theme) || theme === current) {
+  if (theme === current) {
     return;
   }
   current = theme;
@@ -71,7 +69,6 @@ export function setTheme(theme: Theme): void {
   try {
     localStorage.setItem(STORAGE_KEY, theme);
   } catch {
-    // Nothing to persist to; the choice still applies for this page.
   }
 
   applyThemeTo(document.documentElement);
