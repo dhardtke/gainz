@@ -68,8 +68,7 @@ export function setTheme(theme: Theme): void {
 
   try {
     localStorage.setItem(STORAGE_KEY, theme);
-  } catch {
-  }
+  } catch {}
 
   applyThemeTo(document.documentElement);
   window.dispatchEvent(new CustomEvent(EVENT, { detail: { theme } }));
