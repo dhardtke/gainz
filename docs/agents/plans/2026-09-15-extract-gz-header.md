@@ -4,7 +4,7 @@ git_commit: 748297973a1d9a8de6d6a0d30c6ddc2793bad698
 branch: main
 topic: 'Extract gz-header out of gz-app'
 tags: [plan, frontend, gz-app, gz-header, refactor]
-status: ready
+status: complete
 ---
 
 # PLAN: Extract gz-header out of gz-app
@@ -150,7 +150,7 @@ Move the header into its own component and trim `gz-app` to the shell.
 
 **Tasks**:
 
-- [ ] `src/frontend/app/gz-header.component.ts` — create:
+- [x] `src/frontend/app/gz-header.component.ts` — create:
   ```ts
   import type { RawHtml } from '../ui/html.ts';
   import { define, GzElement } from '../ui/base.ts';
@@ -205,7 +205,7 @@ Move the header into its own component and trim `gz-app` to the shell.
   Move the loop body and the markup verbatim from `gz-app.component.ts:84-98` and `:130-166`.
   `super.connectedCallback()` renders, which runs `afterRender` and so the first sync; the
   subscription starts after it.
-- [ ] `src/frontend/app/gz-header.component.css` — create. Header comment describing the sticky
+- [x] `src/frontend/app/gz-header.component.css` — create. Header comment describing the sticky
       header. Move `gz-app.component.css:9-94` over, with the sticky declarations lifted onto the
       host and the nav rules still nested under `header nav`, so the prefix keeps outranking
       Pico's summary focus rules:
@@ -225,21 +225,21 @@ Move the header into its own component and trim `gz-app` to the shell.
     /* … unchanged … */
   }
   ```
-- [ ] `src/frontend/app/gz-app.component.ts` `template()` — replace the `<header>…</header>` block
+- [x] `src/frontend/app/gz-app.component.ts` `template()` — replace the `<header>…</header>` block
       with `<gz-header></gz-header>` and drop `navItems`.
-- [ ] `src/frontend/app/gz-app.component.ts` `#renderView` — delete the link loop, its comment and
+- [x] `src/frontend/app/gz-app.component.ts` `#renderView` — delete the link loop, its comment and
       the dropdown close, leaving the token bump, `scrollTo` and `#swapView`. Rewrite the JSDoc:
       it no longer updates the header; keep the point that the outgoing view stays put until the
       next one is ready.
-- [ ] `src/frontend/app/gz-app.component.ts:22-23` — the click-listener comment names the views'
+- [x] `src/frontend/app/gz-app.component.ts:22-23` — the click-listener comment names the views'
       and the header's shadow roots as what retargets the event.
-- [ ] `src/frontend/app/gz-app.component.ts` imports — replace `import './gz-theme-toggle.component.ts'`
+- [x] `src/frontend/app/gz-app.component.ts` imports — replace `import './gz-theme-toggle.component.ts'`
       with `import './gz-header.component.ts'`, and drop `isActive` from the router import.
-- [ ] `src/frontend/app/gz-app.component.css` — delete the moved `header` and `.brand` blocks; keep
+- [x] `src/frontend/app/gz-app.component.css` — delete the moved `header` and `.brand` blocks; keep
       `:host`, `main`, `footer`; change the header comment to "Application shell: header, centred
       content column, footer."
-- [ ] `src/backend/features/static/static.routes.test.ts:30` — `toBeGreaterThanOrEqual(12)`.
-- [ ] `docs/frontend.md`:
+- [x] `src/backend/features/static/static.routes.test.ts:30` — `toBeGreaterThanOrEqual(12)`.
+- [x] `docs/frontend.md`:
   - tree (`:11`) — `app/        gz-app, gz-header, gz-theme-toggle, router.ts, routes.ts`
   - `:23-24` — `app/` is the shell: `gz-app`, the `gz-header` it renders at the top with the
     `gz-theme-toggle` inside it, …
@@ -252,29 +252,29 @@ Move the header into its own component and trim `gz-app` to the shell.
   - `:86` — Back/Forward reach `gz-app` and `gz-header` through `onRouteChange`.
   - `:131-133` — "the other four components stay private" becomes five.
   - `:157` — the shell loaded up front is `gz-app`, `gz-header`, `gz-toast`, `gz-theme-toggle`.
-- [ ] `docs/styling-guidelines.md:27-28` — the hamburger `<summary>` is in `gz-header`.
+- [x] `docs/styling-guidelines.md:27-28` — the hamburger `<summary>` is in `gz-header`.
 
 **Automated Verification**:
 
-- [ ] `bun test src/backend/features/static/static.routes.test.ts` passes, including the stylesheet
+- [x] `bun test src/backend/features/static/static.routes.test.ts` passes, including the stylesheet
       beside `app/gz-header.component.ts`
-- [ ] `bun test` passes
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
+- [x] `bun test` passes
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
 - [ ] `bun run fmt:check` passes
 
 **Manual Verification**:
 
-- [ ] Wide and ≤ 560 px, light and dark: the header looks exactly as before — brand, links or
+- [x] Wide and ≤ 560 px, light and dark: the header looks exactly as before — brand, links or
       hamburger, divider, theme icon, bottom border.
-- [ ] Scrolling a long page (a workout with many sets) keeps the header stuck to the top over the
+- [x] Scrolling a long page (a workout with many sets) keeps the header stuck to the top over the
       content.
-- [ ] Clicking a header link navigates without a full reload; the current page is highlighted at
+- [x] Clicking a header link navigates without a full reload; the current page is highlighted at
       `/`, `/workouts/…` and `/exercises/…`, including after Back/Forward and on a hard reload of
       a deep link.
-- [ ] The narrow-screen menu opens, highlights the current page, and closes after picking a link
+- [x] The narrow-screen menu opens, highlights the current page, and closes after picking a link
       and after Back/Forward.
-- [ ] The theme toggle still flips the theme and keeps focus.
+- [x] The theme toggle still flips the theme and keeps focus.
 
 ## Implementation Notes
 
