@@ -4,7 +4,7 @@ git_commit: 0d1744d67ceb7c5d02c1207a207ca96cc613f39b
 branch: main
 topic: 'Use # names instead of the private modifier'
 tags: [plan, typescript, oxlint, backend, frontend, coding-guidelines]
-status: ready
+status: complete
 ---
 
 # PLAN: Use # names instead of the private modifier
@@ -197,46 +197,46 @@ Flip the rule, convert every `private` and parameter property, and record the co
 
 **Tasks**:
 
-- [ ] `.oxlintrc.json`: change `typescript/parameter-properties` to `"prefer": "class-property"`.
-- [ ] Run `bun run lint` and confirm it reports exactly the 22 `parameter-properties` errors listed
+- [x] `.oxlintrc.json`: change `typescript/parameter-properties` to `"prefer": "class-property"`.
+- [x] Run `bun run lint` and confirm it reports exactly the 22 `parameter-properties` errors listed
       under Current State, and no other new errors.
-- [ ] `src/backend/http/errors.ts` and `src/frontend/ui/html.ts`: replace the public parameter
+- [x] `src/backend/http/errors.ts` and `src/frontend/ui/html.ts`: replace the public parameter
       properties with public `readonly` fields assigned in the constructor. In `HttpError`, assign
       the fields after `super(message)`.
-- [ ] `src/backend/features/exercises/`: in `exercises.facade.ts`,
+- [x] `src/backend/features/exercises/`: in `exercises.facade.ts`,
       `internal/exercise.repository.ts` and `internal/exercise.controller.ts`, replace each
       `private readonly` parameter property with a `readonly #name` field assigned in the
       constructor, rename `validateCreate` / `validateEdit` to `#validateCreate` /
       `#validateEdit`, and update every `this.name` use to `this.#name`.
-- [ ] `src/backend/features/workouts/`: the same in `workouts.facade.ts` (both classes),
+- [x] `src/backend/features/workouts/`: the same in `workouts.facade.ts` (both classes),
       `internal/workout.repository.ts`, `internal/set.repository.ts` (keeping the constructor doc
       comment), `internal/workout.controller.ts` and `internal/set.controller.ts`.
-- [ ] `src/backend/features/stats/`: the same in `stats.facade.ts`,
+- [x] `src/backend/features/stats/`: the same in `stats.facade.ts`,
       `internal/stats.repository.ts` and `internal/stats.controller.ts`.
-- [ ] `src/backend/features/static/internal/static.controller.ts`: `private async module` →
+- [x] `src/backend/features/static/internal/static.controller.ts`: `private async module` →
       `async #module`, and `this.module(candidate)` → `this.#module(candidate)`.
-- [ ] `src/frontend/features/`: the same parameter-property conversion in
+- [x] `src/frontend/features/`: the same parameter-property conversion in
       `exercises/exercises.facade.ts`, `workouts/workouts.facade.ts` (both classes) and
       `stats/stats.facade.ts`.
-- [ ] `docs/coding-guidelines.md`: after the `override` paragraph, add a paragraph along the lines
+- [x] `docs/coding-guidelines.md`: after the `override` paragraph, add a paragraph along the lines
       of: "Private class members use `#` names, never TypeScript's `private` modifier. A `#` name
       is private at runtime as well as to the compiler, and it cannot collide with a member a
       class inherits — which matters for components, whose base is `HTMLElement`. Since a `#`
       name cannot be a parameter property, `bun run lint` bans parameter properties altogether
       (`typescript/parameter-properties`); a `private` method or field in a class body is not
       caught by any rule."
-- [ ] `docs/backend.md:101`: "the facade's own private `validateCreate` / `validateEdit` methods"
+- [x] `docs/backend.md:101`: "the facade's own private `validateCreate` / `validateEdit` methods"
       → "the facade's own `#validateCreate` / `#validateEdit` methods".
 
 **Automated Verification**:
 
-- [ ] `bun run lint` passes.
-- [ ] `bun run typecheck` passes.
-- [ ] `bun run fmt:check` passes.
-- [ ] `bun test` passes, including the backend route tests that exercise every controller,
+- [x] `bun run lint` passes.
+- [x] `bun run typecheck` passes.
+- [x] `bun run fmt:check` passes.
+- [x] `bun test` passes, including the backend route tests that exercise every controller,
       facade and repository, and `src/backend/features/static/static.routes.test.ts` for
       `#module`.
-- [ ] `(Get-ChildItem src -Recurse -Filter *.ts | Select-String '\bprivate\s').Count` is 1 — the
+- [x] `(Get-ChildItem src -Recurse -Filter *.ts | Select-String '\bprivate\s').Count` is 1 — the
       prose comment in `src/backend/features/exercises/internal/exercise.translator.ts`.
 
 ## Implementation Notes
