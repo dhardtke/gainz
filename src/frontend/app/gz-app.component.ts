@@ -1,10 +1,10 @@
 import type { RawHtml } from '../ui/html.ts';
 import { define, GzElement } from '../ui/base.ts';
 import { html } from '../ui/html.ts';
-import { currentPath, isActive, linkPath, matchRoute, navigate, onRouteChange } from './router.ts';
+import { currentPath, linkPath, matchRoute, navigate, onRouteChange } from './router.ts';
 import { ROUTES } from './routes.ts';
 import { toastError } from '../ui/gz-toast.component.ts';
-import './gz-theme-toggle.component.ts';
+import './gz-header.component.ts';
 
 /**
  * Application shell: a persistent header plus a view slot.
@@ -19,8 +19,8 @@ class GzAppComponent extends GzElement {
   constructor() {
     super();
     this.addEventListener('click', (event) => {
-      // Links sit in the views' shadow roots, which retarget event.target to the view's host by the
-      // time the click reaches here; composedPath() still holds the anchor itself.
+      // Links sit in the views' and the header's shadow roots, which retarget event.target to their
+      // host by the time the click reaches here; composedPath() still holds the anchor itself.
       const anchor = event.composedPath().find((target): target is HTMLAnchorElement => target instanceof HTMLAnchorElement);
       if (!anchor) {
         return;
@@ -64,12 +64,10 @@ class GzAppComponent extends GzElement {
   }
 
   /**
-   * Points the shell at the active route.
+   * Points the view slot at the active route.
    *
-   * The header is updated synchronously so a click is answered at once, and the
-   * view follows when it is ready. On a route's first visit its script and
-   * stylesheet still have to arrive; until they do, the outgoing view stays put
-   * rather than the page going blank.
+   * On a route's first visit its script and stylesheet still have to arrive;
+   * until they do, the outgoing view stays put rather than the page going blank.
    */
   #renderView(): void {
     const path = currentPath();
@@ -79,23 +77,6 @@ class GzAppComponent extends GzElement {
     // re-entrantly.
     const token = ++this.#renderToken;
 
-    // Pico's nav hides the underline its aria-current styling relies on, so the
-    // current page also swaps secondary for contrast to stand out.
-    const links = this.$$<HTMLAnchorElement>('nav a[data-path]');
-    for (const link of links) {
-      const active = isActive(link.dataset.path ?? '');
-      link.classList.toggle('contrast', active);
-      link.classList.toggle('secondary', !active);
-      if (active) {
-        link.setAttribute('aria-current', 'page');
-      } else {
-        link.removeAttribute('aria-current');
-      }
-    }
-    const menu = this.$<HTMLDetailsElement>('details.dropdown');
-    if (menu) {
-      menu.open = false;
-    }
     window.scrollTo({ top: 0, behavior: 'instant' });
 
     void this.#swapView(path, token);
@@ -125,45 +106,8 @@ class GzAppComponent extends GzElement {
   }
 
   template(): RawHtml {
-    const navItems = ROUTES.flatMap((route) => (route.nav ? [route.nav] : []));
     return html`
-      <header>
-        <nav class="container">
-          <ul>
-            <li>
-              <a class="brand" href="/"><strong>gainz</strong><span class="tag">lifting log</span></a>
-            </li>
-          </ul>
-          <ul class="links">
-            ${navItems.map((item) => html`<li><a class="secondary" href="${item.path}" data-path="${item.path}">${item.label}</a></li>`)}
-          </ul>
-          <ul class="menu">
-            <li>
-              <details class="dropdown">
-                <summary aria-label="Menu">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                </summary>
-                <ul dir="rtl">
-                  ${navItems.map((item) => html`<li><a class="secondary" href="${item.path}" data-path="${item.path}">${item.label}</a></li>`)}
-                </ul>
-              </details>
-            </li>
-          </ul>
-          <ul class="icons">
-            <li><gz-theme-toggle></gz-theme-toggle></li>
-          </ul>
-        </nav>
-      </header>
+      <gz-header></gz-header>
 
       <main class="container"></main>
 
