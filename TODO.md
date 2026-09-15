@@ -3,7 +3,6 @@
 ## Architecture / Code Style
 
 - Import maps to have hashed filenames
-- Have DTOs that are shared between FE / BE
 - Logging
 
 ## Features
@@ -13,7 +12,6 @@
 
 ## UI / UX
 
-- Use https://picocss.com/docs/nav instead of buttons
 - Breadcrumbs through the whole app
 - PWA
 
