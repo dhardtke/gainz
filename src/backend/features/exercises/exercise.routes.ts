@@ -1,9 +1,10 @@
-import type { ExerciseFacade } from './exercises.facade.ts';
+import type { DB } from '../../db/db.ts';
+import { createExerciseFacade } from './exercises.facade.ts';
 import type { RouteTable } from '../../http/routing.ts';
 import { ExerciseController } from './internal/exercise.controller.ts';
 
-export function exerciseRoutes(exercises: ExerciseFacade): RouteTable {
-  const controller = new ExerciseController(exercises);
+export function exerciseRoutes(db: DB): RouteTable {
+  const controller = new ExerciseController(createExerciseFacade(db));
 
   return {
     '/api/exercises': {

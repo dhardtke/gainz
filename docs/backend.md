@@ -105,12 +105,13 @@ lives in the controller, and the facade is where it goes if it ever needs to mov
 The facades take request DTOs and publish rows, so the rule above it is unchanged: the controller
 translates what the facade returns through its feature's translator, and the camelCase rename is still what the
 compiler checks.
-`features/facades.ts` is the single composition root — it declares `Facades` (a parameter object
-with no methods of its own) and `createFacades(db)` over the three per-feature factories, and it is
-what `http/server.ts` and `src/scripts/seed.ts` each call. `seed.ts` hands the facades camelCase
-DTOs, so seeded data passes the same validation as the API.
-`allRoutes` then hands each route factory only the facades it uses: `workoutRoutes(workouts, sets)`,
-`exerciseRoutes(exercises)`, and so on, and each factory builds its own controller from them. `meta`
+There is no composition root. Each route factory takes the database and builds what it uses:
+`workoutRoutes(db)` and `setRoutes(db)` each call `createWorkoutFacades(db)`, `exerciseRoutes(db)`
+calls `createExerciseFacade(db)`, and `statsRoutes(db)` calls `createStatsFacade(db)`, then each
+builds its controller from those facades. `allRoutes(db)` only passes the database along. Building
+the workouts facades twice costs nothing, because a repository holds only its connection.
+`src/scripts/seed.ts` calls the same three factories and hands the facades camelCase DTOs, so
+seeded data passes the same validation as the API. `meta`
 and `static` have controllers but no facade: there is no table behind either. All SQL lives in a feature's `internal/`; `db/sql.ts` keeps
 only what names no table — `buildUpdate`, `isUniqueViolation` and `isForeignKeyViolation`.
 Repositories reference each other only with `import type` and take what they need through their

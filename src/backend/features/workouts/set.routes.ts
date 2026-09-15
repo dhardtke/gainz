@@ -1,9 +1,10 @@
-import type { SetFacade } from './workouts.facade.ts';
+import type { DB } from '../../db/db.ts';
 import type { RouteTable } from '../../http/routing.ts';
 import { SetController } from './internal/set.controller.ts';
+import { createWorkoutFacades } from './workouts.facade.ts';
 
-export function setRoutes(sets: SetFacade): RouteTable {
-  const controller = new SetController(sets);
+export function setRoutes(db: DB): RouteTable {
+  const controller = new SetController(createWorkoutFacades(db).sets);
   return {
     '/api/sets/:id': {
       GET: (req) => controller.show(req),

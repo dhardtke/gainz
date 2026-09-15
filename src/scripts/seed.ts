@@ -4,7 +4,9 @@
  * nothing if the database already holds workouts.
  */
 import { DEFAULT_DB_PATH, openDatabase } from '../backend/db/db.ts';
-import { createFacades } from '../backend/features/facades.ts';
+import { createExerciseFacade } from '../backend/features/exercises/exercises.facade.ts';
+import { createStatsFacade } from '../backend/features/stats/stats.facade.ts';
+import { createWorkoutFacades } from '../backend/features/workouts/workouts.facade.ts';
 import type { ExerciseId, Iso8601Date } from '../shared/flavors.ts';
 
 const EXERCISES = [
@@ -49,7 +51,9 @@ function isoDaysAgo(days: number): Iso8601Date {
 
 function main(): void {
   const db = openDatabase(DEFAULT_DB_PATH);
-  const { exercises, workouts, sets, stats } = createFacades(db);
+  const exercises = createExerciseFacade(db);
+  const { workouts, sets } = createWorkoutFacades(db);
+  const stats = createStatsFacade(db);
 
   if (workouts.count() > 0) {
     console.log('Database already contains workouts — nothing seeded.');
