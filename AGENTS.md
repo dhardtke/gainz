@@ -40,7 +40,7 @@ Tests sit beside the module they exercise. `bun run lint` enforces the import bo
 Details live in `docs/`:
 
 - `docs/backend.md` — features, ports/internal, routes, repositories, migrations, the data model, tests
-- `docs/frontend.md` — features and facades, components, import boundaries, loading, theming, and
+- `docs/frontend.md` — features and facades, components, import boundaries, loading, theming, tests, and
   why a module's URL is its path
 - `docs/coding-guidelines.md` — pinning, quote style, commits on `main`
 - `docs/styling-guidelines.md` — Pico, no CSS in JavaScript, no font sizes
