@@ -15,10 +15,14 @@ export type EditWorkout = Partial<CreateWorkout>;
 const FIELDS = ['performed_on', 'title', 'notes'] as const;
 
 export class WorkoutRepository {
-  constructor(private readonly db: DB) {}
+  readonly #db: DB;
+
+  constructor(db: DB) {
+    this.#db = db;
+  }
 
   list(limit: number, offset: number): WorkoutWithStats[] {
-    return this.db
+    return this.#db
       .query<WorkoutWithStats, [number, number]>(
         `SELECT w.id, w.performed_on, w.title, w.notes, w.created_at,
                 COUNT(s.id)                         AS set_count,
@@ -35,11 +39,11 @@ export class WorkoutRepository {
   }
 
   count(): number {
-    return this.db.query<{ n: number }, []>('SELECT COUNT(*) AS n FROM workouts').get()?.n ?? 0;
+    return this.#db.query<{ n: number }, []>('SELECT COUNT(*) AS n FROM workouts').get()?.n ?? 0;
   }
 
   get(id: WorkoutId): Workout | null {
-    return this.db.query<Workout, [WorkoutId]>('SELECT id, performed_on, title, notes, created_at FROM workouts WHERE id = ?').get(id);
+    return this.#db.query<Workout, [WorkoutId]>('SELECT id, performed_on, title, notes, created_at FROM workouts WHERE id = ?').get(id);
   }
 
   require(id: WorkoutId): Workout {
@@ -56,13 +60,13 @@ export class WorkoutRepository {
    * leaving an empty workout behind.
    */
   create(input: CreateWorkout, options: { copyFrom?: WorkoutId } = {}): Workout {
-    return this.db.transaction(() => {
+    return this.#db.transaction(() => {
       const { copyFrom } = options;
       if (copyFrom !== undefined) {
         this.require(copyFrom);
       }
 
-      const row = this.db
+      const row = this.#db
         .query<Workout, [Iso8601Date, string | null, string | null]>(
           `INSERT INTO workouts (performed_on, title, notes) VALUES (?, ?, ?)
            RETURNING id, performed_on, title, notes, created_at`,
@@ -73,7 +77,7 @@ export class WorkoutRepository {
       }
 
       if (copyFrom !== undefined) {
-        this.db
+        this.#db
           .query<unknown, [WorkoutId, WorkoutId]>(
             `INSERT INTO sets (workout_id, exercise_id, reps, weight, notes, position)
              SELECT ?, exercise_id, reps, weight, notes, position
@@ -91,13 +95,13 @@ export class WorkoutRepository {
 
     const update = buildUpdate('workouts', FIELDS, patch);
     if (update) {
-      this.db.query(update.sql).run(...update.values, id);
+      this.#db.query(update.sql).run(...update.values, id);
     }
     return this.require(id);
   }
 
   delete(id: WorkoutId): void {
     this.require(id);
-    this.db.query('DELETE FROM workouts WHERE id = ?').run(id);
+    this.#db.query('DELETE FROM workouts WHERE id = ?').run(id);
   }
 }

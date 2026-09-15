@@ -42,7 +42,7 @@ export class StaticController {
     const file = Bun.file(candidate);
     if (await file.exists()) {
       if (extname(candidate) === '.ts') {
-        return this.module(candidate);
+        return this.#module(candidate);
       }
       // No explicit Content-Type: `new Response(Bun.file(x))` carries the type Bun infers from
       // the extension, off a complete MIME database — .svg → image/svg+xml, .woff2 → font/woff2,
@@ -64,7 +64,7 @@ export class StaticController {
   }
 
   /** The frontend is TypeScript on disk and JavaScript on the wire. */
-  private async module(path: string): Promise<Response> {
+  async #module(path: string): Promise<Response> {
     const code = await transpileModule(path);
     if (code === null) {
       return new Response(`Could not transpile ${basename(path)}`, { status: 500 });

@@ -3,13 +3,15 @@ import type { ErrorDto } from '../../shared/dto/error.ts';
 
 /** An error carrying an HTTP status code; turned into a JSON error body by the server. */
 export class HttpError extends Error {
-  constructor(
-    readonly status: number,
-    message: string,
-    readonly details?: unknown,
-  ) {
+  readonly status: number;
+
+  readonly details: unknown;
+
+  constructor(status: number, message: string, details?: unknown) {
     super(message);
     this.name = 'HttpError';
+    this.status = status;
+    this.details = details;
   }
 }
 

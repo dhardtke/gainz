@@ -7,10 +7,14 @@ import type { Summary } from './ports/stats.ts';
  * the module is that the repository behind it is named nowhere else. `StatsController` holds it.
  */
 export class StatsFacade {
-  constructor(private readonly stats: StatsRepository) {}
+  readonly #stats: StatsRepository;
+
+  constructor(stats: StatsRepository) {
+    this.#stats = stats;
+  }
 
   summary(): Summary {
-    return this.stats.summary();
+    return this.#stats.summary();
   }
 }
 
