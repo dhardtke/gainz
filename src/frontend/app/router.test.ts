@@ -1,22 +1,30 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
 import { useGlobals } from '../testing.ts';
-import { currentPath, isActive, matchRoute, navigate, onRouteChange } from './router.ts';
-import type { RouteDef } from './router.ts';
+import { currentPath, isActive, linkPath, matchRoute, navigate, onRouteChange } from './router.ts';
+import type { LinkClick, LinkTarget, RouteDef } from './router.ts';
 
 const stub = useGlobals();
 
-let hashChanges: number;
+let pushes: number;
+let popStates: number;
+let events: EventTarget;
 
 beforeEach(() => {
-  hashChanges = 0;
-  const events = new EventTarget();
-  // A plain object: assigning its hash fires nothing, which is what the tests below rely on to
-  // tell navigate()'s own hashchange apart from the browser's.
-  stub('location', { hash: '' });
+  pushes = 0;
+  popStates = 0;
+  events = new EventTarget();
+  const fakeLocation = { pathname: '/', origin: 'http://gainz.test' };
+  stub('location', fakeLocation);
+  stub('history', {
+    pushState(_state: unknown, _title: string, url: string): void {
+      pushes++;
+      fakeLocation.pathname = url;
+    },
+  });
   stub('window', events);
-  stub('HashChangeEvent', class extends Event {});
-  events.addEventListener('hashchange', () => {
-    hashChanges++;
+  stub('PopStateEvent', class extends Event {});
+  events.addEventListener('popstate', () => {
+    popStates++;
   });
 });
 
@@ -45,30 +53,24 @@ describe('matchRoute', () => {
 });
 
 describe('currentPath', () => {
-  test('is the hash without its #', () => {
-    location.hash = '#/workouts/3';
+  test('is the location pathname', () => {
+    location.pathname = '/workouts/3';
 
     expect(currentPath()).toBe('/workouts/3');
-  });
-
-  test.each(['', '#'])('is / for the hash %p', (hash) => {
-    location.hash = hash;
-
-    expect(currentPath()).toBe('/');
   });
 });
 
 describe('isActive', () => {
   test('/ is active only on the dashboard itself, not under every route', () => {
-    location.hash = '#/';
+    location.pathname = '/';
     expect(isActive('/')).toBe(true);
 
-    location.hash = '#/workouts';
+    location.pathname = '/workouts';
     expect(isActive('/')).toBe(false);
   });
 
   test('a section stays active on its detail pages', () => {
-    location.hash = '#/workouts/3';
+    location.pathname = '/workouts/3';
 
     expect(isActive('/workouts')).toBe(true);
     expect(isActive('/exercises')).toBe(false);
@@ -76,21 +78,32 @@ describe('isActive', () => {
 });
 
 describe('navigate', () => {
-  test('to another route sets the hash and leaves the browser to fire hashchange', () => {
-    location.hash = '#/';
-
+  test('to another route pushes that path once and dispatches popstate once', () => {
     navigate('/workouts');
 
-    expect(location.hash).toBe('#/workouts');
-    expect(hashChanges).toBe(0);
+    expect(location.pathname).toBe('/workouts');
+    expect(pushes).toBe(1);
+    expect(popStates).toBe(1);
   });
 
-  test('to the current route fires hashchange itself, so the view refreshes', () => {
-    location.hash = '#/workouts';
+  test('to the current route pushes nothing but still dispatches popstate, so the view refreshes', () => {
+    location.pathname = '/workouts';
 
     navigate('/workouts');
 
-    expect(hashChanges).toBe(1);
+    expect(pushes).toBe(0);
+    expect(popStates).toBe(1);
+  });
+
+  test('a popstate the browser fires on Back or Forward reaches onRouteChange', () => {
+    let heard = 0;
+    onRouteChange(() => {
+      heard++;
+    });
+
+    events.dispatchEvent(new Event('popstate'));
+
+    expect(heard).toBe(1);
   });
 
   test('onRouteChange returns a function that stops listening', () => {
@@ -98,12 +111,63 @@ describe('navigate', () => {
     const stop = onRouteChange(() => {
       heard++;
     });
-    location.hash = '#/workouts';
 
     navigate('/workouts');
     stop();
     navigate('/workouts');
 
     expect(heard).toBe(1);
+  });
+});
+
+describe('linkPath', () => {
+  const origin = 'http://gainz.test';
+  const click: LinkClick = {
+    button: 0,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false,
+    altKey: false,
+    defaultPrevented: false,
+  };
+  const link: LinkTarget = { href: `${origin}/workouts/3`, target: '', download: false };
+
+  test('a plain left click on an in-app link routes to its path', () => {
+    expect(linkPath(click, link, origin)).toBe('/workouts/3');
+    expect(linkPath(click, { ...link, href: `${origin}/` }, origin)).toBe('/');
+  });
+
+  test.each(['ctrlKey', 'metaKey', 'shiftKey', 'altKey'] as const)('%s leaves it to the browser', (key) => {
+    expect(linkPath({ ...click, [key]: true }, link, origin)).toBeNull();
+  });
+
+  test('a non-primary button or an already prevented click leaves it to the browser', () => {
+    expect(linkPath({ ...click, button: 1 }, link, origin)).toBeNull();
+    expect(linkPath({ ...click, defaultPrevented: true }, link, origin)).toBeNull();
+  });
+
+  test('a target other than _self, or download, leaves it to the browser', () => {
+    expect(linkPath(click, { ...link, target: '_blank' }, origin)).toBeNull();
+    expect(linkPath(click, { ...link, target: '_self' }, origin)).toBe('/workouts/3');
+    expect(linkPath(click, { ...link, download: true }, origin)).toBeNull();
+  });
+
+  test('another origin leaves it to the browser', () => {
+    expect(linkPath(click, { ...link, href: 'http://elsewhere.test/workouts/3' }, origin)).toBeNull();
+  });
+
+  test('the API is not a route, though a path merely starting with api is', () => {
+    expect(linkPath(click, { ...link, href: `${origin}/api` }, origin)).toBeNull();
+    expect(linkPath(click, { ...link, href: `${origin}/api/health` }, origin)).toBeNull();
+    expect(linkPath(click, { ...link, href: `${origin}/apiary` }, origin)).toBe('/apiary');
+  });
+
+  test('a file leaves it to the browser', () => {
+    expect(linkPath(click, { ...link, href: `${origin}/vendor/pico.css` }, origin)).toBeNull();
+  });
+
+  test('a query string or a fragment leaves it to the browser', () => {
+    expect(linkPath(click, { ...link, href: `${origin}/workouts?x=1` }, origin)).toBeNull();
+    expect(linkPath(click, { ...link, href: `${origin}/workouts#top` }, origin)).toBeNull();
   });
 });

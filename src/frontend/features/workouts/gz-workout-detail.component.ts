@@ -364,7 +364,7 @@ export class GzWorkoutDetailComponent extends GzElement {
       return html`
         <div class="stack">
           <p class="error-text">${this.#state.message}</p>
-          <p><a href="#/workouts">Back to all workouts</a></p>
+          <p><a href="/workouts">Back to all workouts</a></p>
         </div>
       `;
     }
@@ -419,7 +419,7 @@ export class GzWorkoutDetailComponent extends GzElement {
                         ${breakdown.map(
                           (entry) => html`
                             <tr>
-                              <td class="name"><a href="#/exercises/${entry.id}">${entry.name}</a></td>
+                              <td class="name"><a href="/exercises/${entry.id}">${entry.name}</a></td>
                               <td class="num">${entry.sets}</td>
                               <td class="num">${entry.reps}</td>
                               <td class="num">${formatNumber(entry.top)} ${UNIT}</td>

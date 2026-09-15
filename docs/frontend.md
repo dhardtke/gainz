@@ -1,9 +1,9 @@
 # Frontend (`src/frontend/`)
 
 `index.html` is the only page: it links Pico and `ui/app.css`, applies a stored theme in a small
-inline script before the first paint, and loads `main.ts` as a module. `main.ts` imports the
-`app/gz-app.component.ts` shell and redirects a hashless visit to `#/`, so the address bar always shows a
-real route.
+inline script before the first paint, and loads `main.ts` as a module. `main.ts` only imports the
+`app/gz-app.component.ts` shell. Routes are real paths such as `/workouts/3`, and the server answers
+each with `index.html` because it carries no extension.
 
 ```
 src/frontend/
@@ -21,7 +21,7 @@ src/frontend/
 ```
 
 What belongs to no feature sits in three directories. `app/` is the shell: `gz-app`, the
-`gz-theme-toggle` in its header, `router.ts`, a generic hash matcher that names no route, and
+`gz-theme-toggle` in its header, `router.ts`, a generic path router that names no route, and
 `routes.ts`, which spreads the features' route lists into the one `ROUTES` table. `http/` is the request
 plumbing: `http.ts` holds the `get`/`post`/`patch`/`remove` helpers over `fetch`, and `errors.ts`
 holds `ApiError` and `errorMessage`, kept apart so a component can catch an error without being
@@ -68,6 +68,15 @@ route it is; when nothing matches it shows its own not-found message. A route ma
 spreads the features — so adding a list page needs no edit in `app/` beyond a new feature's spread. A route file only
 `import type`s `RouteDef` from `app/router.ts`, so it loads up front at almost no cost and reaches
 its views only through `import()`.
+
+Links are plain `<a href="/…">`. `gz-app` listens for clicks on its host, finds the anchor through
+`composedPath()` because the views' shadow roots retarget the event, and routes it through
+`navigate()` when `router.ts`'s `linkPath` says it is a plain same-origin click on an
+extension-less, non-`/api` path without query or fragment; anything else — a modifier click, a
+`target`, `download` — is left to the browser. `navigate()` pushes a history entry (none when
+already on that path) and dispatches `popstate`, so links, `navigate()` and Back/Forward all reach
+`gz-app` through the one `onRouteChange` listener. A route path must therefore stay extension-less
+and must not name a file under `src/frontend/`.
 
 `bun run lint` holds five import boundaries in `.oxlintrc.json`. A module under `features/<a>/` may
 not import `features/<b>/internal/`. Nothing under `app/`, `ui/`, `http/` or `main.ts` may import

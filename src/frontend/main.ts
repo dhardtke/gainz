@@ -4,8 +4,3 @@
  * the way out and the browser loads one module per file.
  */
 import './app/gz-app.component.ts';
-
-// Land on the dashboard so the address bar always shows a real route.
-if (!location.hash) {
-  location.replace('#/');
-}

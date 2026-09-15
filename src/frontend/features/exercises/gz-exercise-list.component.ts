@@ -127,7 +127,7 @@ export class GzExerciseListComponent extends GzElement {
     return html`
       <tr>
         <td class="name">
-          <a href="#/exercises/${exercise.id}">${exercise.name}</a>
+          <a href="/exercises/${exercise.id}">${exercise.name}</a>
           ${exercise.notes ? html`<div class="muted">${exercise.notes}</div>` : ''}
         </td>
         <td>${exercise.muscleGroup ?? html`<span class="muted">–</span>`}</td>
