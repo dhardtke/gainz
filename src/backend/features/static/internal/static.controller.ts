@@ -1,8 +1,15 @@
 import { basename, extname, resolve } from 'node:path';
+import type { DevFacade } from '../../dev/dev.facade.ts';
 import { FRONTEND_DIR, resolveStaticPath, resolveVendorPath } from './paths.ts';
 import { transpileModule } from './transpile.ts';
 
 export class StaticController {
+  readonly #dev: DevFacade;
+
+  constructor(dev: DevFacade) {
+    this.#dev = dev;
+  }
+
   async vendor(req: Request): Promise<Response> {
     const vendor = resolveVendorPath(new URL(req.url).pathname);
     if (!vendor) {
@@ -37,6 +44,10 @@ export class StaticController {
       if (extname(candidate) === '.ts') {
         return this.#module(req, candidate);
       }
+      // `/` arrives here too, rewritten to `index.html` above.
+      if (extname(candidate) === '.html') {
+        return this.#html(req, file);
+      }
       // `file.type` is Bun's MIME database lookup, so no hand-written map is kept here.
       return this.#respond(req, await file.bytes(), { 'Content-Type': file.type });
     }
@@ -46,7 +57,7 @@ export class StaticController {
     if (extname(pathname) === '' && !isDirectory) {
       const index = Bun.file(resolve(FRONTEND_DIR, 'index.html'));
       if (await index.exists()) {
-        return this.#respond(req, await index.bytes(), { 'Content-Type': index.type });
+        return this.#html(req, index);
       }
     }
     return new Response('Not found', { status: 404 });
@@ -59,6 +70,12 @@ export class StaticController {
       return new Response(`Could not transpile ${basename(path)}`, { status: 500 });
     }
     return this.#respond(req, code, { 'Content-Type': 'text/javascript;charset=utf-8' });
+  }
+
+  /** A page, with the hot-reload client injected in development — before hashing, so the ETag covers it. */
+  async #html(req: Request, file: Bun.BunFile): Promise<Response> {
+    const body = await this.#dev.injectClient(await file.bytes());
+    return this.#respond(req, body, { 'Content-Type': file.type });
   }
 
   /** Assets carry a hash-free URL, so every response is revalidated against its content hash. */

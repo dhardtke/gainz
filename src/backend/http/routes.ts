@@ -1,4 +1,5 @@
 import type { DB } from '../db/db.ts';
+import { devRoutes } from '../features/dev/dev.routes.ts';
 import { exerciseRoutes } from '../features/exercises/exercise.routes.ts';
 import { metaRoutes } from '../features/meta/meta.routes.ts';
 import { setRoutes } from '../features/workouts/set.routes.ts';
@@ -24,6 +25,7 @@ export function allRoutes(db: DB): RouteTable {
     ...exerciseRoutes(db),
     ...workoutRoutes(db),
     ...setRoutes(db),
+    ...devRoutes(),
     ...staticRoutes(),
   };
 }
