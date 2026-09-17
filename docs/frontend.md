@@ -8,6 +8,7 @@ each with `index.html` because it carries no extension.
 ```
 src/frontend/
 ├── index.html  main.ts
+├── dev/        hot.ts (development only)
 ├── app/        gz-app, gz-header, gz-theme-toggle, router.ts, routes.ts
 ├── http/       http.ts (get/post/patch/remove), errors.ts (ApiError, errorMessage)
 ├── ui/         base.ts, html.ts, styles.ts, theme.ts, format.ts, app.css, shared.css, gz-toast, gz-tile
@@ -20,7 +21,9 @@ src/frontend/
         └── internal/  stats.api.ts
 ```
 
-What belongs to no feature sits in three directories. `app/` is the shell: `gz-app`, the
+What belongs to no feature sits in four directories. `dev/` holds `hot.ts`, the hot-reload client
+the server injects only in development; nothing imports it, and it is deliberately not one of the
+import boundaries below. `app/` is the shell: `gz-app`, the
 `gz-header` it renders at the top with the `gz-theme-toggle` inside it, `router.ts`, a generic path router that names no route, and
 `routes.ts`, which spreads the features' route lists into the one `ROUTES` table. `http/` is the request
 plumbing: `http.ts` holds the `get`/`post`/`patch`/`remove` helpers over `fetch`, and `errors.ts`

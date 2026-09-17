@@ -1,0 +1,28 @@
+import { describe, expect, test } from 'bun:test';
+import { changeFor } from './changes.ts';
+
+describe('changeFor', () => {
+  test('a stylesheet swaps at its URL', () => {
+    expect(changeFor('features/workouts/internal/gz-set-row.component.css')).toEqual({
+      swap: '/features/workouts/internal/gz-set-row.component.css',
+    });
+  });
+
+  test('a Windows path is turned into a URL', () => {
+    expect(changeFor('ui\\gz-tile.component.css')).toEqual({ swap: '/ui/gz-tile.component.css' });
+  });
+
+  test('a module and the index page reload', () => {
+    expect(changeFor('app\\router.ts')).toEqual({ reload: '/app/router.ts' });
+    expect(changeFor('index.html')).toEqual({ reload: '/index.html' });
+  });
+
+  test('a bare directory name is ignored', () => {
+    expect(changeFor('ui')).toBeNull();
+  });
+
+  test('an unknown extension is ignored', () => {
+    expect(changeFor('ui\\gz-tile.component.css~')).toBeNull();
+    expect(changeFor('ui/.gz-tile.component.css.swp')).toBeNull();
+  });
+});

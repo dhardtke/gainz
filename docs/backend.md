@@ -1,7 +1,7 @@
 # Backend (`src/backend/`)
 
 The backend is organised by feature, not by layer. `features/` holds one directory per thing the
-app is about — `exercises/`, `workouts/`, `stats/`, `meta/`, `static/` — and each owns its routes,
+app is about — `exercises/`, `workouts/`, `stats/`, `meta/`, `static/`, `dev/` — and each owns its routes,
 its SQL and its mapping end to end, the mapping reached through its controllers and its facade. What is left outside `features/` is only what belongs to no
 feature: `db/` (the connection and its PRAGMAs in `db.ts`, the schema in `migrations.ts` and
 `migrations/`, and the table-agnostic statement helpers in `db/sql.ts`), `http/` (`routing.ts` for
@@ -81,7 +81,9 @@ reads the way the router dispatches.
 
 **Every data-owning feature has a front door.** Each publishes exactly one facade module at its
 root — `exercises/exercises.facade.ts`, `workouts/workouts.facade.ts`, `stats/stats.facade.ts` —
-holding a `<Entity>Facade` per repository. A route handler holds its controller, and the controller
+holding a `<Entity>Facade` per repository. A facade is not reserved for data, though: `static` and
+`dev` publish one too, with no table behind either, because another feature needs something from
+them and the house rule is that a feature is reached through its facade. A route handler holds its controller, and the controller
 holds the facades. A repository is named only by its own feature's facade, and constructed only by
 that facade's factory, so `features/workouts/internal/` is the whole world in which `SetRepository`
 exists as a name. That is what a facade buys: a published surface narrower than the repository
@@ -108,8 +110,10 @@ calls `createExerciseFacade(db)`, and `statsRoutes(db)` calls `createStatsFacade
 builds its controller from those facades. `allRoutes(db)` only passes the database along. Building
 the workouts facades twice costs nothing, because a repository holds only its connection.
 `src/scripts/seed.ts` calls the same three factories and hands the facades camelCase DTOs, so
-seeded data passes the same validation as the API. `meta`
-and `static` have controllers but no facade: there is no table behind either. All SQL lives in a feature's `internal/`; `db/sql.ts` keeps
+seeded data passes the same validation as the API. `meta` has a controller but no facade, since
+nothing else needs it. `static.facade.ts` publishes one method, `webRoot()`, so the dev feature can
+watch `src/frontend/` without importing `static/internal/paths.ts`; `createDevFacade()` builds it,
+and `staticRoutes()` builds a dev facade in turn, to inject the hot-reload client. All SQL lives in a feature's `internal/`; `db/sql.ts` keeps
 only what names no table — `buildUpdate`, `isUniqueViolation` and `isForeignKeyViolation`.
 Repositories reference each other only with `import type` and take what they need through their
 constructor — `SetRepository(db, workouts)`, wired in `createWorkoutFacades` — so there is no
@@ -154,12 +158,13 @@ else. The runner refuses to start rather than guess when the files and the datab
 its own database rather than sharing one through the module cache. Every `*.test.ts` sits beside
 the module it exercises, and each one covers the module declaring the routes it drives, which is
 why the two tests for `POST /api/workouts/:id/sets` are in `workout.routes.test.ts` and not beside
-`set.routes.ts`. Tests are end-to-end over HTTP, with seven exceptions: `db/db.test.ts` checks the real
+`set.routes.ts`. Tests are end-to-end over HTTP, with eight exceptions: `db/db.test.ts` checks the real
 migrations; `db/migrations.test.ts` unit-tests the migration runner against throwaway fixture
 directories; `features/static/internal/paths.test.ts` pins the web root, which is derived by
 counting directories up from that module's own URL and would otherwise 404 every asset in silence
 if the file were moved; `http/errors.test.ts` covers `errorResponse`, whose 500 branch cannot be
-provoked over HTTP; `shared/validate.test.ts` pins the field helpers' normalisation edge cases; and
+provoked over HTTP; `shared/validate.test.ts` pins the field helpers' normalisation edge cases;
+`features/dev/internal/changes.test.ts` pins how a watched path becomes a URL and a change; and
 `features/exercises/exercises.facade.test.ts` and `features/workouts/workouts.facade.test.ts` drive
 each facade's validation directly, including that a bad body on an unknown id is a 400 rather than
 a 404. There are no unit tests of the repositories.
@@ -196,3 +201,29 @@ depends on the Bun version, and hashing files of this app's size costs well unde
 A `304` still reads or transpiles the file; only the transfer is saved. The vendor stylesheet used
 to be cached for an hour, which let a browser keep a stale Pico after `bun install`; it is now
 revalidated like everything else. Error responses carry no `ETag`.
+
+## Hot reload (`features/dev/`)
+
+`bun run start:dev` sets `GAINZ_DEV=1`, and only then does the dev feature do anything: `devRoutes()`
+registers `/dev/ws`, `StaticController` injects `<script type="module" src="/dev/hot.ts">` into the
+index page, and `main.ts` prints `hot reload: on`. Without the variable `devRoutes()` is `{}` and the
+page is byte-for-byte what `bun start` has always served. The switch is that one variable rather
+than `NODE_ENV`, whose non-production default would give plain `bun start` a watcher and a socket.
+`DevFacade.enabled()` is static, so `main.ts` can ask without building a facade, and reads it on every call, so `dev.routes.test.ts` can flip it around a server.
+
+The injection runs before the page is hashed, so the ETag covers the injected bytes. It is reached
+from both places the index page is served — the plain-file branch, for `/` and `/index.html`, and
+the single-page fallback for every client route.
+
+The watcher follows the connections, not the process. `internal/hub.ts` starts one recursive
+`fs.watch` over the web root when the first browser connects and closes it when the last one
+leaves, so `main.ts`'s shutdown has nothing to stop and no test leaves a watcher behind. Each path
+is debounced for 25 ms, because one save reports several events, and `internal/changes.ts` turns it
+into `{ swap }` for a `.css` or `{ reload }` for a `.ts` or `.html`; anything else — including the
+bare directory names the watcher also reports — is dropped. The connection set is module state
+rather than a facade's field, because `devRoutes()` and `staticRoutes()` each build their own facade.
+
+`websocket` is passed to `Bun.serve` unconditionally and only the route is gated. Spreading the
+option in conditionally flips `Bun.serve`'s options type between its with- and without-WebSocket
+variants, which is also why `RouteTable` is `Bun.Serve.RoutesWithUpgrade`: a route that upgrades
+returns `undefined`. Production therefore carries a socket handler no route can reach.

@@ -11,7 +11,10 @@ describe('static files', () => {
     const res = await api('/');
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toContain('text/html');
-    expect(await res.text()).toContain('gainz');
+    const page = await res.text();
+    expect(page).toContain('gainz');
+    // Hot reload is development-only and must stay off unless GAINZ_DEV=1 asks for it.
+    expect(page).not.toContain('/dev/hot.ts');
   });
 
   test('rejects directory traversal below src/frontend/', async () => {

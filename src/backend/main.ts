@@ -1,5 +1,6 @@
 import { basename } from 'node:path';
 import { DEFAULT_DB_PATH, openDatabase } from './db/db.ts';
+import { DevFacade } from './features/dev/dev.facade.ts';
 import { startServer } from './http/server.ts';
 
 function main(): void {
@@ -12,6 +13,9 @@ function main(): void {
 
   console.log(`gainz is running on ${server.url}`);
   console.log(`  database: ${DEFAULT_DB_PATH}`);
+  if (DevFacade.enabled()) {
+    console.log('  hot reload: on');
+  }
 
   const shutdown = async (): Promise<void> => {
     await server.stop();

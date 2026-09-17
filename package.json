@@ -7,7 +7,7 @@
   "module": "src/backend/main.ts",
   "scripts": {
     "start": "bun run src/backend/main.ts",
-    "start:dev": "bun --watch src/backend/main.ts",
+    "start:dev": "GAINZ_DEV=1 bun --watch src/backend/main.ts",
     "seed": "bun run src/scripts/seed.ts",
     "migrate": "bun run src/scripts/migrate.ts",
     "test": "bun test",
