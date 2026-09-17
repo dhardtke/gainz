@@ -163,6 +163,36 @@ Only the shell (`gz-app`, `gz-header`, `gz-toast`, `gz-theme-toggle`), `app/rout
 route files, and Pico plus `ui/shared.css` load up front. `gz-app` keeps the outgoing view on screen while the next one loads, guards against two
 navigations resolving out of order, and reports a failed import through the toast.
 
+## Hot reload
+
+`bun run start:dev` sets `GAINZ_DEV=1`, and the server then injects `dev/hot.ts` into the index page
+and opens `/dev/ws`, over which it pushes one message per file saved under `src/frontend/` (the
+backend half is described in `docs/backend.md`). `bun start` does neither.
+
+Saving a `.css` restyles the page in place, with no reload and no lost form state or scroll
+position. That costs nothing because every component adopts its `CSSStyleSheet` objects by
+reference: `reloadSheet` in `ui/styles.ts` refetches into the **same** object, and every live
+instance picks the change up without re-rendering. A stylesheet in the document rather than a
+shadow root — `ui/app.css`, and Pico's `<link>` — is swapped for a fresh `<link>`, the old one
+removed only once the new one has loaded. A stylesheet the page has never fetched reloads the page.
+
+Saving a `.ts` or `index.html` reloads the page, because a module cannot be evaluated a second time:
+`customElements.define` throws on a tag it already knows, and `define()` returns early for one, so a
+re-run module would quietly keep the old class. Before reloading, `hot.ts` sends a `HEAD` for the
+module; a file that will not parse answers 500, and rather than reload into a blank page the client
+reports it through the toast and waits for the next save.
+
+**`styles.ts` keys its sheets by pathname.** `loadStyles` receives a module's absolute
+`import.meta.url`, but `BASE_HREFS` are pathnames and the server reports a change as a pathname, so
+the key is normalised to `/ui/gz-tile.component.css`. Revert that and every component stylesheet
+silently misses the lookup and falls back to a full reload, while `shared.css` keeps swapping and
+hides the regression.
+
+Bun's own HMR is not used. It exists only behind its bundler, which would rewrite the page's scripts
+and stylesheets to hashed bundle URLs and break the module-URL-is-its-path property `styles.ts`
+finds a component's stylesheet by. With no `import.meta.hot.accept()` handlers it would full-reload
+anyway.
+
 ## Theming
 
 `src/frontend/ui/theme.ts` holds the preference and mirrors it onto `<html>`; `ui/base.ts` mirrors

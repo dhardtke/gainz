@@ -26,7 +26,14 @@ const hrefs = new Map<string, string>();
 
 const pending = new Map<string, Promise<void>>();
 
+/**
+ * Fills the sheet for `href`, creating it on first use. A repeat call refills the
+ * same object, because components adopt it by reference: that is what lets
+ * `reloadSheet` restyle every live instance without re-rendering one.
+ */
 async function load(href: string): Promise<void> {
+  const sheet = sheets.get(href) ?? new CSSStyleSheet();
+  sheets.set(href, sheet);
   try {
     const response = await fetch(href);
     if (!response.ok) {
@@ -34,15 +41,13 @@ async function load(href: string): Promise<void> {
       throw new Error(`HTTP ${response.status}`);
     }
 
-    const sheet = new CSSStyleSheet();
     // replace() rather than replaceSync(): it tolerates @import instead of throwing.
     await sheet.replace(await response.text());
-    sheets.set(href, sheet);
   } catch (cause) {
-    // An unstyled component is easier to diagnose than a blank page, so carry
-    // on with an empty sheet and say loudly what went missing.
+    // An unstyled component is easier to diagnose than a blank page (or, on a
+    // hot reload, a stale one), so carry on empty and say loudly what went missing.
     console.error(`gainz: could not load stylesheet ${href}`, cause);
-    sheets.set(href, new CSSStyleSheet());
+    await sheet.replace('');
   }
 }
 
@@ -56,15 +61,18 @@ await Promise.all(BASE_HREFS.map(load));
  * @param moduleUrl the defining module's `import.meta.url`; its `.css` sibling is the sheet.
  */
 export function loadStyles(tagName: string, moduleUrl: string): Promise<void> {
-  const href = moduleUrl.replace(/\.ts$/, '.css');
+  // A pathname, not the absolute import.meta.url: BASE_HREFS are pathnames and
+  // dev/hot.ts is told which path changed, so every key must be the same shape.
+  // Keyed by URL instead, a component's sheet would never be found to swap.
+  const href = new URL(moduleUrl, location.href).pathname.replace(/\.ts$/, '.css');
   hrefs.set(tagName, href);
-  if (sheets.has(href)) {
-    return Promise.resolve();
+  // `pending` alone de-duplicates: `sheets` holds the sheet before its fetch settles.
+  let promise = pending.get(href);
+  if (!promise) {
+    promise = load(href);
+    pending.set(href, promise);
   }
-  if (!pending.has(href)) {
-    pending.set(href, load(href));
-  }
-  return pending.get(href) ?? Promise.resolve();
+  return promise;
 }
 
 /**
@@ -80,4 +88,18 @@ export function stylesFor(tagName: string): CSSStyleSheet[] {
     return sheet ? [sheet] : [];
   });
   return own ? [...base, own] : base;
+}
+
+/**
+ * Refetches a stylesheet this module tracks into the sheet components already
+ * adopt. It exists for dev/hot.ts and is inert otherwise.
+ *
+ * @returns whether `href` was tracked, so the caller can fall back for one that is not.
+ */
+export async function reloadSheet(href: string): Promise<boolean> {
+  if (!sheets.has(href)) {
+    return false;
+  }
+  await load(href);
+  return true;
 }
