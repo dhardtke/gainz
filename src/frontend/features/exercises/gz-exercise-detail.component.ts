@@ -3,11 +3,12 @@ import type { RawHtml } from '../../ui/html.ts';
 import { define, GzElement } from '../../ui/base.ts';
 import { html } from '../../ui/html.ts';
 import { formatDate, formatDelta, formatNumber, formatShortDate, formatVolume, plural, relativeDay, UNIT } from '../../ui/format.ts';
-import type { ExerciseProgressDto, SessionPointDto } from '../../../shared/dto/exercise.ts';
+import { navigate } from '../../app/router.ts';
+import type { ExerciseDto, ExerciseProgressDto, SessionPointDto } from '../../../shared/dto/exercise.ts';
 import type { ExerciseId } from '../../../shared/flavors.ts';
 import { exerciseFacade } from './exercises.facade.ts';
 import type { GzChartComponent } from './internal/gz-chart.component.ts';
-import { toastError } from '../../ui/gz-toast.component.ts';
+import { toast, toastError } from '../../ui/gz-toast.component.ts';
 import './internal/gz-chart.component.ts';
 import '../../ui/gz-tile.component.ts';
 
@@ -47,6 +48,16 @@ export class GzExerciseDetailComponent extends GzElement {
   #state: ExerciseDetailState = { status: 'loading' };
 
   #metric: MetricKey = METRICS[0].key;
+
+  /**
+   * What has been typed into the details form but not saved.
+   *
+   * The form is always on screen and switching the charted metric re-renders
+   * the view, so the template — not the DOM — has to own these values. `null`
+   * means "show what the server returned", which is also what a successful
+   * save restores.
+   */
+  #edits: Record<string, string> | null = null;
 
   static observedAttributes = ['exercise-id'];
 
@@ -93,7 +104,7 @@ export class GzExerciseDetailComponent extends GzElement {
     this.render();
   }
 
-  override handleAction(action: string, element: HTMLElement): void {
+  override handleAction(action: string, element: HTMLElement): void | Promise<void> {
     if (action === 'metric') {
       const chosen = METRICS.find((candidate) => candidate.key === element.dataset.metric);
       if (!chosen) {
@@ -101,10 +112,56 @@ export class GzExerciseDetailComponent extends GzElement {
       }
       this.#metric = chosen.key;
       this.render();
+      return;
+    }
+
+    if (action === 'delete-exercise') {
+      return this.#deleteExercise();
+    }
+  }
+
+  async #deleteExercise(): Promise<void> {
+    if (this.#state.status !== 'ready' || !confirm(`Delete "${this.#state.exercise.name}"? Only possible while no set uses it.`)) {
+      return;
+    }
+    try {
+      await exerciseFacade.delete(this.#id);
+      toast('Exercise deleted', 'success');
+      navigate('/exercises');
+    } catch (error) {
+      // A set still referencing the exercise comes back as a 409 naming the
+      // obstacle, so the useful outcome is to stay here and show it.
+      toastError(error);
+    }
+  }
+
+  override async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
+    if (action !== 'save-exercise') {
+      return;
+    }
+    const values = this.formData(form);
+    try {
+      await exerciseFacade.update(this.#id, {
+        // `name` is `required`, so an empty one only arrives if the browser's
+        // validation was bypassed; the API rejects it either way.
+        name: values.name ?? '',
+        muscleGroup: values.muscleGroup,
+        notes: values.notes,
+      });
+      this.#edits = null;
+      toast('Exercise updated', 'success');
+      await this.#load();
+    } catch (error) {
+      toastError(error);
     }
   }
 
   override afterRender(): void {
+    const details = this.$<HTMLFormElement>("form[data-action='save-exercise']");
+    details?.addEventListener('input', () => {
+      this.#edits = this.formData(details);
+    });
+
     const chart = this.$<GzChartComponent>('gz-chart');
     if (!chart || this.#state.status !== 'ready') {
       return;
@@ -117,6 +174,48 @@ export class GzExerciseDetailComponent extends GzElement {
       value: session[metric.key],
       hint: `${plural(session.setCount, 'set')}, ${plural(session.totalReps, 'rep')}`,
     }));
+  }
+
+  #headerTemplate(exercise: ExerciseDto): RawHtml {
+    const edits = this.#edits ?? {
+      name: exercise.name,
+      muscleGroup: exercise.muscleGroup ?? '',
+      notes: exercise.notes ?? '',
+    };
+
+    return html`
+      <div>
+        <p><a href="/exercises">← Exercises</a></p>
+        <div class="row-between">
+          <hgroup>
+            <h1>${exercise.name}</h1>
+            <p>${exercise.muscleGroup ?? 'No muscle group set'}</p>
+          </hgroup>
+          <button class="danger" data-action="delete-exercise">Delete</button>
+        </div>
+      </div>
+      <article>
+        <form class="stack-sm" data-action="save-exercise">
+          <div class="fields">
+            <div class="field grow">
+              <label for="name">Name</label>
+              <input id="name" name="name" type="text" maxlength="120" value="${edits.name}" required />
+            </div>
+            <div class="field">
+              <label for="muscleGroup">Muscle group</label>
+              <input id="muscleGroup" name="muscleGroup" type="text" maxlength="60" value="${edits.muscleGroup}" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="notes">Notes</label>
+            <textarea id="notes" name="notes" maxlength="2000" placeholder="Low bar, belt over 100 kg">${edits.notes}</textarea>
+          </div>
+          <div class="row">
+            <button type="submit">Save</button>
+          </div>
+        </form>
+      </article>
+    `;
   }
 
   #summaryTiles(state: ReadyState): RawHtml {
@@ -205,15 +304,7 @@ export class GzExerciseDetailComponent extends GzElement {
 
     return html`
       <div class="stack">
-        <div>
-          <p><a href="/exercises">← Exercises</a></p>
-          <hgroup>
-            <h1>${exercise.name}</h1>
-            <p>${exercise.muscleGroup ?? 'No muscle group set'}${exercise.notes ? html` · ${exercise.notes}` : ''}</p>
-          </hgroup>
-        </div>
-
-        ${this.#summaryTiles(state)}
+        ${this.#headerTemplate(exercise)} ${this.#summaryTiles(state)}
 
         <article class="stack-sm">
           <div class="row-between">

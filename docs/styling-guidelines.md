@@ -1,15 +1,21 @@
 # Styling guidelines
 
-- Pico CSS provides typography, colours, form controls, tables and both themes. Hand-written CSS
-  is a thin layer built from Pico's own `--pico-*` custom properties, so it follows the active
-  theme.
+- **Pico first.** Pico CSS provides typography, colours, form controls, tables and both themes.
+  Hand-written CSS is a thin layer built from Pico's own `--pico-*` custom properties, so it follows
+  the active theme. Before writing a box of your own, check whether Pico already draws it, because
+  its components are plain elements rather than class names and are easy to miss: **a card is
+  `<article>`** — background, shadow, radius and padding from `--pico-card-*`, in both themes — a
+  heading with a subtitle is `<hgroup>`, a dropdown is `<details class="dropdown">`, and a loading
+  state is `aria-busy="true"`. Hand-rolling one of these produces a box that competes with Pico and
+  has to be re-themed by hand.
 - **No CSS in JavaScript.** Every rule lives in an external `.css` file — `ui/app.css` for the
   document, `ui/shared.css` for utilities adopted by every component, and a component's `<tag>.component.css`
   beside its `<tag>.component.ts`.
-- **Selectors nest.** A rule that would repeat a prefix — `.workout`, `.workout:hover`,
-  `.workout a` — nests instead, so each block reads as one component and the media queries that
-  only adjust it sit inside it. There is no preprocessor: this is the browser's own nesting, and
-  `&` is always written explicitly.
+- **Selectors nest.** A rule that would repeat a prefix — `article.open-card`,
+  `article.open-card:hover .open`, `article.open-card .actions` — nests instead as
+  `article.open-card { &:hover .open { … } & .actions { … } }`, so each block reads as one component
+  and the media queries that only adjust it sit inside it. There is no preprocessor: this is the
+  browser's own nesting, and `&` is always written explicitly.
 - **No stylesheet declares a font size.** Body text is one size everywhere, headings come from
   Pico's scale, and emphasis is weight and colour. Two rules hold that in place: `app.css` pins
   `--pico-font-size: 100%`, because Pico otherwise grows the root font with the viewport up to

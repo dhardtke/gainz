@@ -4,7 +4,6 @@ import { define, GzElement } from '../../ui/base.ts';
 import { html } from '../../ui/html.ts';
 import { formatWeight, plural, relativeDay } from '../../ui/format.ts';
 import type { ExerciseWithStatsDto } from '../../../shared/dto/exercise.ts';
-import type { ExerciseId } from '../../../shared/flavors.ts';
 import { toast, toastError } from '../../ui/gz-toast.component.ts';
 import { exerciseFacade } from './exercises.facade.ts';
 
@@ -13,8 +12,6 @@ type ExerciseListState = { status: 'loading' } | { status: 'ready'; items: Exerc
 /** The exercise catalogue — the vocabulary the rest of the log is written in. */
 export class GzExerciseListComponent extends GzElement {
   #state: ExerciseListState = { status: 'loading' };
-
-  #editingId: ExerciseId | null = null;
 
   override connectedCallback(): void {
     super.connectedCallback();
@@ -32,113 +29,41 @@ export class GzExerciseListComponent extends GzElement {
   }
 
   override async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
+    if (action !== 'create') {
+      return;
+    }
     const values = this.formData(form);
     // The name input is `required`, so an empty one only reaches here if the
     // browser's own validation was bypassed; the API rejects it either way.
     const name = values.name ?? '';
 
-    if (action === 'create') {
-      try {
-        await exerciseFacade.create({
-          name,
-          muscleGroup: values.muscleGroup,
-          notes: values.notes,
-        });
-        toast(`Added ${name}`, 'success');
-        form.reset();
-        await this.#load();
-      } catch (error) {
-        toastError(error);
-      }
-      return;
-    }
-
-    if (action === 'save') {
-      try {
-        await exerciseFacade.update(Number(form.dataset.id), {
-          name,
-          muscleGroup: values.muscleGroup,
-          notes: values.notes,
-        });
-        this.#editingId = null;
-        await this.#load();
-      } catch (error) {
-        toastError(error);
-      }
+    try {
+      await exerciseFacade.create({
+        name,
+        muscleGroup: values.muscleGroup,
+        notes: values.notes,
+      });
+      toast(`Added ${name}`, 'success');
+      form.reset();
+      await this.#load();
+    } catch (error) {
+      toastError(error);
     }
   }
 
-  override async handleAction(action: string, element: HTMLElement): Promise<void> {
-    if (action === 'edit') {
-      this.#editingId = Number(element.dataset.id);
-      this.render();
-      const field = this.$<HTMLInputElement>('.edit-row input');
-      field?.focus();
-      return;
-    }
-
-    if (action === 'cancel') {
-      this.#editingId = null;
-      this.render();
-      return;
-    }
-
-    if (action === 'delete') {
-      const name = element.dataset.name;
-      if (!confirm(`Delete "${name}"? Only possible while no set uses it.`)) {
-        return;
-      }
-      try {
-        await exerciseFacade.delete(Number(element.dataset.id));
-        toast(`Deleted ${name}`, 'success');
-        await this.#load();
-      } catch (error) {
-        toastError(error);
-      }
-    }
-  }
-
-  #editRow(exercise: ExerciseWithStatsDto): RawHtml {
+  #card(exercise: ExerciseWithStatsDto): RawHtml {
+    const subtitle = [exercise.muscleGroup, exercise.notes].filter((part) => part !== null).join(' · ');
     return html`
-      <tr class="edit-row">
-        <td colspan="6">
-          <form class="edit-fields fields" data-action="save" data-id="${exercise.id}">
-            <div class="field">
-              <label>Name</label>
-              <input name="name" type="text" maxlength="120" value="${exercise.name}" required />
-            </div>
-            <div class="field">
-              <label>Muscle group</label>
-              <input name="muscleGroup" type="text" maxlength="60" value="${exercise.muscleGroup ?? ''}" />
-            </div>
-            <div class="field">
-              <label>Notes</label>
-              <input name="notes" type="text" maxlength="2000" value="${exercise.notes ?? ''}" />
-            </div>
-            <button type="submit">Save</button>
-            <button class="secondary outline" type="button" data-action="cancel">Cancel</button>
-          </form>
-        </td>
-      </tr>
-    `;
-  }
-
-  #row(exercise: ExerciseWithStatsDto): RawHtml {
-    return html`
-      <tr>
-        <td class="name">
-          <a href="/exercises/${exercise.id}">${exercise.name}</a>
-          ${exercise.notes ? html`<div class="muted">${exercise.notes}</div>` : ''}
-        </td>
-        <td>${exercise.muscleGroup ?? html`<span class="muted">–</span>`}</td>
-        <td class="num">${exercise.setCount}</td>
-        <td class="num">${exercise.bestWeight === null ? '–' : formatWeight(exercise.bestWeight)}</td>
-        <td class="nowrap">${exercise.lastPerformedOn ? relativeDay(exercise.lastPerformedOn) : html`<span class="muted">never</span>`}</td>
-        <td class="actions">
-          <button class="secondary outline compact" data-action="edit" data-id="${exercise.id}">Edit</button>
-          <button class="danger compact" data-action="delete" data-id="${exercise.id}" data-name="${exercise.name}">Delete</button>
-        </td>
-      </tr>
+      <article class="open-card">
+        <div class="grow">
+          <a class="open" href="/exercises/${exercise.id}">${exercise.name}</a>
+          ${subtitle === '' ? '' : html`<div class="muted">${subtitle}</div>`}
+        </div>
+        <span class="badge">
+          ${plural(exercise.setCount, 'set')} · ${exercise.bestWeight === null ? 'no best yet' : `${formatWeight(exercise.bestWeight)} best`} ·
+          ${exercise.lastPerformedOn ? relativeDay(exercise.lastPerformedOn) : 'never done'}
+        </span>
+      </article>
     `;
   }
 
@@ -180,31 +105,9 @@ export class GzExerciseListComponent extends GzElement {
           </form>
         </article>
 
-        ${
-          items.length === 0
-            ? html`<p class="empty">No exercises yet. Add the lifts you train above.</p>`
-            : html`
-                <article>
-                  <div class="overflow-auto">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th scope="col">Exercise</th>
-                          <th scope="col">Muscle group</th>
-                          <th scope="col" class="num">Sets</th>
-                          <th scope="col" class="num">Best</th>
-                          <th scope="col">Last done</th>
-                          <th scope="col"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${items.map((exercise) => (this.#editingId === exercise.id ? this.#editRow(exercise) : this.#row(exercise)))}
-                      </tbody>
-                    </table>
-                  </div>
-                </article>
-              `
-        }
+        <div class="stack-sm">
+          ${items.length === 0 ? html`<p class="empty">No exercises yet. Add the lifts you train above.</p>` : items.map((exercise) => this.#card(exercise))}
+        </div>
       </div>
     `;
   }

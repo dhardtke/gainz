@@ -30,10 +30,6 @@
   gap: 0.4rem;
 }
 
-.header-notes {
-  white-space: pre-wrap;
-}
-
 .breakdown {
   & td.name {
     font-weight: 600;

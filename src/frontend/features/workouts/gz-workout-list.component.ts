@@ -81,21 +81,6 @@ export class GzWorkoutListComponent extends GzElement {
       } catch (error) {
         toastError(error);
       }
-      return;
-    }
-
-    if (action === 'delete') {
-      const label = element.dataset.label ?? 'this workout';
-      if (!confirm(`Delete ${label}? Its sets are deleted too — this cannot be undone.`)) {
-        return;
-      }
-      try {
-        await workoutFacade.delete(id);
-        toast('Workout deleted', 'success');
-        await this.#load(0);
-      } catch (error) {
-        toastError(error);
-      }
     }
   }
 
@@ -146,10 +131,10 @@ export class GzWorkoutListComponent extends GzElement {
               ? html`<p class="empty">No sessions logged yet. Start one above.</p>`
               : items.map(
                   (workout) => html`
-                    <div class="workout">
+                    <article class="open-card">
                       <div class="grow">
-                        <a href="/workouts/${workout.id}">${workout.title ?? formatDate(workout.performedOn)}</a>
-                        <div class="date">${formatDate(workout.performedOn)} · ${relativeDay(workout.performedOn)}</div>
+                        <a class="open" href="/workouts/${workout.id}">${workout.title ?? formatDate(workout.performedOn)}</a>
+                        <div class="muted">${formatDate(workout.performedOn)} · ${relativeDay(workout.performedOn)}</div>
                       </div>
                       <span class="badge">
                         ${plural(workout.setCount, 'set')} · ${plural(workout.exerciseCount, 'exercise')} · ${formatVolume(workout.totalVolume)}
@@ -164,16 +149,8 @@ export class GzWorkoutListComponent extends GzElement {
                         >
                           Repeat
                         </button>
-                        <button
-                          class="danger compact"
-                          data-action="delete"
-                          data-id="${workout.id}"
-                          data-label="${workout.title ?? formatDate(workout.performedOn)}"
-                        >
-                          Delete
-                        </button>
                       </div>
-                    </div>
+                    </article>
                   `,
                 )
           }
