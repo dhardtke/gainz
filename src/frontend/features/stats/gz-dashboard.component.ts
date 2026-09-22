@@ -74,7 +74,7 @@ export class GzDashboardComponent extends GzElement {
           <gz-tile label="Exercises" value="${summary.exerciseCount}" hint="${plural(summary.totalReps, 'rep')} lifted"></gz-tile>
         </div>
 
-        <article class="stack-sm">
+        <section class="stack-sm">
           <div class="row-between">
             <h2>Recent workouts</h2>
             <a href="/workouts">See all</a>
@@ -84,17 +84,17 @@ export class GzDashboardComponent extends GzElement {
               ? html`<p class="empty">No workouts yet. Log one and it will show up here.</p>`
               : workouts.map(
                   (workout) => html`
-                    <a class="workout-link" href="/workouts/${workout.id}">
-                      <span class="grow">
-                        <span class="title">${workout.title ?? formatDate(workout.performedOn)}</span>
-                        <span class="muted"> · ${relativeDay(workout.performedOn)}</span>
-                      </span>
+                    <article class="open-card">
+                      <div class="grow">
+                        <a class="open" href="/workouts/${workout.id}">${workout.title ?? formatDate(workout.performedOn)}</a>
+                        <div class="muted">${relativeDay(workout.performedOn)}</div>
+                      </div>
                       <span class="badge">${plural(workout.setCount, 'set')} · ${formatVolume(workout.totalVolume)}</span>
-                    </a>
+                    </article>
                   `,
                 )
           }
-        </article>
+        </section>
       </div>
     `;
   }

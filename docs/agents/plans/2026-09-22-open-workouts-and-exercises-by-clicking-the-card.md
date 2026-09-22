@@ -340,7 +340,7 @@ the current info"; Phase 2 then has nothing to take away that is not available e
 
 **Tasks**:
 
-- [ ] In `gz-workout-detail.component.ts`, delete `#editingHeader` and the `toggle-header` branch of
+- [x] In `gz-workout-detail.component.ts`, delete `#editingHeader` and the `toggle-header` branch of
       `handleAction`, and rewrite `#headerTemplate()` to render both halves unconditionally: the
       `hgroup` with the title and date plus a Delete button, then the form. Drop the Cancel button —
       there is no longer a state to cancel back to — and drop the `.header-notes` paragraph, whose
@@ -368,7 +368,7 @@ the current info"; Phase 2 then has nothing to take away that is not available e
       }
       ```
 
-- [ ] Add the `#edits` field to `gz-workout-detail` with the comment that earns it — that
+- [x] Add the `#edits` field to `gz-workout-detail` with the comment that earns it — that
       `render()` replaces the form's DOM and `#load()` runs after every logged set, so without this
       a half-typed title would not survive logging a set. Type it as
       `Record<string, string> | null`, which is what `formData()` returns.
@@ -384,7 +384,7 @@ the current info"; Phase 2 then has nothing to take away that is not available e
       #edits: Record<string, string> | null = null;
       ```
 
-- [ ] In `afterRender()`, register the `input` listener that keeps `#edits` current. It sits beside
+- [x] In `afterRender()`, register the `input` listener that keeps `#edits` current. It sits beside
       the existing `select[name='exerciseId']` wiring, which is the same kind of after-render
       listener on markup the template just produced.
 
@@ -395,16 +395,16 @@ the current info"; Phase 2 then has nothing to take away that is not available e
       });
       ```
 
-- [ ] In the `save-workout` branch, replace `this.#editingHeader = false` with `this.#edits = null`
+- [x] In the `save-workout` branch, replace `this.#editingHeader = false` with `this.#edits = null`
       so the next render shows the server's normalisation — notably a cleared notes field coming
       back blank rather than as the text the user deleted.
 
-- [ ] In `gz-exercise-detail.component.ts`, add the same `#edits` field, with the same comment
+- [x] In `gz-exercise-detail.component.ts`, add the same `#edits` field, with the same comment
       adapted to its own trigger: the metric switch calls `render()` directly
       (`handleAction('metric')`), so switching from "Estimated 1RM" to "Volume" while editing the
       notes must not discard them.
 
-- [ ] Give `gz-exercise-detail` a `#headerTemplate()` shaped like the workout's: `.row-between` with
+- [x] Give `gz-exercise-detail` a `#headerTemplate()` shaped like the workout's: `.row-between` with
       the `hgroup` (name, and the muscle group alone as the subtitle — the notes move into the form,
       decision 6) and a Delete button, followed by the form article.
 
@@ -433,7 +433,7 @@ the current info"; Phase 2 then has nothing to take away that is not available e
       Note the notes field is a `<textarea>` here, where the list's inline row used a single-line
       `<input>`. 2000 characters never fitted on one line; the workout form already made this call.
 
-- [ ] Add `handleSubmit` to `gz-exercise-detail` — it has none today — with the single
+- [x] Add `handleSubmit` to `gz-exercise-detail` — it has none today — with the single
       `save-exercise` branch. It mirrors the workout's: send all three fields, clear `#edits`,
       toast, reload. Reloading is what re-reads `progress()` and repaints the `hgroup` with the new
       name.
@@ -457,7 +457,7 @@ the current info"; Phase 2 then has nothing to take away that is not available e
       }
       ```
 
-- [ ] Widen `gz-exercise-detail`'s `handleAction` from `void` to `void | Promise<void>` and add the
+- [x] Widen `gz-exercise-detail`'s `handleAction` from `void` to `void | Promise<void>` and add the
       `delete-exercise` branch. Keep the list's confirm wording verbatim, and let `toastError`
       carry the 409 when a set still references the exercise — the view stays where it is, which is
       the useful outcome, because the message names the obstacle.
@@ -479,11 +479,11 @@ the current info"; Phase 2 then has nothing to take away that is not available e
 
       This adds `navigate` and `toast` to the module's imports; `toastError` is already there.
 
-- [ ] Register the `input` listener for the exercise form in `gz-exercise-detail`'s existing
+- [x] Register the `input` listener for the exercise form in `gz-exercise-detail`'s existing
       `afterRender()`, ahead of its early `return` for the chart — that guard bails out when there
       is no `gz-chart`, which must not also skip the form.
 
-- [ ] Remove `.header-notes` from `gz-workout-detail.component.css`.
+- [x] Remove `.header-notes` from `gz-workout-detail.component.css`.
 
 **Manual verification**:
 
@@ -505,7 +505,7 @@ list's buttons are removed.
 
 **Tasks**:
 
-- [ ] Add `article.open-card` to `src/frontend/ui/shared.css`, under the "pieces" section beside
+- [x] Add `article.open-card` to `src/frontend/ui/shared.css`, under the "pieces" section beside
       `.badge` and `.empty`. Write it as what Pico does *not* give an `<article>`: the flex layout,
       the containing block for the overlay, the overlay itself, and the `.actions` group lifted
       above it. Do **not** restate background, shadow, radius or padding — those are the reason the
@@ -562,17 +562,17 @@ list's buttons are removed.
 
       CSS keeps double quotes here (`content: ""`), per `docs/styling-guidelines.md`.
 
-- [ ] Rewrite the workout row in `gz-workout-list.component.ts`: `<div class="workout">` becomes
+- [x] Rewrite the workout row in `gz-workout-list.component.ts`: `<div class="workout">` becomes
       `<article class="open-card">`, the anchor gains `class="open"`, the `.date` div becomes
       `class="muted"`, and the Delete button goes, leaving Repeat alone in `.actions`.
 
-- [ ] Delete the `delete` branch from `gz-workout-list`'s `handleAction`. `workoutFacade` is still
+- [x] Delete the `delete` branch from `gz-workout-list`'s `handleAction`. `workoutFacade` is still
       imported for `create`; check that `toast` still is too — `repeat` uses it.
 
-- [ ] Strip `gz-workout-list.component.css` down to `.new-form .field-notes`, keeping its header
+- [x] Strip `gz-workout-list.component.css` down to `.new-form .field-notes`, keeping its header
       comment adjusted to what is left.
 
-- [ ] Rewrite `gz-exercise-list.component.ts`'s `#row()` as a card of the same shape, and delete
+- [x] Rewrite `gz-exercise-list.component.ts`'s `#row()` as a card of the same shape, and delete
       `#editRow()`. The badge carries what three of the dropped columns said.
 
       ```ts
@@ -594,22 +594,22 @@ list's buttons are removed.
       }
       ```
 
-- [ ] Replace the `<article><div class="overflow-auto"><table>…` block in `gz-exercise-list`'s
+- [x] Replace the `<article><div class="overflow-auto"><table>…` block in `gz-exercise-list`'s
       `template()` with a `<div class="stack-sm">` of cards, matching how `gz-workout-list` lays its
       list out. The wrapping `<article>` and the `.overflow-auto` div both go: the cards are
       articles themselves now, and nesting them inside a panel article would read as cards within a
       card (decision 2). Keep the empty state.
 
-- [ ] Delete `#editingId` from `gz-exercise-list`, the `edit`, `cancel` and `delete` branches of
+- [x] Delete `#editingId` from `gz-exercise-list`, the `edit`, `cancel` and `delete` branches of
       `handleAction`, and the `save` branch of `handleSubmit`. `handleAction` is then empty and is
       removed with its `override` keyword; `handleSubmit` keeps `create` alone and can drop its
       early `return` for other actions in favour of a guard, matching `gz-workout-list:46-48`.
       Remove the imports this orphans — `ExerciseId` and `formatWeight`'s neighbours are easy to get
       wrong here, so let `bun run lint` name them rather than guessing.
 
-- [ ] Strip `gz-exercise-list.component.css` to `.new-form .field-notes`.
+- [x] Strip `gz-exercise-list.component.css` to `.new-form .field-notes`.
 
-- [ ] Bring `gz-dashboard`'s "Recent workouts" rows onto the same card (decision 9), and delete
+- [x] Bring `gz-dashboard`'s "Recent workouts" rows onto the same card (decision 9), and delete
       `.workout-link` from `gz-dashboard.component.css`. The row is a wrapping `<a>` today; it
       becomes the same article-with-an-inner-anchor as the other two lists, so all three are one
       shape. This is the one task here that touches a page the request did not name — if it is
@@ -629,13 +629,13 @@ list's buttons are removed.
       together on one. That is what makes it the same card as the other two, and it is why the
       change is visible rather than purely internal.
 
-- [ ] Update `docs/styling-guidelines.md` twice. The nesting example at lines 9-11 names `.workout`,
+- [x] Update `docs/styling-guidelines.md` twice. The nesting example at lines 9-11 names `.workout`,
       `.workout:hover`, `.workout a`, which no longer exist — rewrite it around `article.open-card`,
       `&:hover .open` and `& .actions`. And extend the "Pico first" bullet at lines 3-5 to name the
       components by element, `<article>` for a card above all, so the next person reaches for Pico's
       before writing a box of their own. That bullet is why this plan changed shape mid-flight.
 
-- [ ] Update `docs/frontend.md`'s routing paragraph (the one beginning "Links are plain
+- [x] Update `docs/frontend.md`'s routing paragraph (the one beginning "Links are plain
       `<a href="/…">`"): add that a list item's whole card is the anchor's hit area, drawn as the
       anchor's own `::after` in `shared.css`'s `article.open-card`, so opening stays one mechanism
       and buttons on a card sit above the overlay. Say why in one clause — a click handler would not be a link.
@@ -659,13 +659,13 @@ list's buttons are removed.
 
 **Automated verification**:
 
-- [ ] `bun test` — nothing mounts a component, so the suite is a regression check on the facades,
+- [x] `bun test` — nothing mounts a component, so the suite is a regression check on the facades,
       the router and the static routes. `static.routes.test.ts`'s "stylesheet beside every component
       module" must still pass: both stripped `.css` files stay on disk.
-- [ ] `bun run typecheck`
-- [ ] `bun run lint` — this is what catches the imports the deletions orphan, and it is the only
+- [x] `bun run typecheck`
+- [x] `bun run lint` — this is what catches the imports the deletions orphan, and it is the only
       thing enforcing that a component still reaches the network through a facade.
-- [ ] `bun run fmt:check`
+- [x] `bun run fmt:check`
 
 ## Implementation Notes
 

@@ -1,35 +1,5 @@
-/* The exercise catalogue. */
+/* The exercise catalogue. The cards themselves are shared.css's article.open-card. */
 
 .new-form .field-notes {
   flex: 2 1 15rem;
-}
-
-td.name {
-  font-weight: 600;
-
-  & a {
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-}
-
-td.actions {
-  text-align: right;
-  white-space: nowrap;
-
-  & button {
-    margin-bottom: 0;
-  }
-}
-
-.edit-row td {
-  background: var(--pico-card-sectioning-background-color);
-}
-
-/* The inline edit form replaces a whole row, so it spans every column. */
-.edit-fields {
-  margin: 0;
 }

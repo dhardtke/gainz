@@ -91,6 +91,14 @@ already on that path) and dispatches `popstate`, so links, `navigate()` and Back
 `gz-app` and `gz-header` through `onRouteChange`. A route path must therefore stay extension-less
 and must not name a file under `src/frontend/`.
 
+A list item opens its entity the same way, and on the whole card rather than on the words: the
+card is `shared.css`'s `article.open-card`, and its hit area is the anchor's own `::after` stretched
+across the card. Because the overlay is part of the anchor, it is still a link — `gz-app` routes it,
+Ctrl- and middle-click open a tab, and the keyboard reaches it — where a click handler on the card
+would be none of those things. A button on a card sits in `.actions`, which is positioned so it
+paints above the overlay and takes its own click; a click there carries no anchor in its composed
+path, so `gz-app` leaves it alone.
+
 `bun run lint` holds five import boundaries in `.oxlintrc.json`. A module under `features/<a>/` may
 not import `features/<b>/internal/`. Nothing under `app/`, `ui/`, `http/` or `main.ts` may import
 any `internal/`. No component may import an `*.api.ts` module or `http/http.ts`. Nothing

@@ -37,7 +37,14 @@ export class GzWorkoutDetailComponent extends GzElement {
 
   #exercises: ExerciseDto[] = [];
 
-  #editingHeader = false;
+  /**
+   * What has been typed into the details form but not saved.
+   *
+   * The form is always on screen and every logged set re-renders the view, so
+   * the template — not the DOM — has to own these values. `null` means "show
+   * what the server returned", which is also what a successful save restores.
+   */
+  #edits: Record<string, string> | null = null;
 
   /**
    * Remembers the last logged set so the next one starts from it.
@@ -108,12 +115,6 @@ export class GzWorkoutDetailComponent extends GzElement {
   }
 
   override async handleAction(action: string, element: HTMLElement): Promise<void> {
-    if (action === 'toggle-header') {
-      this.#editingHeader = !this.#editingHeader;
-      this.render();
-      return;
-    }
-
     if (action === 'delete-workout') {
       if (!confirm('Delete this workout and all of its sets? This cannot be undone.')) {
         return;
@@ -162,7 +163,7 @@ export class GzWorkoutDetailComponent extends GzElement {
           title: values.title,
           notes: values.notes,
         });
-        this.#editingHeader = false;
+        this.#edits = null;
         toast('Workout updated', 'success');
         await this.#load();
       } catch (error) {
@@ -214,6 +215,11 @@ export class GzWorkoutDetailComponent extends GzElement {
       row.set = set;
     }
 
+    const details = this.$<HTMLFormElement>("form[data-action='save-workout']");
+    details?.addEventListener('input', () => {
+      this.#edits = this.formData(details);
+    });
+
     const select = this.$<HTMLSelectElement>("select[name='exerciseId']");
     if (select) {
       select.addEventListener('change', () => {
@@ -250,42 +256,38 @@ export class GzWorkoutDetailComponent extends GzElement {
   }
 
   #headerTemplate(workout: WorkoutWithSetsDto): RawHtml {
-    if (!this.#editingHeader) {
-      return html`
-        <div class="row-between">
-          <hgroup>
-            <h1>${workout.title ?? formatDate(workout.performedOn)}</h1>
-            <p>${formatDate(workout.performedOn)} · ${relativeDay(workout.performedOn)}</p>
-          </hgroup>
-          <div class="row">
-            <button class="secondary outline" data-action="toggle-header">Edit</button>
-            <button class="danger" data-action="delete-workout">Delete</button>
-          </div>
-        </div>
-        ${workout.notes ? html`<p class="header-notes muted">${workout.notes}</p>` : ''}
-      `;
-    }
+    const edits = this.#edits ?? {
+      performedOn: workout.performedOn,
+      title: workout.title ?? '',
+      notes: workout.notes ?? '',
+    };
 
     return html`
+      <div class="row-between">
+        <hgroup>
+          <h1>${workout.title ?? formatDate(workout.performedOn)}</h1>
+          <p>${formatDate(workout.performedOn)} · ${relativeDay(workout.performedOn)}</p>
+        </hgroup>
+        <button class="danger" data-action="delete-workout">Delete</button>
+      </div>
       <article>
         <form class="stack-sm" data-action="save-workout">
           <div class="fields">
             <div class="field">
               <label for="performedOn">Date</label>
-              <input id="performedOn" name="performedOn" type="date" value="${workout.performedOn}" required />
+              <input id="performedOn" name="performedOn" type="date" value="${edits.performedOn}" required />
             </div>
             <div class="field grow">
               <label for="title">Title</label>
-              <input id="title" name="title" type="text" maxlength="120" value="${workout.title ?? ''}" />
+              <input id="title" name="title" type="text" maxlength="120" value="${edits.title}" />
             </div>
           </div>
           <div class="field">
             <label for="notes">Session notes</label>
-            <textarea id="notes" name="notes" maxlength="2000" placeholder="How did it feel?">${workout.notes ?? ''}</textarea>
+            <textarea id="notes" name="notes" maxlength="2000" placeholder="How did it feel?">${edits.notes}</textarea>
           </div>
           <div class="row">
             <button type="submit">Save</button>
-            <button class="secondary outline" type="button" data-action="toggle-header">Cancel</button>
           </div>
         </form>
       </article>
