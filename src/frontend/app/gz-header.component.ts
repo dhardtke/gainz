@@ -52,7 +52,7 @@ class GzHeaderComponent extends GzElement {
             ${navItems.map((item) => html`<li><a href="${item.path}" data-path="${item.path}">${item.label}</a></li>`)}
           </ul>
           <ot-dropdown class="menu">
-            <button type="button" class="ghost icon" popovertarget="nav-menu" aria-label="Menu">
+            <button type="button" class="icon" popovertarget="nav-menu" aria-label="Menu">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"

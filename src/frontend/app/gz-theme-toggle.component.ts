@@ -41,7 +41,7 @@ class GzThemeToggleComponent extends GzElement {
   override template(): RawHtml {
     const dark = currentTheme() === 'dark';
     return html`
-      <button type="button" class="theme-toggle ghost icon" data-action="toggle-theme" aria-label="${dark ? 'Turn off dark mode' : 'Turn on dark mode'}">
+      <button type="button" class="theme-toggle icon" data-action="toggle-theme" aria-label="${dark ? 'Turn off dark mode' : 'Turn on dark mode'}">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true" class="icon-theme-toggle ${dark ? 'moon' : ''}">
           <clipPath id="theme-toggle-cutout"><path d="M0-11h25a1 1 0 0017 13v30H0Z" /></clipPath>
           <g clip-path="url(#theme-toggle-cutout)">
