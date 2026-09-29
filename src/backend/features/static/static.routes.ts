@@ -11,9 +11,10 @@ import type { RouteTable } from '../../http/routing.ts';
 import { createDevFacade } from '../dev/dev.facade.ts';
 import { vendorUrls } from './internal/paths.ts';
 import { StaticController } from './internal/static.controller.ts';
+import { createWebFiles } from './internal/web-files.ts';
 
 export function staticRoutes(): RouteTable {
-  const controller = new StaticController(createDevFacade());
+  const controller = new StaticController(createDevFacade(), createWebFiles());
   const vendor = (req: Request): Promise<Response> => controller.vendor(req);
   return {
     ...Object.fromEntries(vendorUrls().map((url) => [url, { GET: vendor, HEAD: vendor }])),

@@ -11,16 +11,18 @@
  * transpiles happily and ships.
  */
 const transpiler = new Bun.Transpiler({ loader: 'ts', target: 'browser' });
+/** For the single-file build: whitespace only, so names and structure survive for devtools. */
+const minifier = new Bun.Transpiler({ loader: 'ts', target: 'browser', minifyWhitespace: true });
 
 /**
- * Transpiles one module. `path` has already been resolved inside `src/frontend/` by
- * `StaticController`, through the traversal guard in `paths.ts`.
+ * Transpiles one module. `path` has already been resolved inside `src/frontend/`, through the
+ * traversal guard in `paths.ts` or by the build walking the web root.
  */
-export async function transpileModule(path: string): Promise<string | null> {
+export async function transpileModule(path: string, options: { minify?: boolean } = {}): Promise<string | null> {
   const source = await Bun.file(path).text();
 
   try {
-    return transpiler.transformSync(source);
+    return (options.minify === true ? minifier : transpiler).transformSync(source);
   } catch (cause) {
     // A syntax error would otherwise reach the browser as a blank view, so name
     // the file and let gz-app's failed-import path put it in a toast.

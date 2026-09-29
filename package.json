@@ -10,6 +10,7 @@
     "start:dev": "GAINZ_DEV=1 bun --watch src/backend/main.ts",
     "seed": "bun run src/scripts/seed.ts",
     "migrate": "bun run src/scripts/migrate.ts",
+    "build": "bun run src/scripts/build.ts",
     "test": "bun test",
     "typecheck": "bunx tsc --noEmit",
     "fmt": "oxfmt .",

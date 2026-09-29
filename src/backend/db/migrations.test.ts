@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { Database } from 'bun:sqlite';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { migrate, type MigrateResult, MIGRATIONS_DIR, schemaVersion } from './migrations.ts';
-import { tables, useTempDir } from '../testing.ts';
+import { migrate, type MigrateResult, MIGRATIONS_DIR, readMigrations, schemaVersion } from './migrations.ts';
+import { at, tables, useTempDir } from '../testing.ts';
 
 const tempDir = useTempDir();
 let db: Database;
@@ -148,6 +148,21 @@ describe('migration runner', () => {
 });
 
 describe('the real migrations', () => {
+  test('are read from disk by bare filename, with their SQL', () => {
+    const initial = readMigrations(MIGRATIONS_DIR).find((source) => source.filename === '001-initial-schema.sql');
+
+    expect(initial?.sql).toContain('CREATE TABLE');
+  });
+
+  test('report what they applied by bare filename', () => {
+    const fresh = new Database(':memory:', { create: true });
+
+    const result = migrate(fresh);
+
+    expect(at(result.applied, 0).file).toBe('001-initial-schema.sql');
+    fresh.close();
+  });
+
   test('adopt a database that already has the schema but no ledger', () => {
     // How an existing data/gainz.sqlite, created before migrations existed, is taken over.
     const legacy = new Database(':memory:', { create: true });

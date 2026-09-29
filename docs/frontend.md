@@ -152,8 +152,11 @@ each module through `Bun.Transpiler` as it is requested — around 76 µs per fi
 frontend in under two milliseconds — and hands the result back as `text/javascript`. Nothing is
 written to disk and nothing is bundled: specifiers are left untouched, so a module imports
 `'../../ui/format.ts'` and the browser fetches the file of that name, and editing a module and reloading
-is the whole edit loop. `src/frontend/` is the web root, so a module's URL is its path below it:
-`src/frontend/app/gz-app.component.ts` is served at `/app/gz-app.component.ts`.
+is the whole edit loop. A deployed build (`bun run build`) serves these same modules from memory
+instead — transpiled once at build time with whitespace minified, still one module per URL — and a
+module that does not parse fails the build rather than answering 500. `src/frontend/` is the web
+root, so a module's URL is its path below it: `src/frontend/app/gz-app.component.ts` is served at
+`/app/gz-app.component.ts`.
 
 The transpiler **erases types without checking them**, and throws only when a file will not parse.
 A type error transpiles happily and ships; `bun run typecheck` is the only gate that catches it. A
@@ -175,7 +178,8 @@ navigations resolving out of order, and reports a failed import through the toas
 
 `bun run start:dev` sets `GAINZ_DEV=1`, and the server then injects `dev/hot.ts` into the index page
 and opens `/dev/ws`, over which it pushes one message per file saved under `src/frontend/` (the
-backend half is described in `docs/backend.md`). `bun start` does neither.
+backend half is described in `docs/backend.md`). `bun start` does neither, and neither does a built
+`dist/gainz.js`, whatever `GAINZ_DEV` says.
 
 Saving a `.css` restyles the page in place, with no reload and no lost form state or scroll
 position. That costs nothing because every component adopts its `CSSStyleSheet` objects by
@@ -230,7 +234,8 @@ operating system around afterwards.
 Pico is served from `node_modules` at `/vendor/pico.css` through an explicit one-file allowlist in
 `src/backend/features/static` — installing a package never publishes anything the app did not ask to
 serve. The build is the pico default theme; swapping themes is a one-line change to
-`VENDOR_FILES`.
+`VENDOR_FILES`. A single-file build carries Pico inside it and serves it at the same
+`/vendor/pico.css`.
 
 ## Tests
 

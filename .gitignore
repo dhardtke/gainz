@@ -4,6 +4,9 @@ node_modules/
 # bun (bun.lock is committed on purpose)
 .bun/
 
+# build output
+dist/
+
 # database (local data, not source)
 data/*.sqlite
 data/*.sqlite-shm
