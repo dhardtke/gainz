@@ -1,7 +1,7 @@
-article {
+article.card {
   height: 100%;
   margin: 0;
-  padding: 0.9rem 1rem;
+  padding: var(--space-3) var(--space-4);
   display: flex;
   flex-direction: column;
   gap: 0.1rem;
@@ -10,7 +10,7 @@ article {
 .label {
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--pico-muted-color);
+  color: var(--muted-foreground);
   font-weight: 600;
 }
 
@@ -21,5 +21,5 @@ article {
 }
 
 .hint {
-  color: var(--pico-muted-color);
+  color: var(--muted-foreground);
 }

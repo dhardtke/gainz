@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```sh
-bun install              # deps (Pico CSS + dev types/tooling)
+bun install              # deps (Oat + dev types/tooling)
 bun start                # serve API + frontend on PORT (default 3000)
 bun run start:dev        # same, with --watch
 bun run seed             # fill an empty DB with sample workouts
@@ -44,7 +44,7 @@ Details live in `docs/`:
 - `docs/frontend.md` — features and facades, components, import boundaries, loading, theming, tests, and
   why a module's URL is its path
 - `docs/coding-guidelines.md` — pinning, quote style, commits on `main`
-- `docs/styling-guidelines.md` — Pico, no CSS in JavaScript, no font sizes
+- `docs/styling-guidelines.md` — Oat, no CSS in JavaScript, no font sizes
 
 That list is the only index in the repository: a document added to `docs/` is added here in the
 same commit.

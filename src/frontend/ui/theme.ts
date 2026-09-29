@@ -1,19 +1,9 @@
 /**
  * Color theme preference: light or dark.
  *
- * Pico themes an element through a `data-theme` attribute, and its rules only
- * reach a shadow root through `:host`. So the choice is mirrored onto the
- * document element *and* onto every component host — base.ts does the latter
- * for all of them.
- *
- * The two cases inside a shadow root resolve like this:
- *   data-theme=light → `:host(:not([data-theme=dark]))` matches, forcing light;
- *   data-theme=dark  → Pico only ships a bare `[data-theme=dark]`, which cannot
- *                     match a host from inside its own shadow root. No rule
- *                     matches, so the colours inherit from the document
- *                     element, which carries the same attribute. Pico's base
- *                     `:host,:root` block sets no colours, so nothing local
- *                     overrides that inheritance.
+ * The choice is a `data-theme` attribute on `<html>`, which app.css turns into
+ * `color-scheme`. Oat colours every token with `light-dark()`, and `color-scheme`
+ * inherits into every shadow root, so setting it once on the document is enough.
  */
 
 export type Theme = 'light' | 'dark';
@@ -55,9 +45,8 @@ export function currentTheme(): Theme {
   return current;
 }
 
-/** Mirrors the current choice onto one element (a shadow host, or <html>). */
-export function applyThemeTo(element: Element): void {
-  element.setAttribute('data-theme', current);
+function applyTheme(): void {
+  document.documentElement.setAttribute('data-theme', current);
 }
 
 export function setTheme(theme: Theme): void {
@@ -70,7 +59,7 @@ export function setTheme(theme: Theme): void {
     localStorage.setItem(STORAGE_KEY, theme);
   } catch {}
 
-  applyThemeTo(document.documentElement);
+  applyTheme();
   window.dispatchEvent(new CustomEvent(EVENT, { detail: { theme } }));
 }
 
@@ -88,5 +77,5 @@ export function onThemeChange(listener: () => void): () => void {
 
 // The inline script has already covered the first paint for a stored choice;
 // this pins the attribute down for the unstored case too, where that script
-// deliberately leaves it off and lets Pico's media query paint the first frame.
-applyThemeTo(document.documentElement);
+// deliberately leaves it off so Oat's `color-scheme: light dark` paints the first frame.
+applyTheme();

@@ -5,7 +5,7 @@ import { html } from '../../ui/html.ts';
 import { formatDate, formatVolume, plural, relativeDay, todayIso } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
 import type { WorkoutWithStatsDto } from '../../../shared/dto/workout.ts';
-import { toast, toastError } from '../../ui/gz-toast.component.ts';
+import { toast, toastError } from '../../ui/toast.ts';
 import { workoutFacade } from './workouts.facade.ts';
 
 /**
@@ -86,7 +86,7 @@ export class GzWorkoutListComponent extends GzElement {
 
   #newWorkoutForm(): RawHtml {
     return html`
-      <article class="stack-sm">
+      <article class="card vstack gap-2">
         <h2>New workout</h2>
         <form class="new-form" data-action="create">
           <div class="fields">
@@ -117,31 +117,31 @@ export class GzWorkoutListComponent extends GzElement {
     const { items, total } = this.#state;
 
     return html`
-      <div class="stack">
-        <div class="row-between">
+      <div class="vstack">
+        <div class="hstack justify-between gap-2">
           <h1>Workouts</h1>
-          <span class="badge">${plural(total, 'session')}</span>
+          <span class="badge outline">${plural(total, 'session')}</span>
         </div>
 
         ${this.#newWorkoutForm()}
 
-        <div class="stack-sm">
+        <div class="vstack gap-2">
           ${
             items.length === 0
               ? html`<p class="empty">No sessions logged yet. Start one above.</p>`
               : items.map(
                   (workout) => html`
-                    <article class="open-card">
+                    <article class="card open-card">
                       <div class="grow">
                         <a class="open" href="/workouts/${workout.id}">${workout.title ?? formatDate(workout.performedOn)}</a>
-                        <div class="muted">${formatDate(workout.performedOn)} · ${relativeDay(workout.performedOn)}</div>
+                        <div class="text-light">${formatDate(workout.performedOn)} · ${relativeDay(workout.performedOn)}</div>
                       </div>
-                      <span class="badge">
+                      <span class="badge outline">
                         ${plural(workout.setCount, 'set')} · ${plural(workout.exerciseCount, 'exercise')} · ${formatVolume(workout.totalVolume)}
                       </span>
                       <div class="actions">
                         <button
-                          class="secondary outline compact"
+                          class="outline"
                           data-action="repeat"
                           data-id="${workout.id}"
                           data-title="${workout.title ?? ''}"
@@ -156,11 +156,7 @@ export class GzWorkoutListComponent extends GzElement {
           }
         </div>
 
-        ${
-          items.length < total
-            ? html` <button class="secondary outline" data-action="load-more">Load ${Math.min(PAGE_SIZE, total - items.length)} more</button> `
-            : ''
-        }
+        ${items.length < total ? html` <button class="outline" data-action="load-more">Load ${Math.min(PAGE_SIZE, total - items.length)} more</button> ` : ''}
       </div>
     `;
   }

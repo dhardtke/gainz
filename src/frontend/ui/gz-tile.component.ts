@@ -15,7 +15,7 @@ class GzTileComponent extends GzElement {
   override template(): RawHtml {
     const hint = this.getAttribute('hint');
     return html`
-      <article>
+      <article class="card">
         <span class="label">${this.getAttribute('label')}</span>
         <strong class="value">${this.getAttribute('value') ?? '–'}</strong>
         ${hint ? html`<span class="hint">${hint}</span>` : ''}

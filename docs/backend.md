@@ -176,8 +176,8 @@ HTTP like the route tests, but against the built file, copied alone into a tempo
 run in a child process — so it sits beside the route tests rather than among the exceptions.
 
 Static serving is deliberately narrow: `src/frontend/` with a path-escape guard, plus `VENDOR_FILES`
-in `internal/paths.ts` — a one-file allowlist into `node_modules` (`/vendor/pico.css`). Serving anything
-else from a package means adding it to that map. A trailing slash asks for `index.html` in that
+in `internal/paths.ts` — an allowlist of single files into `node_modules`, of any type (`/vendor/oat.css`,
+`/vendor/oat.js`). Serving anything else from a package means adding it to that map. A trailing slash asks for `index.html` in that
 directory, and a directory without one is a 404 rather than the single-page app — otherwise the
 extension-less fallback would mask a real miss, which is the thing it exists to avoid.
 
@@ -192,8 +192,8 @@ fallback, the client injection and the ETag for both sources. Vendor files sit i
 they stay reachable only at their literal URL, exactly as on disk. `static.routes.ts` only declares
 the URLs that reach the controller.
 
-The static feature keeps no map of content types. The vendor stylesheet and transpiled modules get
-a fixed `Content-Type`, and every plain file takes `Bun.file(x).type` — the same lookup
+The static feature keeps no map of content types. Transpiled modules get a fixed `Content-Type`,
+and every plain file — vendor files included — takes `Bun.file(x).type` — the same lookup
 `new Response(Bun.file(x))` uses, off a complete MIME database (`.svg` → `image/svg+xml`, `.woff2` →
 `font/woff2`, `.png` → `image/png`, `.webp` → `image/webp`, no extension →
 `application/octet-stream`, all measured on Bun 1.4.2), so a hand-written map would be a subset
@@ -205,16 +205,16 @@ and there is no `fetch` behind it to say otherwise. An unmatched verb on a vendo
 through to `/*` and is answered there.
 
 Assets carry hash-free URLs, so every static `200` — files, transpiled modules, the index page and
-the vendor stylesheet alike — is sent `Cache-Control: no-cache` with a strong `ETag` hashed from the
+the vendor files alike — is sent `Cache-Control: no-cache` with a strong `ETag` hashed from the
 exact body with `Bun.hash`. A `GET` or `HEAD` whose `If-None-Match` matches (in a comma-separated
 list, as `*`, or with a `W/` prefix, per RFC 9110 weak comparison) gets an empty `304`. Bun does
 neither of these itself: measured on 1.4.2, a `Bun.file` response has no validator, and a response
 that sets `ETag` is still a full `200` when the tag matches. The tag is a content hash rather than
 mtime and size because it changes exactly when the bytes do, it covers transpiler output that
 depends on the Bun version, and hashing files of this app's size costs well under a millisecond.
-A `304` still reads or transpiles the file; only the transfer is saved. The vendor stylesheet used
-to be cached for an hour, which let a browser keep a stale Pico after `bun install`; it is now
-revalidated like everything else. Error responses carry no `ETag`.
+A `304` still reads or transpiles the file; only the transfer is saved. Vendor files used to be
+cached for an hour, which let a browser keep a stale vendor file (Pico, at the time) after
+`bun install`; they are now revalidated like everything else. Error responses carry no `ETag`.
 
 ## Hot reload (`features/dev/`)
 

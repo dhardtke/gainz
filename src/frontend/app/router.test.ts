@@ -163,7 +163,7 @@ describe('linkPath', () => {
   });
 
   test('a file leaves it to the browser', () => {
-    expect(linkPath(click, { ...link, href: `${origin}/vendor/pico.css` }, origin)).toBeNull();
+    expect(linkPath(click, { ...link, href: `${origin}/vendor/oat.css` }, origin)).toBeNull();
   });
 
   test('a query string or a fragment leaves it to the browser', () => {

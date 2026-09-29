@@ -4,7 +4,7 @@ import { html } from '../../../ui/html.ts';
 import { formatNumber, formatVolume, UNIT } from '../../../ui/format.ts';
 import type { ExerciseDto } from '../../../../shared/dto/exercise.ts';
 import type { LiftSetDto } from '../../../../shared/dto/set.ts';
-import { toast, toastError } from '../../../ui/gz-toast.component.ts';
+import { toast, toastError } from '../../../ui/toast.ts';
 import { setFacade } from '../workouts.facade.ts';
 
 /**
@@ -128,7 +128,7 @@ export class GzSetRowComponent extends GzElement {
           <input name="notes" type="text" maxlength="2000" value="${set.notes ?? ''}" />
         </div>
         <button type="submit">Save</button>
-        <button class="secondary outline" type="button" data-action="cancel">Cancel</button>
+        <button class="outline" type="button" data-action="cancel">Cancel</button>
       </form>
     `;
   }
@@ -150,9 +150,9 @@ export class GzSetRowComponent extends GzElement {
         <span class="note">${set.notes ?? ''}</span>
         <span class="actions">
           <span class="volume mono">${formatVolume(set.weight * set.reps)}</span>
-          <button class="secondary outline compact" data-action="edit">Edit</button>
-          <button class="secondary outline compact" data-action="duplicate" title="Log another set just like this one">+1</button>
-          <button class="danger compact" data-action="delete" aria-label="Delete set">×</button>
+          <button class="outline" data-action="edit">Edit</button>
+          <button class="outline" data-action="duplicate" title="Log another set just like this one">+1</button>
+          <button class="ghost" data-variant="danger" data-action="delete" aria-label="Delete set">×</button>
         </span>
       </div>
     `;

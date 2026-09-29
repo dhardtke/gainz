@@ -10,25 +10,14 @@
   display: flex;
   gap: 0.35rem;
   flex-wrap: wrap;
-
-  & button {
-    margin-bottom: 0;
-
-    /* The selected metric reads as pressed rather than merely hovered. */
-    &[aria-pressed="true"] {
-      --pico-background-color: var(--pico-primary-background);
-      --pico-border-color: var(--pico-primary-border);
-      --pico-color: var(--pico-primary-inverse);
-    }
-  }
 }
 
 .up {
-  color: var(--pico-ins-color, #2e7d32);
+  color: var(--success);
 }
 
 .down {
-  color: var(--pico-del-color, #c0392b);
+  color: var(--danger);
 }
 
 td.name {

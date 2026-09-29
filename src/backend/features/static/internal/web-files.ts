@@ -59,9 +59,9 @@ class DiskWebFiles implements WebFiles {
 
     const file = Bun.file(path);
     if (!(await file.exists())) {
-      return { kind: 'error', message: 'Vendor stylesheet missing — run `bun install`' };
+      return { kind: 'error', message: 'Vendor file missing — run `bun install`' };
     }
-    return { kind: 'file', body: await file.bytes(), type: 'text/css;charset=utf-8' };
+    return { kind: 'file', body: await file.bytes(), type: file.type };
   }
 }
 

@@ -1,13 +1,14 @@
 # Styling guidelines
 
-- **Pico first.** Pico CSS provides typography, colours, form controls, tables and both themes.
-  Hand-written CSS is a thin layer built from Pico's own `--pico-*` custom properties, so it follows
-  the active theme. Before writing a box of your own, check whether Pico already draws it, because
-  its components are plain elements rather than class names and are easy to miss: **a card is
-  `<article>`** — background, shadow, radius and padding from `--pico-card-*`, in both themes — a
-  heading with a subtitle is `<hgroup>`, a dropdown is `<details class="dropdown">`, and a loading
-  state is `aria-busy="true"`. Hand-rolling one of these produces a box that competes with Pico and
-  has to be re-themed by hand.
+- **Oat first.** [Oat](https://oat.ink) provides typography, colours, form controls, tables and both
+  themes. Hand-written CSS is a thin layer built from Oat's unprefixed tokens (`--primary`,
+  `--muted-foreground`, `--border`, `--space-*`, `--radius-medium`, …), so it follows the active
+  theme. Before writing a box of your own, check whether Oat already draws it: **a card is `.card`**,
+  a dropdown is `<ot-dropdown>`, a loading state is `aria-busy="true"`, layout is
+  `.vstack` / `.hstack` / `.gap-*`, a scrolling table is `<div class="table">`, and a toast is
+  `toast()` from `ui/toast.ts`, which calls `ot.toast()`. Hand-rolling one of these produces a box that
+  competes with Oat and has to be re-themed by hand. Never name a bespoke class after an Oat
+  component or utility — `.row`, `.badge`, `.toast`, `.error`, `.small` and `.table` are all Oat's.
 - **No CSS in JavaScript.** Every rule lives in an external `.css` file — `ui/app.css` for the
   document, `ui/shared.css` for utilities adopted by every component, and a component's `<tag>.component.css`
   beside its `<tag>.component.ts`.
@@ -16,25 +17,18 @@
   `article.open-card { &:hover .open { … } & .actions { … } }`, so each block reads as one component
   and the media queries that only adjust it sit inside it. There is no preprocessor: this is the
   browser's own nesting, and `&` is always written explicitly.
-- **No stylesheet declares a font size.** Body text is one size everywhere, headings come from
-  Pico's scale, and emphasis is weight and colour. Two rules hold that in place: `app.css` pins
-  `--pico-font-size: 100%`, because Pico otherwise grows the root font with the viewport up to
-  `131.25%`; and `shared.css` sets `font-size: inherit` on `:host`, because Pico applies
-  `font-size: var(--pico-font-size)` to `:host, :root` — written to land once at the document
-  root, but every component adopts Pico, so the percentage re-applied at each shadow host and
-  _multiplied_ with nesting. `gz-app > gz-dashboard > gz-tile` reached 39px from a 20px root.
-  For the same reason `gz-chart` draws only geometry in SVG and positions its axis labels as HTML
-  over the plot: a font size inside a `viewBox` is measured in user units, so the browser would
-  scale the lettering with the chart instead of matching the page.
-- **Colour buttons with Pico's own variant classes** (`secondary`, `contrast`, `outline`, …), never
-  with custom CSS or `--pico-*` overrides on the button. The one exception is an icon-only control
-  in the header nav, which resets Pico's button or dropdown-summary styling so it reads as a nav
-  link: an action belongs in a `<button>`, and Pico has no link-look button variant. There are two
-  instances: `gz-theme-toggle`'s sun/moon button, and the hamburger `<summary>` of the narrow-screen
-  menu in `gz-header`.
-- Shadow roots don't inherit document styles, so Pico is adopted into each one _and_ linked in
-  `index.html`. Theme is mirrored onto every host as `data-theme` because Pico reaches a shadow
-  root only via `:host`.
+- **No stylesheet declares a font size.** Body text is Oat's `1rem` everywhere, headings come from
+  Oat's fluid scale, and emphasis is weight and colour. Oat sets no root or `:host` font size, so
+  nothing has to be pinned. For the same reason `gz-chart` draws only geometry in SVG and positions
+  its axis labels as HTML over the plot: a font size inside a `viewBox` is measured in user units,
+  so the browser would scale the lettering with the chart instead of matching the page.
+- **Colour buttons only with Oat's variants** — `data-variant="secondary|danger"`, `.outline`,
+  `.ghost`, `.icon` — never with custom CSS or token overrides on the button. No exceptions remain:
+  the header's icon-only controls are `.ghost.icon` buttons.
+- Shadow roots don't inherit document styles, so Oat is adopted into each one _and_ linked in
+  `index.html`. Its tokens are declared on `:root` and reach every shadow root by inheritance. The
+  theme is `data-theme` on `<html>`, which `app.css` turns into `color-scheme`; Oat's
+  `light-dark()` tokens follow it everywhere.
 - **CSS keeps double quotes**, while the TypeScript around it uses single ones. Double quotes are
   the prevailing CSS convention, so `.oxfmtrc.json` overrides `singleQuote` back off for
   `**/*.css`; that file is plain JSON and cannot carry a comment saying why, so the reason lives

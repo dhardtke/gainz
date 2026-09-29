@@ -1,26 +1,7 @@
-/* Sun/moon icon button for the colour theme, reset to read as a header nav link. */
+/* Sun/moon icon button for the colour theme: an Oat ghost icon button. */
 
-/* This shadow root is out of reach of Pico's `nav li button` rule, so the
-   button sets its own nav-link spacing. */
 .theme-toggle {
-  --pico-background-color: transparent;
-  --pico-border-color: transparent;
-  --pico-color: var(--pico-contrast);
-  --pico-box-shadow: none;
-  display: inline-flex;
-  margin: calc(var(--pico-nav-link-spacing-vertical) * -1) calc(var(--pico-nav-link-spacing-horizontal) * -1);
-  padding: calc(var(--pico-nav-link-spacing-vertical) - var(--pico-border-width) * 2) var(--pico-nav-link-spacing-horizontal);
-
-  &:is(:hover, :active, :focus) {
-    --pico-background-color: transparent;
-    --pico-border-color: transparent;
-    --pico-color: var(--pico-contrast-hover);
-    --pico-box-shadow: none;
-  }
-
-  &:focus-visible {
-    --pico-box-shadow: 0 0 0 var(--pico-outline-width) var(--pico-contrast-focus);
-  }
+  color: var(--foreground);
 }
 
 svg.icon-theme-toggle {

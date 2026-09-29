@@ -3,14 +3,14 @@ import { define, GzElement } from '../ui/base.ts';
 import { html } from '../ui/html.ts';
 import { currentPath, linkPath, matchRoute, navigate, onRouteChange } from './router.ts';
 import { ROUTES } from './routes.ts';
-import { toastError } from '../ui/gz-toast.component.ts';
+import { toastError } from '../ui/toast.ts';
 import './gz-header.component.ts';
 
 /**
- * Application shell: a persistent header plus a view slot.
+ * Application shell: a persistent header and view slot.
  *
  * The shell renders once; route changes only swap the element inside <main>,
- * so the header and the toast stack survive navigation.
+ * so the header survives navigation. Toasts live in the document, not here.
  */
 class GzAppComponent extends GzElement {
   #unsubscribe: (() => void) | null = null;
@@ -112,8 +112,6 @@ class GzAppComponent extends GzElement {
       <main class="container"></main>
 
       <footer class="container">Weights in kilograms · estimated 1RM uses the Epley formula.</footer>
-
-      <gz-toast></gz-toast>
     `;
   }
 }

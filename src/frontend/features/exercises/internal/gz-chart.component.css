@@ -19,7 +19,7 @@
   grid-column: 1;
   grid-row: 1;
   position: relative;
-  color: var(--pico-muted-color);
+  color: var(--muted-foreground);
 
   & .sizer {
     display: block;
@@ -59,20 +59,20 @@ svg {
 }
 
 .grid {
-  stroke: var(--pico-muted-border-color);
+  stroke: var(--border);
   stroke-width: 1;
 }
 
 .line {
   fill: none;
-  stroke: var(--pico-primary);
+  stroke: var(--primary);
   stroke-width: 2.5;
   stroke-linejoin: round;
   stroke-linecap: round;
 }
 
 .area {
-  fill: var(--pico-primary);
+  fill: var(--primary);
   opacity: 0.1;
 }
 
@@ -82,9 +82,9 @@ svg {
   width: 0.55rem;
   height: 0.55rem;
   margin: -0.275rem 0 0 -0.275rem;
-  border: 2px solid var(--pico-primary);
+  border: 2px solid var(--primary);
   border-radius: 50%;
-  background: var(--pico-card-background-color);
+  background: var(--card);
   cursor: pointer;
 }
 
@@ -93,7 +93,7 @@ svg {
   grid-row: 2;
   position: relative;
   height: 1.5em;
-  color: var(--pico-muted-color);
+  color: var(--muted-foreground);
 
   & .tick {
     position: absolute;

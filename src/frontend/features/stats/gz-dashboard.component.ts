@@ -6,7 +6,7 @@ import { formatDate, formatVolume, plural, relativeDay, todayIso } from '../../u
 import { navigate } from '../../app/router.ts';
 import type { SummaryDto } from '../../../shared/dto/stats.ts';
 import type { WorkoutWithStatsDto } from '../../../shared/dto/workout.ts';
-import { toastError } from '../../ui/gz-toast.component.ts';
+import { toastError } from '../../ui/toast.ts';
 import { workoutFacade } from '../workouts/workouts.facade.ts';
 import { statsFacade } from './stats.facade.ts';
 import '../../ui/gz-tile.component.ts';
@@ -56,14 +56,14 @@ export class GzDashboardComponent extends GzElement {
     const { summary, workouts } = this.#state;
 
     return html`
-      <div class="stack">
-        <div class="row-between">
-          <div>
+      <div class="vstack">
+        <div class="hstack justify-between gap-2">
+          <hgroup>
             <h1>Dashboard</h1>
-            <p class="muted">
+            <p class="text-light">
               ${summary.lastPerformedOn ? html`Last session ${relativeDay(summary.lastPerformedOn)}.` : html`Nothing logged yet — time for session one.`}
             </p>
-          </div>
+          </hgroup>
           <button data-action="start-workout">Log today's workout</button>
         </div>
 
@@ -74,8 +74,8 @@ export class GzDashboardComponent extends GzElement {
           <gz-tile label="Exercises" value="${summary.exerciseCount}" hint="${plural(summary.totalReps, 'rep')} lifted"></gz-tile>
         </div>
 
-        <section class="stack-sm">
-          <div class="row-between">
+        <section class="vstack gap-2">
+          <div class="hstack justify-between gap-2">
             <h2>Recent workouts</h2>
             <a href="/workouts">See all</a>
           </div>
@@ -84,12 +84,12 @@ export class GzDashboardComponent extends GzElement {
               ? html`<p class="empty">No workouts yet. Log one and it will show up here.</p>`
               : workouts.map(
                   (workout) => html`
-                    <article class="open-card">
+                    <article class="card open-card">
                       <div class="grow">
                         <a class="open" href="/workouts/${workout.id}">${workout.title ?? formatDate(workout.performedOn)}</a>
-                        <div class="muted">${relativeDay(workout.performedOn)}</div>
+                        <div class="text-light">${relativeDay(workout.performedOn)}</div>
                       </div>
-                      <span class="badge">${plural(workout.setCount, 'set')} · ${formatVolume(workout.totalVolume)}</span>
+                      <span class="badge outline">${plural(workout.setCount, 'set')} · ${formatVolume(workout.totalVolume)}</span>
                     </article>
                   `,
                 )

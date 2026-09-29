@@ -5,7 +5,7 @@ and the reps, weight and notes for each one.
 
 - **Backend** — [Bun](https://bun.sh) serving a REST API over SQLite (`bun:sqlite`).
 - **Frontend** — TypeScript custom elements and ES modules styled with
-  [Pico CSS](https://picocss.com). No framework, and no build step in
+  [Oat](https://oat.ink). No framework, and no build step in
   development: there is no bundler and no output directory, and the server
   erases the types as it hands each file over, one module per request. For
   deployment, `bun run build` produces one file that carries it all.
@@ -15,7 +15,7 @@ and the reps, weight and notes for each one.
 Requires [Bun](https://bun.sh) 1.4 or newer.
 
 ```sh
-bun install          # Pico CSS, plus TypeScript types for development
+bun install          # Oat, plus TypeScript types for development
 bun run seed         # optional: a few weeks of sample history
 bun start            # http://localhost:3000
 ```

@@ -9,7 +9,7 @@ import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import type { WorkoutWithSetsDto } from '../../../shared/dto/workout.ts';
 import type { ExerciseId, WorkoutId } from '../../../shared/flavors.ts';
 import type { GzSetRowComponent } from './internal/gz-set-row.component.ts';
-import { toast, toastError } from '../../ui/gz-toast.component.ts';
+import { toast, toastError } from '../../ui/toast.ts';
 import { exerciseFacade } from '../exercises/exercises.facade.ts';
 import { setFacade, workoutFacade } from './workouts.facade.ts';
 import './internal/gz-set-row.component.ts';
@@ -263,15 +263,15 @@ export class GzWorkoutDetailComponent extends GzElement {
     };
 
     return html`
-      <div class="row-between">
+      <div class="hstack justify-between gap-2">
         <hgroup>
           <h1>${workout.title ?? formatDate(workout.performedOn)}</h1>
-          <p>${formatDate(workout.performedOn)} · ${relativeDay(workout.performedOn)}</p>
+          <p class="text-light">${formatDate(workout.performedOn)} · ${relativeDay(workout.performedOn)}</p>
         </hgroup>
-        <button class="danger" data-action="delete-workout">Delete</button>
+        <button class="ghost" data-variant="danger" data-action="delete-workout">Delete</button>
       </div>
-      <article>
-        <form class="stack-sm" data-action="save-workout">
+      <article class="card">
+        <form class="vstack gap-2" data-action="save-workout">
           <div class="fields">
             <div class="field">
               <label for="performedOn">Date</label>
@@ -286,7 +286,7 @@ export class GzWorkoutDetailComponent extends GzElement {
             <label for="notes">Session notes</label>
             <textarea id="notes" name="notes" maxlength="2000" placeholder="How did it feel?">${edits.notes}</textarea>
           </div>
-          <div class="row">
+          <div class="hstack gap-2">
             <button type="submit">Save</button>
           </div>
         </form>
@@ -302,7 +302,7 @@ export class GzWorkoutDetailComponent extends GzElement {
     const selected = this.#draft.exerciseId;
 
     return html`
-      <article class="add-form stack-sm">
+      <article class="card add-form vstack gap-2">
         <h2>Add a set</h2>
         <form data-action="add-set">
           <div class="fields">
@@ -364,7 +364,7 @@ export class GzWorkoutDetailComponent extends GzElement {
     }
     if (this.#state.status === 'error') {
       return html`
-        <div class="stack">
+        <div class="vstack">
           <p class="error-text">${this.#state.message}</p>
           <p><a href="/workouts">Back to all workouts</a></p>
         </div>
@@ -378,19 +378,19 @@ export class GzWorkoutDetailComponent extends GzElement {
     const breakdown = this.#breakdown(sets);
 
     return html`
-      <div class="stack">
+      <div class="vstack">
         ${this.#headerTemplate(workout)}
 
         <div class="totals">
-          <span class="badge">${plural(sets.length, 'set')}</span>
-          <span class="badge">${plural(breakdown.length, 'exercise')}</span>
-          <span class="badge">${plural(reps, 'rep')}</span>
-          <span class="badge">${formatVolume(volume)} total volume</span>
+          <span class="badge outline">${plural(sets.length, 'set')}</span>
+          <span class="badge outline">${plural(breakdown.length, 'exercise')}</span>
+          <span class="badge outline">${plural(reps, 'rep')}</span>
+          <span class="badge outline">${formatVolume(volume)} total volume</span>
         </div>
 
         ${this.#addSetTemplate()}
 
-        <section class="stack-sm">
+        <section class="vstack gap-2">
           <h2>Sets</h2>
           ${
             sets.length === 0
@@ -403,9 +403,9 @@ export class GzWorkoutDetailComponent extends GzElement {
           breakdown.length === 0
             ? ''
             : html`
-                <article class="stack-sm">
+                <article class="card vstack gap-2">
                   <h2>By exercise</h2>
-                  <div class="overflow-auto">
+                  <div class="table">
                     <table class="breakdown">
                       <thead>
                         <tr>
@@ -427,7 +427,7 @@ export class GzWorkoutDetailComponent extends GzElement {
                               <td class="num">${formatNumber(entry.top)} ${UNIT}</td>
                               <td class="num">${formatVolume(entry.volume)}</td>
                               <td class="num">
-                                <button class="secondary outline compact" data-action="repeat-exercise" data-id="${entry.id}">Another set</button>
+                                <button class="outline" data-action="repeat-exercise" data-id="${entry.id}">Another set</button>
                               </td>
                             </tr>
                           `,

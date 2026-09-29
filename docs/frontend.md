@@ -1,7 +1,7 @@
 # Frontend (`src/frontend/`)
 
-`index.html` is the only page: it links Pico and `ui/app.css`, applies a stored theme in a small
-inline script before the first paint, and loads `main.ts` as a module. `main.ts` only imports the
+`index.html` is the only page: it links Oat and `ui/app.css`, applies a stored theme in a small
+inline script before the first paint, loads Oat's `oat.js` deferred, and `main.ts` as a module. `main.ts` only imports the
 `app/gz-app.component.ts` shell. Routes are real paths such as `/workouts/3`, and the server answers
 each with `index.html` because it carries no extension.
 
@@ -11,7 +11,7 @@ src/frontend/
 ├── dev/        hot.ts (development only)
 ├── app/        gz-app, gz-header, gz-theme-toggle, router.ts, routes.ts
 ├── http/       http.ts (get/post/patch/remove), errors.ts (ApiError, errorMessage)
-├── ui/         base.ts, html.ts, styles.ts, theme.ts, format.ts, app.css, shared.css, gz-toast, gz-tile
+├── ui/         base.ts, html.ts, styles.ts, theme.ts, format.ts, app.css, shared.css, toast.ts, gz-tile
 └── features/
     ├── exercises/  exercises.routes.ts, exercises.facade.ts, gz-exercise-list, gz-exercise-detail
     │   └── internal/  exercise.api.ts, gz-chart
@@ -31,8 +31,8 @@ holds `ApiError` and `errorMessage`, kept apart so a component can catch an erro
 able to make a request. `ui/` is what any component may use: `base.ts` with `GzElement` (open
 shadow root, `data-action` click/submit delegation, `template()`/`render()`) and `define()`;
 `html.ts` with the escaping `html` tagged template and `raw()`; `styles.ts`, `theme.ts` and `format.ts`; the document stylesheet
-`app.css` and the utilities in `shared.css`; and the two widgets several views use, `gz-toast` and
-`gz-tile`.
+`app.css` and the utilities in `shared.css`; `toast.ts`, whose `toast()` and `toastError()` show Oat's toasts
+through `ot.toast()`; and `gz-tile`, the stat tile several views use.
 
 A component is a pair of files side by side, `gz-<name>.component.ts` and `gz-<name>.component.css`, in whichever
 directory owns it. A component module ends with `await define('<tag>', TheClass, import.meta.url)`,
@@ -71,14 +71,16 @@ route it is; when nothing matches it shows its own not-found message. A route ma
 spreads the features — so adding a list page needs no edit in `app/` beyond a new feature's spread.
 `gz-app` renders `gz-header` above its `<main>`; the header's host is the sticky element, because a
 `<header>` inside its shadow root would be only as tall as its host and could never stick.
-The header is a Pico `<nav>`: the brand on the left, then the page links as plain `secondary`
-links, with `contrast` and `aria-current="page"` on the current page, then a thin divider and the
-theme toggle. Both classes are Pico's own; the swap is there because Pico's nav hides the underline
-its `aria-current` styling relies on, so the attribute alone barely shows. Below 560 px the links
-render a second time inside a Pico `<details class="dropdown">` behind a hamburger, and CSS shows
-one list at a time rather than a resize listener choosing. `gz-header` subscribes to `onRouteChange` itself, and
-on every route change its `nav a[data-path]` loop highlights both lists and it closes the dropdown. Inside the dropdown Pico sets
-the link colour itself, so there the current page shows through Pico's `aria-current` background. A route file only
+The header is a flex `<nav>`: the brand on the left, then the page links in `--muted-foreground`,
+with `aria-current="page"` and `--foreground` on the current page, then a thin divider and the
+theme toggle. Below 560 px the links render a second time inside Oat's `<ot-dropdown>` — a
+`.ghost.icon` hamburger with `popovertarget` and a `<menu popover>` of `role="menuitem"` links —
+and CSS shows one list at a time rather than a resize listener choosing. `ot-dropdown` works
+inside the header's shadow root because it uses no shadow DOM of its own, queries only its own
+children, and a `popovertarget` ID resolves within its tree; it positions the menu, closes it on
+Esc or an outside click, and moves between items with the arrow keys. `gz-header` subscribes to
+`onRouteChange` itself, and on every route change its `nav a[data-path]` loop marks the current
+page in both lists and closes the menu if it is open. A route file only
 `import type`s `RouteDef` from `app/router.ts`, so it loads up front at almost no cost and reaches
 its views only through `import()`.
 
@@ -170,8 +172,8 @@ it — so the `await import('./gz-exercise-detail.component.ts')` in the exercis
 only when that view _and_ everything it renders have their scripts and their CSS. A lazily loaded
 page is fully styled on its first paint; there is no flash to guard against.
 
-Only the shell (`gz-app`, `gz-header`, `gz-toast`, `gz-theme-toggle`), `app/routes.ts` with the three feature
-route files, and Pico plus `ui/shared.css` load up front. `gz-app` keeps the outgoing view on screen while the next one loads, guards against two
+Only the shell (`gz-app`, `gz-header`, `gz-theme-toggle`), `app/routes.ts` with the three feature
+route files, and Oat plus `ui/shared.css` load up front. `gz-app` keeps the outgoing view on screen while the next one loads, guards against two
 navigations resolving out of order, and reports a failed import through the toast.
 
 ## Hot reload
@@ -185,7 +187,7 @@ Saving a `.css` restyles the page in place, with no reload and no lost form stat
 position. That costs nothing because every component adopts its `CSSStyleSheet` objects by
 reference: `reloadSheet` in `ui/styles.ts` refetches into the **same** object, and every live
 instance picks the change up without re-rendering. A stylesheet in the document rather than a
-shadow root — `ui/app.css`, and Pico's `<link>` — is swapped for a fresh `<link>`, the old one
+shadow root — `ui/app.css`, and Oat's `oat.css` `<link>` — is swapped for a fresh `<link>`, the old one
 removed only once the new one has loaded. A stylesheet the page has never fetched reloads the page.
 
 Saving a `.ts` or `index.html` reloads the page, because a module cannot be evaluated a second time:
@@ -207,19 +209,11 @@ anyway.
 
 ## Theming
 
-`src/frontend/ui/theme.ts` holds the preference and mirrors it onto `<html>`; `ui/base.ts` mirrors
-it onto every component host too, because Pico can only reach a shadow root through `:host`. There
-are two states, and one Pico rule covers each:
-
-| Host `data-theme` | Rule that matches                                                                                       | Result                                          |
-| ----------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `light`           | `:host(:not([data-theme=dark]))`                                                                        | forced light                                    |
-| `dark`            | none — Pico ships a bare `[data-theme=dark]`, which cannot match a host from inside its own shadow root | colours inherit from `<html data-theme="dark">` |
-
-The second row works because custom properties inherit and Pico's base `:host,:root` block sets no
-colours, only typography and spacing. Any component added later gets this for free from
-`GzElement`.
-
+`src/frontend/ui/theme.ts` holds the preference and sets it as `data-theme` on `<html>` alone.
+`ui/app.css` turns that attribute into `color-scheme: light` or `color-scheme: dark`. Oat colours
+every token with `light-dark()` under `:root { color-scheme: light dark }`, and `color-scheme` is
+an inherited property, so the choice reaches every shadow root with no per-host mirroring. With no
+attribute set, Oat's `light dark` follows the system.
 The control is `gz-theme-toggle`, an icon-only `<button>` in the header that calls `toggleTheme()`.
 It shows a sun in light mode and a moon in dark mode, and its `aria-label` flips between "Turn on
 dark mode" and "Turn off dark mode". The template paints the current state, so a dark page loads as
@@ -231,11 +225,10 @@ A visitor who has never touched the theme toggle is seeded from `prefers-color-s
 The first flip stores an explicit choice that wins from then on, so the page does not follow the
 operating system around afterwards.
 
-Pico is served from `node_modules` at `/vendor/pico.css` through an explicit one-file allowlist in
-`src/backend/features/static` — installing a package never publishes anything the app did not ask to
-serve. The build is the pico default theme; swapping themes is a one-line change to
-`VENDOR_FILES`. A single-file build carries Pico inside it and serves it at the same
-`/vendor/pico.css`.
+Oat is served from `node_modules` at `/vendor/oat.css` and `/vendor/oat.js` through an explicit
+allowlist in `src/backend/features/static` — installing a package never publishes anything the app
+did not ask to serve. A single-file build carries both files inside it and serves them at the same
+URLs.
 
 ## Tests
 

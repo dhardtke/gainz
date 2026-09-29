@@ -1,10 +1,9 @@
 import { raw } from './html.ts';
 import type { RawHtml } from './html.ts';
 import { loadStyles, stylesFor } from './styles.ts';
-import { applyThemeTo, onThemeChange } from './theme.ts';
 
 /**
- * Base class for every component: an open shadow root styled by Pico,
+ * Base class for every component: an open shadow root styled by Oat,
  * the shared utilities and the element's own stylesheet, a render hook, and
  * click/submit delegation driven by `data-action` attributes.
  *
@@ -13,8 +12,6 @@ import { applyThemeTo, onThemeChange } from './theme.ts';
  * component never carries CSS in JavaScript.
  */
 export class GzElement extends HTMLElement {
-  #stopThemeSync: (() => void) | null = null;
-
   readonly root: ShadowRoot;
 
   constructor() {
@@ -40,19 +37,11 @@ export class GzElement extends HTMLElement {
   }
 
   connectedCallback(): void {
-    // Pico only themes a shadow root through :host, so the chosen theme has to
-    // be mirrored onto each host rather than set once on <html>.
-    applyThemeTo(this);
-    this.#stopThemeSync ??= onThemeChange(() => {
-      applyThemeTo(this);
-    });
     this.render();
   }
 
-  disconnectedCallback(): void {
-    this.#stopThemeSync?.();
-    this.#stopThemeSync = null;
-  }
+  /** Empty, but kept so subclasses can call `super.disconnectedCallback()`. */
+  disconnectedCallback(): void {}
 
   template(): RawHtml {
     return raw('');

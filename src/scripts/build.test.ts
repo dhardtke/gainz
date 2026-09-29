@@ -119,15 +119,16 @@ describe('single-file build', () => {
     expect(chart).not.toContain('sourceMappingURL');
   });
 
-  test('serves every component stylesheet, the app stylesheet and Pico', async () => {
-    const urls = ['/ui/app.css', '/vendor/pico.css'];
+  test('serves every component stylesheet, the app stylesheet and Oat', async () => {
+    const urls = ['/ui/app.css', '/vendor/oat.css', '/vendor/oat.js'];
     for await (const entry of new Bun.Glob('**/gz-*.component.ts').scan({ cwd: FRONTEND })) {
       urls.push(`/${entry.replaceAll('\\', '/').replace(/\.ts$/, '.css')}`);
     }
-    expect(urls.length).toBeGreaterThan(2);
+    expect(urls.length).toBeGreaterThan(3);
     for (const url of urls) {
       expect({ url, status: (await get(url)).status }).toEqual({ url, status: 200 });
     }
+    expect((await get('/vendor/oat.js')).headers.get('content-type')).toStartWith('text/javascript');
   });
 
   test('carries neither the dev client nor anything test-only', async () => {
@@ -138,7 +139,7 @@ describe('single-file build', () => {
 
   test('keeps the path guards', async () => {
     expect((await get('/ui/../main.ts')).status).toBe(200);
-    for (const url of ['/%2e%2e/backend/http/server.ts', '/%zz', '/vendor/%70ico.css']) {
+    for (const url of ['/%2e%2e/backend/http/server.ts', '/%zz', '/vendor/%6fat.css']) {
       expect({ url, status: (await get(url)).status }).toEqual({ url, status: 404 });
     }
   });

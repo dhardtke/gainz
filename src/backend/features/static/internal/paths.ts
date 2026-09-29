@@ -7,13 +7,14 @@ const REPO_ROOT = resolve(fileURLToPath(new URL('../../../../..', import.meta.ur
 export const FRONTEND_DIR = resolve(REPO_ROOT, 'src', 'frontend');
 
 /**
- * Third-party stylesheets served straight out of node_modules.
+ * Third-party files served straight out of node_modules.
  *
  * An explicit allowlist of single files rather than a served directory, so
  * installing a package never exposes anything the app did not ask to publish.
  */
 const VENDOR_FILES: Record<string, string> = {
-  '/vendor/pico.css': '@picocss/pico/css/pico.min.css',
+  '/vendor/oat.css': '@knadh/oat/oat.min.css',
+  '/vendor/oat.js': '@knadh/oat/oat.min.js',
 };
 
 export function vendorUrls(): string[] {
