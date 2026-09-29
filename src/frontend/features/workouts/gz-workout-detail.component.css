@@ -25,17 +25,3 @@
   flex-direction: column;
   gap: 0.4rem;
 }
-
-.breakdown {
-  & td.name {
-    font-weight: 600;
-  }
-
-  & a {
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-}

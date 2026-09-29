@@ -2,10 +2,9 @@ import { ApiError, errorMessage } from '../../http/errors.ts';
 import type { RawHtml } from '../../ui/html.ts';
 import { define, GzElement } from '../../ui/base.ts';
 import { html } from '../../ui/html.ts';
-import { formatDate, formatNumber, formatVolume, plural, relativeDay, UNIT } from '../../ui/format.ts';
+import { formatDate, formatVolume, plural, relativeDay, UNIT } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
 import type { ExerciseDto } from '../../../shared/dto/exercise.ts';
-import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import type { WorkoutWithSetsDto } from '../../../shared/dto/workout.ts';
 import type { ExerciseId, WorkoutId } from '../../../shared/flavors.ts';
 import type { GzSetRowComponent } from './internal/gz-set-row.component.ts';
@@ -15,17 +14,6 @@ import { setFacade, workoutFacade } from './workouts.facade.ts';
 import './internal/gz-set-row.component.ts';
 
 type WorkoutDetailState = { status: 'loading' } | { status: 'ready'; workout: WorkoutWithSetsDto } | { status: 'error'; message: string };
-
-/** One exercise's totals within the session. */
-interface ExerciseTotals {
-  id: ExerciseId;
-  name: string;
-  sets: number;
-  reps: number;
-  volume: number;
-  /** The heaviest weight moved. */
-  top: number;
-}
 
 const NEW_EXERCISE = '__new__';
 
@@ -114,7 +102,7 @@ export class GzWorkoutDetailComponent extends GzElement {
     this.render();
   }
 
-  override async handleAction(action: string, element: HTMLElement): Promise<void> {
+  override async handleAction(action: string): Promise<void> {
     if (action === 'delete-workout') {
       if (!confirm('Delete this workout and all of its sets? This cannot be undone.')) {
         return;
@@ -123,30 +111,6 @@ export class GzWorkoutDetailComponent extends GzElement {
         await workoutFacade.delete(this.#id);
         toast('Workout deleted', 'success');
         navigate('/workouts');
-      } catch (error) {
-        toastError(error);
-      }
-      return;
-    }
-
-    if (action === 'repeat-exercise') {
-      // Re-log the last set of an exercise the user already did in this session.
-      const exerciseId = Number(element.dataset.id);
-      if (this.#state.status !== 'ready') {
-        return;
-      }
-      const last = this.#state.workout.sets.filter((set) => set.exerciseId === exerciseId).at(-1);
-      if (!last) {
-        return;
-      }
-      try {
-        await setFacade.create(this.#id, {
-          exerciseId: last.exerciseId,
-          reps: last.reps,
-          weight: last.weight,
-          notes: null,
-        });
-        await this.#load();
       } catch (error) {
         toastError(error);
       }
@@ -340,26 +304,6 @@ export class GzWorkoutDetailComponent extends GzElement {
     `;
   }
 
-  #breakdown(sets: LiftSetDto[]): ExerciseTotals[] {
-    const byExercise = new Map<ExerciseId, ExerciseTotals>();
-    for (const set of sets) {
-      const entry = byExercise.get(set.exerciseId) ?? {
-        id: set.exerciseId,
-        name: set.exerciseName,
-        sets: 0,
-        reps: 0,
-        volume: 0,
-        top: 0,
-      };
-      entry.sets += 1;
-      entry.reps += set.reps;
-      entry.volume += set.reps * set.weight;
-      entry.top = Math.max(entry.top, set.weight);
-      byExercise.set(set.exerciseId, entry);
-    }
-    return [...byExercise.values()];
-  }
-
   override template(): RawHtml {
     if (this.#state.status === 'loading') {
       return html`<p aria-busy="true">Loading workout…</p>`;
@@ -377,7 +321,7 @@ export class GzWorkoutDetailComponent extends GzElement {
     const sets = workout.sets;
     const volume = sets.reduce((total, set) => total + set.reps * set.weight, 0);
     const reps = sets.reduce((total, set) => total + set.reps, 0);
-    const breakdown = this.#breakdown(sets);
+    const exercises = new Set(sets.map((set) => set.exerciseId)).size;
 
     return html`
       <div class="vstack">
@@ -385,7 +329,7 @@ export class GzWorkoutDetailComponent extends GzElement {
 
         <div class="totals">
           <span class="badge outline">${plural(sets.length, 'set')}</span>
-          <span class="badge outline">${plural(breakdown.length, 'exercise')}</span>
+          <span class="badge outline">${plural(exercises, 'exercise')}</span>
           <span class="badge outline">${plural(reps, 'rep')}</span>
           <span class="badge outline">${formatVolume(volume)} total volume</span>
         </div>
@@ -400,47 +344,6 @@ export class GzWorkoutDetailComponent extends GzElement {
         </section>
 
         ${this.#addSetTemplate()}
-        ${
-          breakdown.length === 0
-            ? ''
-            : html`
-                <section class="vstack gap-2">
-                  <h2>By exercise</h2>
-                  <article class="card">
-                    <div class="table">
-                      <table class="breakdown">
-                        <thead>
-                          <tr>
-                            <th scope="col">Exercise</th>
-                            <th scope="col" class="num">Sets</th>
-                            <th scope="col" class="num">Reps</th>
-                            <th scope="col" class="num">Top set</th>
-                            <th scope="col" class="num">Volume</th>
-                            <th scope="col"></th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          ${breakdown.map(
-                            (entry) => html`
-                              <tr>
-                                <td class="name"><a href="/exercises/${entry.id}">${entry.name}</a></td>
-                                <td class="num">${entry.sets}</td>
-                                <td class="num">${entry.reps}</td>
-                                <td class="num">${formatNumber(entry.top)} ${UNIT}</td>
-                                <td class="num">${formatVolume(entry.volume)}</td>
-                                <td class="num">
-                                  <button class="outline" data-action="repeat-exercise" data-id="${entry.id}">Another set</button>
-                                </td>
-                              </tr>
-                            `,
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </article>
-                </section>
-              `
-        }
       </div>
     `;
   }
