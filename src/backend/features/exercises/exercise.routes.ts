@@ -8,7 +8,7 @@ export function exerciseRoutes(db: DB): RouteTable {
 
   return {
     '/api/exercises': {
-      GET: () => controller.list(),
+      GET: (req) => controller.list(req),
       POST: (req) => controller.create(req),
     },
 
@@ -16,6 +16,10 @@ export function exerciseRoutes(db: DB): RouteTable {
       GET: (req) => controller.show(req),
       PATCH: (req) => controller.update(req),
       DELETE: (req) => controller.delete(req),
+    },
+
+    '/api/exercises/:id/position': {
+      GET: (req) => controller.position(req),
     },
 
     '/api/exercises/:id/progress': {

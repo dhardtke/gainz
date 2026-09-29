@@ -13,12 +13,14 @@ beforeEach(() => {
   pushes = 0;
   popStates = 0;
   events = new EventTarget();
-  const fakeLocation = { pathname: '/', origin: 'http://gainz.test' };
+  const fakeLocation = { pathname: '/', search: '', origin: 'http://gainz.test' };
   stub('location', fakeLocation);
   stub('history', {
     pushState(_state: unknown, _title: string, url: string): void {
       pushes++;
-      fakeLocation.pathname = url;
+      const { pathname, search } = new URL(url, fakeLocation.origin);
+      fakeLocation.pathname = pathname;
+      fakeLocation.search = search;
     },
   });
   stub('window', events);
@@ -90,6 +92,27 @@ describe('navigate', () => {
     location.pathname = '/workouts';
 
     navigate('/workouts');
+
+    expect(pushes).toBe(0);
+    expect(popStates).toBe(1);
+  });
+
+  test('from a query to the bare path pushes once and drops the query', () => {
+    location.pathname = '/workouts';
+    location.search = '?page=2';
+
+    navigate('/workouts');
+
+    expect(location.pathname).toBe('/workouts');
+    expect(location.search).toBe('');
+    expect(pushes).toBe(1);
+  });
+
+  test('to the current path and query pushes nothing but still dispatches popstate', () => {
+    location.pathname = '/workouts';
+    location.search = '?page=2';
+
+    navigate('/workouts?page=2');
 
     expect(pushes).toBe(0);
     expect(popStates).toBe(1);

@@ -3,13 +3,19 @@ import type { RawHtml } from '../../ui/html.ts';
 import { define, GzElement } from '../../ui/base.ts';
 import { html } from '../../ui/html.ts';
 import { formatWeight, plural, relativeDay } from '../../ui/format.ts';
-import type { ExerciseWithStatsDto } from '../../../shared/dto/exercise.ts';
+import { navigate } from '../../app/router.ts';
+import { isBeyondApi, PAGE_SIZE, pageCount, pageOffset, pagePath, pager, parsePage, pastEnd } from '../../ui/pagination.ts';
+import type { ExerciseDto, ExerciseWithStatsDto } from '../../../shared/dto/exercise.ts';
 import { toast, toastError } from '../../ui/toast.ts';
 import { exerciseFacade } from './exercises.facade.ts';
 
-type ExerciseListState = { status: 'loading' } | { status: 'ready'; items: ExerciseWithStatsDto[] } | { status: 'error'; message: string };
+type ExerciseListState =
+  | { status: 'loading' }
+  /** `page` is 1-based, from `?page=`; `total` counts every exercise. */
+  | { status: 'ready'; items: ExerciseWithStatsDto[]; total: number; page: number }
+  | { status: 'error'; message: string };
 
-/** The exercise catalog — the vocabulary the rest of the log is written in. */
+/** The exercise catalog — the vocabulary the rest of the log is written in — by name, a page at a time. */
 export class GzExerciseListComponent extends GzElement {
   #state: ExerciseListState = { status: 'loading' };
 
@@ -19,8 +25,10 @@ export class GzExerciseListComponent extends GzElement {
   }
 
   async #load(): Promise<void> {
+    const page = parsePage(location.search);
     try {
-      this.#state = { status: 'ready', items: await exerciseFacade.list() };
+      const result = await exerciseFacade.list({ limit: PAGE_SIZE, offset: pageOffset(page, PAGE_SIZE) });
+      this.#state = { status: 'ready', items: result.items, total: result.total, page };
     } catch (error) {
       this.#state = { status: 'error', message: errorMessage(error) };
       toastError(error);
@@ -37,17 +45,34 @@ export class GzExerciseListComponent extends GzElement {
     // browser's own validation was bypassed; the API rejects it either way.
     const name = values.name ?? '';
 
+    let exercise: ExerciseDto;
     try {
-      await exerciseFacade.create({
+      exercise = await exerciseFacade.create({
         name,
         muscleGroup: values.muscleGroup,
         notes: values.notes,
       });
-      toast(`Added ${name}`, 'success');
-      form.reset();
-      await this.#load();
     } catch (error) {
       toastError(error);
+      return;
+    }
+    toast(`Added ${name}`, 'success');
+
+    // Show the page the new exercise landed on. The rebuilt view replaces the form, so
+    // there is nothing to reset; the current page's URL refreshes the view all the same.
+    try {
+      const { index } = await exerciseFacade.position(exercise.id);
+      navigate(pagePath('/exercises', Math.floor(index / PAGE_SIZE) + 1));
+    } catch (error) {
+      toastError(error);
+      form.reset();
+      await this.#load();
+    }
+  }
+
+  override handleAction(action: string, element: HTMLElement): void {
+    if (action === 'page') {
+      navigate(pagePath('/exercises', Number(element.dataset.page)));
     }
   }
 
@@ -67,6 +92,20 @@ export class GzExerciseListComponent extends GzElement {
     `;
   }
 
+  /** The page's cards and the pager, or the past-the-end state in their place. */
+  #page(items: ExerciseWithStatsDto[], total: number, page: number): RawHtml {
+    const pages = pageCount(total, PAGE_SIZE);
+    if (page > pages || isBeyondApi(page, PAGE_SIZE)) {
+      return pastEnd('exercises');
+    }
+    return html`
+      <div class="vstack gap-2">
+        ${items.length === 0 ? html`<p class="empty">No exercises yet. Add the lifts you train above.</p>` : items.map((exercise) => this.#card(exercise))}
+      </div>
+      ${pager(page, pages)}
+    `;
+  }
+
   override template(): RawHtml {
     if (this.#state.status === 'loading') {
       return html`<p aria-busy="true">Loading exercises…</p>`;
@@ -75,13 +114,13 @@ export class GzExerciseListComponent extends GzElement {
       return html`<p class="error-text">${this.#state.message}</p>`;
     }
 
-    const { items } = this.#state;
+    const { items, total, page } = this.#state;
 
     return html`
       <div class="vstack">
         <div class="hstack justify-between gap-2">
           <h1>Exercises</h1>
-          <span class="badge outline">${plural(items.length, 'exercise')}</span>
+          <span class="badge outline">${plural(total, 'exercise')}</span>
         </div>
 
         <article class="card vstack gap-2">
@@ -105,9 +144,7 @@ export class GzExerciseListComponent extends GzElement {
           </form>
         </article>
 
-        <div class="vstack gap-2">
-          ${items.length === 0 ? html`<p class="empty">No exercises yet. Add the lifts you train above.</p>` : items.map((exercise) => this.#card(exercise))}
-        </div>
+        ${this.#page(items, total, page)}
       </div>
     `;
   }

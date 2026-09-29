@@ -38,10 +38,15 @@ export function pathId(raw: string | undefined, what: string): number {
   return id;
 }
 
-export function queryInt(params: URLSearchParams, key: string, fallback: number, { min = 0, max = 1000 }: { min?: number; max?: number } = {}): number {
+export function queryInt(params: URLSearchParams, key: string, fallback: number, bounds: { min?: number; max?: number } = {}): number {
+  return optionalQueryInt(params, key, bounds) ?? fallback;
+}
+
+/** Like `queryInt`, but null for a missing or empty value, where the caller has no default. */
+export function optionalQueryInt(params: URLSearchParams, key: string, { min = 0, max = 1000 }: { min?: number; max?: number } = {}): number | null {
   const raw = params.get(key);
   if (raw === null || raw === '') {
-    return fallback;
+    return null;
   }
   const num = Number(raw);
   if (!Number.isInteger(num) || num < min || num > max) {

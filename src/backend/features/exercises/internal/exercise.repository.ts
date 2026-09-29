@@ -24,10 +24,12 @@ export class ExerciseRepository {
     this.#db = db;
   }
 
-  list(): ExerciseWithStats[] {
-    return this.#db
-      .query<ExerciseWithStats, []>(
-        `SELECT ${EXERCISE_COLUMNS},
+  /** @param limit null for every exercise. */
+  list(limit: number | null, offset: number): ExerciseWithStats[] {
+    return (
+      this.#db
+        .query<ExerciseWithStats, [number, number]>(
+          `SELECT ${EXERCISE_COLUMNS},
                 COUNT(s.id)                  AS set_count,
                 COUNT(DISTINCT s.workout_id) AS workout_count,
                 MAX(w.performed_on)          AS last_performed_on,
@@ -36,9 +38,26 @@ export class ExerciseRepository {
            LEFT JOIN sets s     ON s.exercise_id = e.id
            LEFT JOIN workouts w ON w.id = s.workout_id
           GROUP BY e.id
-          ORDER BY e.name COLLATE NOCASE ASC`,
-      )
-      .all();
+          ORDER BY e.name COLLATE NOCASE ASC
+          LIMIT ? OFFSET ?`,
+        )
+        // A negative LIMIT is SQLite's "no limit".
+        .all(limit ?? -1, offset)
+    );
+  }
+
+  count(): number {
+    return this.#db.query<{ n: number }, []>('SELECT COUNT(*) AS n FROM exercises').get()?.n ?? 0;
+  }
+
+  /**
+   * The exercise's 0-based place in `list()`'s order. Names are unique under NOCASE
+   * (`idx_exercises_name`), so no other exercise ties with it and counting the ones
+   * that sort before it is its exact position.
+   */
+  index(id: ExerciseId): number {
+    const { name } = this.require(id);
+    return this.#db.query<{ n: number }, [string]>('SELECT COUNT(*) AS n FROM exercises WHERE name < ? COLLATE NOCASE').get(name)?.n ?? 0;
   }
 
   get(id: ExerciseId): Exercise | null {

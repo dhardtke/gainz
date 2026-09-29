@@ -1,4 +1,11 @@
-import type { CreateExerciseDto, EditExerciseDto, ExerciseDto, ExerciseProgressDto, ExerciseWithStatsDto } from '../../../shared/dto/exercise.ts';
+import type {
+  CreateExerciseDto,
+  EditExerciseDto,
+  ExerciseDto,
+  ExercisePageDto,
+  ExercisePositionDto,
+  ExerciseProgressDto,
+} from '../../../shared/dto/exercise.ts';
 import type { ExerciseId } from '../../../shared/flavors.ts';
 import { ExerciseApi } from './internal/exercise.api.ts';
 
@@ -9,12 +16,18 @@ export class ExerciseFacade {
     this.#api = api;
   }
 
-  list(): Promise<ExerciseWithStatsDto[]> {
-    return this.#api.list();
+  /** Every exercise without a `limit`, one page with it. */
+  list(page?: { limit?: number; offset?: number }): Promise<ExercisePageDto> {
+    return this.#api.list(page);
   }
 
   get(id: ExerciseId): Promise<ExerciseDto> {
     return this.#api.get(id);
+  }
+
+  /** The exercise's 0-based place in the list's name order. */
+  position(id: ExerciseId): Promise<ExercisePositionDto> {
+    return this.#api.position(id);
   }
 
   progress(id: ExerciseId): Promise<ExerciseProgressDto> {

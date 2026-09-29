@@ -1,4 +1,4 @@
-import { json, noContent, pathId, readJsonObject } from '../../../http/http.ts';
+import { json, noContent, optionalQueryInt, pathId, queryInt, readJsonObject } from '../../../http/http.ts';
 import type { ParamRequest } from '../../../http/routing.ts';
 import type { ExerciseId } from '../../../../shared/flavors.ts';
 import type { ExerciseFacade } from '../exercises.facade.ts';
@@ -6,8 +6,9 @@ import {
   translateToCreateExerciseDto,
   translateToEditExerciseDto,
   translateToExerciseDto,
+  translateToExercisePageDto,
+  translateToExercisePositionDto,
   translateToExerciseProgressDto,
-  translateToExerciseWithStatsDto,
 } from './exercise.translator.ts';
 
 export class ExerciseController {
@@ -17,8 +18,12 @@ export class ExerciseController {
     this.#exercises = exercises;
   }
 
-  list(): Response {
-    return json(this.#exercises.list().map(translateToExerciseWithStatsDto));
+  /** Pages with `limit`/`offset`; without `limit` it answers every exercise, as the exercise select needs. */
+  list(req: Request): Response {
+    const params = new URL(req.url).searchParams;
+    const limit = optionalQueryInt(params, 'limit', { min: 1, max: 200 });
+    const offset = queryInt(params, 'offset', 0, { min: 0, max: 100000 });
+    return json(translateToExercisePageDto(this.#exercises.list(limit, offset), this.#exercises.count(), limit, offset));
   }
 
   async create(req: Request): Promise<Response> {
@@ -39,6 +44,10 @@ export class ExerciseController {
   delete(req: ParamRequest): Response {
     this.#exercises.delete(pathId(req.params.id, 'exercise'));
     return noContent();
+  }
+
+  position(req: ParamRequest): Response {
+    return json(translateToExercisePositionDto(this.#exercises.index(pathId(req.params.id, 'exercise'))));
   }
 
   progress(req: ParamRequest): Response {

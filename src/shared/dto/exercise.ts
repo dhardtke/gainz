@@ -16,6 +16,21 @@ export interface ExerciseWithStatsDto extends ExerciseDto {
   bestWeight: number | null;
 }
 
+export interface ExercisePageDto {
+  items: ExerciseWithStatsDto[];
+  /** Every exercise, not just this page. */
+  total: number;
+  /** Null when the request asked for every exercise. */
+  limit: number | null;
+  offset: number;
+}
+
+/** Where an exercise sits in the list's name order. */
+export interface ExercisePositionDto {
+  /** 0-based. */
+  index: number;
+}
+
 /** One session on an exercise's progress line. */
 export interface SessionPointDto {
   workoutId: WorkoutId;
