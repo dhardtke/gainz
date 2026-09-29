@@ -62,15 +62,15 @@ export function pager(page: number, pages: number): RawHtml {
   return html`
     <nav aria-label="Pagination">
       <menu class="buttons">
-        <li><button class="outline small" data-action="page" data-page="${page - 1}" ${page <= 1 ? 'disabled' : ''}>← Previous</button></li>
+        <li><button class="outline" data-action="page" data-page="${page - 1}" ${page <= 1 ? 'disabled' : ''}>← Previous</button></li>
         ${pageItems(page, pages).map((item) =>
           item === 'gap'
-            ? html`<li><button class="outline small" disabled aria-hidden="true">…</button></li>`
+            ? html`<li><button class="outline" disabled aria-hidden="true">…</button></li>`
             : item === page
-              ? html`<li><button class="small" aria-current="page" data-action="page" data-page="${item}" aria-label="Page ${item}">${item}</button></li>`
-              : html`<li><button class="outline small" data-action="page" data-page="${item}" aria-label="Page ${item}">${item}</button></li>`,
+              ? html`<li><button aria-current="page" data-action="page" data-page="${item}" aria-label="Page ${item}">${item}</button></li>`
+              : html`<li><button class="outline" data-action="page" data-page="${item}" aria-label="Page ${item}">${item}</button></li>`,
         )}
-        <li><button class="outline small" data-action="page" data-page="${page + 1}" ${page >= pages ? 'disabled' : ''}>Next →</button></li>
+        <li><button class="outline" data-action="page" data-page="${page + 1}" ${page >= pages ? 'disabled' : ''}>Next →</button></li>
       </menu>
     </nav>
   `;
