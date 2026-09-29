@@ -21,6 +21,10 @@ class GzThemeToggleComponent extends GzElement {
     this.#stopThemeSync = null;
   }
 
+  override afterRender(): void {
+    this.#syncIcon();
+  }
+
   /**
    * Updates the icon and label in place rather than re-rendering: the button has
    * to survive its own click, or a keyboard toggle would destroy the element the
@@ -28,8 +32,9 @@ class GzThemeToggleComponent extends GzElement {
    */
   #syncIcon(): void {
     const dark = currentTheme() === 'dark';
-    this.$('svg.icon-theme-toggle')?.classList.toggle('moon', dark);
-    this.$('button.theme-toggle')?.setAttribute('aria-label', dark ? 'Turn off dark mode' : 'Turn on dark mode');
+    this.$('svg.sun')?.toggleAttribute('hidden', dark);
+    this.$('svg.moon')?.toggleAttribute('hidden', !dark);
+    this.$('button')?.setAttribute('aria-label', dark ? 'Turn off dark mode' : 'Turn on dark mode');
   }
 
   override handleAction(action: string): void {
@@ -39,17 +44,33 @@ class GzThemeToggleComponent extends GzElement {
   }
 
   override template(): RawHtml {
-    const dark = currentTheme() === 'dark';
     return html`
-      <button type="button" class="theme-toggle icon" data-action="toggle-theme" aria-label="${dark ? 'Turn off dark mode' : 'Turn on dark mode'}">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true" class="icon-theme-toggle ${dark ? 'moon' : ''}">
-          <clipPath id="theme-toggle-cutout"><path d="M0-11h25a1 1 0 0017 13v30H0Z" /></clipPath>
-          <g clip-path="url(#theme-toggle-cutout)">
-            <circle cx="16" cy="16" r="8.4" />
-            <path
-              d="M18.3 3.2c0 1.3-1 2.3-2.3 2.3s-2.3-1-2.3-2.3S14.7.9 16 .9s2.3 1 2.3 2.3zm-4.6 25.6c0-1.3 1-2.3 2.3-2.3s2.3 1 2.3 2.3-1 2.3-2.3 2.3-2.3-1-2.3-2.3zm15.1-10.5c-1.3 0-2.3-1-2.3-2.3s1-2.3 2.3-2.3 2.3 1 2.3 2.3-1 2.3-2.3 2.3zM3.2 13.7c1.3 0 2.3 1 2.3 2.3s-1 2.3-2.3 2.3S.9 17.3.9 16s1-2.3 2.3-2.3zm5.8-7C9 7.9 7.9 9 6.7 9S4.4 8 4.4 6.7s1-2.3 2.3-2.3S9 5.4 9 6.7zm16.3 21c-1.3 0-2.3-1-2.3-2.3s1-2.3 2.3-2.3 2.3 1 2.3 2.3-1 2.3-2.3 2.3zm2.4-21c0 1.3-1 2.3-2.3 2.3S23 7.9 23 6.7s1-2.3 2.3-2.3 2.4 1 2.4 2.3zM6.7 23C8 23 9 24 9 25.3s-1 2.3-2.3 2.3-2.3-1-2.3-2.3 1-2.3 2.3-2.3z"
-            />
-          </g>
+      <button type="button" class="icon" data-action="toggle-theme">
+        <svg
+          class="sun"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+        </svg>
+        <svg
+          class="moon"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
         </svg>
       </button>
     `;

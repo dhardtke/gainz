@@ -229,11 +229,10 @@ every token with `light-dark()` under `:root { color-scheme: light dark }`, and 
 an inherited property, so the choice reaches every shadow root with no per-host mirroring. With no
 attribute set, Oat's `light dark` follows the system.
 The control is `gz-theme-toggle`, an icon-only `<button>` in the header that calls `toggleTheme()`.
-It shows a sun in light mode and a moon in dark mode, and its `aria-label` flips between "Turn on
-dark mode" and "Turn off dark mode". The template paints the current state, so a dark page loads as
-a moon with nothing to animate; after that a theme change toggles the SVG's `moon` class and the
-label in place, letting its stylesheet morph one icon into the other without re-rendering the button
-and dropping its focus.
+It holds a sun and a moon SVG and shows the sun in light mode and the moon in dark mode, and its
+`aria-label` flips between "Turn on dark mode" and "Turn off dark mode". A theme change toggles the
+icons' `hidden` attributes and the label in place, without re-rendering the button and dropping its
+focus.
 
 A visitor who has never touched the theme toggle is seeded from `prefers-color-scheme` once, at load.
 The first flip stores an explicit choice that wins from then on, so the page does not follow the
