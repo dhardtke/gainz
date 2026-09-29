@@ -1,3 +1,13 @@
+/* A flex host rather than a line box, so no descender space pushes the button off-center. */
+:host {
+  display: flex;
+}
+
+/* The button is primary on a primary bar, so Oat's bevel border is all that would show of it. */
+button {
+  border-width: 0;
+}
+
 svg {
   width: auto;
   height: 1.125rem;

@@ -45,9 +45,15 @@ nav {
     display: none;
   }
 
+  /* Flex rather than block, so no descender space pushes the button off-center. */
   .menu {
-    display: block;
+    display: flex;
   }
+}
+
+/* The button is primary on a primary bar, so Oat's bevel border is all that would show of it. */
+.menu button {
+  border-width: 0;
 }
 
 .menu button svg {
