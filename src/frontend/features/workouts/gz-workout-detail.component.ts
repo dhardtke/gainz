@@ -268,7 +268,7 @@ export class GzWorkoutDetailComponent extends GzElement {
           <h1>${workout.title ?? formatDate(workout.performedOn)}</h1>
           <p class="text-light">${formatDate(workout.performedOn)} · ${relativeDay(workout.performedOn)}</p>
         </hgroup>
-        <button class="ghost" data-variant="danger" data-action="delete-workout">Delete</button>
+        <button data-variant="danger" data-action="delete-workout">Delete</button>
       </div>
       <article class="card">
         <form class="vstack gap-2" data-action="save-workout">

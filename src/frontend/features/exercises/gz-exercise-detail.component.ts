@@ -191,7 +191,7 @@ export class GzExerciseDetailComponent extends GzElement {
             <h1>${exercise.name}</h1>
             <p class="text-light">${exercise.muscleGroup ?? 'No muscle group set'}</p>
           </hgroup>
-          <button class="ghost" data-variant="danger" data-action="delete-exercise">Delete</button>
+          <button data-variant="danger" data-action="delete-exercise">Delete</button>
         </div>
       </div>
       <article class="card">
