@@ -4,37 +4,38 @@ import { define, GzElement } from '../../ui/base.ts';
 import { html } from '../../ui/html.ts';
 import { formatDate, formatVolume, plural, relativeDay, todayIso } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
+import { isBeyondApi, PAGE_SIZE, pageCount, pageOffset, pagePath, pager, parsePage, pastEnd } from '../../ui/pagination.ts';
 import type { WorkoutWithStatsDto } from '../../../shared/dto/workout.ts';
 import { toast, toastError } from '../../ui/toast.ts';
 import { workoutFacade } from './workouts.facade.ts';
 
 /**
- * The list keeps the pages it has already loaded, so `items` and `total` live
- * on every variant — an error while paging must not blank what is on screen.
+ * One page of the log. `items` and `total` live on every variant, so an error
+ * still renders the header and the form rather than a blank view.
  */
 interface WorkoutListState {
   status: 'loading' | 'ready' | 'error';
   items: WorkoutWithStatsDto[];
   total: number;
+  /** 1-based, from `?page=`. */
+  page: number;
   message?: string;
 }
 
-const PAGE_SIZE = 25;
-
-/** The training log: every session, newest first. */
+/** The training log: every session, newest first, a page at a time. */
 export class GzWorkoutListComponent extends GzElement {
-  #state: WorkoutListState = { status: 'loading', items: [], total: 0 };
+  #state: WorkoutListState = { status: 'loading', items: [], total: 0, page: 1 };
 
   override connectedCallback(): void {
     super.connectedCallback();
-    this.ready = this.#load(0);
+    this.ready = this.#load();
   }
 
-  async #load(offset: number): Promise<void> {
+  async #load(): Promise<void> {
+    const page = parsePage(location.search);
     try {
-      const page = await workoutFacade.list({ limit: PAGE_SIZE, offset });
-      const items = offset === 0 ? page.items : [...this.#state.items, ...page.items];
-      this.#state = { status: 'ready', items, total: page.total };
+      const result = await workoutFacade.list({ limit: PAGE_SIZE, offset: pageOffset(page, PAGE_SIZE) });
+      this.#state = { status: 'ready', items: result.items, total: result.total, page };
     } catch (error) {
       this.#state = { ...this.#state, status: 'error', message: errorMessage(error) };
       toastError(error);
@@ -64,8 +65,8 @@ export class GzWorkoutListComponent extends GzElement {
   override async handleAction(action: string, element: HTMLElement): Promise<void> {
     const id = Number(element.dataset.id);
 
-    if (action === 'load-more') {
-      await this.#load(this.#state.items.length);
+    if (action === 'page') {
+      navigate(pagePath('/workouts', Number(element.dataset.page)));
       return;
     }
 
@@ -109,12 +110,51 @@ export class GzWorkoutListComponent extends GzElement {
     `;
   }
 
+  #card(workout: WorkoutWithStatsDto): RawHtml {
+    return html`
+      <article class="card open-card">
+        <div class="grow">
+          <a class="open" href="/workouts/${workout.id}">${workout.title ?? formatDate(workout.performedOn)}</a>
+          <div class="text-light">${formatDate(workout.performedOn)} · ${relativeDay(workout.performedOn)}</div>
+        </div>
+        <span class="badge outline">
+          ${plural(workout.setCount, 'set')} · ${plural(workout.exerciseCount, 'exercise')} · ${formatVolume(workout.totalVolume)}
+        </span>
+        <div class="actions">
+          <button
+            class="outline"
+            data-action="repeat"
+            data-id="${workout.id}"
+            data-title="${workout.title ?? ''}"
+            title="Copy these sets into a new session dated today"
+          >
+            Repeat
+          </button>
+        </div>
+      </article>
+    `;
+  }
+
+  /** The page's cards and the pager, or the past-the-end state in their place. */
+  #page(items: WorkoutWithStatsDto[], total: number, page: number): RawHtml {
+    const pages = pageCount(total, PAGE_SIZE);
+    if (page > pages || isBeyondApi(page, PAGE_SIZE)) {
+      return pastEnd('workouts');
+    }
+    return html`
+      <div class="vstack gap-2">
+        ${items.length === 0 ? html`<p class="empty">No sessions logged yet. Start one above.</p>` : items.map((workout) => this.#card(workout))}
+      </div>
+      ${pager(page, pages)}
+    `;
+  }
+
   override template(): RawHtml {
     if (this.#state.status === 'loading') {
       return html`<p aria-busy="true">Loading workouts…</p>`;
     }
 
-    const { items, total } = this.#state;
+    const { items, total, page } = this.#state;
 
     return html`
       <div class="vstack">
@@ -123,40 +163,7 @@ export class GzWorkoutListComponent extends GzElement {
           <span class="badge outline">${plural(total, 'session')}</span>
         </div>
 
-        ${this.#newWorkoutForm()}
-
-        <div class="vstack gap-2">
-          ${
-            items.length === 0
-              ? html`<p class="empty">No sessions logged yet. Start one above.</p>`
-              : items.map(
-                  (workout) => html`
-                    <article class="card open-card">
-                      <div class="grow">
-                        <a class="open" href="/workouts/${workout.id}">${workout.title ?? formatDate(workout.performedOn)}</a>
-                        <div class="text-light">${formatDate(workout.performedOn)} · ${relativeDay(workout.performedOn)}</div>
-                      </div>
-                      <span class="badge outline">
-                        ${plural(workout.setCount, 'set')} · ${plural(workout.exerciseCount, 'exercise')} · ${formatVolume(workout.totalVolume)}
-                      </span>
-                      <div class="actions">
-                        <button
-                          class="outline"
-                          data-action="repeat"
-                          data-id="${workout.id}"
-                          data-title="${workout.title ?? ''}"
-                          title="Copy these sets into a new session dated today"
-                        >
-                          Repeat
-                        </button>
-                      </div>
-                    </article>
-                  `,
-                )
-          }
-        </div>
-
-        ${items.length < total ? html` <button class="outline" data-action="load-more">Load ${Math.min(PAGE_SIZE, total - items.length)} more</button> ` : ''}
+        ${this.#newWorkoutForm()} ${this.#page(items, total, page)}
       </div>
     `;
   }

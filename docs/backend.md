@@ -6,8 +6,8 @@ its SQL and its mapping end to end, the mapping reached through its controllers 
 feature: `db/` (the connection and its PRAGMAs in `db.ts`, the schema in `migrations.ts` and
 `migrations/`, and the table-agnostic statement helpers in `db/sql.ts`), `http/` (`routing.ts` for
 the `RouteTable` and `ParamRequest` types, `routes.ts` for the registry,
-`http.ts`, `errors.ts` and `server.ts`, with `http.ts` holding `pathId` and `queryInt` beside
-`readJsonObject`), `shared/validate.ts` for the request-field rules and their length bounds, and
+`http.ts`, `errors.ts` and `server.ts`, with `http.ts` holding `pathId`, `queryInt` and
+`optionalQueryInt` beside `readJsonObject`), `shared/validate.ts` for the request-field rules and their length bounds, and
 `main.ts`, the entry point that opens the database and starts the server
 through `startServer`. There is no `fetch` fallback — every URL the server answers is a declared pattern.
 
@@ -28,7 +28,8 @@ door described below — and, for a feature whose data other tests need, a test-
 
 A route file is only a table: each handler is one line that passes the request to its controller
 and returns what comes back. The controller does the rest. It takes the
-request and returns a `Response`, reading it with `pathId`, `queryInt` and `readJsonObject` and
+request and returns a `Response`, reading it with `pathId`, `queryInt` (or `optionalQueryInt`, null
+where a missing value has no default) and `readJsonObject` and
 answering with `json()` or `noContent()` and the status code, and in between it runs
 `body → translateTo<X>Dto → <X>Dto → facade → row → translateTo<X>Dto → DTO`. The facade's write methods in
 turn run `validate → <X>Dto → translateDtoTo<Create|Edit><Entity> → <Create|Edit><Entity> → repository`. The
@@ -36,6 +37,16 @@ translator has three parts. Its body-to-DTO part only casts, so a request DTO is
 facade has validated and normalized it, which happens before anything touches the database; its
 DTO-to-input part and its row-to-DTO part are where renaming happens. No part, nor the facade, does
 another's job.
+
+Both list endpoints page. `GET /api/workouts` and `GET /api/exercises` take `limit` (1–200) and
+`offset` (0–100000), answer `{ items, total, limit, offset }` with `total` counting every row, and
+refuse a value outside those bounds with a 400. `GET /api/workouts` defaults `limit` to 50;
+`GET /api/exercises` without a `limit` returns every exercise with `limit: null`, which is what the
+workout detail's exercise select asks for. `GET /api/exercises/:id/position` answers `{ index }`,
+the exercise's 0-based place in that list's name order, so the frontend can open the page a new
+exercise landed on without the API knowing its page size. The index is a `COUNT` of the names that
+sort before it, which is exact because `idx_exercises_name` makes names unique under `NOCASE`, the
+same collation the list orders by, so no two exercises tie.
 
 **A controller answers with a DTO, never a row.** The wire format is declared once in `src/shared/dto/` —
 camelCase, type-only, imported by the frontend as well — and each feature holds one function per

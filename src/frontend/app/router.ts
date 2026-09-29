@@ -37,8 +37,9 @@ export function currentPath(): string {
   return location.pathname;
 }
 
+/** Routes to `path`, which may carry a query such as `/workouts?page=2`. */
 export function navigate(path: string): void {
-  if (location.pathname !== path) {
+  if (location.pathname + location.search !== path) {
     history.pushState(null, '', path);
   }
   // pushState fires no event, and the same route must refresh too: tell the listeners.

@@ -2,6 +2,8 @@ import type {
   CreateExerciseDto,
   EditExerciseDto,
   ExerciseDto,
+  ExercisePageDto,
+  ExercisePositionDto,
   ExerciseProgressDto,
   ExerciseWithStatsDto,
   SessionPointDto,
@@ -72,6 +74,14 @@ export function translateToExerciseWithStatsDto(row: ExerciseWithStats): Exercis
     lastPerformedOn: row.last_performed_on,
     bestWeight: row.best_weight,
   };
+}
+
+export function translateToExercisePageDto(rows: ExerciseWithStats[], total: number, limit: number | null, offset: number): ExercisePageDto {
+  return { items: rows.map(translateToExerciseWithStatsDto), total, limit, offset };
+}
+
+export function translateToExercisePositionDto(index: number): ExercisePositionDto {
+  return { index };
 }
 
 function translateToSessionPointDto(row: SessionPoint): SessionPointDto {

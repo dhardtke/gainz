@@ -86,7 +86,7 @@ export class GzWorkoutDetailComponent extends GzElement {
 
   async #load(): Promise<void> {
     try {
-      const [workout, exercises] = await Promise.all([workoutFacade.get(this.#id), exerciseFacade.list()]);
+      const [workout, { items: exercises }] = await Promise.all([workoutFacade.get(this.#id), exerciseFacade.list()]);
       this.#exercises = exercises;
       this.#state = { status: 'ready', workout };
       if (this.#draft.exerciseId === null) {

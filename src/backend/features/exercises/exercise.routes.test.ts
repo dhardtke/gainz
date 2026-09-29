@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { ErrorDto } from '../../../shared/dto/error.ts';
-import type { ExerciseProgressDto, ExerciseWithStatsDto } from '../../../shared/dto/exercise.ts';
+import type { ExercisePageDto, ExercisePositionDto, ExerciseProgressDto } from '../../../shared/dto/exercise.ts';
 import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import type { WorkoutWithSetsDto } from '../../../shared/dto/workout.ts';
 import { at, body, useServer } from '../../testing.ts';
@@ -14,9 +14,28 @@ describe('exercises', () => {
     const created = await createExercise(post, 'Back Squat');
     expect(created).toMatchObject({ name: 'Back Squat' });
 
-    const list = await body<ExerciseWithStatsDto[]>(await api('/api/exercises'));
-    expect(list).toHaveLength(1);
-    expect(list[0]).toMatchObject({ name: 'Back Squat', setCount: 0, workoutCount: 0 });
+    const page = await body<ExercisePageDto>(await api('/api/exercises'));
+    expect(page).toMatchObject({ total: 1, limit: null, offset: 0 });
+    expect(page.items).toHaveLength(1);
+    expect(page.items[0]).toMatchObject({ name: 'Back Squat', setCount: 0, workoutCount: 0 });
+  });
+
+  test('pages by name with limit and offset, counting every exercise', async () => {
+    for (const name of ['Deadlift', 'bench Press', 'Arnold Press']) {
+      await createExercise(post, name);
+    }
+
+    const first = await body<ExercisePageDto>(await api('/api/exercises?limit=2&offset=0'));
+    const second = await body<ExercisePageDto>(await api('/api/exercises?limit=2&offset=2'));
+
+    expect(first.items.map((exercise) => exercise.name)).toEqual(['Arnold Press', 'bench Press']);
+    expect(first).toMatchObject({ total: 3, limit: 2, offset: 0 });
+    expect(second.items.map((exercise) => exercise.name)).toEqual(['Deadlift']);
+    expect(second).toMatchObject({ total: 3, limit: 2, offset: 2 });
+  });
+
+  test.each(['limit=0', 'limit=201', 'offset=-1'])('rejects %s', async (query) => {
+    expect((await api(`/api/exercises?${query}`)).status).toBe(400);
   });
 
   test('rejects a blank name', async () => {
@@ -55,6 +74,25 @@ describe('exercises', () => {
     const exercise = await createExercise(post);
     expect((await api(`/api/exercises/${exercise.id}`, { method: 'DELETE' })).status).toBe(204);
     expect((await api(`/api/exercises/${exercise.id}`)).status).toBe(404);
+  });
+});
+
+describe('position', () => {
+  test('is the 0-based index in the list, ignoring case', async () => {
+    const bench = await createExercise(post, 'bench Press');
+    const deadlift = await createExercise(post, 'Deadlift');
+    const arnold = await createExercise(post, 'Arnold Press');
+
+    const indexOf = async (id: number): Promise<number> => (await body<ExercisePositionDto>(await api(`/api/exercises/${id}/position`))).index;
+
+    expect(await indexOf(bench.id)).toBe(1);
+    expect(await indexOf(deadlift.id)).toBe(2);
+    expect(await indexOf(arnold.id)).toBe(0);
+  });
+
+  test('is 404 for an unknown exercise and 400 for a malformed id', async () => {
+    expect((await api('/api/exercises/9999/position')).status).toBe(404);
+    expect((await api('/api/exercises/abc/position')).status).toBe(400);
   });
 });
 

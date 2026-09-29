@@ -1,14 +1,26 @@
-import type { CreateExerciseDto, EditExerciseDto, ExerciseDto, ExerciseProgressDto, ExerciseWithStatsDto } from '../../../../shared/dto/exercise.ts';
+import type {
+  CreateExerciseDto,
+  EditExerciseDto,
+  ExerciseDto,
+  ExercisePageDto,
+  ExercisePositionDto,
+  ExerciseProgressDto,
+} from '../../../../shared/dto/exercise.ts';
 import type { ExerciseId } from '../../../../shared/flavors.ts';
 import { get, patch, post, remove } from '../../../http/http.ts';
 
 export class ExerciseApi {
-  list(): Promise<ExerciseWithStatsDto[]> {
-    return get('/exercises');
+  /** Every exercise without a `limit`, one page with it. */
+  list({ limit, offset }: { limit?: number; offset?: number } = {}): Promise<ExercisePageDto> {
+    return get(limit === undefined ? '/exercises' : `/exercises?limit=${limit}&offset=${offset ?? 0}`);
   }
 
   get(id: ExerciseId): Promise<ExerciseDto> {
     return get(`/exercises/${id}`);
+  }
+
+  position(id: ExerciseId): Promise<ExercisePositionDto> {
+    return get(`/exercises/${id}/position`);
   }
 
   progress(id: ExerciseId): Promise<ExerciseProgressDto> {
