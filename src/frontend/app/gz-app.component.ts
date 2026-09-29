@@ -6,6 +6,9 @@ import { ROUTES } from './routes.ts';
 import { toastError } from '../ui/toast.ts';
 import './gz-header.component.ts';
 
+/** How long the outgoing view waits for the incoming one's data before giving way to its loading state. */
+const SLOW_VIEW_MS = 300;
+
 /**
  * Application shell: a persistent header and view slot.
  *
@@ -66,20 +69,17 @@ class GzAppComponent extends GzElement {
   /**
    * Points the view slot at the active route.
    *
-   * On a route's first visit its script and stylesheet still have to arrive;
-   * until they do, the outgoing view stays put rather than the page going blank.
+   * The outgoing view stays put until the incoming one has its script, its
+   * stylesheet and its data, rather than the page going blank or collapsing to
+   * a "Loading…" line for a frame or two.
    */
   #renderView(): void {
-    const path = currentPath();
-
     // Bumped on every entry, not just on a genuine route change: navigate()
     // dispatches popstate for the current path on purpose, so this runs
     // re-entrantly.
     const token = ++this.#renderToken;
 
-    window.scrollTo({ top: 0, behavior: 'instant' });
-
-    void this.#swapView(path, token);
+    void this.#swapView(currentPath(), token);
   }
 
   async #swapView(path: string, token: number): Promise<void> {
@@ -94,15 +94,40 @@ class GzAppComponent extends GzElement {
     }
 
     // A newer route change started while this one was loading; that one wins.
-    if (token !== this.#renderToken) {
+    // Re-queried after the await: a stale node would take the view silently.
+    const main = this.$('main');
+    if (token !== this.#renderToken || main?.isConnected !== true) {
       return;
     }
 
-    // Re-queried after the await: replaceChildren on a stale node is silent.
-    const main = this.$('main');
-    if (main?.isConnected === true) {
-      main.replaceChildren(view);
+    // A view fetches its data once connected, so it is connected hidden, beside
+    // the outgoing one, and shown when ready. A slow API still gets its loading
+    // state after a moment rather than a navigation that seems to do nothing.
+    if (view instanceof GzElement) {
+      view.hidden = true;
+      main.append(view);
+      const slow = new Promise<void>((resolve) => {
+        setTimeout(resolve, SLOW_VIEW_MS);
+      });
+      await Promise.race([view.ready, slow]);
+      if (token !== this.#renderToken || !view.isConnected) {
+        view.remove();
+        return;
+      }
     }
+
+    // Not replaceChildren: moving a connected view would reconnect it, and it would load again.
+    // A copy: `children` is live, and removing from it while iterating skips elements.
+    for (const child of Array.from(main.children)) {
+      if (child !== view) {
+        child.remove();
+      }
+    }
+    if (view.parentNode !== main) {
+      main.append(view);
+    }
+    view.removeAttribute('hidden');
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }
 
   override template(): RawHtml {

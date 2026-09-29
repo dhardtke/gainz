@@ -14,6 +14,14 @@ import { loadStyles, stylesFor } from './styles.ts';
 export class GzElement extends HTMLElement {
   readonly root: ShadowRoot;
 
+  /**
+   * Settles once the element shows its content rather than a loading state.
+   * gz-app keeps the outgoing view on screen until the incoming one is ready, so a
+   * page switch does not flash a "Loading…" line. A view that fetches on connect
+   * replaces this with its first load, which must not reject.
+   */
+  ready: Promise<void> = Promise.resolve();
+
   constructor() {
     super();
     this.root = this.attachShadow({ mode: 'open' });

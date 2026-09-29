@@ -15,7 +15,7 @@ export class GzExerciseListComponent extends GzElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
-    void this.#load();
+    this.ready = this.#load();
   }
 
   async #load(): Promise<void> {
