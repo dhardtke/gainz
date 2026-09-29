@@ -4,7 +4,8 @@ import { define, GzElement } from '../../ui/base.ts';
 import { html } from '../../ui/html.ts';
 import { formatDate, formatVolume, plural, relativeDay, todayIso } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
-import { isBeyondApi, PAGE_SIZE, pageCount, pageOffset, pagePath, pager, parsePage, pastEnd } from '../../ui/pagination.ts';
+import { PAGE_SIZE, pageCount, pageOffset, pagePath, parsePage } from '../../ui/pagination.ts';
+import '../../ui/gz-pagination.component.ts';
 import type { WorkoutWithStatsDto } from '../../../shared/dto/workout.ts';
 import { toast, toastError } from '../../ui/toast.ts';
 import { workoutFacade } from './workouts.facade.ts';
@@ -28,6 +29,11 @@ export class GzWorkoutListComponent extends GzElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
+    this.root.addEventListener('page-change', (event) => {
+      if (event instanceof CustomEvent && typeof event.detail === 'number') {
+        navigate(pagePath('/workouts', event.detail));
+      }
+    });
     this.ready = this.#load();
   }
 
@@ -64,11 +70,6 @@ export class GzWorkoutListComponent extends GzElement {
 
   override async handleAction(action: string, element: HTMLElement): Promise<void> {
     const id = Number(element.dataset.id);
-
-    if (action === 'page') {
-      navigate(pagePath('/workouts', Number(element.dataset.page)));
-      return;
-    }
 
     if (action === 'repeat') {
       try {
@@ -135,17 +136,18 @@ export class GzWorkoutListComponent extends GzElement {
     `;
   }
 
-  /** The page's cards and the pager, or the past-the-end state in their place. */
+  /** The page's cards and the pager; past the last page, the pager alone says so. */
   #page(items: WorkoutWithStatsDto[], total: number, page: number): RawHtml {
     const pages = pageCount(total, PAGE_SIZE);
-    if (page > pages || isBeyondApi(page, PAGE_SIZE)) {
-      return pastEnd('workouts');
+    const pager = html` <gz-pagination page="${page}" pages="${pages}" noun="workouts"></gz-pagination> `;
+    if (page > pages) {
+      return pager;
     }
     return html`
       <div class="vstack gap-2">
         ${items.length === 0 ? html`<p class="empty">No sessions logged yet. Start one above.</p>` : items.map((workout) => this.#card(workout))}
       </div>
-      ${pager(page, pages)}
+      ${pager}
     `;
   }
 
