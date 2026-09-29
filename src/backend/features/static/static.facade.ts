@@ -1,4 +1,4 @@
-import type { EmbeddedWeb } from '../../embedded.ts';
+import type { EmbeddedWeb } from '../../shared/embedded.ts';
 import { embedWebRoot } from './internal/embed.ts';
 import { FRONTEND_DIR } from './internal/paths.ts';
 

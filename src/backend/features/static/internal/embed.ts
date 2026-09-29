@@ -4,7 +4,7 @@
  * modules — one module per URL — without a source tree beside it.
  */
 import { resolve } from 'node:path';
-import type { EmbeddedFile, EmbeddedWeb } from '../../../embedded.ts';
+import type { EmbeddedFile, EmbeddedWeb } from '../../../shared/embedded.ts';
 import { FRONTEND_DIR, resolveVendorPath, vendorUrls } from './paths.ts';
 import { transpileModule } from './transpile.ts';
 

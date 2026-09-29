@@ -247,7 +247,7 @@ returns `undefined`. Production therefore carries a socket handler no route can 
 ## Single-file build (`src/scripts/build.ts`)
 
 `bun run build` writes `dist/gainz.js` and a linked `dist/gainz.js.map`, and a deployment is that one
-file run with `bun`. `src/backend/embedded.ts` is a committed stub exporting `EMBEDDED = null`,
+file run with `bun`. `src/backend/shared/embedded.ts` is a committed stub exporting `EMBEDDED = null`,
 which means "read from disk" — the state under `bun start` and in every test. The build replaces
 that module through `Bun.build`'s `files` option with one that exports the embedded web root, the
 vendor files and the migrations; `bun:sqlite` stays external. It sits outside `features/` because
