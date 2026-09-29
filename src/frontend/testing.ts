@@ -1,4 +1,6 @@
-import { afterEach, beforeEach } from 'bun:test';
+import { afterAll, afterEach, beforeAll, beforeEach } from 'bun:test';
+// Type-only, so erased: happy-dom is still loaded lazily, by the files that call useDom().
+import type { GlobalWindow } from 'happy-dom';
 
 /**
  * Replaces browser globals for the current test file, restoring each after every
@@ -53,7 +55,7 @@ export function useFetch(): FakeFetch {
     requests.length = 0;
     answer = ok;
     stub('fetch', (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      const url = urlOf(input);
       const body: unknown = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined;
       requests.push({ method: init?.method ?? 'GET', url, headers: new Headers(init?.headers).toJSON(), body });
       return answer();
@@ -69,4 +71,82 @@ export function useFetch(): FakeFetch {
       answer = (): Promise<Response> => Promise.reject(cause);
     },
   };
+}
+
+/** The URL a `fetch` call asks for, whichever form it was given in. */
+function urlOf(input: RequestInfo | URL): string {
+  return typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+}
+
+/** Not copied onto globalThis: they are the global object itself, or language values. */
+const NOT_INSTALLED = new Set<PropertyKey>(['constructor', 'global', 'globalThis', 'undefined', 'NaN']);
+
+/** Created once: component modules are cached across files and keep this window's classes. */
+let shared: GlobalWindow | undefined;
+
+/**
+ * Installs a happy-dom window's globals for the current test file (or describe block)
+ * and puts Bun's back afterwards. Import components with `await import()` after
+ * this, never statically: a static import evaluates `class extends HTMLElement`
+ * before any hook has run.
+ *
+ * Under it, `fetch` answers a `.css` URL with an empty `200`, so stylesheets load
+ * silently, and rejects anything else, naming it; stub API calls with `useFetch()`.
+ */
+export function useDom(): void {
+  const saved = new Map<PropertyKey, PropertyDescriptor | undefined>();
+
+  beforeAll(async () => {
+    const { GlobalWindow } = await import('happy-dom');
+    shared ??= new GlobalWindow({
+      url: 'http://localhost/',
+      settings: { navigation: { disableMainFrameNavigation: true, disableFallbackToSetURL: true } },
+    });
+    const window = shared;
+    const install = (key: PropertyKey, descriptor: PropertyDescriptor): void => {
+      if (!saved.has(key)) {
+        saved.set(key, Object.getOwnPropertyDescriptor(globalThis, key));
+      }
+      Object.defineProperty(globalThis, key, { ...descriptor, configurable: true });
+    };
+
+    // The same walk as @happy-dom/global-registrator's register(), which is not used
+    // because it creates a new window every time.
+    for (const key of Reflect.ownKeys(window)) {
+      const descriptor = Object.getOwnPropertyDescriptor(window, key);
+      const current = Object.getOwnPropertyDescriptor(globalThis, key);
+      if (NOT_INSTALLED.has(key) || !descriptor || (current?.value !== undefined && current.value === descriptor.value)) {
+        continue;
+      }
+      install(key, descriptor);
+    }
+
+    install('fetch', {
+      writable: true,
+      value: (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+        const url = urlOf(input);
+        if (new URL(url, location.href).pathname.endsWith('.css')) {
+          return Promise.resolve(new Response('', { status: 200 }));
+        }
+        const method = init?.method ?? (input instanceof Request ? input.method : 'GET');
+        return Promise.reject(new Error(`useDom: unexpected fetch ${method} ${url}; stub it with useFetch()`));
+      },
+    });
+  });
+
+  afterEach(() => {
+    document.body.replaceChildren();
+    localStorage.clear();
+  });
+
+  afterAll(() => {
+    for (const [key, descriptor] of saved) {
+      if (descriptor) {
+        Object.defineProperty(globalThis, key, descriptor);
+      } else {
+        Reflect.deleteProperty(globalThis, key);
+      }
+    }
+    saved.clear();
+  });
 }

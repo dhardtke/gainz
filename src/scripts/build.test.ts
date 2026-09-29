@@ -140,7 +140,7 @@ describe('single-file build', () => {
   });
 
   test('carries neither the dev client nor anything test-only', async () => {
-    for (const url of ['/dev/hot.ts', '/testing.ts', '/ui/html.test.ts']) {
+    for (const url of ['/dev/hot.ts', '/testing.ts', '/ui/html.test.ts', '/ui/tile/gz-tile.component.test.ts']) {
       expect({ url, status: (await get(url)).status }).toEqual({ url, status: 404 });
     }
   });
