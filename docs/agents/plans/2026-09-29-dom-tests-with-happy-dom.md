@@ -4,7 +4,7 @@ git_commit: 225bdabbd75624c2e184daa9c6e44b8504f3cd37
 branch: main
 topic: 'DOM tests for frontend components with happy-dom'
 tags: [plan, frontend, tests, happy-dom, gz-tile, gz-pagination, gz-theme-toggle, gz-app]
-status: ready
+status: done
 ---
 
 # PLAN: DOM tests for frontend components with happy-dom
@@ -178,9 +178,9 @@ documentation of the setup.
 
 **Tasks**:
 
-- [ ] Add the dependency: `bun add -d happy-dom@20.14.5`, and confirm `package.json` records the
+- [x] Add the dependency: `bun add -d happy-dom@20.14.5`, and confirm `package.json` records the
       exact version with no range.
-- [ ] `src/frontend/testing.ts`: add `useDom()`. Shape (types and doc comment as the file's other
+- [x] `src/frontend/testing.ts`: add `useDom()`. Shape (types and doc comment as the file's other
       helpers have them):
 
       ```ts
@@ -223,7 +223,7 @@ documentation of the setup.
 
       The window is never closed: it lives for the process, like the modules that depend on it.
       Resolve `fetch`'s URL the way `useFetch()` does (`string`, `URL` or `Request`).
-- [ ] `src/frontend/testing.test.ts`: at the top, keep references to Bun's `fetch`, `Response`,
+- [x] `src/frontend/testing.test.ts`: at the top, keep references to Bun's `fetch`, `Response`,
       `URL`, `setTimeout` and `EventTarget`. `describe('useDom', …)` calls `useDom()` and tests:
       - `document`, `HTMLElement` and `customElements` exist, and `location.href` is `http://localhost/`;
       - `await fetch('/ui/shared.css')` answers `200` with an empty body;
@@ -231,7 +231,7 @@ documentation of the setup.
       - `document.body` is empty again in a second test after the first appended to it.
       A following `describe('after useDom', …)` tests that each kept reference is identical to the
       current global again and that `typeof document` is `'undefined'`.
-- [ ] `src/frontend/ui/tile/gz-tile.component.test.ts`: `useDom()`, then
+- [x] `src/frontend/ui/tile/gz-tile.component.test.ts`: `useDom()`, then
       `beforeAll(async () => { await import('./gz-tile.component.ts'); })`, and a local `mount(attributes)`
       that creates `gz-tile`, sets the attributes **before** appending (so `connectedCallback`
       renders them; happy-dom does not fire `attributeChangedCallback` for attributes present at
@@ -241,7 +241,7 @@ documentation of the setup.
       - without `hint`, there is no `.hint`;
       - setting `value` on a mounted tile re-renders it;
       - a label holding markup is shown as text, not parsed (`<b>` stays text; no `b` element).
-- [ ] `src/frontend/ui/pagination/gz-pagination.component.test.ts`: same setup for
+- [x] `src/frontend/ui/pagination/gz-pagination.component.test.ts`: same setup for
       `./gz-pagination.component.ts`, a `mount(page, pages, noun?)`, and a helper returning the
       shadow root's buttons' text. Tests:
       - page 5 of 12 reads `← Previous`, `1`, `…`, `4`, `5`, `6`, `…`, `12`, `Next →`; the `…`
@@ -255,10 +255,10 @@ documentation of the setup.
       - page 4 of 3 with `noun="workouts"` shows `No workouts on this page.` and no `nav`, and
         clicking `Go to page 1` sends `1`; without `noun` it reads `No items on this page.`;
       - changing `page` on a mounted pager re-renders it.
-- [ ] `src/scripts/build.test.ts`: add `/ui/tile/gz-tile.component.test.ts` to the URLs the
+- [x] `src/scripts/build.test.ts`: add `/ui/tile/gz-tile.component.test.ts` to the URLs the
       "carries neither the dev client nor anything test-only" test expects a `404` for, beside
       `/testing.ts` and `/ui/html.test.ts`, so a component test is shown to stay out of the build.
-- [ ] `docs/frontend.md`, "## Tests": replace the opening paragraph's "there is no DOM there" with
+- [x] `docs/frontend.md`, "## Tests": replace the opening paragraph's "there is no DOM there" with
       the current setup, keeping the section's existing points (the stubs, the `?N` fresh import,
       the oxfmt note). Cover:
       - pure-module tests still run without a DOM, and `html.ts` stays apart from `base.ts` for them;
@@ -273,15 +273,15 @@ documentation of the setup.
 
 **Automated Verification**:
 
-- [ ] `bun test src/frontend/testing.test.ts` passes, including the restored-globals `describe`.
-- [ ] `bun test src/frontend/ui` passes (tile, pagination and the existing pure tests).
-- [ ] `bun test` passes as a whole: the backend's route tests still run on Bun's globals.
-- [ ] `bun test src/frontend/ui/tile/gz-tile.component.test.ts src/backend/features/static/static.routes.test.ts`
+- [x] `bun test src/frontend/testing.test.ts` passes, including the restored-globals `describe`.
+- [x] `bun test src/frontend/ui` passes (tile, pagination and the existing pure tests).
+- [x] `bun test` passes as a whole: the backend's route tests still run on Bun's globals.
+- [x] `bun test src/frontend/ui/tile/gz-tile.component.test.ts src/backend/features/static/static.routes.test.ts`
       passes, a DOM file followed by a request-making backend file in one process.
-- [ ] `bun run typecheck`, `bun run lint` and `bun run fmt:check` pass.
-- [ ] `bun test src/backend/features/static/static.routes.test.ts src/frontend/ui/tile/gz-tile.component.test.ts`
+- [x] `bun run typecheck`, `bun run lint` and `bun run fmt:check` pass.
+- [x] `bun test src/backend/features/static/static.routes.test.ts src/frontend/ui/tile/gz-tile.component.test.ts`
       passes, the reverse order.
-- [ ] `bun run build` passes, and `bun test src/scripts/build.test.ts` passes with the new URL.
+- [x] `bun run build` passes, and `bun test src/scripts/build.test.ts` passes with the new URL.
 
 ### Phase 2: `gz-theme-toggle`
 
@@ -291,7 +291,7 @@ Tests that the toggle mirrors the theme and survives its own click.
 
 **Tasks**:
 
-- [ ] `src/frontend/app/gz-theme-toggle.component.test.ts`: `useDom()`, then in `beforeAll`
+- [x] `src/frontend/app/gz-theme-toggle.component.test.ts`: `useDom()`, then in `beforeAll`
       `await import('./gz-theme-toggle.component.ts')` and keep the plain `../ui/theme.ts` module
       from `await import('../ui/theme.ts')` — the same instance the component uses, unlike
       `theme.test.ts`'s `?N` copies. `beforeEach` calls `theme.setTheme('light')`, because the
@@ -304,16 +304,16 @@ Tests that the toggle mirrors the theme and survives its own click.
         the shadow root's `activeElement` after it;
       - `theme.setTheme('dark')` called elsewhere updates a mounted toggle's icon and label;
       - once the toggle is removed, `setTheme()` no longer reaches it: its label stays as it was.
-- [ ] `docs/frontend.md`, "## Tests": one sentence that a component test importing the plain
+- [x] `docs/frontend.md`, "## Tests": one sentence that a component test importing the plain
       `ui/theme.ts` shares its state with the component, so it resets the theme before each test.
 
 **Automated Verification**:
 
-- [ ] `bun test src/frontend/app/gz-theme-toggle.component.test.ts` passes.
-- [ ] `bun test src/frontend/ui/theme.test.ts src/frontend/app/gz-theme-toggle.component.test.ts`
+- [x] `bun test src/frontend/app/gz-theme-toggle.component.test.ts` passes.
+- [x] `bun test src/frontend/ui/theme.test.ts src/frontend/app/gz-theme-toggle.component.test.ts`
       passes in that order and in the reverse order: the `?N` copies and the plain module do not
       disturb each other.
-- [ ] `bun test`, `bun run typecheck`, `bun run lint` and `bun run fmt:check` pass.
+- [x] `bun test`, `bun run typecheck`, `bun run lint` and `bun run fmt:check` pass.
 
 ### Phase 3: `gz-app` link routing
 
@@ -324,7 +324,7 @@ browser, using only paths no route matches.
 
 **Tasks**:
 
-- [ ] `src/frontend/app/gz-app.component.test.ts`: `useDom()`, then in `beforeAll`
+- [x] `src/frontend/app/gz-app.component.test.ts`: `useDom()`, then in `beforeAll`
       `await import('./gz-app.component.ts')` and define a test-only `gz-test-link` (skipped when
       `customElements.get` already knows it) whose constructor attaches an open shadow root holding
       one `<a>` whose `href`, `target` and `download` come from its attributes when connected.
@@ -348,15 +348,15 @@ browser, using only paths no route matches.
         browser fires on Back, the view reads `Nothing lives at /back-here.`;
       - once removed, the app no longer listens: a `popstate` after removal does not throw and a
         re-mounted app renders the current path.
-- [ ] `docs/frontend.md`, "## Tests": one sentence that `gz-app`'s tests use only paths no route
+- [x] `docs/frontend.md`, "## Tests": one sentence that `gz-app`'s tests use only paths no route
       matches, so no feature view or API is loaded, and that the hidden/`ready` view swap is not
       covered yet.
 
 **Automated Verification**:
 
-- [ ] `bun test src/frontend/app/gz-app.component.test.ts` passes.
-- [ ] `bun test src/frontend/app` passes: the router, routes, toggle and app tests together.
-- [ ] `bun test`, `bun run typecheck`, `bun run lint` and `bun run fmt:check` pass.
+- [x] `bun test src/frontend/app/gz-app.component.test.ts` passes.
+- [x] `bun test src/frontend/app` passes: the router, routes, toggle and app tests together.
+- [x] `bun test`, `bun run typecheck`, `bun run lint` and `bun run fmt:check` pass.
 
 ## Implementation Notes
 
@@ -365,6 +365,13 @@ During implementation, document user feedback, problems, and decisions here.
 - `useFetch()` builds its recorded headers with Bun's `Headers.prototype.toJSON()`, which happy-dom's
   `Headers` lacks. No test in this plan combines `useFetch()` with `useDom()`; the plan that adds
   view tests changes that line to `Object.fromEntries(new Headers(init?.headers))`.
+- happy-dom does not dispatch `click()` on a disabled button, so `gz-pagination`'s
+  disabled-Previous test stays and no gap is recorded in the docs.
+- `useFetch()`'s URL resolution moved into a private `urlOf()` in `testing.ts`, which `useDom()`'s
+  base fetch shares.
+- `testing.test.ts` checks the rejection with `.then()` rather than `expect(…).rejects`: oxlint's
+  `await-thenable` and `no-confusing-void-expression` reject awaiting it, and `http.test.ts`
+  already reads rejections the same way.
 
 ## References
 

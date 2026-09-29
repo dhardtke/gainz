@@ -265,19 +265,39 @@ URLs.
 
 ## Tests
 
-The frontend's tests run under `bun test` with the backend's, and there is no DOM there: no
-`HTMLElement`, `document`, `window` or `localStorage`. So they cover what does not need one — the
-`html` template's escaping, `format.ts`, the router, the paging arithmetic, the theme
-preference, the HTTP client and the URL each facade method requests — and nothing yet mounts a component. That is also why `html.ts`
-is its own module rather than part of `base.ts`: importing `base.ts` evaluates `class extends
-HTMLElement` and, through `styles.ts`, a top-level `fetch` of the stylesheets.
+The frontend's tests run under `bun test` with the backend's, in the same process. Most need no DOM
+and run without one: the `html` template's escaping, `format.ts`, the router, the paging
+arithmetic, the theme preference, the HTTP client and the URL each facade method requests. That is
+why `html.ts` is its own module rather than part of `base.ts`: importing `base.ts` evaluates `class
+extends HTMLElement` and, through `styles.ts`, a top-level `fetch` of the stylesheets.
 
-`src/frontend/testing.ts` holds the two stubs they use. `useFetch()` replaces `fetch` with one that
+A component test calls `useDom()` from `src/frontend/testing.ts`, which installs a
+[happy-dom](https://github.com/capricorn86/happy-dom) window's globals for that file and puts
+Bun's back after its last test. It is per file rather than a `bunfig.toml` preload because the
+backend's route tests make real requests and need Bun's own `fetch`, `Response` and `URL`, all of
+which the window replaces. There is one window for the whole process, created by the first file that
+asks: bun caches a component module across files, so the class it registered keeps extending that
+window's `HTMLElement` and stays in that window's `customElements`, and a fresh window would leave
+later files with neither. Between tests `useDom()` empties `document.body` and `localStorage`.
+
+Because a static import runs before any hook, a component test `await import()`s the component in
+`beforeAll`, after `useDom()`, and then creates it by tag name and reads its open `shadowRoot`.
+Under `useDom()`, `fetch` answers a `.css` URL with an empty `200`, so stylesheets load silently,
+and rejects anything else with an error naming the method and URL; a test that needs an API
+answer puts `useFetch()` on top. A test sets a component's attributes before appending it, because
+happy-dom does not call `attributeChangedCallback` for attributes already present at upgrade.
+happy-dom has no popovers, so `gz-header`'s dropdown is not tested, and with every sheet empty no
+test asserts styling. `gz-app`'s tests use only paths no route matches, so no feature view or API
+is loaded, and its hidden/`ready` view swap is not covered yet.
+
+`src/frontend/testing.ts` also holds the two stubs. `useFetch()` replaces `fetch` with one that
 records each request and answers `200 {}` unless told otherwise. `useGlobals()` installs whatever
 browser global a test needs and puts back what was there after every test — which matters because
 bun test runs every file in one process, and the backend's route tests make real requests. A module
 that reads the browser when it loads, as `theme.ts` reads the stored choice, is imported with a
 query string (`./theme.ts?3`) so each test gets a fresh instance evaluated against its own stubs.
+A component test that imports the plain `ui/theme.ts` instead shares its state with the component,
+so it resets the theme before each test.
 
 oxfmt formats the markup inside an `html` tagged template, so a test that compares exact output
 keeps its template free of markup and interpolates the parts it needs instead.
