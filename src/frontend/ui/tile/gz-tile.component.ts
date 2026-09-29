@@ -1,6 +1,6 @@
-import type { RawHtml } from './html.ts';
-import { define, GzElement } from './base.ts';
-import { html } from './html.ts';
+import type { RawHtml } from '../html.ts';
+import { define, GzElement } from '../base.ts';
+import { html } from '../html.ts';
 
 /** A single headline number with a label and optional sub-line. */
 class GzTileComponent extends GzElement {

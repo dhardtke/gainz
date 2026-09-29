@@ -10,7 +10,7 @@ import { exerciseFacade } from './exercises.facade.ts';
 import type { GzChartComponent } from './internal/gz-chart.component.ts';
 import { toast, toastError } from '../../ui/toast.ts';
 import './internal/gz-chart.component.ts';
-import '../../ui/gz-tile.component.ts';
+import '../../ui/tile/gz-tile.component.ts';
 
 /** The `SessionPointDto` fields that can be plotted. */
 type MetricKey = 'estOneRepMax' | 'topWeight' | 'totalVolume';

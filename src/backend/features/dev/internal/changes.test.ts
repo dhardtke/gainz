@@ -9,7 +9,7 @@ describe('changeFor', () => {
   });
 
   test('a Windows path is turned into a URL', () => {
-    expect(changeFor('ui\\gz-tile.component.css')).toEqual({ swap: '/ui/gz-tile.component.css' });
+    expect(changeFor('ui\\tile\\gz-tile.component.css')).toEqual({ swap: '/ui/tile/gz-tile.component.css' });
   });
 
   test('a module and the index page reload', () => {
@@ -22,7 +22,7 @@ describe('changeFor', () => {
   });
 
   test('an unknown extension is ignored', () => {
-    expect(changeFor('ui\\gz-tile.component.css~')).toBeNull();
-    expect(changeFor('ui/.gz-tile.component.css.swp')).toBeNull();
+    expect(changeFor('ui\\tile\\gz-tile.component.css~')).toBeNull();
+    expect(changeFor('ui/tile/.gz-tile.component.css.swp')).toBeNull();
   });
 });

@@ -11,7 +11,7 @@ src/frontend/
 ├── dev/        hot.ts (development only)
 ├── app/        gz-app, gz-header, gz-theme-toggle, router.ts, routes.ts
 ├── http/       http.ts (get/post/patch/remove), errors.ts (ApiError, errorMessage)
-├── ui/         base.ts, html.ts, styles.ts, theme.ts, format.ts, app.css, shared.css, toast.ts, gz-tile, pagination/
+├── ui/         base.ts, html.ts, styles.ts, theme.ts, format.ts, app.css, shared.css, toast.ts, tile/, pagination/
 └── features/
     ├── exercises/  exercises.routes.ts, exercises.facade.ts, gz-exercise-list, gz-exercise-detail
     │   └── internal/  exercise.api.ts, gz-chart
@@ -32,7 +32,7 @@ able to make a request. `ui/` is what any component may use: `base.ts` with `GzE
 shadow root, `data-action` click/submit delegation, `template()`/`render()`) and `define()`;
 `html.ts` with the escaping `html` tagged template and `raw()`; `styles.ts`, `theme.ts` and `format.ts`; the document stylesheet
 `app.css` and the utilities in `shared.css`; `toast.ts`, whose `toast()` and `toastError()` show Oat's toasts
-through `ot.toast()`; `gz-tile`, the stat tile several views use; and `pagination/`, the paged lists' page
+through `ot.toast()`; `tile/gz-tile`, the stat tile several views use; and `pagination/`, the paged lists' page
 arithmetic in `pagination.ts` beside `gz-pagination`, their pager.
 
 A component is a pair of files side by side, `gz-<name>.component.ts` and `gz-<name>.component.css`, in whichever
@@ -232,7 +232,7 @@ reports it through the toast and waits for the next save.
 
 **`styles.ts` keys its sheets by pathname.** `loadStyles` receives a module's absolute
 `import.meta.url`, but `BASE_HREFS` are pathnames and the server reports a change as a pathname, so
-the key is normalized to `/ui/gz-tile.component.css`. Revert that and every component stylesheet
+the key is normalized to `/ui/tile/gz-tile.component.css`. Revert that and every component stylesheet
 silently misses the lookup and falls back to a full reload, while `shared.css` keeps swapping and
 hides the regression.
 
