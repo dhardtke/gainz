@@ -93,7 +93,7 @@ export class GzWorkoutDetailComponent extends GzElement {
     this.root.addEventListener('sets-changed', () => {
       void this.#load();
     });
-    void this.#load();
+    this.ready = this.#load();
   }
 
   async #load(): Promise<void> {

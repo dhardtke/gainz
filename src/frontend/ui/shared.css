@@ -7,6 +7,12 @@
   display: block;
 }
 
+/* Author styles outrank the browser's own [hidden] rule, so the line above would override it.
+   gz-app relies on hiding a view while it loads. */
+:host([hidden]) {
+  display: none;
+}
+
 /* ------------------------------------------------------------------ layout */
 
 /* The gap sets the rhythm, as Oat's own `.hstack > *` does. */

@@ -27,7 +27,7 @@ export class GzWorkoutListComponent extends GzElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
-    void this.#load(0);
+    this.ready = this.#load(0);
   }
 
   async #load(offset: number): Promise<void> {

@@ -170,11 +170,25 @@ only once you open an exercise. Two pieces make that safe: `define()` awaits the
 stylesheet before registering the element, and a top-level `await` blocks the modules that import
 it — so the `await import('./gz-exercise-detail.component.ts')` in the exercise route's `view()` resolves
 only when that view _and_ everything it renders have their scripts and their CSS. A lazily loaded
-page is fully styled on its first paint; there is no flash to guard against.
+page is fully styled on its first paint; there is no flash of unstyled content to guard against.
 
 Only the shell (`gz-app`, `gz-header`, `gz-theme-toggle`), `app/routes.ts` with the three feature
-route files, and Oat plus `ui/shared.css` load up front. `gz-app` keeps the outgoing view on screen while the next one loads, guards against two
-navigations resolving out of order, and reports a failed import through the toast.
+route files, and Oat plus `ui/shared.css` load up front. `gz-app` guards against two
+navigations resolving out of order and reports a failed import through the toast.
+
+Styled is not the same as ready, though: a view fetches its data once connected, and until then
+it renders a "Loading…" line. Swapped in straight away, every page switch would collapse the page
+to that line for a frame or two and expand it again. So `gz-app` keeps the outgoing view on screen
+until the incoming one is ready. It connects the new view `hidden` beside the old one, awaits its
+`ready` promise, then removes the old view, reveals the new one and scrolls to the top. `ready`
+lives on `GzElement` and is already settled; a view that loads on connect replaces it with its
+first `#load()`, which catches its own errors so the promise never rejects. The wait is capped at
+300 ms (`SLOW_VIEW_MS`), after which a slow API shows the view's loading state rather than a
+navigation that seems to do nothing. Two details hold this together. `shared.css` sets
+`:host([hidden]) { display: none }`, because its own `:host { display: block }` outranks the
+browser's `[hidden]` rule. And the swap removes the other children rather than calling
+`replaceChildren(view)`, because moving an already connected view reconnects it and it would fetch
+a second time.
 
 ## Hot reload
 
