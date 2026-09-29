@@ -6,7 +6,7 @@
  * `bun run build` swaps this module through `Bun.build`'s `files` option for one that exports the
  * embedded files, so a built `gainz.js` needs nothing beside it.
  */
-import type { MigrationSource } from './db/migrations.ts';
+import type { MigrationSource } from '../db/migrations.ts';
 
 export interface EmbeddedFile {
   body: string;

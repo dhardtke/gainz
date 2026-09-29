@@ -4,7 +4,7 @@
  * about what to answer, so both sources behave alike.
  */
 import { basename, extname, posix } from 'node:path';
-import { EMBEDDED, type EmbeddedFile, type EmbeddedWeb } from '../../../embedded.ts';
+import { EMBEDDED, type EmbeddedFile, type EmbeddedWeb } from '../../../shared/embedded.ts';
 import { resolveStaticPath, resolveVendorPath } from './paths.ts';
 import { transpileModule } from './transpile.ts';
 

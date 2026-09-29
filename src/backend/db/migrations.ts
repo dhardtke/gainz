@@ -6,7 +6,7 @@
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { EMBEDDED } from '../embedded.ts';
+import { EMBEDDED } from '../shared/embedded.ts';
 import type { DB } from './db.ts';
 
 /** One migration file: its bare filename and its contents. */

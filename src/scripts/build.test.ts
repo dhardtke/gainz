@@ -3,7 +3,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync 
 import { unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import type { Embedded } from '../backend/embedded.ts';
+import type { Embedded } from '../backend/shared/embedded.ts';
 import { body, useTempDir } from '../backend/testing.ts';
 import { build } from './build.ts';
 

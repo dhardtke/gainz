@@ -1,5 +1,5 @@
 import type { Server, WebSocketHandler } from 'bun';
-import { EMBEDDED } from '../../embedded.ts';
+import { EMBEDDED } from '../../shared/embedded.ts';
 import { createStaticFacade, type StaticFacade } from '../static/static.facade.ts';
 import { DevController } from './internal/dev.controller.ts';
 import { devWebSocket } from './internal/ws.ts';
