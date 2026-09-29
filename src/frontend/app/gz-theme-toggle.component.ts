@@ -3,7 +3,7 @@ import { define, GzElement } from '../ui/base.ts';
 import { html } from '../ui/html.ts';
 import { currentTheme, onThemeChange, toggleTheme } from '../ui/theme.ts';
 
-/** Icon button for the colour theme: a sun in light mode, a moon in dark mode. */
+/** Icon button for the color theme: a sun in light mode, a moon in dark mode. */
 class GzThemeToggleComponent extends GzElement {
   #stopThemeSync: (() => void) | null = null;
 

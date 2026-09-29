@@ -212,7 +212,7 @@ reports it through the toast and waits for the next save.
 
 **`styles.ts` keys its sheets by pathname.** `loadStyles` receives a module's absolute
 `import.meta.url`, but `BASE_HREFS` are pathnames and the server reports a change as a pathname, so
-the key is normalised to `/ui/gz-tile.component.css`. Revert that and every component stylesheet
+the key is normalized to `/ui/gz-tile.component.css`. Revert that and every component stylesheet
 silently misses the lookup and falls back to a full reload, while `shared.css` keeps swapping and
 hides the regression.
 
@@ -224,7 +224,7 @@ anyway.
 ## Theming
 
 `src/frontend/ui/theme.ts` holds the preference and sets it as `data-theme` on `<html>` alone.
-`ui/app.css` turns that attribute into `color-scheme: light` or `color-scheme: dark`. Oat colours
+`ui/app.css` turns that attribute into `color-scheme: light` or `color-scheme: dark`. Oat colors
 every token with `light-dark()` under `:root { color-scheme: light dark }`, and `color-scheme` is
 an inherited property, so the choice reaches every shadow root with no per-host mirroring. With no
 attribute set, Oat's `light dark` follows the system.

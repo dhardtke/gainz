@@ -2,7 +2,7 @@
  * Color theme preference: light or dark.
  *
  * The choice is a `data-theme` attribute on `<html>`, which app.css turns into
- * `color-scheme`. Oat colours every token with `light-dark()`, and `color-scheme`
+ * `color-scheme`. Oat colors every token with `light-dark()`, and `color-scheme`
  * inherits into every shadow root, so setting it once on the document is enough.
  */
 

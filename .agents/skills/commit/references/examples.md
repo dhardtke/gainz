@@ -72,9 +72,9 @@ The navbar entries were plain links dressed up by twenty lines of bespoke
 CSS, with a hover state invented for this project that matched no other
 button in the app. They are now Pico buttons: `secondary outline` at
 rest, and the active page renders as the solid `secondary` variant. No
-stylesheet colours them — `#renderView()` toggles the `outline` class
+stylesheet colors them — `#renderView()` toggles the `outline` class
 next to the `aria-current` attribute it already managed, so the active
-state is a change of Pico variant rather than a recolouring. What is left
+state is a change of Pico variant rather than a recoloring. What is left
 in gz-app.css is sizing only, because Pico sizes buttons for touch and
 the header is a single compact row.
 
@@ -96,7 +96,7 @@ detail that would otherwise get "cleaned up" by the next person.
 
 Paragraph one opens with the problem in the past tense — twenty lines of bespoke
 CSS and a hover state matching nothing else — then states the replacement, then
-explains why no stylesheet colours the buttons. That last clause is the reasoning
+explains why no stylesheet colors the buttons. That last clause is the reasoning
 a reader could not recover from the diff.
 
 Paragraph two carries the migration sentence. Someone reviewing a change to

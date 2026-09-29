@@ -18,7 +18,7 @@ describe('requiredString', () => {
 });
 
 describe('optionalString', () => {
-  test('normalises undefined, null and blank to null', () => {
+  test('normalizes undefined, null and blank to null', () => {
     expect(optionalString({ notes: undefined }, 'notes')).toBeNull();
     expect(optionalString({ notes: null }, 'notes')).toBeNull();
     expect(optionalString({ notes: '  ' }, 'notes')).toBeNull();

@@ -1,6 +1,6 @@
 # Backend (`src/backend/`)
 
-The backend is organised by feature, not by layer. `features/` holds one directory per thing the
+The backend is organized by feature, not by layer. `features/` holds one directory per thing the
 app is about — `exercises/`, `workouts/`, `stats/`, `meta/`, `static/`, `dev/` — and each owns its routes,
 its SQL and its mapping end to end, the mapping reached through its controllers and its facade. What is left outside `features/` is only what belongs to no
 feature: `db/` (the connection and its PRAGMAs in `db.ts`, the schema in `migrations.ts` and
@@ -33,7 +33,7 @@ answering with `json()` or `noContent()` and the status code, and in between it 
 `body → translateTo<X>Dto → <X>Dto → facade → row → translateTo<X>Dto → DTO`. The facade's write methods in
 turn run `validate → <X>Dto → translateDtoTo<Create|Edit><Entity> → <Create|Edit><Entity> → repository`. The
 translator has three parts. Its body-to-DTO part only casts, so a request DTO is unchecked until the
-facade has validated and normalised it, which happens before anything touches the database; its
+facade has validated and normalized it, which happens before anything touches the database; its
 DTO-to-input part and its row-to-DTO part are where renaming happens. No part, nor the facade, does
 another's job.
 
@@ -167,7 +167,7 @@ migrations; `db/migrations.test.ts` unit-tests the migration runner against thro
 directories; `features/static/internal/paths.test.ts` pins the web root, which is derived by
 counting directories up from that module's own URL and would otherwise 404 every asset in silence
 if the file were moved; `http/errors.test.ts` covers `errorResponse`, whose 500 branch cannot be
-provoked over HTTP; `shared/validate.test.ts` pins the field helpers' normalisation edge cases;
+provoked over HTTP; `shared/validate.test.ts` pins the field helpers' normalization edge cases;
 `features/dev/internal/changes.test.ts` pins how a watched path becomes a URL and a change; and
 `features/exercises/exercises.facade.test.ts` and `features/workouts/workouts.facade.test.ts` drive
 each facade's validation directly, including that a bad body on an unknown id is a 400 rather than

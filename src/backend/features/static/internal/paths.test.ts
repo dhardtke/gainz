@@ -13,7 +13,7 @@ describe('static paths', () => {
   });
 
   test('a traversal attempt stays inside the web root', () => {
-    // Normalising before joining collapses the `..` against the root rather than climbing out
+    // Normalizing before joining collapses the `..` against the root rather than climbing out
     // of it, so the escape never happens and the request 404s on a file that is not there.
     const target = resolveStaticPath('/../backend/main.ts');
     expect(target).not.toBeNull();

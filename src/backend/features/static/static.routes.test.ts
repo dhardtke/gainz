@@ -97,7 +97,7 @@ describe('static files', () => {
   });
 
   test('refuses to transpile anything outside src/frontend/', async () => {
-    // Encoded, so the URL parser cannot normalise the traversal away before
+    // Encoded, so the URL parser cannot normalize the traversal away before
     // resolveStaticPath sees it.
     expect((await api('/%2e%2e/backend/http/server.ts')).status).toBe(404);
     expect((await api('/%2e%2e/backend/features/static/internal/transpile.ts')).status).toBe(404);
