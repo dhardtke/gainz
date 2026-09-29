@@ -4,7 +4,7 @@ git_commit: 3a92df572e538bae656ba381207f23f5bd41e9a2
 branch: main
 topic: 'Build server and frontend into one JS file'
 tags: [plan, build, deploy, static, migrations, dev, scripts]
-status: ready
+status: complete
 ---
 
 # PLAN: Build server and frontend into one JS file
@@ -419,7 +419,7 @@ that serves the whole app from an empty directory.
 
 **Manual Verification**:
 
-- [ ] Copy `dist/gainz.js` alone into an empty directory outside the repository, run
+- [x] Copy `dist/gainz.js` alone into an empty directory outside the repository, run
       `bun gainz.js`, open the printed URL, and click through the dashboard, a workout (add a set)
       and an exercise (the chart renders): every view is styled on first paint and the browser
       console is clean.
