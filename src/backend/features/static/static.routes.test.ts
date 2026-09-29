@@ -32,7 +32,7 @@ describe('static files', () => {
 
   test('serves a stylesheet beside every component module', async () => {
     const modules = await Array.fromAsync(new Bun.Glob('**/gz-*.component.ts').scan(FRONTEND_DIR));
-    expect(modules.length).toBeGreaterThanOrEqual(12);
+    expect(modules.length).toBeGreaterThanOrEqual(11);
     for (const file of modules) {
       // scan() yields backslashes on Windows.
       const res = await api(`/${file.replaceAll('\\', '/').replace(/\.ts$/, '.css')}`);
@@ -41,16 +41,22 @@ describe('static files', () => {
     }
   });
 
-  test('serves Pico from node_modules at a fixed vendor path', async () => {
-    const res = await api('/vendor/pico.css');
-    expect(res.status).toBe(200);
-    expect(res.headers.get('content-type')).toContain('text/css');
-    expect(await res.text()).toContain('Pico CSS');
+  test("serves Oat's stylesheet and script from node_modules at fixed vendor paths", async () => {
+    const css = await api('/vendor/oat.css');
+    expect(css.status).toBe(200);
+    expect(css.headers.get('content-type')).toContain('text/css');
+    expect(await css.text()).toContain('@layer theme,base,components');
+
+    const js = await api('/vendor/oat.js');
+    expect(js.status).toBe(200);
+    expect(js.headers.get('content-type')).toContain('text/javascript');
+    expect(await js.text()).toContain('customElements.define("ot-dropdown"');
   });
 
-  test('exposes only the allowlisted vendor file, not node_modules', async () => {
-    expect((await api('/vendor/pico.scss')).status).toBe(404);
-    expect((await api('/node_modules/@picocss/pico/package.json')).status).toBe(404);
+  test('exposes only the allowlisted vendor files, not node_modules', async () => {
+    expect((await api('/vendor/oat.min.css')).status).toBe(404);
+    expect((await api('/vendor/pico.css')).status).toBe(404);
+    expect((await api('/node_modules/@knadh/oat/package.json')).status).toBe(404);
   });
 
   test('answers HEAD with the headers and no body', async () => {
@@ -65,9 +71,9 @@ describe('static files', () => {
   });
 
   test('answers a verb other than GET or HEAD with 405', async () => {
-    // `/vendor/pico.css` is the load-bearing case: it has its own { GET, HEAD } route, so the
+    // `/vendor/oat.css` is the load-bearing case: it has its own { GET, HEAD } route, so the
     // 405 can only come from an unmatched verb falling through to `/*`.
-    for (const path of ['/', '/ui/app.css', '/vendor/pico.css']) {
+    for (const path of ['/', '/ui/app.css', '/vendor/oat.css']) {
       const res = await api(path, { method: 'POST' });
       expect(res.status).toBe(405);
       expect(await res.text()).toBe('Method not allowed');
@@ -106,7 +112,7 @@ describe('revalidation', () => {
   };
 
   test('every served file carries a strong ETag and no-cache', async () => {
-    for (const path of ['/', '/workouts', '/ui/app.css', '/vendor/pico.css', '/main.ts']) {
+    for (const path of ['/', '/workouts', '/ui/app.css', '/vendor/oat.css', '/vendor/oat.js', '/main.ts']) {
       const res = await api(path);
       expect(res.status).toBe(200);
       expect(res.headers.get('etag')).toMatch(/^"[0-9a-z]+"$/);
@@ -119,7 +125,7 @@ describe('revalidation', () => {
   });
 
   test('a matching If-None-Match gets an empty 304', async () => {
-    for (const path of ['/ui/app.css', '/vendor/pico.css', '/workouts']) {
+    for (const path of ['/ui/app.css', '/vendor/oat.css', '/vendor/oat.js', '/workouts']) {
       const etag = await tagOf(path);
       for (const method of ['GET', 'HEAD']) {
         const res = await api(path, { method, headers: { 'If-None-Match': etag } });
@@ -160,7 +166,7 @@ describe('revalidation', () => {
   });
 
   test('error responses carry no ETag', async () => {
-    for (const res of [await api('/nope.css'), await api('/vendor/pico.scss'), await api('/', { method: 'POST' })]) {
+    for (const res of [await api('/nope.css'), await api('/vendor/oat.scss'), await api('/', { method: 'POST' })]) {
       expect(res.status).toBeGreaterThanOrEqual(400);
       expect(res.headers.get('etag')).toBeNull();
     }

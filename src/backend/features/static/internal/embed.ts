@@ -41,9 +41,9 @@ export async function embedWebRoot(): Promise<EmbeddedWeb> {
     const path = resolveVendorPath(url);
     const file = path === null ? null : Bun.file(path);
     if (file === null || !(await file.exists())) {
-      throw new Error('Vendor stylesheet missing — run `bun install`');
+      throw new Error('Vendor file missing — run `bun install`');
     }
-    vendor[url] = { body: await file.text(), type: 'text/css;charset=utf-8' };
+    vendor[url] = { body: await file.text(), type: file.type };
   }
 
   return { pages, vendor };

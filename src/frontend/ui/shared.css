@@ -1,55 +1,22 @@
 /*
- * Adopted into every component's shadow root, right after Pico.
+ * Adopted into every component's shadow root, right after Oat. Layout comes from Oat's utilities
+ * (.vstack, .hstack, .gap-*); this file holds only what is gainz's own.
  */
 
 :host {
   display: block;
-
-  /*
-   * Pico sets `font-size: var(--pico-font-size)` on `:host, :root`, where that
-   * value is a percentage. It is written to apply once, at the document root —
-   * but every component adopts Pico, so the percentage re-applies at each
-   * shadow host and multiplies with nesting: gz-app > gz-dashboard >
-   * gz-tile turned a 20px root into 39px text. Inheriting instead means
-   * the root sets the size and every component simply keeps it.
-   */
-  font-size: inherit;
 }
 
 /* ------------------------------------------------------------------ layout */
 
-.stack {
-  display: flex;
-  flex-direction: column;
-  gap: var(--pico-spacing);
+/* The gap sets the rhythm, as Oat's own `.hstack > *` does. */
+.vstack > * {
+  margin-block: 0;
 }
 
-.stack-sm {
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--pico-spacing) * 0.5);
-}
-
-/* Pico gives block elements a trailing margin; inside a flex stack the gap
-   already provides the rhythm, so the margin would double it up. */
-.stack > *,
-.stack-sm > * {
-  margin-bottom: 0;
-}
-
-.row {
-  display: flex;
-  align-items: center;
-  gap: calc(var(--pico-spacing) * 0.5);
-  flex-wrap: wrap;
-}
-
-.row-between {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: calc(var(--pico-spacing) * 0.5);
-  flex-wrap: wrap;
+/* Oat leaves <hgroup> unstyled, so a heading would keep its trailing margin above its subtitle. */
+hgroup > * {
+  margin-block: 0;
 }
 
 .grow {
@@ -59,47 +26,23 @@
 
 /* ------------------------------------------------------------------- forms */
 
-/* A row of inputs that wraps on narrow screens. Pico's own role="group" packs
-   controls edge to edge, which is wrong when each one needs its own label. */
+/* A row of labelled inputs that wraps on narrow screens, with the button at its end. */
 .fields {
   display: flex;
   flex-wrap: wrap;
-  gap: calc(var(--pico-spacing) * 0.5);
+  gap: var(--space-2);
   align-items: flex-end;
 
   & > .field {
     flex: 1 1 10rem;
     min-width: 0;
   }
-
-  /* Inputs carry a bottom margin in Pico so stacked forms breathe; in a
-     .fields row it misaligns them against the submit button. */
-  & :is(input, select, textarea) {
-    margin-bottom: 0;
-  }
-}
-
-.field > label {
-  margin-bottom: calc(var(--pico-spacing) * 0.25);
-}
-
-/* Pico stretches submit buttons to full width, which is right for a stacked
-   form and wrong for a button sitting at the end of a row of inputs. */
-.fields > button,
-.row > button,
-.row-between button {
-  width: auto;
-  margin-bottom: 0;
 }
 
 /* ------------------------------------------------------------------ typography */
 
-.muted {
-  color: var(--pico-muted-color);
-}
-
 .mono {
-  font-family: var(--pico-font-family-monospace);
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 
@@ -108,23 +51,12 @@
 }
 
 .error-text {
-  color: var(--pico-del-color, #c0392b);
+  color: var(--danger);
 }
 
 /* ------------------------------------------------------------------ pieces */
 
-.badge {
-  display: inline-block;
-  padding: 0.15rem 0.55rem;
-  border: 1px solid var(--pico-muted-border-color);
-  border-radius: 1rem;
-  background: var(--pico-card-sectioning-background-color);
-  color: var(--pico-muted-color);
-  line-height: 1.5;
-  white-space: nowrap;
-}
-
-/* A list item that opens something. Pico's <article> is the card; this adds only
+/* A list item that opens something. Oat's `.card` is the card; this adds only
    the layout and the hit area. The whole box is the link's hit area, drawn as the
    link's own ::after so it stays a real anchor: gz-app routes it, the keyboard
    reaches it, and Ctrl-click still opens a tab. */
@@ -148,7 +80,7 @@ article.open-card {
   }
 
   &:hover .open {
-    color: var(--pico-primary);
+    color: var(--primary);
   }
 
   /* Anything interactive has to paint above the overlay to take its own
@@ -166,31 +98,11 @@ article.open-card {
 
 .empty {
   margin: 0;
-  padding: calc(var(--pico-spacing) * 1.5);
-  border: 1px dashed var(--pico-muted-border-color);
-  border-radius: var(--pico-border-radius);
-  color: var(--pico-muted-color);
+  padding: var(--space-6);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-medium);
+  color: var(--muted-foreground);
   text-align: center;
-}
-
-/* Pico sizes every button for touch; log screens are dense lists of them. */
-button.compact {
-  width: auto;
-  padding: 0.25rem 0.6rem;
-  margin-bottom: 0;
-}
-
-button.danger {
-  --pico-background-color: transparent;
-  --pico-border-color: transparent;
-  --pico-color: var(--pico-del-color, #c0392b);
-  --pico-underline: transparent;
-
-  &:is(:hover, :active, :focus) {
-    --pico-background-color: var(--pico-card-sectioning-background-color);
-    --pico-border-color: var(--pico-del-color, #c0392b);
-    --pico-color: var(--pico-del-color, #c0392b);
-  }
 }
 
 /* ------------------------------------------------------------------ tables */
@@ -198,8 +110,4 @@ button.danger {
 :is(td, th).num {
   text-align: right;
   font-variant-numeric: tabular-nums;
-}
-
-table {
-  margin-bottom: 0;
 }

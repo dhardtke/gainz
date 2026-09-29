@@ -8,11 +8,11 @@
 
 main {
   flex: 1 0 auto;
-  padding-block: calc(var(--pico-block-spacing-vertical) * 0.8) 3rem;
+  padding: var(--space-6) 0 var(--space-12);
 }
 
 footer {
   flex: 0 0 auto;
   padding-bottom: 2rem;
-  color: var(--pico-muted-color);
+  color: var(--muted-foreground);
 }

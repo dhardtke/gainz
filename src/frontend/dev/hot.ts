@@ -2,7 +2,7 @@
  * Development only: the hot-reload client. The server injects this module into the index page when
  * started with `GAINZ_DEV=1` and pushes one message per saved file under `src/frontend/`.
  */
-import { toastError } from '../ui/gz-toast.component.ts';
+import { toastError } from '../ui/toast.ts';
 import { reloadSheet } from '../ui/styles.ts';
 
 /** Declared here rather than imported: the frontend keeps its own types, and this is no DTO. */

@@ -8,7 +8,7 @@ import type { ExerciseDto, ExerciseProgressDto, SessionPointDto } from '../../..
 import type { ExerciseId } from '../../../shared/flavors.ts';
 import { exerciseFacade } from './exercises.facade.ts';
 import type { GzChartComponent } from './internal/gz-chart.component.ts';
-import { toast, toastError } from '../../ui/gz-toast.component.ts';
+import { toast, toastError } from '../../ui/toast.ts';
 import './internal/gz-chart.component.ts';
 import '../../ui/gz-tile.component.ts';
 
@@ -186,16 +186,16 @@ export class GzExerciseDetailComponent extends GzElement {
     return html`
       <div>
         <p><a href="/exercises">← Exercises</a></p>
-        <div class="row-between">
+        <div class="hstack justify-between gap-2">
           <hgroup>
             <h1>${exercise.name}</h1>
-            <p>${exercise.muscleGroup ?? 'No muscle group set'}</p>
+            <p class="text-light">${exercise.muscleGroup ?? 'No muscle group set'}</p>
           </hgroup>
-          <button class="danger" data-action="delete-exercise">Delete</button>
+          <button class="ghost" data-variant="danger" data-action="delete-exercise">Delete</button>
         </div>
       </div>
-      <article>
-        <form class="stack-sm" data-action="save-exercise">
+      <article class="card">
+        <form class="vstack gap-2" data-action="save-exercise">
           <div class="fields">
             <div class="field grow">
               <label for="name">Name</label>
@@ -210,7 +210,7 @@ export class GzExerciseDetailComponent extends GzElement {
             <label for="notes">Notes</label>
             <textarea id="notes" name="notes" maxlength="2000" placeholder="Low bar, belt over 100 kg">${edits.notes}</textarea>
           </div>
-          <div class="row">
+          <div class="hstack gap-2">
             <button type="submit">Save</button>
           </div>
         </form>
@@ -246,9 +246,9 @@ export class GzExerciseDetailComponent extends GzElement {
 
   #sessionsTable(sessions: SessionPointDto[]): RawHtml {
     return html`
-      <article class="stack-sm">
+      <article class="card vstack gap-2">
         <h2>Session history</h2>
-        <div class="overflow-auto">
+        <div class="table">
           <table>
             <thead>
               <tr>
@@ -291,7 +291,7 @@ export class GzExerciseDetailComponent extends GzElement {
     }
     if (this.#state.status === 'error') {
       return html`
-        <div class="stack">
+        <div class="vstack">
           <p class="error-text">${this.#state.message}</p>
           <p><a href="/exercises">Back to all exercises</a></p>
         </div>
@@ -303,17 +303,17 @@ export class GzExerciseDetailComponent extends GzElement {
     const metric = METRICS.find((candidate) => candidate.key === this.#metric) ?? METRICS[0];
 
     return html`
-      <div class="stack">
+      <div class="vstack">
         ${this.#headerTemplate(exercise)} ${this.#summaryTiles(state)}
 
-        <article class="stack-sm">
-          <div class="row-between">
+        <article class="card vstack gap-2">
+          <div class="hstack justify-between gap-2">
             <h2>${metric.label}</h2>
             <div class="metric-switch">
               ${METRICS.map(
                 (candidate) => html`
                   <button
-                    class="secondary outline compact"
+                    class="${candidate.key === this.#metric ? '' : 'outline'}"
                     data-action="metric"
                     data-metric="${candidate.key}"
                     aria-pressed="${candidate.key === this.#metric}"
@@ -325,7 +325,7 @@ export class GzExerciseDetailComponent extends GzElement {
             </div>
           </div>
           <gz-chart></gz-chart>
-          <p class="muted">${metric.hint}</p>
+          <p class="text-light">${metric.hint}</p>
         </article>
 
         ${sessions.length === 0 ? html`<p class="empty">No sets logged for this exercise yet.</p>` : this.#sessionsTable(sessions)}

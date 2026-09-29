@@ -26,23 +26,19 @@ class GzHeaderComponent extends GzElement {
     this.#syncLinks();
   }
 
+  /** Marks the current page in both link lists, and closes the menu after a navigation from it. */
   #syncLinks(): void {
-    // Pico's nav hides the underline its aria-current styling relies on, so the
-    // current page also swaps secondary for contrast to stand out.
     const links = this.$$<HTMLAnchorElement>('nav a[data-path]');
     for (const link of links) {
-      const active = isActive(link.dataset.path ?? '');
-      link.classList.toggle('contrast', active);
-      link.classList.toggle('secondary', !active);
-      if (active) {
+      if (isActive(link.dataset.path ?? '')) {
         link.setAttribute('aria-current', 'page');
       } else {
         link.removeAttribute('aria-current');
       }
     }
-    const menu = this.$<HTMLDetailsElement>('details.dropdown');
-    if (menu) {
-      menu.open = false;
+    const menu = this.$<HTMLElement>('menu[popover]');
+    if (menu?.matches(':popover-open') === true) {
+      menu.hidePopover();
     }
   }
 
@@ -51,39 +47,29 @@ class GzHeaderComponent extends GzElement {
     return html`
       <header>
         <nav class="container">
-          <ul>
-            <li>
-              <a class="brand" href="/"><strong>gainz</strong><span class="tag">lifting log</span></a>
-            </li>
+          <a class="brand" href="/"><strong>gainz</strong><span class="tag">lifting log</span></a>
+          <ul class="links unstyled">
+            ${navItems.map((item) => html`<li><a href="${item.path}" data-path="${item.path}">${item.label}</a></li>`)}
           </ul>
-          <ul class="links">
-            ${navItems.map((item) => html`<li><a class="secondary" href="${item.path}" data-path="${item.path}">${item.label}</a></li>`)}
-          </ul>
-          <ul class="menu">
-            <li>
-              <details class="dropdown">
-                <summary aria-label="Menu">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                </summary>
-                <ul dir="rtl">
-                  ${navItems.map((item) => html`<li><a class="secondary" href="${item.path}" data-path="${item.path}">${item.label}</a></li>`)}
-                </ul>
-              </details>
-            </li>
-          </ul>
-          <ul class="icons">
-            <li><gz-theme-toggle></gz-theme-toggle></li>
-          </ul>
+          <ot-dropdown class="menu">
+            <button type="button" class="ghost icon" popovertarget="nav-menu" aria-label="Menu">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                aria-hidden="true"
+              >
+                <path d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <menu popover id="nav-menu">
+              ${navItems.map((item) => html`<a role="menuitem" href="${item.path}" data-path="${item.path}">${item.label}</a>`)}
+            </menu>
+          </ot-dropdown>
+          <gz-theme-toggle></gz-theme-toggle>
         </nav>
       </header>
     `;

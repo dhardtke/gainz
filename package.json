@@ -19,7 +19,7 @@
     "typecheck": "bunx tsc --noEmit"
   },
   "dependencies": {
-    "@picocss/pico": "2.1.1"
+    "@knadh/oat": "0.8.0"
   },
   "devDependencies": {
     "@types/bun": "1.4.2",

@@ -196,31 +196,31 @@ each file's own content type. The frontend still uses Pico, so the app is unchan
 
 **Tasks**:
 
-- [ ] `package.json` / `bun.lock`: `bun add --exact @knadh/oat@0.8.0`
-- [ ] `src/backend/features/static/internal/paths.ts`: add `'/vendor/oat.css': '@knadh/oat/oat.min.css'`
+- [x] `package.json` / `bun.lock`: `bun add --exact @knadh/oat@0.8.0`
+- [x] `src/backend/features/static/internal/paths.ts`: add `'/vendor/oat.css': '@knadh/oat/oat.min.css'`
       and `'/vendor/oat.js': '@knadh/oat/oat.min.js'` to `VENDOR_FILES`; reword the doc comment from
       "Third-party stylesheets" to "Third-party files".
-- [ ] `src/backend/features/static/internal/web-files.ts`: `DiskWebFiles.vendor` answers
+- [x] `src/backend/features/static/internal/web-files.ts`: `DiskWebFiles.vendor` answers
       `type: file.type` instead of the hard-coded `'text/css;charset=utf-8'`; the missing-file
       message becomes ``'Vendor file missing — run `bun install`'``.
-- [ ] `src/backend/features/static/internal/embed.ts`: the vendor loop stores `type: file.type`, with
+- [x] `src/backend/features/static/internal/embed.ts`: the vendor loop stores `type: file.type`, with
       the same reworded message.
-- [ ] `src/backend/shared/embedded.ts`: `EmbeddedWeb.vendor` comment example becomes `/vendor/oat.css`.
-- [ ] `src/backend/features/static/static.routes.test.ts`: add a test "serves Oat's stylesheet and
+- [x] `src/backend/shared/embedded.ts`: `EmbeddedWeb.vendor` comment example becomes `/vendor/oat.css`.
+- [x] `src/backend/features/static/static.routes.test.ts`: add a test "serves Oat's stylesheet and
       script from node_modules at fixed vendor paths" — `/vendor/oat.css` is 200, `text/css`, body
       contains `@layer theme,base,components`; `/vendor/oat.js` is 200, `text/javascript`, body contains
       `customElements.define("ot-dropdown"`. Add `/vendor/oat.js` to the ETag/no-cache and 304 loops.
-- [ ] `src/scripts/build.test.ts`: the vendor test also requests `/vendor/oat.css` and `/vendor/oat.js`
+- [x] `src/scripts/build.test.ts`: the vendor test also requests `/vendor/oat.css` and `/vendor/oat.js`
       and asserts `/vendor/oat.js`'s content type starts with `text/javascript`.
-- [ ] `docs/backend.md` (static-feature section, around `:178-217`): `VENDOR_FILES` holds third-party
+- [x] `docs/backend.md` (static-feature section, around `:178-217`): `VENDOR_FILES` holds third-party
       files of any type, each typed by Bun's MIME lookup like page files; drop "fixed vendor
       `Content-Type`".
 
 **Automated Verification**:
 
-- [ ] `bun test src/backend/features/static/static.routes.test.ts` passes, including the new Oat test
-- [ ] `bun test src/scripts/build.test.ts` passes
-- [ ] `bun run typecheck`, `bun run lint`, `bun run fmt:check` and `bun test` pass
+- [x] `bun test src/backend/features/static/static.routes.test.ts` passes, including the new Oat test
+- [x] `bun test src/scripts/build.test.ts` passes
+- [x] `bun run typecheck`, `bun run lint`, `bun run fmt:check` and `bun test` pass
 
 ### Phase 2: Switch the frontend to Oat
 
@@ -232,14 +232,14 @@ and memories that describe it.
 
 **Tasks — loading and theming**:
 
-- [ ] `src/frontend/index.html`: `<link rel="stylesheet" href="/vendor/oat.css" />`; add
+- [x] `src/frontend/index.html`: `<link rel="stylesheet" href="/vendor/oat.css" />`; add
       `<script src="/vendor/oat.js" defer></script>` directly before the `/main.ts` module script;
       rewrite the comment: Oat styles the document and is also adopted into every shadow root, where
       its tokens (declared on `:root`) and body typography arrive by inheritance; `oat.js` is deferred
       so it runs before the modules that use `ot-dropdown` and `window.ot`. The no-flash script stays.
-- [ ] `src/frontend/ui/styles.ts`: `BASE_HREFS = ['/vendor/oat.css', '/ui/shared.css']`; replace
+- [x] `src/frontend/ui/styles.ts`: `BASE_HREFS = ['/vendor/oat.css', '/ui/shared.css']`; replace
       "Pico" with "Oat" in the comments.
-- [ ] `src/frontend/ui/app.css`: delete the `--pico-font-size` block and its comment; add
+- [x] `src/frontend/ui/app.css`: delete the `--pico-font-size` block and its comment; add
       ```css
       /* Oat colours every token with light-dark() under `color-scheme: light dark`; the chosen theme
          narrows it. color-scheme inherits, so this reaches every shadow root with no mirroring. */
@@ -251,21 +251,21 @@ and memories that describe it.
         color-scheme: dark;
       }
       ```
-- [ ] `src/frontend/ui/theme.ts`: rewrite the header comment (the theme is a `data-theme` attribute on
+- [x] `src/frontend/ui/theme.ts`: rewrite the header comment (the theme is a `data-theme` attribute on
       `<html>`, which `app.css` turns into `color-scheme`); make `applyThemeTo` a private
       `applyTheme()` that sets the attribute on `document.documentElement`, and update both call
       sites (`setTheme` and the module-level call at the bottom). Reword that bottom comment
       (`:89-91`): the unstored case leaves the attribute off so Oat's `color-scheme: light dark`
       paints the first frame.
-- [ ] `src/frontend/ui/theme.test.ts`: delete "applyThemeTo mirrors the current theme onto a component
+- [x] `src/frontend/ui/theme.test.ts`: delete "applyThemeTo mirrors the current theme onto a component
       host". The existing `setTheme` tests already assert `data-theme` on `<html>`.
-- [ ] `src/frontend/ui/base.ts`: remove the `applyThemeTo`/`onThemeChange` import, `#stopThemeSync`
+- [x] `src/frontend/ui/base.ts`: remove the `applyThemeTo`/`onThemeChange` import, `#stopThemeSync`
       and the mirroring in `connectedCallback`; keep `disconnectedCallback(): void {}` because
       subclasses call `super.disconnectedCallback()`; the class comment says "styled by Oat".
 
 **Tasks — shared CSS and toasts**:
 
-- [ ] `src/frontend/ui/shared.css`: rewrite over Oat tokens (mapping table above):
+- [x] `src/frontend/ui/shared.css`: rewrite over Oat tokens (mapping table above):
   - `:host { display: block; }` only; drop the font-size comment and rule
   - delete `.stack`, `.stack-sm`, `.row`, `.row-between`, `.muted`, `.badge`, `button.compact`,
     `button.danger`, `.field > label`, the `margin-bottom: 0` cancellations, the submit-width rule and
@@ -276,25 +276,25 @@ and memories that describe it.
     `.error-text` (`--danger`), `.empty` (`--space-6`, `--border`, `--radius-medium`,
     `--muted-foreground`), `article.open-card` (hover `--primary`; comment "Oat's `.card` is the
     card"), `:is(td, th).num`
-- [ ] `src/frontend/ui/toast.ts` (new): move `ToastKind`, `toast` and `toastError` here;
+- [x] `src/frontend/ui/toast.ts` (new): move `ToastKind`, `toast` and `toastError` here;
       `toast(message, kind = 'info')` calls
       `window.ot.toast(message, undefined, { variant: kind === 'error' ? 'danger' : kind, placement: 'bottom-right', duration: kind === 'error' ? 6000 : 3000 })`;
       declare `interface Window { ot: { toast: (message: string, title?: string, options?: { variant?: string; placement?: string; duration?: number }) => HTMLElement } }`
       in `declare global`, with a comment that `index.html` loads `oat.js` before any module.
-- [ ] Delete `src/frontend/ui/gz-toast.component.ts` and `.css`; remove `<gz-toast></gz-toast>` from
+- [x] Delete `src/frontend/ui/gz-toast.component.ts` and `.css`; remove `<gz-toast></gz-toast>` from
       `gz-app`; point every `toast`/`toastError` import at `ui/toast.ts` (`gz-app`, `dev/hot.ts`,
       `gz-dashboard`, `gz-exercise-list`, `gz-exercise-detail`, `gz-workout-list`,
       `gz-workout-detail`, `gz-set-row`).
-- [ ] `src/frontend/ui/gz-tile.component.ts`: `<article class="card">`;
+- [x] `src/frontend/ui/gz-tile.component.ts`: `<article class="card">`;
       `gz-tile.component.css`: select `article.card`, padding `var(--space-3) var(--space-4)`,
       `--muted-foreground` for `.label` and `.hint`.
 
 **Tasks — app shell**:
 
-- [ ] `src/frontend/app/gz-app.component.ts`: shell comment says "header and view slot" (toasts
+- [x] `src/frontend/app/gz-app.component.ts`: shell comment says "header and view slot" (toasts
       live in the document now). `gz-app.component.css`: `main` padding
       `var(--space-6) 0 var(--space-12)`; footer `--muted-foreground`.
-- [ ] `src/frontend/app/gz-header.component.ts`: new template —
+- [x] `src/frontend/app/gz-header.component.ts`: new template —
       ```html
       <header>
         <nav class="container">
@@ -310,7 +310,7 @@ and memories that describe it.
       ```
       `#syncLinks` toggles only `aria-current="page"` (no `secondary`/`contrast` classes) and closes
       the menu with `menu.hidePopover()` when `menu.matches(':popover-open')`; update its comment.
-- [ ] `src/frontend/app/gz-header.component.css`: `:host` keeps sticky/top/z-index, adds
+- [x] `src/frontend/app/gz-header.component.css`: `:host` keeps sticky/top/z-index, adds
       `background-color: var(--background)`, border `1px solid var(--border)`; `nav` is
       `display: flex; align-items: center; gap: var(--space-4); padding-block: var(--space-2)`;
       `.links` flex with `gap: var(--space-4)`, `margin-inline-start: auto`, `li { margin: 0 }`;
@@ -320,13 +320,13 @@ and memories that describe it.
       `gz-theme-toggle` gets `border-inline-start: 1px solid var(--border)` and
       `padding-inline-start: var(--space-2)` as the divider; `.brand strong` `--primary`, `.tag`
       `--muted-foreground`; delete the dropdown-summary and `ul.icons` rules.
-- [ ] `src/frontend/app/gz-theme-toggle.component.ts`: button classes `theme-toggle ghost icon`.
+- [x] `src/frontend/app/gz-theme-toggle.component.ts`: button classes `theme-toggle ghost icon`.
       `gz-theme-toggle.component.css`: `.theme-toggle` keeps only `color: var(--foreground)`; delete
       every `--pico-*` hook and the nav-spacing margins; the `svg.icon-theme-toggle` rules stay.
 
 **Tasks — features**:
 
-- [ ] Templates, applying across `gz-dashboard`, `gz-exercise-list`, `gz-exercise-detail`,
+- [x] Templates, applying across `gz-dashboard`, `gz-exercise-list`, `gz-exercise-detail`,
       `gz-workout-list`, `gz-workout-detail`, `gz-set-row`:
   - bare `<article>` → `<article class="card">`; `article.open-card` → `article.card.open-card`;
     `article class="stack-sm"` → `class="card vstack gap-2"`; `add-form stack-sm` → `card add-form vstack gap-2`
@@ -338,7 +338,7 @@ and memories that describe it.
   - `<hgroup>` subtitle `<p>` → `<p class="text-light">`
   - `<div class="overflow-auto">` → `<div class="table">`
   - metric switch buttons: `class="${pressed ? '' : 'outline'}"`, `aria-pressed` kept
-- [ ] Component CSS over Oat tokens (mapping table): `gz-exercise-detail.component.css` (delete the
+- [x] Component CSS over Oat tokens (mapping table): `gz-exercise-detail.component.css` (delete the
       `margin-bottom` and `[aria-pressed]` override; `.up` `--success`, `.down` `--danger`),
       `gz-set-row.component.css`, `gz-chart.component.css`, `gz-workout-detail.component.css`
       (`.add-form` border `--primary`). `gz-dashboard`, `gz-exercise-list`, `gz-workout-list` CSS
@@ -346,20 +346,20 @@ and memories that describe it.
 
 **Tasks — remove Pico and update tests**:
 
-- [ ] `package.json` / `bun.lock`: `bun remove @picocss/pico`.
-- [ ] `src/backend/features/static/internal/paths.ts`: drop the `/vendor/pico.css` entry.
-- [ ] `src/backend/features/static/static.routes.test.ts`: delete the Pico test; the allowlist test,
+- [x] `package.json` / `bun.lock`: `bun remove @picocss/pico`.
+- [x] `src/backend/features/static/internal/paths.ts`: drop the `/vendor/pico.css` entry.
+- [x] `src/backend/features/static/static.routes.test.ts`: delete the Pico test; the allowlist test,
       retitled "exposes only the allowlisted vendor files, not node_modules", asserts `/vendor/oat.min.css`, `/vendor/pico.css` and `/node_modules/@knadh/oat/package.json`
       are 404; the 405, ETag, 304 and error loops use `/vendor/oat.css` / `/vendor/oat.scss`, and the
       405 comment names `/vendor/oat.css`.
-- [ ] `src/scripts/build.test.ts`: test title "…the app stylesheet and Oat"; drop `/vendor/pico.css`;
+- [x] `src/scripts/build.test.ts`: test title "…the app stylesheet and Oat"; drop `/vendor/pico.css`;
       the path-guard case becomes `/vendor/%6fat.css`.
-- [ ] `src/frontend/app/router.test.ts`: the file link is `/vendor/oat.css`.
-- [ ] `src/scripts/build.ts` and `src/backend/shared/embedded.ts`: comments say Oat, not Pico.
+- [x] `src/frontend/app/router.test.ts`: the file link is `/vendor/oat.css`.
+- [x] `src/scripts/build.ts` and `src/backend/shared/embedded.ts`: comments say Oat, not Pico.
 
 **Tasks — documentation and memories**:
 
-- [ ] `docs/styling-guidelines.md`: rewrite —
+- [x] `docs/styling-guidelines.md`: rewrite —
   - **Oat first**: typography, colours, forms, tables, both themes; hand-written CSS uses Oat's
     unprefixed tokens (`--primary`, `--muted-foreground`, `--border`, `--space-*`, …). Check Oat
     before hand-rolling: a card is `.card`, a dropdown is `<ot-dropdown>`, loading is
@@ -374,18 +374,18 @@ and memories that describe it.
   - Oat is adopted into every shadow root and linked in `index.html`; its tokens sit on `:root` and
     reach shadow roots by inheritance; the theme is `data-theme` on `<html>` → `color-scheme`
   - CSS double quotes — unchanged
-- [ ] `docs/frontend.md` (`:3-6, 72-81, 173-175, 184-189, 208-232, 234-238`): index.html
+- [x] `docs/frontend.md` (`:3-6, 72-81, 173-175, 184-189, 208-232, 234-238`): index.html
       links Oat and loads `oat.js`; the header uses `<ot-dropdown>`; up-front loading names Oat; hot
       reload's document `<link>` swap covers `oat.css`; theming table → `data-theme` on `<html>` +
       `color-scheme`, no host mirroring; vendor serving names both files; toasts are `ui/toast.ts`
       over `ot.toast()`.
-- [ ] `docs/backend.md`: the allowlist sentence (`:179`) names `/vendor/oat.css` and
+- [x] `docs/backend.md`: the allowlist sentence (`:179`) names `/vendor/oat.css` and
       `/vendor/oat.js` instead of `/vendor/pico.css`; the ETag history's "kept a stale Pico after `bun install`" stays as history
       but is reworded to "a stale vendor file (Pico, at the time)"; no other Pico mention remains.
-- [ ] `README.md` (`:7-8, 18`): "styled with Oat"; `bun install` comment "(Oat + dev tooling)".
-- [ ] `AGENTS.md` (`:8, 47`): `bun install # deps (Oat + dev types/tooling)`; index entry
+- [x] `README.md` (`:7-8, 18`): "styled with Oat"; `bun install` comment "(Oat + dev tooling)".
+- [x] `AGENTS.md` (`:8, 47`): `bun install # deps (Oat + dev types/tooling)`; index entry
       "`docs/styling-guidelines.md` — Oat, no CSS in JavaScript, no font sizes".
-- [ ] Agent memories in `~/.claude/projects/C--Users-DominikHa-IdeaProjects-gainz/memory/`, restated
+- [x] Agent memories in `~/.claude/projects/C--Users-DominikHa-IdeaProjects-gainz/memory/`, restated
       in Oat terms with the same intent:
   - `gainz-styling-picocss-external-css.md` → styles with Oat, external `.css`, no font sizes
   - `gainz-check-pico-component-before-hand-rolling.md` → check Oat's components and utilities first;
@@ -397,14 +397,14 @@ and memories that describe it.
 
 **Automated Verification**:
 
-- [ ] `bun run typecheck`, `bun run lint`, `bun run fmt:check` and `bun test` pass
-- [ ] `git grep -n -i pico -- src package.json bun.lock README.md AGENTS.md ':(glob)docs/*.md'`
+- [x] `bun run typecheck`, `bun run lint`, `bun run fmt:check` and `bun test` pass
+- [x] `git grep -n -i pico -- src package.json bun.lock README.md AGENTS.md ':(glob)docs/*.md'`
       prints only the reworded history line in `docs/backend.md`
-- [ ] `git grep -n -e '--pico-' -e 'gz-toast' -e 'overflow-auto' -e 'compact' -- src` prints nothing
-- [ ] `git grep -n -E 'class="([^"]* )?(stack|stack-sm|row|row-between|muted|secondary|contrast)[" ]' -- src/frontend`
+- [x] `git grep -n -e '--pico-' -e 'gz-toast' -e 'overflow-auto' -e 'compact' -- src` prints nothing
+- [x] `git grep -n -E 'class="([^"]* )?(stack|stack-sm|row|row-between|muted|secondary|contrast)[" ]' -- src/frontend`
       prints nothing (the `[" ]` terminator keeps `row-view` from matching)
-- [ ] `bun test src/backend/features/static/static.routes.test.ts` shows `/vendor/pico.css` is 404
-- [ ] `bun run build` succeeds and `bun test src/scripts/build.test.ts` passes
+- [x] `bun test src/backend/features/static/static.routes.test.ts` shows `/vendor/pico.css` is 404
+- [x] `bun run build` succeeds and `bun test src/scripts/build.test.ts` passes
 
 **Manual Verification**:
 
@@ -423,6 +423,17 @@ and memories that describe it.
 ## Implementation Notes
 
 During implementation, document user feedback, problems, and decisions here.
+
+- `static.routes.test.ts` "serves a stylesheet beside every component module" asserted at least 12
+  components; deleting `gz-toast` leaves 11, so the floor is now 11.
+- The `git grep -i pico` check also prints the allowlist test's `/vendor/pico.css` 404 assertion —
+  required by the same plan, so it stays.
+- Oat leaves `<hgroup>` unstyled, so its `h1` kept a `--space-6` bottom margin above the subtitle;
+  `shared.css` adds `hgroup > * { margin-block: 0 }`. The dashboard's title-and-subtitle `<div>`
+  became an `<hgroup>` to share it.
+- The three renamed memories got Oat file names (`gainz-styling-oat-external-css`,
+  `gainz-check-oat-component-before-hand-rolling`, `gainz-no-nested-cards`); the Pico-named files
+  were removed.
 
 ## References
 

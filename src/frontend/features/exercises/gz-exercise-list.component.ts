@@ -4,7 +4,7 @@ import { define, GzElement } from '../../ui/base.ts';
 import { html } from '../../ui/html.ts';
 import { formatWeight, plural, relativeDay } from '../../ui/format.ts';
 import type { ExerciseWithStatsDto } from '../../../shared/dto/exercise.ts';
-import { toast, toastError } from '../../ui/gz-toast.component.ts';
+import { toast, toastError } from '../../ui/toast.ts';
 import { exerciseFacade } from './exercises.facade.ts';
 
 type ExerciseListState = { status: 'loading' } | { status: 'ready'; items: ExerciseWithStatsDto[] } | { status: 'error'; message: string };
@@ -54,12 +54,12 @@ export class GzExerciseListComponent extends GzElement {
   #card(exercise: ExerciseWithStatsDto): RawHtml {
     const subtitle = [exercise.muscleGroup, exercise.notes].filter((part) => part !== null).join(' · ');
     return html`
-      <article class="open-card">
+      <article class="card open-card">
         <div class="grow">
           <a class="open" href="/exercises/${exercise.id}">${exercise.name}</a>
-          ${subtitle === '' ? '' : html`<div class="muted">${subtitle}</div>`}
+          ${subtitle === '' ? '' : html`<div class="text-light">${subtitle}</div>`}
         </div>
-        <span class="badge">
+        <span class="badge outline">
           ${plural(exercise.setCount, 'set')} · ${exercise.bestWeight === null ? 'no best yet' : `${formatWeight(exercise.bestWeight)} best`} ·
           ${exercise.lastPerformedOn ? relativeDay(exercise.lastPerformedOn) : 'never done'}
         </span>
@@ -78,13 +78,13 @@ export class GzExerciseListComponent extends GzElement {
     const { items } = this.#state;
 
     return html`
-      <div class="stack">
-        <div class="row-between">
+      <div class="vstack">
+        <div class="hstack justify-between gap-2">
           <h1>Exercises</h1>
-          <span class="badge">${plural(items.length, 'exercise')}</span>
+          <span class="badge outline">${plural(items.length, 'exercise')}</span>
         </div>
 
-        <article class="stack-sm">
+        <article class="card vstack gap-2">
           <h2>Add an exercise</h2>
           <form class="new-form" data-action="create">
             <div class="fields">
@@ -105,7 +105,7 @@ export class GzExerciseListComponent extends GzElement {
           </form>
         </article>
 
-        <div class="stack-sm">
+        <div class="vstack gap-2">
           ${items.length === 0 ? html`<p class="empty">No exercises yet. Add the lifts you train above.</p>` : items.map((exercise) => this.#card(exercise))}
         </div>
       </div>

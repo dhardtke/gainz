@@ -1,4 +1,4 @@
-/* The training log. The session cards themselves are shared.css's article.open-card. */
+/* The training log. The session cards themselves are Oat's .card with shared.css's .open-card. */
 
 .new-form .field-notes {
   flex: 2 1 16rem;

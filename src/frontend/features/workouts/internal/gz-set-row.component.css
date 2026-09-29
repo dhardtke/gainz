@@ -6,16 +6,16 @@
   align-items: center;
   gap: 0.6rem;
   padding: 0.5rem 0.65rem;
-  border: 1px solid var(--pico-muted-border-color);
-  border-radius: var(--pico-border-radius);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-medium);
 }
 
 :host(:hover) .row-view {
-  background: var(--pico-card-sectioning-background-color);
+  background: var(--muted);
 }
 
 .index {
-  color: var(--pico-muted-color);
+  color: var(--muted-foreground);
   font-variant-numeric: tabular-nums;
 }
 
@@ -25,7 +25,7 @@
   text-decoration: none;
 
   &:hover {
-    color: var(--pico-primary);
+    color: var(--primary);
   }
 }
 
@@ -36,7 +36,7 @@
 }
 
 .note {
-  color: var(--pico-muted-color);
+  color: var(--muted-foreground);
   overflow-wrap: anywhere;
 }
 
@@ -48,14 +48,14 @@
 }
 
 .volume {
-  color: var(--pico-muted-color);
+  color: var(--muted-foreground);
   margin-right: 0.25rem;
 }
 
 form.edit {
   padding: 0.65rem;
-  border: 1px solid var(--pico-primary);
-  border-radius: var(--pico-border-radius);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-medium);
   margin: 0;
 
   & .field-exercise {

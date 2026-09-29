@@ -2,7 +2,7 @@
  * What a single-file build carries inside it.
  *
  * This committed stub exports `null`, which means "read from disk": the frontend from
- * `src/frontend/`, Pico from `node_modules` and the migrations from `src/backend/db/migrations/`.
+ * `src/frontend/`, Oat from `node_modules` and the migrations from `src/backend/db/migrations/`.
  * `bun run build` swaps this module through `Bun.build`'s `files` option for one that exports the
  * embedded files, so a built `gainz.js` needs nothing beside it.
  */
@@ -16,7 +16,7 @@ export interface EmbeddedFile {
 export interface EmbeddedWeb {
   /** Every servable file under the web root, keyed by its URL path (`/main.ts`). */
   pages: Record<string, EmbeddedFile>;
-  /** Vendor files, keyed by their literal URL (`/vendor/pico.css`). */
+  /** Vendor files, keyed by their literal URL (`/vendor/oat.css`). */
   vendor: Record<string, EmbeddedFile>;
 }
 

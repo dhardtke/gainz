@@ -2,66 +2,66 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  border-bottom: 1px solid var(--pico-muted-border-color);
+  background-color: var(--background);
+  border-bottom: 1px solid var(--border);
 }
 
-header nav {
-  /* Pico's space-between would otherwise centre the middle list. */
-  & ul.links,
-  & ul.menu {
-    margin-inline-start: auto;
-  }
+nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding-block: var(--space-2);
+}
 
-  & ul.menu {
+.links {
+  display: flex;
+  gap: var(--space-4);
+  margin-block: 0;
+  margin-inline-start: auto;
+
+  & li {
+    margin: 0;
+  }
+}
+
+nav a[data-path] {
+  color: var(--muted-foreground);
+
+  &:hover,
+  &[aria-current="page"] {
+    color: var(--foreground);
+  }
+}
+
+.menu {
+  display: none;
+  margin-inline-start: auto;
+}
+
+/* The same width at which the brand drops its tag line. */
+@media (max-width: 560px) {
+  .links {
     display: none;
   }
 
-  /* The same width at which the brand drops its tag line. */
-  @media (max-width: 560px) {
-    & ul.links {
-      display: none;
-    }
-
-    & ul.menu {
-      display: flex;
-    }
-  }
-
-  & summary svg {
-    width: auto;
-    height: 1.125rem;
-  }
-
-  /* Pico draws a role-less summary as a form field; this one is a bare icon like the theme toggle.
-     The `header nav` prefix outranks Pico's own focus rules. */
-  & details.dropdown > summary:not([role]) {
-    border-color: transparent;
-    background-color: transparent;
-    color: var(--pico-contrast);
-
-    &::after {
-      display: none;
-    }
-
-    &:is(:hover, :active, :focus) {
-      border-color: transparent;
-      background-color: transparent;
-      color: var(--pico-contrast-hover);
-      box-shadow: none;
-    }
-
-    &:focus-visible {
-      box-shadow: 0 0 0 var(--pico-outline-width) var(--pico-contrast-focus);
-    }
-  }
-
-  & ul.icons::before {
+  .menu {
     display: block;
-    height: 1.125rem;
-    margin-inline: var(--pico-nav-element-spacing-horizontal);
-    border-left: var(--pico-border-width) solid var(--pico-form-element-border-color);
-    content: "";
   }
+}
+
+.menu button svg {
+  width: auto;
+  height: 1.125rem;
+}
+
+menu[popover] a[role="menuitem"] {
+  color: var(--foreground);
+}
+
+/* The divider between the page links and the theme toggle. */
+gz-theme-toggle {
+  border-inline-start: 1px solid var(--border);
+  padding-inline-start: var(--space-2);
 }
 
 .brand {
@@ -72,11 +72,11 @@ header nav {
 
   & strong {
     letter-spacing: -0.02em;
-    color: var(--pico-primary);
+    color: var(--primary);
   }
 
   & .tag {
-    color: var(--pico-muted-color);
+    color: var(--muted-foreground);
 
     @media (max-width: 560px) {
       display: none;

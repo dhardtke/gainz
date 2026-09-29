@@ -156,17 +156,6 @@ describe('setTheme', () => {
 
     expect(heard).toBe(0);
   });
-
-  test('applyThemeTo mirrors the current theme onto a component host', async () => {
-    const theme = await load();
-    const host = new FakeElement();
-    theme.setTheme('dark');
-
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- applyThemeTo only calls setAttribute
-    theme.applyThemeTo(host as unknown as Element);
-
-    expect(host.attributes.get('data-theme')).toBe('dark');
-  });
 });
 
 describe('toggleTheme', () => {

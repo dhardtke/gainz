@@ -1,4 +1,4 @@
-/* The exercise catalogue. The cards themselves are shared.css's article.open-card. */
+/* The exercise catalogue. The cards themselves are Oat's .card with shared.css's .open-card. */
 
 .new-form .field-notes {
   flex: 2 1 15rem;

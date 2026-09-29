@@ -3,11 +3,11 @@
  * `CSSStyleSheet` objects.
  *
  * Shadow roots do not inherit the document's stylesheets, so each component
- * adopts Pico plus the shared utilities plus its own file. Adopting is by
+ * adopts Oat plus the shared utilities plus its own file. Adopting is by
  * reference: the CSS is fetched and parsed a single time no matter how many
  * elements use it.
  *
- * Pico and the shared utilities are fetched up front, behind the top-level
+ * Oat and the shared utilities are fetched up front, behind the top-level
  * await below, because every component adopts both. A component's own sheet is
  * fetched when its module loads, from the `.css` file beside that module's own
  * URL: `define()` in base.ts awaits `loadStyles`
@@ -17,7 +17,7 @@
  */
 
 /** Adopted by every component, in this order, before its own sheet. */
-const BASE_HREFS = ['/vendor/pico.css', '/ui/shared.css'];
+const BASE_HREFS = ['/vendor/oat.css', '/ui/shared.css'];
 
 const sheets = new Map<string, CSSStyleSheet>();
 
@@ -76,7 +76,7 @@ export function loadStyles(tagName: string, moduleUrl: string): Promise<void> {
 }
 
 /**
- * The stylesheets a component should adopt: Pico, the shared utilities, and its
+ * The stylesheets a component should adopt: Oat, the shared utilities, and its
  * own file. Synchronous by design, because it is called from a constructor, and
  * safe because `define()` awaits `loadStyles` before registering the element.
  */
