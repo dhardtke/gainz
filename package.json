@@ -15,7 +15,7 @@
     "seed": "bun run src/scripts/seed.ts",
     "start": "bun run src/backend/main.ts",
     "start:dev": "GAINZ_DEV=1 bun --watch src/backend/main.ts",
-    "test": "bun test",
+    "test": "bun test --parallel",
     "typecheck": "bunx tsc --noEmit"
   },
   "dependencies": {
