@@ -152,7 +152,7 @@ export class GzSetRowComponent extends GzElement {
           <span class="volume mono">${formatVolume(set.weight * set.reps)}</span>
           <button class="outline" data-action="edit">Edit</button>
           <button class="outline" data-action="duplicate" title="Log another set just like this one">+1</button>
-          <button class="ghost" data-variant="danger" data-action="delete" aria-label="Delete set">×</button>
+          <button data-variant="danger" data-action="delete" aria-label="Delete set">×</button>
         </span>
       </div>
     `;
