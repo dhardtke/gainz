@@ -1,26 +1,8 @@
 {
-  "name": "gainz",
-  "version": "0.1.0",
-  "private": true,
-  "description": "Track weight-lifting progress: workouts, sets, reps, weight and notes.",
-  "type": "module",
-  "module": "src/backend/main.ts",
-  "scripts": {
-    "start": "bun run src/backend/main.ts",
-    "start:dev": "GAINZ_DEV=1 bun --watch src/backend/main.ts",
-    "seed": "bun run src/scripts/seed.ts",
-    "migrate": "bun run src/scripts/migrate.ts",
-    "build": "bun run src/scripts/build.ts",
-    "test": "bun test",
-    "typecheck": "bunx tsc --noEmit",
-    "fmt": "oxfmt .",
-    "fmt:check": "oxfmt --check .",
-    "lint": "oxlint",
-    "lint:fix": "oxlint --fix"
-  },
   "dependencies": {
     "@picocss/pico": "2.1.1"
   },
+  "description": "Track weight-lifting progress: workouts, sets, reps, weight and notes.",
   "devDependencies": {
     "@types/bun": "1.4.2",
     "oxfmt": "0.71.0",
@@ -30,5 +12,23 @@
   },
   "engines": {
     "bun": ">=1.4.0"
-  }
+  },
+  "module": "src/backend/main.ts",
+  "name": "gainz",
+  "private": true,
+  "scripts": {
+    "build": "bun run src/scripts/build.ts",
+    "fmt": "oxfmt .",
+    "fmt:check": "oxfmt --check .",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "migrate": "bun run src/scripts/migrate.ts",
+    "seed": "bun run src/scripts/seed.ts",
+    "start": "bun run src/backend/main.ts",
+    "start:dev": "GAINZ_DEV=1 bun --watch src/backend/main.ts",
+    "test": "bun test",
+    "typecheck": "bunx tsc --noEmit"
+  },
+  "type": "module",
+  "version": "0.1.0"
 }
