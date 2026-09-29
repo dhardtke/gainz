@@ -8,7 +8,7 @@ import { loadStyles, stylesFor } from './styles.ts';
  * click/submit delegation driven by `data-action` attributes.
  *
  * The component's CSS file sits next to its module and is found from the
- * module's URL — `ui/gz-tile.component.ts` is styled by `ui/gz-tile.component.css` — so a
+ * module's URL — `ui/tile/gz-tile.component.ts` is styled by `ui/tile/gz-tile.component.css` — so a
  * component never carries CSS in JavaScript.
  */
 export class GzElement extends HTMLElement {

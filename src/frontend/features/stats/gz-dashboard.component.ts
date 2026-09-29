@@ -9,7 +9,7 @@ import type { WorkoutWithStatsDto } from '../../../shared/dto/workout.ts';
 import { toastError } from '../../ui/toast.ts';
 import { workoutFacade } from '../workouts/workouts.facade.ts';
 import { statsFacade } from './stats.facade.ts';
-import '../../ui/gz-tile.component.ts';
+import '../../ui/tile/gz-tile.component.ts';
 
 type DashboardState = { status: 'loading' } | { status: 'ready'; summary: SummaryDto; workouts: WorkoutWithStatsDto[] } | { status: 'error'; message: string };
 
