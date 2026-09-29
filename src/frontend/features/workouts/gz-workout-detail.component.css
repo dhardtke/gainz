@@ -6,11 +6,7 @@
   flex-wrap: wrap;
 }
 
-/* The add-set card is the working surface of this screen; the accent border
-   keeps it distinct from the read-only cards below it. */
 .add-form {
-  border: 1px solid var(--primary);
-
   & .field-exercise {
     flex: 2 1 12rem;
   }

@@ -302,39 +302,41 @@ export class GzWorkoutDetailComponent extends GzElement {
     const selected = this.#draft.exerciseId;
 
     return html`
-      <article class="card add-form vstack gap-2">
+      <section class="vstack gap-2">
         <h2>Add a set</h2>
-        <form data-action="add-set">
-          <div class="fields">
-            <div class="field field-exercise">
-              <label for="exerciseId">Exercise</label>
-              <select id="exerciseId" name="exerciseId">
-                ${this.#exercises.map(
-                  (exercise) => html` <option value="${exercise.id}" ${exercise.id === selected ? 'selected' : ''}>${exercise.name}</option> `,
-                )}
-                <option value="${NEW_EXERCISE}" ${selected === NEW_EXERCISE ? 'selected' : ''}>＋ New exercise…</option>
-              </select>
+        <article class="card add-form">
+          <form data-action="add-set">
+            <div class="fields">
+              <div class="field field-exercise">
+                <label for="exerciseId">Exercise</label>
+                <select id="exerciseId" name="exerciseId">
+                  ${this.#exercises.map(
+                    (exercise) => html` <option value="${exercise.id}" ${exercise.id === selected ? 'selected' : ''}>${exercise.name}</option> `,
+                  )}
+                  <option value="${NEW_EXERCISE}" ${selected === NEW_EXERCISE ? 'selected' : ''}>＋ New exercise…</option>
+                </select>
+              </div>
+              <div class="field field-exercise field-new-exercise" ${selected === NEW_EXERCISE ? '' : 'hidden'}>
+                <label for="newExercise">New exercise name</label>
+                <input id="newExercise" name="newExercise" type="text" maxlength="120" placeholder="Incline Press" />
+              </div>
+              <div class="field field-num">
+                <label for="weight">Weight (${UNIT})</label>
+                <input id="weight" name="weight" type="number" step="0.25" min="0" value="${this.#draft.weight}" required />
+              </div>
+              <div class="field field-num">
+                <label for="reps">Reps</label>
+                <input id="reps" name="reps" type="number" step="1" min="1" value="${this.#draft.reps}" required />
+              </div>
+              <div class="field field-notes">
+                <label for="set-notes">Notes</label>
+                <input id="set-notes" name="notes" type="text" maxlength="2000" placeholder="Paused, felt easy" />
+              </div>
+              <button type="submit">Log set</button>
             </div>
-            <div class="field field-exercise field-new-exercise" ${selected === NEW_EXERCISE ? '' : 'hidden'}>
-              <label for="newExercise">New exercise name</label>
-              <input id="newExercise" name="newExercise" type="text" maxlength="120" placeholder="Incline Press" />
-            </div>
-            <div class="field field-num">
-              <label for="weight">Weight (${UNIT})</label>
-              <input id="weight" name="weight" type="number" step="0.25" min="0" value="${this.#draft.weight}" required />
-            </div>
-            <div class="field field-num">
-              <label for="reps">Reps</label>
-              <input id="reps" name="reps" type="number" step="1" min="1" value="${this.#draft.reps}" required />
-            </div>
-            <div class="field field-notes">
-              <label for="set-notes">Notes</label>
-              <input id="set-notes" name="notes" type="text" maxlength="2000" placeholder="Paused, felt easy" />
-            </div>
-            <button type="submit">Log set</button>
-          </div>
-        </form>
-      </article>
+          </form>
+        </article>
+      </section>
     `;
   }
 
@@ -388,8 +390,6 @@ export class GzWorkoutDetailComponent extends GzElement {
           <span class="badge outline">${formatVolume(volume)} total volume</span>
         </div>
 
-        ${this.#addSetTemplate()}
-
         <section class="vstack gap-2">
           <h2>Sets</h2>
           ${
@@ -399,43 +399,46 @@ export class GzWorkoutDetailComponent extends GzElement {
           }
         </section>
 
+        ${this.#addSetTemplate()}
         ${
           breakdown.length === 0
             ? ''
             : html`
-                <article class="card vstack gap-2">
+                <section class="vstack gap-2">
                   <h2>By exercise</h2>
-                  <div class="table">
-                    <table class="breakdown">
-                      <thead>
-                        <tr>
-                          <th scope="col">Exercise</th>
-                          <th scope="col" class="num">Sets</th>
-                          <th scope="col" class="num">Reps</th>
-                          <th scope="col" class="num">Top set</th>
-                          <th scope="col" class="num">Volume</th>
-                          <th scope="col"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${breakdown.map(
-                          (entry) => html`
-                            <tr>
-                              <td class="name"><a href="/exercises/${entry.id}">${entry.name}</a></td>
-                              <td class="num">${entry.sets}</td>
-                              <td class="num">${entry.reps}</td>
-                              <td class="num">${formatNumber(entry.top)} ${UNIT}</td>
-                              <td class="num">${formatVolume(entry.volume)}</td>
-                              <td class="num">
-                                <button class="outline" data-action="repeat-exercise" data-id="${entry.id}">Another set</button>
-                              </td>
-                            </tr>
-                          `,
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </article>
+                  <article class="card">
+                    <div class="table">
+                      <table class="breakdown">
+                        <thead>
+                          <tr>
+                            <th scope="col">Exercise</th>
+                            <th scope="col" class="num">Sets</th>
+                            <th scope="col" class="num">Reps</th>
+                            <th scope="col" class="num">Top set</th>
+                            <th scope="col" class="num">Volume</th>
+                            <th scope="col"></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${breakdown.map(
+                            (entry) => html`
+                              <tr>
+                                <td class="name"><a href="/exercises/${entry.id}">${entry.name}</a></td>
+                                <td class="num">${entry.sets}</td>
+                                <td class="num">${entry.reps}</td>
+                                <td class="num">${formatNumber(entry.top)} ${UNIT}</td>
+                                <td class="num">${formatVolume(entry.volume)}</td>
+                                <td class="num">
+                                  <button class="outline" data-action="repeat-exercise" data-id="${entry.id}">Another set</button>
+                                </td>
+                              </tr>
+                            `,
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </article>
+                </section>
               `
         }
       </div>
