@@ -11,9 +11,9 @@ bun run start:dev        # same, with --watch
 bun run seed             # fill an empty DB with sample workouts
 bun run migrate          # apply pending schema migrations, then exit
 bun run build            # one-file deployment build: dist/gainz.js (+ .map)
-bun test                 # the test suite against in-memory SQLite
-bun test src/backend/features/workouts/workout.routes.test.ts # one file
-bun test -t "health"     # one test / describe block by name
+bun test --parallel      # the test suite against in-memory SQLite
+bun test --parallel src/backend/features/workouts/workout.routes.test.ts # one file
+bun test --parallel -t "health" # one test / describe block by name
 bun run typecheck        # typechecking (backend + frontend)
 bun run lint             # linting
 bun run fmt              # format (fmt:check for CI)
