@@ -9,7 +9,7 @@ import { exerciseFacade } from './exercises.facade.ts';
 
 type ExerciseListState = { status: 'loading' } | { status: 'ready'; items: ExerciseWithStatsDto[] } | { status: 'error'; message: string };
 
-/** The exercise catalogue — the vocabulary the rest of the log is written in. */
+/** The exercise catalog — the vocabulary the rest of the log is written in. */
 export class GzExerciseListComponent extends GzElement {
   #state: ExerciseListState = { status: 'loading' };
 

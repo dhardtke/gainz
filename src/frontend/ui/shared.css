@@ -32,7 +32,7 @@ hgroup > * {
 
 /* ------------------------------------------------------------------- forms */
 
-/* A row of labelled inputs that wraps on narrow screens, with the button at its end. */
+/* A row of labeled inputs that wraps on narrow screens, with the button at its end. */
 .fields {
   display: flex;
   flex-wrap: wrap;

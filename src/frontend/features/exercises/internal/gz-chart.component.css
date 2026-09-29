@@ -101,7 +101,7 @@ svg {
     white-space: nowrap;
 
     /* Keep the outermost labels inside the plot instead of overhanging it.
-       The :not() guards leave a lone label centred. */
+       The :not() guards leave a lone label centered. */
     &:first-child:not(:last-child) {
       transform: translateX(0);
     }

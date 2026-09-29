@@ -1,6 +1,6 @@
 # Styling guidelines
 
-- **Oat first.** [Oat](https://oat.ink) provides typography, colours, form controls, tables and both
+- **Oat first.** [Oat](https://oat.ink) provides typography, colors, form controls, tables and both
   themes. Hand-written CSS is a thin layer built from Oat's unprefixed tokens (`--primary`,
   `--muted-foreground`, `--border`, `--space-*`, `--radius-medium`, …), so it follows the active
   theme. Before writing a box of your own, check whether Oat already draws it: **a card is `.card`**,
@@ -18,11 +18,11 @@
   and the media queries that only adjust it sit inside it. There is no preprocessor: this is the
   browser's own nesting, and `&` is always written explicitly.
 - **No stylesheet declares a font size.** Body text is Oat's `1rem` everywhere, headings come from
-  Oat's fluid scale, and emphasis is weight and colour. Oat sets no root or `:host` font size, so
+  Oat's fluid scale, and emphasis is weight and color. Oat sets no root or `:host` font size, so
   nothing has to be pinned. For the same reason `gz-chart` draws only geometry in SVG and positions
   its axis labels as HTML over the plot: a font size inside a `viewBox` is measured in user units,
   so the browser would scale the lettering with the chart instead of matching the page.
-- **Colour buttons only with Oat's variants** — `data-variant="secondary|danger"`, `.outline`,
+- **Color buttons only with Oat's variants** — `data-variant="secondary|danger"`, `.outline`,
   `.ghost`, `.icon` — never with custom CSS or token overrides on the button. No exceptions remain:
   the header's icon-only controls are `.ghost.icon` buttons.
 - Shadow roots don't inherit document styles, so Oat is adopted into each one _and_ linked in

@@ -33,15 +33,15 @@ function foreignKeysOn(database: Database): boolean {
 describe('migration runner', () => {
   test('applies every migration to a fresh database, in version order', () => {
     // Written out of order on purpose: the ALTER only parses if 001 ran first.
-    write('002-add-colour.sql', 'ALTER TABLE widgets ADD COLUMN colour TEXT;');
+    write('002-add-color.sql', 'ALTER TABLE widgets ADD COLUMN color TEXT;');
     write('001-create-widgets.sql', 'CREATE TABLE widgets (id INTEGER PRIMARY KEY, name TEXT NOT NULL);');
 
     const result = run();
 
     expect(result.applied.map((migration) => migration.version)).toEqual([1, 2]);
-    expect(result.applied.map((migration) => migration.name)).toEqual(['create-widgets', 'add-colour']);
+    expect(result.applied.map((migration) => migration.name)).toEqual(['create-widgets', 'add-color']);
     expect(result.version).toBe(2);
-    expect(db.query('SELECT colour FROM widgets').all()).toEqual([]);
+    expect(db.query('SELECT color FROM widgets').all()).toEqual([]);
   });
 
   test('is a no-op on an already-migrated database', () => {
@@ -58,10 +58,10 @@ describe('migration runner', () => {
     write('001-create-widgets.sql', 'CREATE TABLE widgets (id INTEGER PRIMARY KEY);');
     run();
 
-    write('002-add-colour.sql', 'ALTER TABLE widgets ADD COLUMN colour TEXT;');
+    write('002-add-color.sql', 'ALTER TABLE widgets ADD COLUMN color TEXT;');
     const result = run();
 
-    expect(result.applied.map((migration) => migration.name)).toEqual(['add-colour']);
+    expect(result.applied.map((migration) => migration.name)).toEqual(['add-color']);
     expect(result.version).toBe(2);
   });
 

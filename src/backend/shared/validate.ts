@@ -15,7 +15,7 @@ export function requiredString<T extends object>(dto: T, field: keyof T & string
   return trimmed;
 }
 
-/** An optional string; empty strings and null both normalise to null. */
+/** An optional string; empty strings and null both normalize to null. */
 export function optionalString<T extends object>(dto: T, field: keyof T & string, maxLength = 2000): string | null {
   const value: unknown = dto[field];
   if (value === undefined || value === null) {

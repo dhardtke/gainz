@@ -78,7 +78,7 @@ own sake produces commits that cannot be reverted independently anyway.
 type(scope): Capitalized imperative summary
 ```
 
-`feat:` for new behaviour, `fix:` for a defect, `refactor:` for a change that
+`feat:` for new behavior, `fix:` for a defect, `refactor:` for a change that
 rearranges code without changing what it does, `test:` for a commit whose change
 is the tests themselves — a test that accompanies the code it exercises stays in
 that code's commit — `docs:` for documentation content
@@ -87,8 +87,8 @@ pipeline, and `chore:` for the rest of the housekeeping: tooling, config,
 dependency and editor upkeep, and instruction files like `AGENTS.md`.
 
 `refactor:` is the workhorse here; several recent commits use it for moves and
-regroupings. If a change both moves code and alters behaviour it is not a
-refactor — either split it or label it by the behaviour.
+regroupings. If a change both moves code and alters behavior it is not a
+refactor — either split it or label it by the behavior.
 
 A scope in parentheses only when it genuinely narrows things (`chore(idea):` for
 IDE run configs); most commits do not need one.

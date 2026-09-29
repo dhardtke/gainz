@@ -1,4 +1,4 @@
-/* Oat colours every token with light-dark() under color-scheme: light dark; the chosen theme
+/* Oat colors every token with light-dark() under color-scheme: light dark; the chosen theme
    narrows it. color-scheme inherits, so this reaches every shadow root with no mirroring. */
 :root[data-theme="light"] {
   color-scheme: light;

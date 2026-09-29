@@ -11,7 +11,7 @@ const CLIENT = '/dev/hot.ts';
 /**
  * A server built with `GAINZ_DEV` set as asked. Not `useServer()`: the variable has to be set
  * before the route table is built, and it must never leak into the other test files this process
- * runs next — `static.routes.test.ts` asserts production behaviour.
+ * runs next — `static.routes.test.ts` asserts production behavior.
  */
 async function withDev(enabled: boolean, fn: (origin: string) => Promise<void>): Promise<void> {
   const previous = process.env.GAINZ_DEV;
