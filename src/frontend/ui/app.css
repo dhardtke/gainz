@@ -1,3 +1,11 @@
+/* The brand color: blue-gray instead of Oat's default. Unlayered, so it wins over Oat's theme
+   layer. */
+:root {
+  --primary: light-dark(#475569, #64748b);
+  --primary-foreground: #fafafa;
+  --ring: light-dark(#475569, #64748b);
+}
+
 /* Oat colors every token with light-dark() under color-scheme: light dark; the chosen theme
    narrows it. color-scheme inherits, so this reaches every shadow root with no mirroring. */
 :root[data-theme="light"] {

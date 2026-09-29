@@ -1,8 +1,5 @@
-/* Sun/moon icon button for the color theme: an Oat ghost icon button. */
-
-.theme-toggle {
-  color: var(--foreground);
-}
+/* Sun/moon icon button for the color theme: a plain Oat icon button, which on the header's
+   primary-colored bar blends into it. */
 
 svg.icon-theme-toggle {
   --theme-toggle-duration: 0.4s;

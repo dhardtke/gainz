@@ -2,8 +2,9 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  background-color: var(--background);
-  border-bottom: 1px solid var(--border);
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: var(--shadow-medium);
 }
 
 nav {
@@ -24,12 +25,12 @@ nav {
   }
 }
 
-nav a[data-path] {
-  color: var(--muted-foreground);
+.links a {
+  color: var(--primary-foreground);
 
   &:hover,
   &[aria-current="page"] {
-    color: var(--foreground);
+    text-decoration: underline;
   }
 }
 
@@ -60,7 +61,7 @@ menu[popover] a[role="menuitem"] {
 
 /* The divider between the page links and the theme toggle. */
 gz-theme-toggle {
-  border-inline-start: 1px solid var(--border);
+  border-inline-start: 1px solid var(--primary-foreground);
   padding-inline-start: var(--space-2);
 }
 
@@ -70,14 +71,13 @@ gz-theme-toggle {
   gap: 0.5rem;
   text-decoration: none;
 
+  color: var(--primary-foreground);
+
   & strong {
     letter-spacing: -0.02em;
-    color: var(--primary);
   }
 
   & .tag {
-    color: var(--muted-foreground);
-
     @media (max-width: 560px) {
       display: none;
     }
