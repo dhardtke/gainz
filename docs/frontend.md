@@ -11,7 +11,7 @@ src/frontend/
 ├── dev/        hot.ts (development only)
 ├── app/        gz-app, gz-header, gz-theme-toggle, router.ts, routes.ts
 ├── http/       http.ts (get/post/patch/remove), errors.ts (ApiError, errorMessage)
-├── ui/         base.ts, html.ts, styles.ts, theme.ts, format.ts, pagination.ts, app.css, shared.css, toast.ts, gz-tile, gz-pagination
+├── ui/         base.ts, html.ts, styles.ts, theme.ts, format.ts, app.css, shared.css, toast.ts, gz-tile, pagination/
 └── features/
     ├── exercises/  exercises.routes.ts, exercises.facade.ts, gz-exercise-list, gz-exercise-detail
     │   └── internal/  exercise.api.ts, gz-chart
@@ -32,7 +32,8 @@ able to make a request. `ui/` is what any component may use: `base.ts` with `GzE
 shadow root, `data-action` click/submit delegation, `template()`/`render()`) and `define()`;
 `html.ts` with the escaping `html` tagged template and `raw()`; `styles.ts`, `theme.ts` and `format.ts`; the document stylesheet
 `app.css` and the utilities in `shared.css`; `toast.ts`, whose `toast()` and `toastError()` show Oat's toasts
-through `ot.toast()`; `pagination.ts`, the paged lists' page arithmetic; `gz-tile`, the stat tile several views use; and `gz-pagination`, the paged lists' pager.
+through `ot.toast()`; `gz-tile`, the stat tile several views use; and `pagination/`, the paged lists' page
+arithmetic in `pagination.ts` beside `gz-pagination`, their pager.
 
 A component is a pair of files side by side, `gz-<name>.component.ts` and `gz-<name>.component.css`, in whichever
 directory owns it. A component module ends with `await define('<tag>', TheClass, import.meta.url)`,
@@ -101,7 +102,7 @@ be a full page load, the `gz-pagination` component renders Oat's pagination `men
 out of buttons. It cannot call `navigate()` because `ui/` may not import `app/`: a click emits a
 composed `page-change` event carrying the page number, and the list turns it into its own URL and
 calls `navigate()`; `gz-app` rebuilds the view on the route change, so a list reads
-`location.search` only when it connects. `ui/pagination.ts` holds the pieces, none of which touch
+`location.search` only when it connects. `ui/pagination/pagination.ts` holds the pieces, none of which touch
 the DOM: `parsePage` reads `?page=` (anything but a positive integer is page 1), `pageCount`,
 `pageOffset`, `pagePath` and `pageItems` (the first page, the last and the current one ±1, with a
 gap for a hole of two or more), which the component renders. `pageOffset` caps the offset at
