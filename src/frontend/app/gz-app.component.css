@@ -8,7 +8,7 @@
 
 main {
   flex: 1 0 auto;
-  padding: var(--space-6) 0 var(--space-12);
+  padding-block: var(--space-6) var(--space-12);
 }
 
 footer {
