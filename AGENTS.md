@@ -10,6 +10,7 @@ bun start                # serve API + frontend on PORT (default 3000)
 bun run start:dev        # same, with --watch
 bun run seed             # fill an empty DB with sample workouts
 bun run migrate          # apply pending schema migrations, then exit
+bun run build            # one-file deployment build: dist/gainz.js (+ .map)
 bun test                 # the test suite against in-memory SQLite
 bun test src/backend/features/workouts/workout.routes.test.ts # one file
 bun test -t "health"     # one test / describe block by name
@@ -33,7 +34,7 @@ the repository as it stood on the date it carries, so an old path in one is a re
 - `src/frontend/` — no-build-step frontend of TypeScript ES modules and custom elements, organised
   by feature like the backend
 - `src/shared/` — types-only wire contract (DTOs, flavored ids and dates) both halves import
-- `src/scripts/` — the `migrate` and `seed` entry points
+- `src/scripts/` — the `migrate`, `seed` and `build` entry points
 
 Tests sit beside the module they exercise. `bun run lint` enforces the import boundaries.
 

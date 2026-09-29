@@ -1,27 +1,25 @@
-import { basename, extname, resolve } from 'node:path';
+import { extname } from 'node:path';
 import type { DevFacade } from '../../dev/dev.facade.ts';
-import { FRONTEND_DIR, resolveStaticPath, resolveVendorPath } from './paths.ts';
-import { transpileModule } from './transpile.ts';
+import type { WebFile, WebFiles } from './web-files.ts';
 
 export class StaticController {
   readonly #dev: DevFacade;
+  readonly #files: WebFiles;
 
-  constructor(dev: DevFacade) {
+  constructor(dev: DevFacade, files: WebFiles) {
     this.#dev = dev;
+    this.#files = files;
   }
 
   async vendor(req: Request): Promise<Response> {
-    const vendor = resolveVendorPath(new URL(req.url).pathname);
-    if (!vendor) {
-      // The specifier would not resolve: the package is not installed.
-      return new Response('Not found', { status: 404 });
+    const file = await this.#files.vendor(new URL(req.url).pathname);
+    if (file.kind === 'file') {
+      return this.#respond(req, file.body, { 'Content-Type': file.type });
     }
-
-    const file = Bun.file(vendor);
-    if (!(await file.exists())) {
-      return new Response('Vendor stylesheet missing — run `bun install`', { status: 500 });
+    if (file.kind === 'error') {
+      return new Response(file.message, { status: 500 });
     }
-    return this.#respond(req, await file.bytes(), { 'Content-Type': 'text/css;charset=utf-8' });
+    return new Response('Not found', { status: 404 });
   }
 
   async frontend(req: Request): Promise<Response> {
@@ -30,51 +28,35 @@ export class StaticController {
     }
 
     const { pathname } = new URL(req.url);
-
-    const resolved = resolveStaticPath(pathname);
-    if (!resolved) {
-      return new Response('Not found', { status: 404 });
-    }
-
     const isDirectory = pathname === '/' || pathname.endsWith('/');
-    const candidate = isDirectory ? resolve(resolved, 'index.html') : resolved;
 
-    const file = Bun.file(candidate);
-    if (await file.exists()) {
-      if (extname(candidate) === '.ts') {
-        return this.#module(req, candidate);
-      }
-      // `/` arrives here too, rewritten to `index.html` above.
-      if (extname(candidate) === '.html') {
-        return this.#html(req, file);
-      }
-      // `file.type` is Bun's MIME database lookup, so no hand-written map is kept here.
-      return this.#respond(req, await file.bytes(), { 'Content-Type': file.type });
+    // `/` arrives as `/index.html`.
+    const file = await this.#files.page(isDirectory ? `${pathname}index.html` : pathname);
+    switch (file.kind) {
+      case 'file':
+        return this.#serve(req, file);
+      case 'error':
+        return new Response(file.message, { status: 500 });
+      case 'invalid':
+        return new Response('Not found', { status: 404 });
+      case 'missing':
+        break;
     }
 
     // Unknown path without a file extension: let the single-page app route it. A trailing
     // slash asked for a directory index that is not there, so it is a miss, not a route.
     if (extname(pathname) === '' && !isDirectory) {
-      const index = Bun.file(resolve(FRONTEND_DIR, 'index.html'));
-      if (await index.exists()) {
-        return this.#html(req, index);
+      const index = await this.#files.page('/index.html');
+      if (index.kind === 'file') {
+        return this.#serve(req, index);
       }
     }
     return new Response('Not found', { status: 404 });
   }
 
-  /** The frontend is TypeScript on disk and JavaScript on the wire. */
-  async #module(req: Request, path: string): Promise<Response> {
-    const code = await transpileModule(path);
-    if (code === null) {
-      return new Response(`Could not transpile ${basename(path)}`, { status: 500 });
-    }
-    return this.#respond(req, code, { 'Content-Type': 'text/javascript;charset=utf-8' });
-  }
-
-  /** A page, with the hot-reload client injected in development — before hashing, so the ETag covers it. */
-  async #html(req: Request, file: Bun.BunFile): Promise<Response> {
-    const body = await this.#dev.injectClient(await file.bytes());
+  /** A page gets the hot-reload client injected in development — before hashing, so the ETag covers it. */
+  async #serve(req: Request, file: WebFile & { kind: 'file' }): Promise<Response> {
+    const body = file.type.startsWith('text/html') ? await this.#dev.injectClient(file.body) : file.body;
     return this.#respond(req, body, { 'Content-Type': file.type });
   }
 

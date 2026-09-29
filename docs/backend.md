@@ -66,9 +66,9 @@ the feature that owns the endpoint and take `post` from `useServer()` as their f
 Other features' route tests import them directly, the one cross-feature import that does not go
 through `ports/`. The static feature keeps its own private modules where the rule
 says they go — `features/static/internal/paths.ts` (the only place a URL becomes a filesystem path)
-and `internal/transpile.ts` — and calls them from `internal/static.controller.ts`. The two operator entry points — `bun run migrate` and `bun run seed` —
-live outside the backend entirely, in `src/scripts/`, so that `src/backend/` holds the running
-server and nothing else.
+and `internal/transpile.ts` — and reaches them through `internal/web-files.ts`. The three operator entry points — `bun run migrate`, `bun run seed`
+and `bun run build` — live outside the backend entirely, in `src/scripts/`, so that `src/backend/`
+holds the running server and nothing else.
 
 A route belongs to the file its URL prefix names, with no exceptions to remember — so
 `/api/workouts/:id/sets` is a workout route and lives in `workout.routes.ts`. Sets are part of the
@@ -111,8 +111,9 @@ builds its controller from those facades. `allRoutes(db)` only passes the databa
 the workouts facades twice costs nothing, because a repository holds only its connection.
 `src/scripts/seed.ts` calls the same three factories and hands the facades camelCase DTOs, so
 seeded data passes the same validation as the API. `meta` has a controller but no facade, since
-nothing else needs it. `static.facade.ts` publishes one method, `webRoot()`, so the dev feature can
-watch `src/frontend/` without importing `static/internal/paths.ts`; `createDevFacade()` builds it,
+nothing else needs it. `static.facade.ts` publishes two methods: `webRoot()`, so the dev feature can
+watch `src/frontend/` without importing `static/internal/paths.ts`, and `embed()`, so the build can
+carry the web root without reaching into `static/internal/`; `createDevFacade()` builds it,
 and `staticRoutes()` builds a dev facade in turn, to inject the hot-reload client. All SQL lives in a feature's `internal/`; `db/sql.ts` keeps
 only what names no table — `buildUpdate`, `isUniqueViolation` and `isForeignKeyViolation`.
 Repositories reference each other only with `import type` and take what they need through their
@@ -151,6 +152,9 @@ duration of the run — SQLite's table-rebuild procedure needs that, and `PRAGMA
 silent no-op inside a transaction — and each migration must pass `PRAGMA foreign_key_check` before
 it commits. Changing the schema means adding a file numbered above the current version; nothing
 else. The runner refuses to start rather than guess when the files and the database disagree.
+It validates a list of `{ filename, sql }` sources rather than a directory: `readMigrations` reads
+them from that directory, and a built file takes them from `EMBEDDED.migrations` instead (see
+"Single-file build") — the same naming, numbering and ordering rules hold for both.
 
 `startServer(db, port)` in `http/server.ts` is the one place `Bun.serve` is called: `main.ts` passes
 `PORT`, and `useServer()` in `src/backend/testing.ts` passes port 0 and an in-memory database.
@@ -167,16 +171,26 @@ provoked over HTTP; `shared/validate.test.ts` pins the field helpers' normalisat
 `features/dev/internal/changes.test.ts` pins how a watched path becomes a URL and a change; and
 `features/exercises/exercises.facade.test.ts` and `features/workouts/workouts.facade.test.ts` drive
 each facade's validation directly, including that a bad body on an unknown id is a 400 rather than
-a 404. There are no unit tests of the repositories.
+a 404. There are no unit tests of the repositories. `src/scripts/build.test.ts` is end-to-end over
+HTTP like the route tests, but against the built file, copied alone into a temporary directory and
+run in a child process — so it sits beside the route tests rather than among the exceptions.
 
 Static serving is deliberately narrow: `src/frontend/` with a path-escape guard, plus `VENDOR_FILES`
 in `internal/paths.ts` — a one-file allowlist into `node_modules` (`/vendor/pico.css`). Serving anything
 else from a package means adding it to that map. A trailing slash asks for `index.html` in that
 directory, and a directory without one is a 404 rather than the single-page app — otherwise the
-extension-less fallback would mask a real miss, which is the thing it exists to avoid. All of
-that — the path-escape guard, the vendor allowlist, the directory index, the single-page fallback
-and transpiling — lives in `internal/static.controller.ts`, and `static.routes.ts` only declares
-the URLs that reach it.
+extension-less fallback would mask a real miss, which is the thing it exists to avoid.
+
+`internal/static.controller.ts` does not know where bytes come from: it reads through the
+`WebFiles` interface in `internal/web-files.ts`. Under `bun start` and in the tests that is
+`DiskWebFiles` — `paths.ts` for the path-escape guard and the vendor allowlist, `transpile.ts` for
+modules, re-read on every request. In a built file it is `EmbeddedWebFiles`, lookups in the maps
+the build carries, behind the same decoding, NUL and escape guards. A `WebFile` is a `file`, a
+`missing` one (eligible for the single-page fallback), an `invalid` path (a 404, never the fallback)
+or an `error` (a 500), and the controller keeps the method check, the directory index, the
+fallback, the client injection and the ETag for both sources. Vendor files sit in their own map, so
+they stay reachable only at their literal URL, exactly as on disk. `static.routes.ts` only declares
+the URLs that reach the controller.
 
 The static feature keeps no map of content types. The vendor stylesheet and transpiled modules get
 a fixed `Content-Type`, and every plain file takes `Bun.file(x).type` — the same lookup
@@ -209,6 +223,8 @@ registers `/dev/ws`, `StaticController` injects `<script type="module" src="/dev
 index page, and `main.ts` prints `hot reload: on`. Without the variable `devRoutes()` is `{}` and the
 page is byte-for-byte what `bun start` has always served. The switch is that one variable rather
 than `NODE_ENV`, whose non-production default would give plain `bun start` a watcher and a socket.
+A built file never enables the dev feature, whatever `GAINZ_DEV` says: it has no source tree to
+watch, and `dev/hot.ts` is not embedded.
 `DevFacade.enabled()` is static, so `main.ts` can ask without building a facade, and reads it on every call, so `dev.routes.test.ts` can flip it around a server.
 
 The injection runs before the page is hashed, so the ETag covers the injected bytes. It is reached
@@ -227,3 +243,24 @@ rather than a facade's field, because `devRoutes()` and `staticRoutes()` each bu
 option in conditionally flips `Bun.serve`'s options type between its with- and without-WebSocket
 variants, which is also why `RouteTable` is `Bun.Serve.RoutesWithUpgrade`: a route that upgrades
 returns `undefined`. Production therefore carries a socket handler no route can reach.
+
+## Single-file build (`src/scripts/build.ts`)
+
+`bun run build` writes `dist/gainz.js` and a linked `dist/gainz.js.map`, and a deployment is that one
+file run with `bun`. `src/backend/embedded.ts` is a committed stub exporting `EMBEDDED = null`,
+which means "read from disk" — the state under `bun start` and in every test. The build replaces
+that module through `Bun.build`'s `files` option with one that exports the embedded web root, the
+vendor files and the migrations; `bun:sqlite` stays external. It sits outside `features/` because
+both `db/` and the static feature read it.
+
+What is embedded comes from `StaticFacade.embed()`: every file under `src/frontend/` except
+`dev/**`, `testing.ts` and `*.test.ts`, keyed by its URL, with each module transpiled ahead of time
+with whitespace minified and no source map, so names and structure survive for browser devtools.
+The frontend is embedded one module per URL rather than bundled, because bundling would change
+`import.meta.url` and break the `.ts` → `.css` lookup in `ui/styles.ts` that lazy routes depend on.
+A module that does not parse fails the build, naming the file. The migrations come from
+`readMigrations`.
+
+The server itself is built with `target: 'bun'` and `minify: true`; Bun reads the linked source map
+for stack traces. `GAINZ_DEV` is ignored in a built file. `dist/` is git-ignored, which is also what
+keeps oxlint and oxfmt out of it.

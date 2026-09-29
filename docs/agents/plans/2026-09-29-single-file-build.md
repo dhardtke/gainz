@@ -204,44 +204,44 @@ exists.
 
 **Tasks**:
 
-- [ ] Add `src/backend/embedded.ts` with `EmbeddedFile`, `EmbeddedWeb`, `Embedded` and
+- [x] Add `src/backend/embedded.ts` with `EmbeddedFile`, `EmbeddedWeb`, `Embedded` and
       `EMBEDDED = null` as described above. It imports nothing from `features/`.
-- [ ] In `src/backend/db/migrations.ts`, add and export `MigrationSource` and
+- [x] In `src/backend/db/migrations.ts`, add and export `MigrationSource` and
       `readMigrations(dir)`, which returns every `.sql` entry of `dir` (`readdirSync`) with its
       contents (`readFileSync`), in directory order — `discover` sorts.
-- [ ] Change `Migration` so `file` is the bare filename (update its doc comment) and add `sql`.
-- [ ] Change `discover(dir)` to `discover(sources: MigrationSource[])`: same filename regex,
+- [x] Change `Migration` so `file` is the bare filename (update its doc comment) and add `sql`.
+- [x] Change `discover(dir)` to `discover(sources: MigrationSource[])`: same filename regex,
       version ≥ 1 and duplicate checks, now over `source.filename`; it does no I/O.
-- [ ] Change `pendingMigrations(files, applied)` to drop `dir`. Its first message becomes
+- [x] Change `pendingMigrations(files, applied)` to drop `dir`. Its first message becomes
       `Database has migration ${row.version} (${row.name}) applied, but no migration file for it exists — the database is newer than this code`;
       its second quotes `file.file` directly (already bare) instead of `basename(file.file)`.
-- [ ] Change `apply()` to `db.run(migration.sql)` and quote `migration.file` directly in its error.
+- [x] Change `apply()` to `db.run(migration.sql)` and quote `migration.file` directly in its error.
       Remove the `basename`, `join` and `readFileSync`/`readdirSync` imports that no longer have a
       user outside `readMigrations`, keeping only what `readMigrations` and `MIGRATIONS_DIR` need.
-- [ ] Change `migrate()` to resolve its sources:
+- [x] Change `migrate()` to resolve its sources:
       ```ts
       const sources = options.dir !== undefined ? readMigrations(options.dir) : (EMBEDDED?.migrations ?? readMigrations(MIGRATIONS_DIR));
       ```
       and update `MigrateOptions.dir`'s doc comment ("Only the tests override this; a built file
       reads the embedded list").
-- [ ] Update the file header comment of `migrations.ts`: migrations come from the embedded list in
+- [x] Update the file header comment of `migrations.ts`: migrations come from the embedded list in
       a built file and from `src/backend/db/migrations/` otherwise, validated the same way.
-- [ ] `src/backend/main.ts` and `src/scripts/migrate.ts` keep `basename(migration.file, '.sql')` —
+- [x] `src/backend/main.ts` and `src/scripts/migrate.ts` keep `basename(migration.file, '.sql')` —
       it still works on a bare filename; leave them unchanged.
-- [ ] In `src/backend/db/migrations.test.ts`, add tests that `readMigrations(MIGRATIONS_DIR)`
+- [x] In `src/backend/db/migrations.test.ts`, add tests that `readMigrations(MIGRATIONS_DIR)`
       contains `001-initial-schema.sql` by bare filename with non-empty `sql`, and that
       `at(result.applied, 0).file` is a bare filename (`'001-...sql'`, no directory separator);
       every existing test and its error regex keeps passing.
-- [ ] In `docs/backend.md`, extend the migrations paragraph ("The schema lives in
+- [x] In `docs/backend.md`, extend the migrations paragraph ("The schema lives in
       `src/backend/db/migrations`…"): the runner validates a list of `{ filename, sql }` sources,
       read from that directory by `readMigrations`, or taken from `EMBEDDED.migrations` in a built
       file (see "Single-file build") — the same rules hold for both.
 
 **Automated Verification**:
 
-- [ ] `bun test src/backend/db` passes, including the new tests
-- [ ] `bun test` passes
-- [ ] `bun run typecheck`, `bun run lint` and `bun run fmt:check` pass
+- [x] `bun test src/backend/db` passes, including the new tests
+- [x] `bun test` passes
+- [x] `bun run typecheck`, `bun run lint` and `bun run fmt:check` pass
 
 ### Phase 2: Single-file build, end to end
 
@@ -253,10 +253,10 @@ that serves the whole app from an empty directory.
 
 **Tasks**:
 
-- [ ] In `features/static/internal/transpile.ts`, add a second transpiler with
+- [x] In `features/static/internal/transpile.ts`, add a second transpiler with
       `minifyWhitespace: true` and give `transpileModule(path, options?: { minify?: boolean })` the
       choice. The per-request path keeps calling it without options.
-- [ ] Add `features/static/internal/web-files.ts`:
+- [x] Add `features/static/internal/web-files.ts`:
       ```ts
       export type WebFile =
         | { kind: 'file'; body: string | Uint8Array<ArrayBuffer>; type: string }
@@ -282,17 +282,17 @@ that serves the whole app from an empty directory.
         `posix.normalize` from `node:path`; a result that does not start with `/` or still contains
         `..` → `invalid`; otherwise a lookup in `EMBEDDED.pages` (absent → `missing`).
         `EmbeddedWebFiles.vendor` looks the raw pathname up in `EMBEDDED.vendor` only.
-- [ ] Change `StaticController` to take `WebFiles` (beside `DevFacade`) and read through it.
+- [x] Change `StaticController` to take `WebFiles` (beside `DevFacade`) and read through it.
       `frontend()` keeps the 405, rewrites a directory path to `…/index.html`, and then:
       `invalid` → 404; `error` → `new Response(message, { status: 500 })`; `file` → injection
       when `type` starts with `text/html`, then `#respond`; `missing` → the single-page fallback
       exactly as today (only for an extension-less, non-directory path, via
       `page('/index.html')`), else 404. `vendor()` maps `missing` → 404, `error` → 500,
       `file` → `#respond`. Drop the controller's imports of `paths.ts` and `transpile.ts`.
-- [ ] Widen `DevFacade.injectClient` to `(html: string | Uint8Array<ArrayBuffer>)` — `new
+- [x] Widen `DevFacade.injectClient` to `(html: string | Uint8Array<ArrayBuffer>)` — `new
       Response(html)` takes both, and the result stays `Uint8Array<ArrayBuffer>`.
-- [ ] Change `static.routes.ts` to build `new StaticController(createDevFacade(), createWebFiles())`.
-- [ ] Add `features/static/internal/embed.ts` with `embedWebRoot(): Promise<EmbeddedWeb>`:
+- [x] Change `static.routes.ts` to build `new StaticController(createDevFacade(), createWebFiles())`.
+- [x] Add `features/static/internal/embed.ts` with `embedWebRoot(): Promise<EmbeddedWeb>`:
       - scan `FRONTEND_DIR` with `new Bun.Glob('**/*').scan({ cwd: FRONTEND_DIR })`, converting
         `\` to `/` (Glob yields `ui\app.css` on Windows) and prefixing `/`
       - skip `dev/**`, `testing.ts` and `**/*.test.ts`
@@ -303,11 +303,11 @@ that serves the whole app from an empty directory.
       - each of `vendorUrls()` → `resolveVendorPath(url)` read as text, type
         `text/css;charset=utf-8`, into `vendor`; unresolved or missing throws
         `Vendor stylesheet missing — run \`bun install\``
-- [ ] Add `StaticFacade.embed(): Promise<EmbeddedWeb>` delegating to `embedWebRoot()`, and extend
+- [x] Add `StaticFacade.embed(): Promise<EmbeddedWeb>` delegating to `embedWebRoot()`, and extend
       the facade's doc comment.
-- [ ] Change `DevFacade.enabled()` to `EMBEDDED === null && process.env.GAINZ_DEV === '1'`, and
+- [x] Change `DevFacade.enabled()` to `EMBEDDED === null && process.env.GAINZ_DEV === '1'`, and
       extend its comment: a built file has no source tree to watch.
-- [ ] Add `src/scripts/build.ts`:
+- [x] Add `src/scripts/build.ts`:
       ```ts
       const SRC = resolve(import.meta.dir, '..');
 
@@ -328,9 +328,9 @@ that serves the whole app from an empty directory.
       ```
       `main()` behind `import.meta.main` calls `build('dist')` and prints the two log lines from
       "Logging & Observability"; a thrown error propagates, so the process exits non-zero.
-- [ ] Add `"build": "bun run src/scripts/build.ts"` to `package.json`'s scripts and `dist/` to
+- [x] Add `"build": "bun run src/scripts/build.ts"` to `package.json`'s scripts and `dist/` to
       `.gitignore` (under a `# build output` heading).
-- [ ] Add `src/scripts/build.test.ts`.
+- [x] Add `src/scripts/build.test.ts`.
       **`describe('single-file build')`**, with its own `beforeAll`/`afterAll` (not `useTempDir()`,
       which is per-test):
       - `beforeAll` (explicit timeout of 60 s): `mkdtempSync` a directory; `build('<tmp>/out')`,
@@ -343,32 +343,32 @@ that serves the whole app from an empty directory.
         the directory with `{ recursive: true, force: true, maxRetries: 5, retryDelay: 20 }`
         (Windows keeps a live process's working directory and SQLite handles locked).
       - Tests:
-        - [ ] `/` and `/workouts/3` answer `index.html` without `/dev/hot.ts` in it, and the
+        - [x] `/` and `/workouts/3` answer `index.html` without `/dev/hot.ts` in it, and the
               collected stdout has no `hot reload: on`
-        - [ ] a `WebSocket` to `/dev/ws` never opens (the `opens()` pattern from
+        - [x] a `WebSocket` to `/dev/ws` never opens (the `opens()` pattern from
               `dev.routes.test.ts`)
-        - [ ] `/app/gz-app.component.ts` answers `text/javascript` whose body equals
+        - [x] `/app/gz-app.component.ts` answers `text/javascript` whose body equals
               `embedded.pages['/app/gz-app.component.ts'].body`; `/features/exercises/internal/gz-chart.component.ts`
               still contains the relative specifier `../../../ui/format.ts` (match without quotes —
               Bun's printer may re-quote it), contains
               `await define(`, contains no `: string` annotation and no `sourceMappingURL`
-        - [ ] the `.css` beside every `gz-*.component.ts` under `src/frontend/`, `/ui/app.css`
+        - [x] the `.css` beside every `gz-*.component.ts` under `src/frontend/`, `/ui/app.css`
               and `/vendor/pico.css` answer 200
-        - [ ] `/dev/hot.ts`, `/testing.ts` and `/ui/html.test.ts` answer 404
-        - [ ] `/ui/../main.ts` answers 200; `/%2e%2e/backend/http/server.ts`, `/%zz` and
+        - [x] `/dev/hot.ts`, `/testing.ts` and `/ui/html.test.ts` answer 404
+        - [x] `/ui/../main.ts` answers 200; `/%2e%2e/backend/http/server.ts`, `/%zz` and
               `/vendor/%70ico.css` answer 404
-        - [ ] `/api/health` matches `{ status: 'ok' }` (`toMatchObject`) and `GET /api/workouts`
+        - [x] `/api/health` matches `{ status: 'ok' }` (`toMatchObject`) and `GET /api/workouts`
               answers 200 — the embedded migrations ran
-        - [ ] `<tmp>/deploy/data/gainz.sqlite` exists — `GAINZ_DB` is honoured
-        - [ ] a request repeating a response's `ETag` in `If-None-Match` gets 304
-        - [ ] `POST /` answers 405
-        - [ ] `<tmp>/out/gainz.js` contains `//# sourceMappingURL=gainz.js.map`, and the map's
+        - [x] `<tmp>/deploy/data/gainz.sqlite` exists — `GAINZ_DB` is honoured
+        - [x] a request repeating a response's `ETag` in `If-None-Match` gets 304
+        - [x] `POST /` answers 405
+        - [x] `<tmp>/out/gainz.js` contains `//# sourceMappingURL=gainz.js.map`, and the map's
               `sources` include one ending in `src/backend/main.ts`
       **`describe('a module that does not parse')`**, using `useTempDir()` for the outdir:
-      - [ ] with `src/frontend/__broken.ts` written (`export const oops: = ;`) and removed in a
+      - [x] with `src/frontend/__broken.ts` written (`export const oops: = ;`) and removed in a
             `finally`, as `transpile.test.ts:48-59` does, `build(dir)` rejects with a message
             matching `src/frontend/__broken.ts`
-- [ ] `README.md`: change the Frontend bullet's "no build step" sentence to say development has no
+- [x] `README.md`: change the Frontend bullet's "no build step" sentence to say development has no
       build step and the server transpiles on request, while `bun run build` produces one file for
       deployment; add a `## Deploy` section after Quick start:
       ```sh
@@ -378,10 +378,10 @@ that serves the whole app from an empty directory.
       ```
       with one sentence each on: the target needs Bun ≥ 1.4 and nothing else; migrations apply on
       start as before; hot reload is not available in the built file.
-- [ ] `AGENTS.md`: add `bun run build             # one-file deployment build: dist/gainz.js (+ .map)`
+- [x] `AGENTS.md`: add `bun run build             # one-file deployment build: dist/gainz.js (+ .map)`
       to the Commands block after `bun run migrate`, and name `build` in the `src/scripts/` bullet
       ("the `migrate`, `seed` and `build` entry points").
-- [ ] `docs/backend.md`:
+- [x] `docs/backend.md`:
       - the static paragraphs: the controller reads through `WebFiles` in
         `internal/web-files.ts` — disk (`paths.ts` + `transpile.ts`) under `bun start` and the
         tests, the embedded maps in a built file — and keeps the method, invalid-path,
@@ -399,7 +399,7 @@ that serves the whole app from an empty directory.
         tests, but against the built file run alone from a temporary directory in a child
         process — so it is described beside the route tests, not added to the list of exceptions
       - the hot-reload section's first paragraph: a built file never enables the dev feature
-- [ ] `docs/frontend.md`:
+- [x] `docs/frontend.md`:
       - `## Loading`: after "editing a module and reloading is the whole edit loop", add that a
         deployed build serves these same modules from memory — transpiled once at build time with
         whitespace minified, still one module per URL — and that a module that does not parse
@@ -411,11 +411,11 @@ that serves the whole app from an empty directory.
 
 **Automated Verification**:
 
-- [ ] `bun test src/scripts/build.test.ts` passes
-- [ ] `bun test` passes, including the unchanged static, transpile and dev suites
-- [ ] `bun run build` exits 0 and writes `dist/gainz.js` and `dist/gainz.js.map`
-- [ ] with `dist/` present, `bun run typecheck`, `bun run lint` and `bun run fmt:check` pass
-- [ ] `git status --short` lists nothing under `dist/`
+- [x] `bun test src/scripts/build.test.ts` passes
+- [x] `bun test` passes, including the unchanged static, transpile and dev suites
+- [x] `bun run build` exits 0 and writes `dist/gainz.js` and `dist/gainz.js.map`
+- [x] with `dist/` present, `bun run typecheck`, `bun run lint` and `bun run fmt:check` pass
+- [x] `git status --short` lists nothing under `dist/`
 
 **Manual Verification**:
 
@@ -427,6 +427,14 @@ that serves the whole app from an empty directory.
 ## Implementation Notes
 
 During implementation, document user feedback, problems, and decisions here.
+
+- oxlint's `typescript/method-signature-style` wants `WebFiles` declared with property signatures
+  (`page: (pathname: string) => Promise<WebFile>`), not the method signatures sketched above.
+- `DevFacade.injectClient` encodes a string page with `TextEncoder` when hot reload is off, so its
+  result stays `Uint8Array<ArrayBuffer>` as planned.
+- The "does not parse" test awaits the rejection through `.then(ok, err)` rather than
+  `await expect(…).rejects`: Bun types the `rejects` matchers as returning `void`, which
+  `await-thenable` refuses.
 
 ## References
 
