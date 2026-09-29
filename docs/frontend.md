@@ -11,7 +11,7 @@ src/frontend/
 ├── dev/        hot.ts (development only)
 ├── app/        gz-app, gz-header, gz-theme-toggle, router.ts, routes.ts
 ├── http/       http.ts (get/post/patch/remove), errors.ts (ApiError, errorMessage)
-├── ui/         base.ts, html.ts, styles.ts, theme.ts, format.ts, pagination.ts, app.css, shared.css, toast.ts, gz-tile
+├── ui/         base.ts, html.ts, styles.ts, theme.ts, format.ts, pagination.ts, app.css, shared.css, toast.ts, gz-tile, gz-pagination
 └── features/
     ├── exercises/  exercises.routes.ts, exercises.facade.ts, gz-exercise-list, gz-exercise-detail
     │   └── internal/  exercise.api.ts, gz-chart
@@ -32,8 +32,7 @@ able to make a request. `ui/` is what any component may use: `base.ts` with `GzE
 shadow root, `data-action` click/submit delegation, `template()`/`render()`) and `define()`;
 `html.ts` with the escaping `html` tagged template and `raw()`; `styles.ts`, `theme.ts` and `format.ts`; the document stylesheet
 `app.css` and the utilities in `shared.css`; `toast.ts`, whose `toast()` and `toastError()` show Oat's toasts
-through `ot.toast()`; `pagination.ts`, the paged lists' page arithmetic and pager markup; and
-`gz-tile`, the stat tile several views use.
+through `ot.toast()`; `pagination.ts`, the paged lists' page arithmetic; `gz-tile`, the stat tile several views use; and `gz-pagination`, the paged lists' pager.
 
 A component is a pair of files side by side, `gz-<name>.component.ts` and `gz-<name>.component.css`, in whichever
 directory owns it. A component module ends with `await define('<tag>', TheClass, import.meta.url)`,
@@ -98,16 +97,18 @@ extension-less and must not name a file under `src/frontend/`.
 The workouts and exercises lists each show one page of `PAGE_SIZE` (10) items at a time, and the page lives in the URL
 as `?page=N`, with page 1 as the bare path, so Back from a detail view, a reload and Back/Forward
 all land on the same page. Because `linkPath` leaves a link with a query to the browser, which would
-be a full page load, the pager is made of `data-action="page"` buttons, and the list calls
-`navigate()` itself; `gz-app` rebuilds the view on the route change, so a list reads
+be a full page load, the `gz-pagination` component renders Oat's pagination `menu.buttons` group
+out of buttons. It cannot call `navigate()` because `ui/` may not import `app/`: a click emits a
+composed `page-change` event carrying the page number, and the list turns it into its own URL and
+calls `navigate()`; `gz-app` rebuilds the view on the route change, so a list reads
 `location.search` only when it connects. `ui/pagination.ts` holds the pieces, none of which touch
 the DOM: `parsePage` reads `?page=` (anything but a positive integer is page 1), `pageCount`,
-`pageOffset`, `pagePath`, `pageItems` (the first page, the last and the current one ±1, with a gap
-for a hole of two or more), `pager()`, which renders them as Oat's pagination `menu.buttons` group,
-and `pastEnd()`. `pageOffset` caps the offset at `MAX_OFFSET`, the largest the API accepts, so even
-`?page=99999999` is a valid request whose `total` fills the header; a page past the last one, or
-one the cap cannot reach (`isBeyondApi`), shows "No … on this page." with a Go to page 1 button in
-place of the pager. Adding an exercise navigates to the page that now holds it, found through
+`pageOffset`, `pagePath` and `pageItems` (the first page, the last and the current one ±1, with a
+gap for a hole of two or more), which the component renders. `pageOffset` caps the offset at
+`MAX_OFFSET`, the largest the API accepts, so even `?page=99999999` is a valid request whose `total`
+fills the header, and `pageCount` stops at the last page that cap can reach. A page past
+`pageCount`, given as `gz-pagination`'s `page` and `pages` attributes, shows "No <noun> on this
+page." with a Go to page 1 button in place of the pager, and the list leaves out its cards. Adding an exercise navigates to the page that now holds it, found through
 `exerciseFacade.position()`; should that request fail after the exercise was created, the list
 reloads the page it is on instead.
 
@@ -265,7 +266,7 @@ URLs.
 
 The frontend's tests run under `bun test` with the backend's, and there is no DOM there: no
 `HTMLElement`, `document`, `window` or `localStorage`. So they cover what does not need one — the
-`html` template's escaping, `format.ts`, the router, paging and the pager's markup, the theme
+`html` template's escaping, `format.ts`, the router, the paging arithmetic, the theme
 preference, the HTTP client and the URL each facade method requests — and nothing yet mounts a component. That is also why `html.ts`
 is its own module rather than part of `base.ts`: importing `base.ts` evaluates `class extends
 HTMLElement` and, through `styles.ts`, a top-level `fetch` of the stylesheets.
