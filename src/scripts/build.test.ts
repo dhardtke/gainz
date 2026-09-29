@@ -101,6 +101,14 @@ describe('single-file build', () => {
     expect(stdout).not.toContain('hot reload: on');
   });
 
+  test('stamps the index page with the commit and the build time in UTC', async () => {
+    const head = Bun.spawnSync(['git', 'rev-parse', 'HEAD']).stdout.toString().trim();
+    const text = await (await get('/')).text();
+    const stamp = /^<!doctype html>\r?\n<!-- gainz ([0-9a-f]{40})(?:-dirty)?, built (\S+Z) -->\r?\n/.exec(text);
+    expect(stamp?.[1]).toBe(head);
+    expect(Math.abs(Date.now() - Date.parse(stamp?.[2] ?? ''))).toBeLessThan(120_000);
+  });
+
   test('never opens a socket at /dev/ws', async () => {
     const socket = new WebSocket(`${origin.replace(/^http/, 'ws')}/dev/ws`);
     expect(await opens(socket)).toBe(false);

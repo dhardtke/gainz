@@ -5,7 +5,7 @@
  */
 import { relative, resolve } from 'node:path';
 import { MIGRATIONS_DIR, readMigrations } from '../backend/db/migrations.ts';
-import type { Embedded } from '../backend/shared/embedded.ts';
+import type { Embedded, EmbeddedWeb } from '../backend/shared/embedded.ts';
 import { createStaticFacade } from '../backend/features/static/static.facade.ts';
 
 const SRC = resolve(import.meta.dir, '..');
@@ -16,8 +16,36 @@ export interface BuildResult {
   embedded: Embedded;
 }
 
+/** The checked-out commit, marked `-dirty` when the working tree has uncommitted changes. */
+function commit(): string {
+  const git = (...args: string[]): string | null => {
+    const result = Bun.spawnSync(['git', ...args], { cwd: SRC, stderr: 'ignore' });
+    return result.success ? result.stdout.toString().trim() : null;
+  };
+  const head = git('rev-parse', 'HEAD');
+  if (head === null) {
+    return 'unknown';
+  }
+  return git('status', '--porcelain') === '' ? head : `${head}-dirty`;
+}
+
+/** Stamps the index page with the commit and the build time (UTC), right below the doctype. */
+function stamp(web: EmbeddedWeb, builtAt: Date): void {
+  const index = web.pages['/index.html'];
+  if (index === undefined) {
+    throw new Error('src/frontend/index.html is missing');
+  }
+  const comment = `<!-- gainz ${commit()}, built ${builtAt.toISOString()} -->`;
+  const doctype = /^<!doctype html>\r?\n/i.exec(index.body)?.[0];
+  if (doctype === undefined) {
+    throw new Error('src/frontend/index.html must start with <!doctype html>');
+  }
+  index.body = `${doctype}${comment}\n${index.body.slice(doctype.length)}`;
+}
+
 export async function build(outdir: string): Promise<BuildResult> {
   const web = await createStaticFacade().embed();
+  stamp(web, new Date());
   const embedded: Embedded = { ...web, migrations: readMigrations(MIGRATIONS_DIR) };
   // Bun.build throws on failure by default (`throw: true`), so there is no success check.
   await Bun.build({
