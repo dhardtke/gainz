@@ -1,6 +1,6 @@
-import type { RawHtml } from './html.ts';
-import { define, GzElement } from './base.ts';
-import { html } from './html.ts';
+import type { RawHtml } from '../html.ts';
+import { define, GzElement } from '../base.ts';
+import { html } from '../html.ts';
 import { pageItems } from './pagination.ts';
 
 /**
