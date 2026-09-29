@@ -22,6 +22,8 @@ bun run fmt              # format (fmt:check for CI)
 The database lives at `data/gainz.sqlite` (override with `GAINZ_DB`), is created on first run,
 and is git-ignored. `:memory:` is supported and is what the tests use.
 
+Write American English in code, comments, docs and commit messages.
+
 Always put plans inside the project directory.
 
 Never edit existing plans or research docs in `docs/agents/` — only add new ones. Each describes
@@ -29,9 +31,9 @@ the repository as it stood on the date it carries, so an old path in one is a re
 
 ## Architecture
 
-- `src/backend/` — Bun + SQLite REST backend, organised by feature (`features/<feature>/`), each
+- `src/backend/` — Bun + SQLite REST backend, organized by feature (`features/<feature>/`), each
   behind a `<feature>.facade.ts`
-- `src/frontend/` — no-build-step frontend of TypeScript ES modules and custom elements, organised
+- `src/frontend/` — no-build-step frontend of TypeScript ES modules and custom elements, organized
   by feature like the backend
 - `src/shared/` — types-only wire contract (DTOs, flavored ids and dates) both halves import
 - `src/scripts/` — the `migrate`, `seed` and `build` entry points
