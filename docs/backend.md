@@ -71,8 +71,9 @@ the local (`const id: WorkoutId = pathId(req.params.id, 'workout')`).
 
 `testing.ts` stays at the top of `src/backend/` because it belongs to no feature: it is test-only
 plumbing every feature's tests use, and it holds only technical hooks — `useServer()`, `useTempDir()`,
-`body()` and `at()`. The fixtures that create a feature's data over HTTP — `createExercise` in
-`exercises/exercises.fixtures.ts` and `createWorkout` in `workouts/workouts.fixtures.ts` — live in
+`body()`, `at()`, `tables()`, `thrown()` and `opens()`. The fixtures that create a feature's data over HTTP —
+`createExercise` in `exercises/exercises.fixtures.ts`, `createWorkout` and `createSet` in
+`workouts/workouts.fixtures.ts` — live in
 the feature that owns the endpoint and take `post` from `useServer()` as their first argument.
 Other features' route tests import them directly, the one cross-feature import that does not go
 through `ports/`. The static feature keeps its own private modules where the rule
@@ -265,7 +266,7 @@ vendor files and the migrations; `bun:sqlite` stays external. It sits outside `f
 both `db/` and the static feature read it.
 
 What is embedded comes from `StaticFacade.embed()`: every file under `src/frontend/` except
-`dev/**`, `testing.ts` and `*.test.ts`, keyed by its URL, with each module transpiled ahead of time
+`dev/**`, `testing.ts`, `*.test.ts` and `*.fixtures.ts`, keyed by its URL, with each module transpiled ahead of time
 with whitespace minified and no source map, so names and structure survive for browser devtools.
 The frontend is embedded one module per URL rather than bundled, because bundling would change
 `import.meta.url` and break the `.ts` → `.css` lookup in `ui/styles.ts` that lazy routes depend on.

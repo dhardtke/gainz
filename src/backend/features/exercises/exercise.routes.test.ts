@@ -2,10 +2,9 @@ import { describe, expect, test } from 'bun:test';
 import type { ErrorDto } from '../../../shared/dto/error.ts';
 import type { ExercisePageDto, ExercisePositionDto, ExerciseProgressDto } from '../../../shared/dto/exercise.ts';
 import type { LiftSetDto } from '../../../shared/dto/set.ts';
-import type { WorkoutWithSetsDto } from '../../../shared/dto/workout.ts';
 import { at, body, useServer } from '../../testing.ts';
 import { createExercise } from './exercises.fixtures.ts';
-import { createWorkout } from '../workouts/workouts.fixtures.ts';
+import { createSet, createWorkout } from '../workouts/workouts.fixtures.ts';
 
 const { api, post, patch } = useServer();
 
@@ -64,7 +63,7 @@ describe('exercises', () => {
   test('refuses to delete an exercise that has logged sets', async () => {
     const exercise = await createExercise(post);
     const workout = await createWorkout(post);
-    await post(`/api/workouts/${workout.id}/sets`, { exerciseId: exercise.id, reps: 5, weight: 60 });
+    await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
 
     const res = await api(`/api/exercises/${exercise.id}`, { method: 'DELETE' });
     expect(res.status).toBe(409);
@@ -105,9 +104,9 @@ describe('progress', () => {
       ['2026-01-05', 60],
       ['2026-01-12', 65],
     ] as const) {
-      const workout = await body<WorkoutWithSetsDto>(await post('/api/workouts', { performedOn: date }));
-      topSets.push(await body<LiftSetDto>(await post(`/api/workouts/${workout.id}/sets`, { exerciseId: exercise.id, reps: 5, weight })));
-      await post(`/api/workouts/${workout.id}/sets`, { exerciseId: exercise.id, reps: 5, weight: weight - 5 });
+      const workout = await createWorkout(post, date);
+      topSets.push(await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight }));
+      await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: weight - 5 });
     }
 
     const progress = await body<ExerciseProgressDto>(await api(`/api/exercises/${exercise.id}/progress`));

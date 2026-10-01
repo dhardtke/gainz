@@ -4,25 +4,10 @@ import { unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import type { Embedded } from '../backend/shared/embedded.ts';
-import { body, useTempDir } from '../backend/testing.ts';
+import { body, opens, useTempDir } from '../backend/testing.ts';
 import { build } from './build.ts';
 
 const FRONTEND = resolve(import.meta.dir, '..', 'frontend');
-
-/** Resolves true once the socket opens, false if it errors or closes first. */
-function opens(socket: WebSocket): Promise<boolean> {
-  return new Promise((done) => {
-    socket.addEventListener('open', () => {
-      done(true);
-    });
-    socket.addEventListener('error', () => {
-      done(false);
-    });
-    socket.addEventListener('close', () => {
-      done(false);
-    });
-  });
-}
 
 /** Reads `stream` until a line announces the server's URL, returning that URL and everything read. */
 async function waitForUrl(stream: ReadableStream<Uint8Array>, stderr: () => Promise<string>): Promise<{ url: string; stdout: string }> {
@@ -140,7 +125,9 @@ describe('single-file build', () => {
   });
 
   test('carries neither the dev client nor anything test-only', async () => {
-    for (const url of ['/dev/hot.ts', '/testing.ts', '/ui/html.test.ts', '/ui/tile/gz-tile.component.test.ts']) {
+    // Present in the sources, so its 404 proves the exclusion rather than a misspelled path.
+    expect(await Bun.file(join(FRONTEND, 'features', 'exercises', 'exercises.fixtures.ts')).exists()).toBe(true);
+    for (const url of ['/dev/hot.ts', '/testing.ts', '/ui/html.test.ts', '/ui/tile/gz-tile.component.test.ts', '/features/exercises/exercises.fixtures.ts']) {
       expect({ url, status: (await get(url)).status }).toEqual({ url, status: 404 });
     }
   });

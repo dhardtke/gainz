@@ -309,5 +309,20 @@ query string (`./theme.ts?3`) so each test gets a fresh instance evaluated again
 A component test that imports the plain `ui/theme.ts` instead shares its state with the component,
 so it resets the theme before each test.
 
+Beside the stubs, `testing.ts` holds the DOM helpers every component test shares. `mount(tag,
+attributes)` creates an element and sets its attributes before appending it to the body, for the
+happy-dom reason above. `shadow()` and `find()` fail the test with a message naming the host or the
+selector instead of returning null, so a test reads `find(shadow(view), 'h1')` without a guard.
+`type()`, `choose()` and `submit()` dispatch the bubbling `input`, `change` and cancelable `submit`
+events a user's input would. `settle()` waits long enough for a view's faked requests, all answered
+at once, to land and render. `collect('page-change')` returns the details of each composed custom
+event heard on the body, outside every shadow root, and `useFetch()`'s `sent('POST /api/…')` reads
+back the bodies of the requests made under the same `'<METHOD> <url>'` name `respondTo()` uses.
+
+Domain test data lives in each feature's test-only `<feature>.fixtures.ts`, mirroring the backend's
+fixtures: `exercise()` and `session()` in `features/exercises/`, `set()` in `features/workouts/`.
+Each builds a DTO from fixed defaults and one object of overrides, so a call site names exactly the
+values its assertions read. The single-file build leaves `*.fixtures.ts` out, as it does tests.
+
 oxfmt formats the markup inside an `html` tagged template, so a test that compares exact output
 keeps its template free of markup and interpolates the parts it needs instead.

@@ -3,7 +3,7 @@ import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import type { WorkoutWithSetsDto } from '../../../shared/dto/workout.ts';
 import { body, useServer } from '../../testing.ts';
 import { createExercise } from '../exercises/exercises.fixtures.ts';
-import { createWorkout } from './workouts.fixtures.ts';
+import { createSet, createWorkout } from './workouts.fixtures.ts';
 
 const { api, post, patch } = useServer();
 
@@ -11,7 +11,7 @@ describe('sets', () => {
   test('updates and deletes a set', async () => {
     const exercise = await createExercise(post);
     const workout = await createWorkout(post);
-    const set = await body<LiftSetDto>(await post(`/api/workouts/${workout.id}/sets`, { exerciseId: exercise.id, reps: 5, weight: 60 }));
+    const set = await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
 
     const updated = await body<LiftSetDto>(await patch(`/api/sets/${set.id}`, { reps: 6, weight: 62.5 }));
     expect(updated).toMatchObject({ reps: 6, weight: 62.5 });
@@ -24,7 +24,7 @@ describe('sets', () => {
   test('rejects a patch naming an exercise that does not exist', async () => {
     const exercise = await createExercise(post);
     const workout = await createWorkout(post);
-    const set = await body<LiftSetDto>(await post(`/api/workouts/${workout.id}/sets`, { exerciseId: exercise.id, reps: 5, weight: 60 }));
+    const set = await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
 
     expect((await patch(`/api/sets/${set.id}`, { exerciseId: 4242 })).status).toBe(400);
   });

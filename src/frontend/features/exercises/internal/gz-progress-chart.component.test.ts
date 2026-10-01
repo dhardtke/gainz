@@ -1,6 +1,6 @@
 import { beforeAll, expect, test } from 'bun:test';
-import { useDom } from '../../../testing.ts';
-import type { SessionPointDto } from '../../../../shared/dto/exercise.ts';
+import { collect, find, mount, shadow, useDom } from '../../../testing.ts';
+import { session } from '../exercises.fixtures.ts';
 import type { GzChartComponent } from './gz-chart.component.ts';
 import type { GzProgressChartComponent } from './gz-progress-chart.component.ts';
 
@@ -10,15 +10,13 @@ beforeAll(async () => {
   await import('./gz-progress-chart.component.ts');
 });
 
-const SESSIONS: SessionPointDto[] = [
-  { workoutId: 1, performedOn: '2026-09-01', setCount: 3, totalReps: 15, totalVolume: 1200, topWeight: 80, estOneRepMax: 90 },
-  { workoutId: 2, performedOn: '2026-09-08', setCount: 4, totalReps: 20, totalVolume: 1700, topWeight: 85, estOneRepMax: 95 },
+const SESSIONS = [
+  session({ workoutId: 1, performedOn: '2026-09-01', estOneRepMax: 90 }),
+  session({ workoutId: 2, performedOn: '2026-09-08', setCount: 4, totalReps: 20, totalVolume: 1700, topWeight: 85, estOneRepMax: 95 }),
 ];
 
-function mount(metric?: string): GzProgressChartComponent {
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- registered in beforeAll
-  const chart = document.createElement('gz-progress-chart') as GzProgressChartComponent;
-  document.body.append(chart);
+function mountChart(metric?: string): GzProgressChartComponent {
+  const chart = mount<GzProgressChartComponent>('gz-progress-chart');
   if (metric !== undefined) {
     chart.metric = metric;
   }
@@ -31,11 +29,7 @@ function heading(chart: HTMLElement): string | undefined {
 }
 
 function button(chart: HTMLElement, metric: string): HTMLButtonElement {
-  const found = chart.shadowRoot?.querySelector<HTMLButtonElement>(`button[data-metric='${metric}']`);
-  if (!found) {
-    throw new Error(`no ${metric} button`);
-  }
-  return found;
+  return find<HTMLButtonElement>(shadow(chart), `button[data-metric='${metric}']`);
 }
 
 function plotted(chart: HTMLElement): number[] {
@@ -44,20 +38,15 @@ function plotted(chart: HTMLElement): number[] {
 }
 
 test('charts the estimated 1RM by default', () => {
-  const chart = mount();
+  const chart = mountChart();
   expect(heading(chart)).toBe('Estimated 1RM');
   expect(button(chart, 'estOneRepMax').getAttribute('aria-pressed')).toBe('true');
   expect(plotted(chart)).toEqual([90, 95]);
 });
 
 test('switches metric on a click and says so with metric-change', () => {
-  const changes: unknown[] = [];
-  document.body.addEventListener('metric-change', (event) => {
-    if (event instanceof CustomEvent) {
-      changes.push(event.detail);
-    }
-  });
-  const chart = mount();
+  const changes = collect('metric-change');
+  const chart = mountChart();
   const hint = chart.shadowRoot?.querySelector('p.text-light')?.textContent;
   button(chart, 'totalVolume').click();
   expect(heading(chart)).toBe('Volume');
@@ -68,17 +57,17 @@ test('switches metric on a click and says so with metric-change', () => {
 });
 
 test('shows a metric set before the sessions', () => {
-  const chart = mount('topWeight');
+  const chart = mountChart('topWeight');
   expect(heading(chart)).toBe('Top set');
   expect(plotted(chart)).toEqual([80, 85]);
 });
 
 test('falls back to the estimated 1RM for an unknown metric', () => {
-  expect(heading(mount('bogus'))).toBe('Estimated 1RM');
+  expect(heading(mountChart('bogus'))).toBe('Estimated 1RM');
 });
 
 test('plots one point per session with the chosen metric', () => {
-  const chart = mount();
+  const chart = mountChart();
   button(chart, 'totalVolume').click();
   expect(plotted(chart)).toEqual([1200, 1700]);
 });

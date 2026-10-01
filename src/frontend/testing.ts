@@ -45,6 +45,8 @@ export interface FakeFetch {
    * with the URL as `fetch` receives it. Any other request gets `respondWith`'s answer.
    */
   respondTo: (request: string, status: number, body?: string) => void;
+  /** The bodies of the recorded requests named as in `respondTo`, `'POST /api/exercises'`, in order. */
+  sent: (request: string) => unknown[];
   /** Makes every following request reject, as fetch does when the server is unreachable. */
   failWith: (cause: Error) => void;
 }
@@ -82,6 +84,7 @@ export function useFetch(): FakeFetch {
     respondTo: (request, status, body = ''): void => {
       answers.set(request, respond(status, body));
     },
+    sent: (request): unknown[] => requests.filter(({ method, url }) => `${method} ${url}` === request).map(({ body }) => body),
     failWith: (cause): void => {
       answer = (): Promise<Response> => Promise.reject(cause);
     },
@@ -196,4 +199,76 @@ export function useDom(): void {
     }
     saved.clear();
   });
+}
+
+/** The open shadow root of `host`, failing the test if it has none. */
+export function shadow(host: Element): ShadowRoot {
+  if (!host.shadowRoot) {
+    throw new Error(`${host.localName} has no shadow root`);
+  }
+  return host.shadowRoot;
+}
+
+/** The first element under `root` matching `selector`, failing the test if none does. */
+// Same once-used type parameter as ui/base.ts's $<T>, for the same reason.
+// oxlint-disable-next-line typescript/no-unnecessary-type-parameters
+export function find<T extends Element = Element>(root: ParentNode, selector: string): T {
+  const found = root.querySelector<T>(selector);
+  if (!found) {
+    throw new Error(`nothing matches ${selector}`);
+  }
+  return found;
+}
+
+/** The text of the element matching `selector` in `host`'s shadow root, if there is one. */
+export function text(host: Element, selector: string): string | undefined {
+  return host.shadowRoot?.querySelector(selector)?.textContent;
+}
+
+/**
+ * Creates `tag` with `attributes` set before it is appended to the body, so its first render
+ * shows them: happy-dom skips attributeChangedCallback for attributes present at upgrade.
+ */
+// oxlint-disable-next-line typescript/no-unnecessary-type-parameters
+export function mount<T extends HTMLElement = HTMLElement>(tag: string, attributes: Record<string, string> = {}): T {
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the caller names the class it registered for `tag`
+  const element = document.createElement(tag) as T;
+  for (const [name, value] of Object.entries(attributes)) {
+    element.setAttribute(name, value);
+  }
+  document.body.append(element);
+  return element;
+}
+
+/** Types `value` into `input`, firing the `input` event a user's typing would. */
+export function type(input: HTMLInputElement, value: string): void {
+  input.value = value;
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+/** Picks `value` in `select`, firing the `change` event a user's choice would. */
+export function choose(select: HTMLSelectElement, value: string): void {
+  select.value = value;
+  select.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+/** Submits `form` the way a user would, with a cancelable, bubbling `submit` event. */
+export function submit(form: Element): void {
+  form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+}
+
+/** Long enough for a view's requests, all answered at once by useFetch(), to land and render. */
+export async function settle(ms = 10): Promise<void> {
+  await Bun.sleep(ms);
+}
+
+/** The details of each `event` CustomEvent heard on the body, outside every shadow root. */
+export function collect(event: string): unknown[] {
+  const details: unknown[] = [];
+  document.body.addEventListener(event, (heard) => {
+    if (heard instanceof CustomEvent) {
+      details.push(heard.detail);
+    }
+  });
+  return details;
 }

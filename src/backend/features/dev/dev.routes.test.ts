@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { openDatabase } from '../../db/db.ts';
 import { startServer } from '../../http/server.ts';
 import { createStaticFacade } from '../static/static.facade.ts';
+import { opens } from '../../testing.ts';
 import { devRoutes } from './dev.routes.ts';
 
 const CLIENT = '/dev/hot.ts';
@@ -37,21 +38,6 @@ async function withDev(enabled: boolean, fn: (origin: string) => Promise<void>):
 
 function socketUrl(origin: string): string {
   return `${origin.replace(/^http/, 'ws')}/dev/ws`;
-}
-
-/** Resolves true once the socket opens, false if it errors or closes first. */
-function opens(socket: WebSocket): Promise<boolean> {
-  return new Promise((done) => {
-    socket.addEventListener('open', () => {
-      done(true);
-    });
-    socket.addEventListener('error', () => {
-      done(false);
-    });
-    socket.addEventListener('close', () => {
-      done(false);
-    });
-  });
 }
 
 function occurrences(text: string, needle: string): number {
