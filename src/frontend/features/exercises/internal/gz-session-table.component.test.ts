@@ -1,6 +1,7 @@
 import { beforeAll, expect, test } from 'bun:test';
-import { useDom } from '../../../testing.ts';
+import { mount, useDom } from '../../../testing.ts';
 import type { SessionPointDto } from '../../../../shared/dto/exercise.ts';
+import { session } from '../exercises.fixtures.ts';
 import type { GzSessionTableComponent } from './gz-session-table.component.ts';
 
 useDom();
@@ -9,14 +10,8 @@ beforeAll(async () => {
   await import('./gz-session-table.component.ts');
 });
 
-function session(workoutId: number, estOneRepMax: number): SessionPointDto {
-  return { workoutId, performedOn: `2026-09-0${workoutId}`, setCount: 3, totalReps: 15, totalVolume: 1200, topWeight: 80, estOneRepMax };
-}
-
-function mount(sessions: SessionPointDto[]): GzSessionTableComponent {
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- registered in beforeAll
-  const table = document.createElement('gz-session-table') as GzSessionTableComponent;
-  document.body.append(table);
+function mountTable(sessions: SessionPointDto[]): GzSessionTableComponent {
+  const table = mount<GzSessionTableComponent>('gz-session-table');
   table.sessions = sessions;
   return table;
 }
@@ -26,23 +21,31 @@ function rows(table: HTMLElement): Element[] {
 }
 
 test('lists the sessions newest first', () => {
-  const table = mount([session(1, 90), session(2, 95), session(3, 92.5)]);
+  const table = mountTable([
+    session({ workoutId: 1, performedOn: '2026-09-01', estOneRepMax: 90 }),
+    session({ workoutId: 2, performedOn: '2026-09-02', estOneRepMax: 95 }),
+    session({ workoutId: 3, performedOn: '2026-09-03', estOneRepMax: 92.5 }),
+  ]);
   expect(rows(table).map((row) => row.querySelector('a')?.getAttribute('href'))).toEqual(['/workouts/3', '/workouts/2', '/workouts/1']);
 });
 
 test('marks a rise in estimated 1RM up and a fall down, and the oldest session neither', () => {
-  const table = mount([session(1, 90), session(2, 95), session(3, 92.5)]);
+  const table = mountTable([
+    session({ workoutId: 1, performedOn: '2026-09-01', estOneRepMax: 90 }),
+    session({ workoutId: 2, performedOn: '2026-09-02', estOneRepMax: 95 }),
+    session({ workoutId: 3, performedOn: '2026-09-03', estOneRepMax: 92.5 }),
+  ]);
   expect(rows(table).map((row) => row.querySelector('span.up, span.down')?.className ?? null)).toEqual(['down', 'up', null]);
 });
 
 test('says so when there are no sessions', () => {
-  const table = mount([]);
+  const table = mountTable([]);
   expect(table.shadowRoot?.querySelector('.empty')?.textContent).toBe('No sets logged for this exercise yet.');
   expect(table.shadowRoot?.querySelector('table')).toBeNull();
 });
 
 test('re-renders when given new sessions', () => {
-  const table = mount([]);
-  table.sessions = [session(1, 90)];
+  const table = mountTable([]);
+  table.sessions = [session({ workoutId: 1, performedOn: '2026-09-01', estOneRepMax: 90 })];
   expect(rows(table)).toHaveLength(1);
 });

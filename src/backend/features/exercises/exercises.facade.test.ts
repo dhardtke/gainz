@@ -1,19 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { openDatabase } from '../../db/db.ts';
-import { HttpError } from '../../http/errors.ts';
+import { thrown } from '../../testing.ts';
 import { createExerciseFacade } from './exercises.facade.ts';
-
-function thrown(fn: () => unknown): HttpError {
-  try {
-    fn();
-  } catch (err) {
-    if (err instanceof HttpError) {
-      return err;
-    }
-    throw err;
-  }
-  throw new Error('Expected an HttpError');
-}
 
 describe('ExerciseFacade validation', () => {
   test('create trims the name and turns a blank muscle group into null', () => {

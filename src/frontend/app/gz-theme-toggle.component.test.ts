@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, expect, test } from 'bun:test';
-import { useDom } from '../testing.ts';
+import { find, mount, shadow, useDom } from '../testing.ts';
 // Type-only, so erased: the module itself is imported once the DOM is in place.
 import type * as ThemeModule from '../ui/theme.ts';
 
@@ -18,14 +18,8 @@ beforeEach(() => {
   theme.setTheme('light');
 });
 
-function mount(): HTMLButtonElement {
-  const toggle = document.createElement('gz-theme-toggle');
-  document.body.append(toggle);
-  const button = toggle.shadowRoot?.querySelector('button');
-  if (!button) {
-    throw new Error('gz-theme-toggle rendered no button');
-  }
-  return button;
+function mountToggle(): HTMLButtonElement {
+  return find<HTMLButtonElement>(shadow(mount('gz-theme-toggle')), 'button');
 }
 
 function icons(button: HTMLButtonElement): { sun: boolean; moon: boolean } {
@@ -36,13 +30,13 @@ function icons(button: HTMLButtonElement): { sun: boolean; moon: boolean } {
 }
 
 test('shows the sun in light mode', () => {
-  const button = mount();
+  const button = mountToggle();
   expect(icons(button)).toEqual({ sun: true, moon: false });
   expect(button.getAttribute('aria-label')).toBe('Turn on dark mode');
 });
 
 test('turns on dark mode when clicked', () => {
-  const button = mount();
+  const button = mountToggle();
   button.click();
   expect(theme.currentTheme()).toBe('dark');
   expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
@@ -51,7 +45,7 @@ test('turns on dark mode when clicked', () => {
 });
 
 test('keeps its button, and the focus on it, across a click', () => {
-  const button = mount();
+  const button = mountToggle();
   button.focus();
   button.click();
   const root = button.getRootNode();
@@ -60,14 +54,14 @@ test('keeps its button, and the focus on it, across a click', () => {
 });
 
 test('follows a theme change made elsewhere', () => {
-  const button = mount();
+  const button = mountToggle();
   theme.setTheme('dark');
   expect(icons(button)).toEqual({ sun: false, moon: true });
   expect(button.getAttribute('aria-label')).toBe('Turn off dark mode');
 });
 
 test('stops following the theme once removed', () => {
-  const button = mount();
+  const button = mountToggle();
   document.body.replaceChildren();
   theme.setTheme('dark');
   expect(button.getAttribute('aria-label')).toBe('Turn on dark mode');

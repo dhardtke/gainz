@@ -1,9 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import type { WorkoutDto, WorkoutPageDto, WorkoutWithSetsDto } from '../../../shared/dto/workout.ts';
 import { at, body, useServer } from '../../testing.ts';
 import { createExercise } from '../exercises/exercises.fixtures.ts';
-import { createWorkout } from './workouts.fixtures.ts';
+import { createSet, createWorkout } from './workouts.fixtures.ts';
 
 const { api, post } = useServer();
 
@@ -22,7 +21,7 @@ describe('workouts', () => {
   test('deleting a workout removes its sets', async () => {
     const exercise = await createExercise(post);
     const workout = await createWorkout(post);
-    const set = await body<LiftSetDto>(await post(`/api/workouts/${workout.id}/sets`, { exerciseId: exercise.id, reps: 5, weight: 60 }));
+    const set = await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
 
     expect((await api(`/api/workouts/${workout.id}`, { method: 'DELETE' })).status).toBe(204);
     expect((await api(`/api/sets/${set.id}`)).status).toBe(404);
@@ -31,8 +30,8 @@ describe('workouts', () => {
   test('copies sets from a previous workout', async () => {
     const exercise = await createExercise(post);
     const source = await createWorkout(post, '2026-01-05');
-    await post(`/api/workouts/${source.id}/sets`, { exerciseId: exercise.id, reps: 5, weight: 60 });
-    await post(`/api/workouts/${source.id}/sets`, { exerciseId: exercise.id, reps: 5, weight: 65 });
+    await createSet(post, source.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
+    await createSet(post, source.id, { exerciseId: exercise.id, reps: 5, weight: 65 });
 
     const res = await post('/api/workouts', { performedOn: '2026-01-12', copyFromWorkoutId: source.id });
     expect(res.status).toBe(201);
@@ -63,8 +62,8 @@ describe('workouts', () => {
   test('lists workouts with roll-up statistics', async () => {
     const exercise = await createExercise(post);
     const workout = await createWorkout(post);
-    await post(`/api/workouts/${workout.id}/sets`, { exerciseId: exercise.id, reps: 10, weight: 50 });
-    await post(`/api/workouts/${workout.id}/sets`, { exerciseId: exercise.id, reps: 5, weight: 60 });
+    await createSet(post, workout.id, { exerciseId: exercise.id, reps: 10, weight: 50 });
+    await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
 
     const page = await body<WorkoutPageDto>(await api('/api/workouts'));
     expect(page).toMatchObject({ total: 1, limit: 50, offset: 0 });
@@ -81,13 +80,13 @@ describe("a workout's sets", () => {
     const exercise = await createExercise(post);
     const workout = await createWorkout(post);
 
-    await post(`/api/workouts/${workout.id}/sets`, {
+    await createSet(post, workout.id, {
       exerciseId: exercise.id,
       reps: 8,
       weight: 60,
       notes: 'warm-up',
     });
-    await post(`/api/workouts/${workout.id}/sets`, { exerciseId: exercise.id, reps: 6, weight: 70 });
+    await createSet(post, workout.id, { exerciseId: exercise.id, reps: 6, weight: 70 });
 
     const detail = await body<WorkoutWithSetsDto>(await api(`/api/workouts/${workout.id}`));
     expect(detail.sets).toHaveLength(2);

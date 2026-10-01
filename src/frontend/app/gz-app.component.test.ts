@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, expect, test } from 'bun:test';
-import { useDom } from '../testing.ts';
+import { find, mount, settle, shadow, useDom } from '../testing.ts';
 import { navigate } from './router.ts';
 
 // Only paths no route matches: a matched route would load a real feature view, which fetches the API.
@@ -34,15 +34,10 @@ beforeEach(() => {
   history.replaceState(null, '', '/nowhere');
 });
 
-/** Long enough for gz-app to swap in a view that is not a GzView: it awaits nothing else. */
-async function settle(): Promise<void> {
-  await Bun.sleep(0);
-}
-
 async function mountApp(): Promise<HTMLElement> {
-  const app = document.createElement('gz-app');
-  document.body.append(app);
-  await settle();
+  const app = mount('gz-app');
+  // Long enough for gz-app to swap in a view that is not a GzView: it awaits nothing else.
+  await settle(0);
   return app;
 }
 
@@ -56,11 +51,7 @@ function link(app: HTMLElement, attributes: Record<string, string>): HTMLAnchorE
     host.setAttribute(name, value);
   }
   app.shadowRoot?.querySelector('main')?.append(host);
-  const anchor = host.shadowRoot?.querySelector('a');
-  if (!anchor) {
-    throw new Error('gz-test-link rendered no anchor');
-  }
-  return anchor;
+  return find<HTMLAnchorElement>(shadow(host), 'a');
 }
 
 /** @returns whether the click's default was prevented, i.e. whether gz-app routed it. */
@@ -80,7 +71,7 @@ test('routes a plain click on a link inside a shadow root, keeping the header', 
   const app = await mountApp();
   const header = app.shadowRoot?.querySelector('gz-header');
   expect(click(link(app, { href: '/elsewhere' }))).toBe(true);
-  await settle();
+  await settle(0);
   expect(location.pathname).toBe('/elsewhere');
   expect(notFound(app)).toBe('Nothing lives at /elsewhere.');
   expect(app.shadowRoot?.querySelector('gz-header')).toBe(header ?? null);
@@ -100,7 +91,7 @@ test.each<[string, Record<string, string>, MouseEventInit]>([
 ])('leaves %s to the browser', async (_name, attributes, init) => {
   const app = await mountApp();
   expect(click(link(app, attributes), init)).toBe(false);
-  await settle();
+  await settle(0);
   expect(location.pathname).toBe('/nowhere');
   expect(notFound(app)).toBe('Nothing lives at /nowhere.');
 });
@@ -108,7 +99,7 @@ test.each<[string, Record<string, string>, MouseEventInit]>([
 test('re-renders on navigate()', async () => {
   const app = await mountApp();
   navigate('/somewhere');
-  await settle();
+  await settle(0);
   expect(notFound(app)).toBe('Nothing lives at /somewhere.');
 });
 
@@ -116,7 +107,7 @@ test('re-renders on popstate, as the browser fires on Back', async () => {
   const app = await mountApp();
   history.replaceState(null, '', '/back-here');
   window.dispatchEvent(new PopStateEvent('popstate'));
-  await settle();
+  await settle(0);
   expect(notFound(app)).toBe('Nothing lives at /back-here.');
 });
 
@@ -125,6 +116,6 @@ test('stops listening once removed, and renders the current path when mounted ag
   document.body.replaceChildren();
   history.replaceState(null, '', '/later');
   expect(() => window.dispatchEvent(new PopStateEvent('popstate'))).not.toThrow();
-  await settle();
+  await settle(0);
   expect(notFound(await mountApp())).toBe('Nothing lives at /later.');
 });

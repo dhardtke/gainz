@@ -9,6 +9,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openDatabase } from './db/db.ts';
+import { HttpError } from './http/errors.ts';
 import { startServer } from './http/server.ts';
 
 /** The request helpers a test file gets from `useServer()`. */
@@ -109,4 +110,32 @@ export function tables(database: Database): string[] {
     .query<{ name: string }, []>("SELECT name FROM sqlite_master WHERE type = 'table'")
     .all()
     .map((row) => row.name);
+}
+
+/** Runs `fn` and returns the `HttpError` it throws, failing the test if it throws nothing or something else. */
+export function thrown(fn: () => unknown): HttpError {
+  try {
+    fn();
+  } catch (err) {
+    if (err instanceof HttpError) {
+      return err;
+    }
+    throw err;
+  }
+  throw new Error('Expected an HttpError');
+}
+
+/** Resolves true once the socket opens, false if it errors or closes first. */
+export function opens(socket: WebSocket): Promise<boolean> {
+  return new Promise((done) => {
+    socket.addEventListener('open', () => {
+      done(true);
+    });
+    socket.addEventListener('error', () => {
+      done(false);
+    });
+    socket.addEventListener('close', () => {
+      done(false);
+    });
+  });
 }

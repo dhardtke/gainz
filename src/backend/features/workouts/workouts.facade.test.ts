@@ -1,21 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import { openDatabase } from '../../db/db.ts';
-import { HttpError } from '../../http/errors.ts';
+import { thrown } from '../../testing.ts';
 import { today } from '../../shared/validate.ts';
 import { createExerciseFacade } from '../exercises/exercises.facade.ts';
 import { createWorkoutFacades } from './workouts.facade.ts';
-
-function thrown(fn: () => unknown): HttpError {
-  try {
-    fn();
-  } catch (err) {
-    if (err instanceof HttpError) {
-      return err;
-    }
-    throw err;
-  }
-  throw new Error('Expected an HttpError');
-}
 
 function setup(): ReturnType<typeof createWorkoutFacades> & { exerciseId: number } {
   const db = openDatabase(':memory:');

@@ -8,9 +8,9 @@ import type { EmbeddedFile, EmbeddedWeb } from '../../../shared/embedded.ts';
 import { FRONTEND_DIR, resolveVendorPath, vendorUrls } from './paths.ts';
 import { transpileModule } from './transpile.ts';
 
-/** Hot reload is off in a built file, and tests never ship. */
+/** Hot reload is off in a built file, and tests and their fixtures never ship. */
 function isEmbedded(url: string): boolean {
-  return !url.startsWith('/dev/') && url !== '/testing.ts' && !url.endsWith('.test.ts');
+  return !url.startsWith('/dev/') && url !== '/testing.ts' && !url.endsWith('.test.ts') && !url.endsWith('.fixtures.ts');
 }
 
 export async function embedWebRoot(): Promise<EmbeddedWeb> {

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { useDom, useFetch, useToasts } from './testing.ts';
+import { choose, collect, find, mount, shadow, submit, text, type, useDom, useFetch, useToasts } from './testing.ts';
 
 // Bun's own, kept before useDom() replaces them.
 const bun = { fetch, Response, URL, setTimeout, EventTarget };
@@ -38,6 +38,103 @@ describe('useDom', () => {
   });
 });
 
+describe('DOM helpers', () => {
+  useDom();
+
+  /** A host with an open shadow root holding one paragraph. */
+  function host(): HTMLElement {
+    const element = document.createElement('div');
+    element.attachShadow({ mode: 'open' }).innerHTML = '<p class="greeting">Hello</p>';
+    return element;
+  }
+
+  /** Every `type` event that reaches the body, with whether it bubbled there and could be canceled. */
+  function heard(type: string): { bubbles: boolean; cancelable: boolean }[] {
+    const events: { bubbles: boolean; cancelable: boolean }[] = [];
+    document.body.addEventListener(type, (event) => {
+      events.push({ bubbles: event.bubbles, cancelable: event.cancelable });
+    });
+    return events;
+  }
+
+  test('shadow() returns the open shadow root', () => {
+    const element = host();
+    expect(shadow(element) === element.shadowRoot).toBe(true);
+  });
+
+  test('shadow() throws naming the tag of a host without one', () => {
+    expect(() => shadow(document.createElement('section'))).toThrow('section has no shadow root');
+  });
+
+  test('find() returns the match', () => {
+    const element = host();
+    expect(find(shadow(element), '.greeting').textContent).toBe('Hello');
+  });
+
+  test('find() throws naming the selector that matches nothing', () => {
+    expect(() => find(shadow(host()), '.farewell')).toThrow('nothing matches .farewell');
+  });
+
+  test('text() reads from the shadow root', () => {
+    const element = host();
+    expect(text(element, '.greeting')).toBe('Hello');
+    expect(text(element, '.farewell')).toBeUndefined();
+  });
+
+  test('mount() sets the attributes before connectedCallback sees them, and appends to the body', () => {
+    if (!customElements.get('gz-test-mount')) {
+      /** Records the label it had when connected. */
+      class GzTestMount extends HTMLElement {
+        labelOnConnect: string | null = null;
+
+        connectedCallback(): void {
+          this.labelOnConnect = this.getAttribute('label');
+        }
+      }
+      customElements.define('gz-test-mount', GzTestMount);
+    }
+    const element = mount<HTMLElement & { labelOnConnect: string | null }>('gz-test-mount', { label: 'Squat' });
+    expect(element.labelOnConnect).toBe('Squat');
+    expect(element.parentElement).toBe(document.body);
+  });
+
+  test('type() sets the value and fires a bubbling input', () => {
+    const events = heard('input');
+    const input = document.createElement('input');
+    document.body.append(input);
+    type(input, '60');
+    expect(input.value).toBe('60');
+    expect(events).toEqual([{ bubbles: true, cancelable: false }]);
+  });
+
+  test('choose() sets the value and fires a bubbling change', () => {
+    const events = heard('change');
+    const select = document.createElement('select');
+    select.innerHTML = '<option value="1">One</option><option value="2">Two</option>';
+    document.body.append(select);
+    choose(select, '2');
+    expect(select.value).toBe('2');
+    expect(events).toEqual([{ bubbles: true, cancelable: false }]);
+  });
+
+  test('submit() fires a bubbling, cancelable submit', () => {
+    const events = heard('submit');
+    const form = document.createElement('form');
+    document.body.append(form);
+    submit(form);
+    expect(events).toEqual([{ bubbles: true, cancelable: true }]);
+  });
+
+  test('collect() records the details of CustomEvents dispatched on a child', () => {
+    const details = collect('picked');
+    const child = document.createElement('span');
+    document.body.append(child);
+    child.dispatchEvent(new CustomEvent('picked', { detail: 3, bubbles: true }));
+    child.dispatchEvent(new CustomEvent('ignored', { detail: 4, bubbles: true }));
+    expect(details).toEqual([3]);
+  });
+});
+
 describe('useFetch', () => {
   const fake = useFetch();
 
@@ -47,6 +144,14 @@ describe('useFetch', () => {
     expect(await (await fetch('/api/exercises')).json()).toBe('exercises');
     expect(await (await fetch('/api/exercises', { method: 'POST' })).json()).toBe('fallback');
     expect(await (await fetch('/api/workouts')).json()).toBe('fallback');
+  });
+
+  test('sent() returns the bodies of only the requests it names', async () => {
+    await fetch('/api/x', { method: 'POST', body: JSON.stringify({ a: 1 }) });
+    await fetch('/api/x');
+    await fetch('/api/y', { method: 'POST', body: JSON.stringify({ b: 2 }) });
+    await fetch('/api/x', { method: 'POST', body: JSON.stringify({ a: 3 }) });
+    expect(fake.sent('POST /api/x')).toEqual([{ a: 1 }, { a: 3 }]);
   });
 
   test('forgets respondTo answers between tests', async () => {
