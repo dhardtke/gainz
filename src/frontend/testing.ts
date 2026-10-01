@@ -40,6 +40,11 @@ export interface FakeFetch {
   readonly requests: RecordedRequest[];
   /** Sets what every following request answers with; the default is `200 {}`. */
   respondWith: (status: number, body?: string) => void;
+  /**
+   * Sets what one request answers with, named as `'<METHOD> <url>'` — `'GET /api/exercises'` —
+   * with the URL as `fetch` receives it. Any other request gets `respondWith`'s answer.
+   */
+  respondTo: (request: string, status: number, body?: string) => void;
   /** Makes every following request reject, as fetch does when the server is unreachable. */
   failWith: (cause: Error) => void;
 }
@@ -49,28 +54,70 @@ export function useFetch(): FakeFetch {
   const stub = useGlobals();
   const requests: RecordedRequest[] = [];
   const ok = (): Promise<Response> => Promise.resolve(new Response('{}'));
+  const answers = new Map<string, () => Promise<Response>>();
   let answer = ok;
 
   beforeEach(() => {
     requests.length = 0;
     answer = ok;
+    answers.clear();
     stub('fetch', (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
       const url = urlOf(input);
+      const method = init?.method ?? 'GET';
       const body: unknown = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined;
-      requests.push({ method: init?.method ?? 'GET', url, headers: new Headers(init?.headers).toJSON(), body });
-      return answer();
+      requests.push({ method, url, headers: Object.fromEntries(new Headers(init?.headers)), body });
+      return (answers.get(`${method} ${url}`) ?? answer)();
     });
   });
+
+  const respond = (status: number, body: string): (() => Promise<Response>) => {
+    return (): Promise<Response> => Promise.resolve(new Response(body === '' ? null : body, { status }));
+  };
 
   return {
     requests,
     respondWith: (status, body = ''): void => {
-      answer = (): Promise<Response> => Promise.resolve(new Response(body === '' ? null : body, { status }));
+      answer = respond(status, body);
+    },
+    respondTo: (request, status, body = ''): void => {
+      answers.set(request, respond(status, body));
     },
     failWith: (cause): void => {
       answer = (): Promise<Response> => Promise.reject(cause);
     },
   };
+}
+
+/**
+ * Stubs Oat's `window.ot.toast()` for the current test file and records each message shown,
+ * emptying the record after every test. Call it after `useDom()`: Bun has no `window`, and under
+ * `useDom()` it is happy-dom's window object rather than `globalThis`, so `useGlobals()` would
+ * miss it.
+ */
+export function useToasts(): string[] {
+  const messages: string[] = [];
+  let saved: Window['ot'] | undefined;
+
+  beforeEach(() => {
+    saved = window.ot;
+    window.ot = {
+      toast: (message): HTMLElement => {
+        messages.push(message);
+        return document.createElement('output');
+      },
+    };
+  });
+
+  afterEach(() => {
+    if (saved) {
+      window.ot = saved;
+    } else {
+      Reflect.deleteProperty(window, 'ot');
+    }
+    messages.length = 0;
+  });
+
+  return messages;
 }
 
 /** The URL a `fetch` call asks for, whichever form it was given in. */

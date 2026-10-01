@@ -1,0 +1,7 @@
+/* An exercise's progress chart with its metric switch. */
+
+.metric-switch {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}

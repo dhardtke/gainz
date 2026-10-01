@@ -1,6 +1,5 @@
-import { errorMessage } from '../../http/errors.ts';
 import type { RawHtml } from '../../ui/html.ts';
-import { define, GzElement } from '../../ui/base.ts';
+import { define } from '../../ui/base.ts';
 import { html } from '../../ui/html.ts';
 import { formatWeight, plural, relativeDay } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
@@ -8,17 +7,20 @@ import { PAGE_SIZE, pageCount, pageOffset, pagePath, parsePage } from '../../ui/
 import '../../ui/pagination/gz-pagination.component.ts';
 import type { ExerciseDto, ExerciseWithStatsDto } from '../../../shared/dto/exercise.ts';
 import { toast, toastError } from '../../ui/toast.ts';
+import { GzView } from '../../ui/view.ts';
 import { exerciseFacade } from './exercises.facade.ts';
 
-type ExerciseListState =
-  | { status: 'loading' }
-  /** `page` is 1-based, from `?page=`; `total` counts every exercise. */
-  | { status: 'ready'; items: ExerciseWithStatsDto[]; total: number; page: number }
-  | { status: 'error'; message: string };
+/** One page of the catalog; `total` counts every exercise. */
+interface ExerciseListData {
+  items: ExerciseWithStatsDto[];
+  total: number;
+  /** 1-based, from `?page=`. */
+  page: number;
+}
 
 /** The exercise catalog — the vocabulary the rest of the log is written in — by name, a page at a time. */
-export class GzExerciseListComponent extends GzElement {
-  #state: ExerciseListState = { status: 'loading' };
+export class GzExerciseListComponent extends GzView<ExerciseListData> {
+  override loadingText = 'Loading exercises…';
 
   override connectedCallback(): void {
     super.connectedCallback();
@@ -27,19 +29,12 @@ export class GzExerciseListComponent extends GzElement {
         navigate(pagePath('/exercises', event.detail));
       }
     });
-    this.ready = this.#load();
   }
 
-  async #load(): Promise<void> {
+  override async load(): Promise<ExerciseListData> {
     const page = parsePage(location.search);
-    try {
-      const result = await exerciseFacade.list({ limit: PAGE_SIZE, offset: pageOffset(page, PAGE_SIZE) });
-      this.#state = { status: 'ready', items: result.items, total: result.total, page };
-    } catch (error) {
-      this.#state = { status: 'error', message: errorMessage(error) };
-      toastError(error);
-    }
-    this.render();
+    const { items, total } = await exerciseFacade.list({ limit: PAGE_SIZE, offset: pageOffset(page, PAGE_SIZE) });
+    return { items, total, page };
   }
 
   override async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
@@ -72,7 +67,7 @@ export class GzExerciseListComponent extends GzElement {
     } catch (error) {
       toastError(error);
       form.reset();
-      await this.#load();
+      await this.reload();
     }
   }
 
@@ -107,16 +102,7 @@ export class GzExerciseListComponent extends GzElement {
     `;
   }
 
-  override template(): RawHtml {
-    if (this.#state.status === 'loading') {
-      return html`<p aria-busy="true">Loading exercises…</p>`;
-    }
-    if (this.#state.status === 'error') {
-      return html`<p class="error-text">${this.#state.message}</p>`;
-    }
-
-    const { items, total, page } = this.#state;
-
+  override readyTemplate({ items, total, page }: ExerciseListData): RawHtml {
     return html`
       <div class="vstack">
         <div class="hstack justify-between gap-2">

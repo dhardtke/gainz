@@ -34,7 +34,7 @@ beforeEach(() => {
   history.replaceState(null, '', '/nowhere');
 });
 
-/** Long enough for gz-app to swap in a view that is not a GzElement: it awaits nothing else. */
+/** Long enough for gz-app to swap in a view that is not a GzView: it awaits nothing else. */
 async function settle(): Promise<void> {
   await Bun.sleep(0);
 }

@@ -11,12 +11,12 @@ src/frontend/
 ├── dev/        hot.ts (development only)
 ├── app/        gz-app, gz-header, gz-theme-toggle, router.ts, routes.ts
 ├── http/       http.ts (get/post/patch/remove), errors.ts (ApiError, errorMessage)
-├── ui/         base.ts, html.ts, styles.ts, theme.ts, format.ts, app.css, shared.css, toast.ts, tile/, pagination/
+├── ui/         base.ts, view.ts, html.ts, styles.ts, theme.ts, format.ts, app.css, shared.css, toast.ts, tile/, pagination/
 └── features/
     ├── exercises/  exercises.routes.ts, exercises.facade.ts, gz-exercise-list, gz-exercise-detail
-    │   └── internal/  exercise.api.ts, gz-chart
+    │   └── internal/  exercise.api.ts, gz-chart, gz-progress-chart, gz-session-table
     ├── workouts/   workouts.routes.ts, workouts.facade.ts, gz-workout-list, gz-workout-detail
-    │   └── internal/  workout.api.ts, set.api.ts, gz-set-row
+    │   └── internal/  workout.api.ts, set.api.ts, gz-set-row, gz-add-set-form
     └── stats/      stats.routes.ts, stats.facade.ts, gz-dashboard
         └── internal/  stats.api.ts
 ```
@@ -30,6 +30,10 @@ plumbing: `http.ts` holds the `get`/`post`/`patch`/`remove` helpers over `fetch`
 holds `ApiError` and `errorMessage`, kept apart so a component can catch an error without being
 able to make a request. `ui/` is what any component may use: `base.ts` with `GzElement` (open
 shadow root, `data-action` click/submit delegation, `template()`/`render()`) and `define()`;
+`view.ts` with `GzView`, the abstract base of the five route views, which loads on connect
+through its `load()` hook and renders `loadingText`, then `readyTemplate()` or `errorTemplate()`
+(the message, and `backLink` below it when a view sets one),
+and whose `numericAttribute()` reads the id attribute a route sets, throwing when it is missing;
 `html.ts` with the escaping `html` tagged template and `raw()`; `styles.ts`, `theme.ts` and `format.ts`; the document stylesheet
 `app.css` and the utilities in `shared.css`; `toast.ts`, whose `toast()` and `toastError()` show Oat's toasts
 through `ot.toast()`; `tile/gz-tile`, the stat tile several views use; and `pagination/`, the paged lists' page
@@ -50,7 +54,7 @@ Everything else is a feature, shaped like its backend counterpart and named the 
 route views, `gz-workout-list` and `gz-workout-detail`, at its root beside `workouts.facade.ts`,
 the feature's front door, and keeps what only it uses in `internal/`: one API class per URL prefix
 — `workout.api.ts` owns every `/api/workouts/**` URL, `set.api.ts` every `/api/sets/**` one — and
-the `gz-set-row` child component. The facade module holds thin classes named after entities,
+the `gz-set-row` and `gz-add-set-form` child components. The facade module holds thin classes named after entities,
 `WorkoutFacade` and `SetFacade`, whose methods delegate one line each and use the backend's verbs
 (`SetFacade.create(workoutId, dto)` posts to `/api/workouts/:id/sets` through `WorkoutApi`). It
 exports ready instances, `workoutFacade` and `setFacade`, rather than having a composition root:
@@ -58,9 +62,10 @@ custom elements cannot take constructor arguments, there is nothing to inject, a
 built every facade would statically pull every feature's API module into every view. A component
 reads data only through a facade; composition across facades stays in the component, as it stays
 in the backend controller. That holds across features too: `gz-workout-detail` loads a workout
-through `workoutFacade` and fills its exercise select through `exerciseFacade` from
-`features/exercises/` — `list()` without a `limit`, the unpaged list, so the select offers every
-exercise — never through anything in `exercises/internal/`; `gz-dashboard` takes its
+through `workoutFacade` and the exercises for its rows' and `gz-add-set-form`'s selects through
+`exerciseFacade` from `features/exercises/` — `list()` without a `limit`, the unpaged list, so a
+select offers every exercise — never through anything in `exercises/internal/`, and
+`gz-add-set-form` creates a new exercise through `exerciseFacade` too; `gz-dashboard` takes its
 summary from `statsFacade` and its recent workouts from `workoutFacade`.
 
 A feature's routes live in `<f>.routes.ts` beside its facade, the way the backend keeps one
@@ -157,15 +162,15 @@ That wire format also names its ids and dates: `WorkoutId`, `ExerciseId`, `LiftS
 `Iso8601Date` and `Iso8601DateTime`, declared in `src/shared/flavors.ts` and used by the frontend's
 own signatures too — the parameters of the `*.api.ts` classes and the facades, `ui/format.ts`'s
 date helpers, and the id-shaped state in
-`gz-workout-detail`, `gz-exercise-detail` and `gz-exercise-list`. So the API client cannot be handed
+`gz-exercise-list` and `gz-add-set-form` (its `workoutId`). So the API client cannot be handed
 the wrong entity's id, and a `createdAt` cannot reach a formatter that expects a `YYYY-MM-DD` day.
 A plain `number` still assigns into a flavor, which is why `Number(element.dataset.id)` needs no
 cast on the way in.
 
-Shapes local to one module — a view's `#state` union, the chart's points — are declared in that
-module. The five route views are exported so their route file can construct them with `new`, which
-keeps each tag name written only in its `define()`. `GzChartComponent` and `GzSetRowComponent` are exported so a
-view can type the element it drives; the other five components stay private to their module.
+Shapes local to one module — a view's loaded data, the chart's points — are declared in that
+module; what a view is doing with that data is `GzView`'s `ViewState<Data>`. The five route views are exported so their route file can construct them with `new`, which
+keeps each tag name written only in its `define()`. `GzChartComponent`, `GzProgressChartComponent`, `GzSessionTableComponent`, `GzSetRowComponent`
+and `GzAddSetFormComponent` are exported so their parent can type the element it drives; the other five components stay private to their module.
 
 ## Loading
 
@@ -192,8 +197,9 @@ it — so the `await import('./gz-exercise-detail.component.ts')` in the exercis
 only when that view _and_ everything it renders have their scripts and their CSS. A lazily loaded
 page is fully styled on its first paint; there is no flash of unstyled content to guard against.
 
-Only the shell (`gz-app`, `gz-header`, `gz-theme-toggle`), `app/routes.ts` with the three feature
-route files, and Oat plus `ui/shared.css` load up front. `gz-app` guards against two
+Only the shell (`gz-app`, `gz-header`, `gz-theme-toggle`) with `ui/view.ts`, `http/errors.ts` and
+`ui/toast.ts`, which `gz-app` imports, `app/routes.ts` with the three feature route files, and Oat
+plus `ui/shared.css` load up front. `gz-app` guards against two
 navigations resolving out of order and reports a failed import through the toast.
 
 Styled is not the same as ready, though: a view fetches its data once connected, and until then
@@ -201,8 +207,9 @@ it renders a "Loading…" line. Swapped in straight away, every page switch woul
 to that line for a frame or two and expand it again. So `gz-app` keeps the outgoing view on screen
 until the incoming one is ready. It connects the new view `hidden` beside the old one, awaits its
 `ready` promise, then removes the old view, reveals the new one and scrolls to the top. `ready`
-lives on `GzElement` and is already settled; a view that loads on connect replaces it with its
-first `#load()`, which catches its own errors so the promise never rejects. The wait is capped at
+lives on `GzView` and starts out settled; a view replaces it with its first `reload()` on connect,
+which catches its own errors so the promise never rejects. `gz-app` waits only for a `GzView`;
+anything else, such as its not-found line, is swapped in straight away. The wait is capped at
 300 ms (`SLOW_VIEW_MS`), after which a slow API shows the view's loading state rather than a
 navigation that seems to do nothing. Two details hold this together. `shared.css` sets
 `:host([hidden]) { display: none }`, because its own `:host { display: block }` outranks the
@@ -290,8 +297,11 @@ happy-dom has no popovers, so `gz-header`'s dropdown is not tested, and with eve
 test asserts styling. `gz-app`'s tests use only paths no route matches, so no feature view or API
 is loaded, and its hidden/`ready` view swap is not covered yet.
 
-`src/frontend/testing.ts` also holds the two stubs. `useFetch()` replaces `fetch` with one that
-records each request and answers `200 {}` unless told otherwise. `useGlobals()` installs whatever
+`src/frontend/testing.ts` also holds the three stubs. `useFetch()` replaces `fetch` with one that
+records each request and answers `200 {}` unless told otherwise: `respondWith()` sets the answer
+for every request, and `respondTo('GET /api/exercises', …)` one for a single method and URL, which
+a view that loads from two URLs needs. `useToasts()`, called after `useDom()`, replaces Oat's
+`window.ot` and returns the messages `toast()` and `toastError()` showed. `useGlobals()` installs whatever
 browser global a test needs and puts back what was there after every test — which matters because
 bun test runs every file in one process, and the backend's route tests make real requests. A module
 that reads the browser when it loads, as `theme.ts` reads the stored choice, is imported with a

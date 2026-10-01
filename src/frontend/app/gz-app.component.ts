@@ -1,5 +1,6 @@
 import type { RawHtml } from '../ui/html.ts';
 import { define, GzElement } from '../ui/base.ts';
+import { GzView } from '../ui/view.ts';
 import { html } from '../ui/html.ts';
 import { currentPath, linkPath, matchRoute, navigate, onRouteChange } from './router.ts';
 import { ROUTES } from './routes.ts';
@@ -100,10 +101,11 @@ class GzAppComponent extends GzElement {
       return;
     }
 
-    // A view fetches its data once connected, so it is connected hidden, beside
+    // A GzView fetches its data once connected, so it is connected hidden, beside
     // the outgoing one, and shown when ready. A slow API still gets its loading
     // state after a moment rather than a navigation that seems to do nothing.
-    if (view instanceof GzElement) {
+    // Anything else, such as the not-found line, is swapped in straight away.
+    if (view instanceof GzView) {
       view.hidden = true;
       main.append(view);
       const slow = new Promise<void>((resolve) => {

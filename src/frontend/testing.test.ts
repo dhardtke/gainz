@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { useDom } from './testing.ts';
+import { useDom, useFetch, useToasts } from './testing.ts';
 
 // Bun's own, kept before useDom() replaces them.
 const bun = { fetch, Response, URL, setTimeout, EventTarget };
@@ -35,6 +35,38 @@ describe('useDom', () => {
 
   test('finds the body empty again', () => {
     expect(document.body.childElementCount).toBe(0);
+  });
+});
+
+describe('useFetch', () => {
+  const fake = useFetch();
+
+  test('answers a request named by respondTo with its own answer', async () => {
+    fake.respondWith(200, '"fallback"');
+    fake.respondTo('GET /api/exercises', 200, '"exercises"');
+    expect(await (await fetch('/api/exercises')).json()).toBe('exercises');
+    expect(await (await fetch('/api/exercises', { method: 'POST' })).json()).toBe('fallback');
+    expect(await (await fetch('/api/workouts')).json()).toBe('fallback');
+  });
+
+  test('forgets respondTo answers between tests', async () => {
+    expect(await (await fetch('/api/exercises')).json()).toEqual({});
+  });
+});
+
+describe('useToasts', () => {
+  useDom();
+  const toasts = useToasts();
+
+  test('records the messages toast() and toastError() show', async () => {
+    const { toast, toastError } = await import('./ui/toast.ts');
+    toast('Saved', 'success');
+    toastError(new Error('Broke'));
+    expect(toasts).toEqual(['Saved', 'Broke']);
+  });
+
+  test('starts every test with an empty record', () => {
+    expect(toasts).toEqual([]);
   });
 });
 
