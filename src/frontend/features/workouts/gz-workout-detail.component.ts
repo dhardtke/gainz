@@ -1,29 +1,30 @@
-import { ApiError, errorMessage } from '../../http/errors.ts';
 import type { RawHtml } from '../../ui/html.ts';
-import { define, GzElement } from '../../ui/base.ts';
+import { define } from '../../ui/base.ts';
 import { html } from '../../ui/html.ts';
-import { formatDate, formatVolume, plural, relativeDay, UNIT } from '../../ui/format.ts';
+import { formatDate, formatVolume, plural, relativeDay } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
 import type { ExerciseDto } from '../../../shared/dto/exercise.ts';
 import type { WorkoutWithSetsDto } from '../../../shared/dto/workout.ts';
-import type { ExerciseId, WorkoutId } from '../../../shared/flavors.ts';
+import type { GzAddSetFormComponent } from './internal/gz-add-set-form.component.ts';
 import type { GzSetRowComponent } from './internal/gz-set-row.component.ts';
 import { toast, toastError } from '../../ui/toast.ts';
+import { GzView } from '../../ui/view.ts';
 import { exerciseFacade } from '../exercises/exercises.facade.ts';
-import { setFacade, workoutFacade } from './workouts.facade.ts';
+import { workoutFacade } from './workouts.facade.ts';
+import './internal/gz-add-set-form.component.ts';
 import './internal/gz-set-row.component.ts';
 
-type WorkoutDetailState = { status: 'loading' } | { status: 'ready'; workout: WorkoutWithSetsDto } | { status: 'error'; message: string };
-
-const NEW_EXERCISE = '__new__';
+interface WorkoutDetailData {
+  workout: WorkoutWithSetsDto;
+  /** Every exercise, for the rows' and the add-set form's selects. */
+  exercises: ExerciseDto[];
+}
 
 /** The logging screen for one session: edit the header, add sets, see totals. */
-export class GzWorkoutDetailComponent extends GzElement {
-  #workoutId: string | null = null;
+export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
+  override loadingText = 'Loading workout…';
 
-  #state: WorkoutDetailState = { status: 'loading' };
-
-  #exercises: ExerciseDto[] = [];
+  override backLink = { href: '/workouts', label: 'Back to all workouts' };
 
   /**
    * What has been typed into the details form but not saved.
@@ -34,149 +35,60 @@ export class GzWorkoutDetailComponent extends GzElement {
    */
   #edits: Record<string, string> | null = null;
 
-  /**
-   * Remembers the last logged set so the next one starts from it.
-   *
-   * `exerciseId` also holds the "new exercise" sentinel, which is what the
-   * select shows on a cold start with no exercises defined yet.
-   */
-  #draft: { exerciseId: ExerciseId | typeof NEW_EXERCISE | null; weight: string; reps: string } = {
-    exerciseId: null,
-    weight: '',
-    reps: '',
-  };
-  #focusAfterRender = false;
-
-  static observedAttributes = ['workout-id'];
-
-  attributeChangedCallback(_name: string, oldValue: string | null, value: string | null): void {
-    this.#workoutId = value;
-    // The initial attribute arrives before connectedCallback, which loads anyway.
-    if (this.isConnected && oldValue !== null && oldValue !== value) {
-      void this.#load();
-    }
-  }
-
-  /**
-   * The id this view is showing.
-   *
-   * its route sets the attribute before the element is connected, so
-   * attributeChangedCallback has always run by the time anything asks for it.
-   * Reading it through here states that invariant once, in the one place that
-   * would notice it being broken, instead of at every call site.
-   *
-   * The attribute mirrors a route parameter `workouts.routes.ts` matches as `(\d+)`, so it is always
-   * digits and the conversion cannot produce a NaN.
-   */
-  get #id(): WorkoutId {
-    const id = this.#workoutId;
-    if (id === null) {
-      throw new Error('gz-workout-detail needs a workout-id attribute');
-    }
-    return Number(id);
-  }
-
   override connectedCallback(): void {
     super.connectedCallback();
     this.root.addEventListener('sets-changed', () => {
-      void this.#load();
+      void this.reload();
     });
-    this.ready = this.#load();
+    // Only a set logged through the form puts focus back in it, not a row's "+1" or delete.
+    this.root.addEventListener('set-logged', () => {
+      void this.reload().then(() => this.$<GzAddSetFormComponent>('gz-add-set-form')?.focusWeight());
+    });
   }
 
-  async #load(): Promise<void> {
-    try {
-      const [workout, { items: exercises }] = await Promise.all([workoutFacade.get(this.#id), exerciseFacade.list()]);
-      this.#exercises = exercises;
-      this.#state = { status: 'ready', workout };
-      if (this.#draft.exerciseId === null) {
-        const lastSet = workout.sets.at(-1);
-        this.#draft.exerciseId = lastSet?.exerciseId ?? exercises[0]?.id ?? null;
-      }
-    } catch (error) {
-      this.#state = { status: 'error', message: errorMessage(error) };
-      if (!(error instanceof ApiError) || error.status !== 404) {
-        toastError(error);
-      }
-    }
-    this.render();
+  override async load(): Promise<WorkoutDetailData> {
+    const [workout, { items: exercises }] = await Promise.all([workoutFacade.get(this.numericAttribute('workout-id')), exerciseFacade.list()]);
+    return { workout, exercises };
   }
 
   override async handleAction(action: string): Promise<void> {
-    if (action === 'delete-workout') {
-      if (!confirm('Delete this workout and all of its sets? This cannot be undone.')) {
-        return;
-      }
-      try {
-        await workoutFacade.delete(this.#id);
-        toast('Workout deleted', 'success');
-        navigate('/workouts');
-      } catch (error) {
-        toastError(error);
-      }
+    if (action !== 'delete-workout' || !confirm('Delete this workout and all of its sets? This cannot be undone.')) {
+      return;
+    }
+    try {
+      await workoutFacade.delete(this.numericAttribute('workout-id'));
+      toast('Workout deleted', 'success');
+      navigate('/workouts');
+    } catch (error) {
+      toastError(error);
     }
   }
 
   override async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
-    const values = this.formData(form);
-
-    if (action === 'save-workout') {
-      try {
-        await workoutFacade.update(this.#id, {
-          performedOn: values.performedOn,
-          title: values.title,
-          notes: values.notes,
-        });
-        this.#edits = null;
-        toast('Workout updated', 'success');
-        await this.#load();
-      } catch (error) {
-        toastError(error);
-      }
+    if (action !== 'save-workout') {
       return;
     }
-
-    if (action === 'add-set') {
-      try {
-        let exerciseId: string | number = values.exerciseId ?? '';
-
-        if (exerciseId === NEW_EXERCISE) {
-          if (!values.newExercise) {
-            toast('Give the new exercise a name', 'error');
-            return;
-          }
-          const created = await exerciseFacade.create({ name: values.newExercise });
-          exerciseId = created.id;
-        }
-
-        await setFacade.create(this.#id, {
-          exerciseId: Number(exerciseId),
-          reps: Number(values.reps),
-          weight: Number(values.weight),
-          notes: values.notes,
-        });
-
-        this.#draft = { exerciseId: Number(exerciseId), weight: values.weight ?? '', reps: values.reps ?? '' };
-        this.#focusAfterRender = true;
-        await this.#load();
-      } catch (error) {
-        toastError(error);
-      }
+    const { performedOn, title, notes } = this.formData(form);
+    try {
+      await workoutFacade.update(this.numericAttribute('workout-id'), { performedOn, title, notes });
+      this.#edits = null;
+      toast('Workout updated', 'success');
+      await this.reload();
+    } catch (error) {
+      toastError(error);
     }
   }
 
   override afterRender(): void {
-    if (this.#state.status !== 'ready') {
+    if (!this.data) {
       return;
     }
-    const workout = this.#state.workout;
+    const { workout, exercises } = this.data;
 
-    const rows = this.$$<GzSetRowComponent>('gz-set-row');
-    for (const row of rows) {
-      const set = workout.sets.find((candidate) => candidate.id === Number(row.dataset.id));
-      row.exercises = this.#exercises;
+    for (const row of this.$$<GzSetRowComponent>('gz-set-row')) {
+      row.exercises = exercises;
       row.index = Number(row.dataset.index);
-      row.set = set;
+      row.set = workout.sets.find((candidate) => candidate.id === Number(row.dataset.id));
     }
 
     const details = this.$<HTMLFormElement>("form[data-action='save-workout']");
@@ -184,38 +96,11 @@ export class GzWorkoutDetailComponent extends GzElement {
       this.#edits = this.formData(details);
     });
 
-    const select = this.$<HTMLSelectElement>("select[name='exerciseId']");
-    if (select) {
-      select.addEventListener('change', () => {
-        this.$('.field-new-exercise')?.toggleAttribute('hidden', select.value !== NEW_EXERCISE);
-        this.#prefillFrom(Number(select.value));
-      });
-    }
-
-    if (this.#focusAfterRender) {
-      this.#focusAfterRender = false;
-      const field = this.$<HTMLInputElement>(".add-form input[name='weight']");
-      field?.focus();
-    }
-  }
-
-  /** Copies the last set of an exercise into the add-set form. */
-  #prefillFrom(exerciseId: ExerciseId): void {
-    if (this.#state.status !== 'ready') {
-      return;
-    }
-    const previous = this.#state.workout.sets.filter((set) => set.exerciseId === exerciseId).at(-1);
-    if (!previous) {
-      return;
-    }
-
-    const weight = this.$<HTMLInputElement>(".add-form input[name='weight']");
-    const reps = this.$<HTMLInputElement>(".add-form input[name='reps']");
-    if (weight) {
-      weight.value = String(previous.weight);
-    }
-    if (reps) {
-      reps.value = String(previous.reps);
+    const addSet = this.$<GzAddSetFormComponent>('gz-add-set-form');
+    if (addSet) {
+      addSet.workoutId = workout.id;
+      addSet.exercises = exercises;
+      addSet.sets = workout.sets;
     }
   }
 
@@ -258,66 +143,7 @@ export class GzWorkoutDetailComponent extends GzElement {
     `;
   }
 
-  #addSetTemplate(): RawHtml {
-    if (this.#exercises.length === 0 && this.#draft.exerciseId === null) {
-      // Still offer the form: the inline "new exercise" field covers a cold start.
-      this.#draft.exerciseId = NEW_EXERCISE;
-    }
-    const selected = this.#draft.exerciseId;
-
-    return html`
-      <section class="vstack gap-2">
-        <h2>Add a set</h2>
-        <article class="card add-form">
-          <form data-action="add-set">
-            <div class="fields">
-              <div class="field field-exercise">
-                <label for="exerciseId">Exercise</label>
-                <select id="exerciseId" name="exerciseId">
-                  ${this.#exercises.map(
-                    (exercise) => html` <option value="${exercise.id}" ${exercise.id === selected ? 'selected' : ''}>${exercise.name}</option> `,
-                  )}
-                  <option value="${NEW_EXERCISE}" ${selected === NEW_EXERCISE ? 'selected' : ''}>＋ New exercise…</option>
-                </select>
-              </div>
-              <div class="field field-exercise field-new-exercise" ${selected === NEW_EXERCISE ? '' : 'hidden'}>
-                <label for="newExercise">New exercise name</label>
-                <input id="newExercise" name="newExercise" type="text" maxlength="120" placeholder="Incline Press" />
-              </div>
-              <div class="field field-num">
-                <label for="weight">Weight (${UNIT})</label>
-                <input id="weight" name="weight" type="number" step="0.25" min="0" value="${this.#draft.weight}" required />
-              </div>
-              <div class="field field-num">
-                <label for="reps">Reps</label>
-                <input id="reps" name="reps" type="number" step="1" min="1" value="${this.#draft.reps}" required />
-              </div>
-              <div class="field field-notes">
-                <label for="set-notes">Notes</label>
-                <input id="set-notes" name="notes" type="text" maxlength="2000" placeholder="Paused, felt easy" />
-              </div>
-              <button type="submit">Log set</button>
-            </div>
-          </form>
-        </article>
-      </section>
-    `;
-  }
-
-  override template(): RawHtml {
-    if (this.#state.status === 'loading') {
-      return html`<p aria-busy="true">Loading workout…</p>`;
-    }
-    if (this.#state.status === 'error') {
-      return html`
-        <div class="vstack">
-          <p class="error-text">${this.#state.message}</p>
-          <p><a href="/workouts">Back to all workouts</a></p>
-        </div>
-      `;
-    }
-
-    const { workout } = this.#state;
+  override readyTemplate({ workout }: WorkoutDetailData): RawHtml {
     const sets = workout.sets;
     const volume = sets.reduce((total, set) => total + set.reps * set.weight, 0);
     const reps = sets.reduce((total, set) => total + set.reps, 0);
@@ -343,7 +169,7 @@ export class GzWorkoutDetailComponent extends GzElement {
           }
         </section>
 
-        ${this.#addSetTemplate()}
+        <gz-add-set-form></gz-add-set-form>
       </div>
     `;
   }

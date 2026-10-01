@@ -1,6 +1,5 @@
-import { errorMessage } from '../../http/errors.ts';
 import type { RawHtml } from '../../ui/html.ts';
-import { define, GzElement } from '../../ui/base.ts';
+import { define } from '../../ui/base.ts';
 import { html } from '../../ui/html.ts';
 import { formatDate, formatVolume, plural, relativeDay, todayIso } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
@@ -8,24 +7,20 @@ import { PAGE_SIZE, pageCount, pageOffset, pagePath, parsePage } from '../../ui/
 import '../../ui/pagination/gz-pagination.component.ts';
 import type { WorkoutWithStatsDto } from '../../../shared/dto/workout.ts';
 import { toast, toastError } from '../../ui/toast.ts';
+import { GzView } from '../../ui/view.ts';
 import { workoutFacade } from './workouts.facade.ts';
 
-/**
- * One page of the log. `items` and `total` live on every variant, so an error
- * still renders the header and the form rather than a blank view.
- */
-interface WorkoutListState {
-  status: 'loading' | 'ready' | 'error';
+/** One page of the log; `total` counts every workout. */
+interface WorkoutListData {
   items: WorkoutWithStatsDto[];
   total: number;
   /** 1-based, from `?page=`. */
   page: number;
-  message?: string;
 }
 
 /** The training log: every session, newest first, a page at a time. */
-export class GzWorkoutListComponent extends GzElement {
-  #state: WorkoutListState = { status: 'loading', items: [], total: 0, page: 1 };
+export class GzWorkoutListComponent extends GzView<WorkoutListData> {
+  override loadingText = 'Loading workouts…';
 
   override connectedCallback(): void {
     super.connectedCallback();
@@ -34,19 +29,12 @@ export class GzWorkoutListComponent extends GzElement {
         navigate(pagePath('/workouts', event.detail));
       }
     });
-    this.ready = this.#load();
   }
 
-  async #load(): Promise<void> {
+  override async load(): Promise<WorkoutListData> {
     const page = parsePage(location.search);
-    try {
-      const result = await workoutFacade.list({ limit: PAGE_SIZE, offset: pageOffset(page, PAGE_SIZE) });
-      this.#state = { status: 'ready', items: result.items, total: result.total, page };
-    } catch (error) {
-      this.#state = { ...this.#state, status: 'error', message: errorMessage(error) };
-      toastError(error);
-    }
-    this.render();
+    const { items, total } = await workoutFacade.list({ limit: PAGE_SIZE, offset: pageOffset(page, PAGE_SIZE) });
+    return { items, total, page };
   }
 
   override async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
@@ -151,13 +139,7 @@ export class GzWorkoutListComponent extends GzElement {
     `;
   }
 
-  override template(): RawHtml {
-    if (this.#state.status === 'loading') {
-      return html`<p aria-busy="true">Loading workouts…</p>`;
-    }
-
-    const { items, total, page } = this.#state;
-
+  override readyTemplate({ items, total, page }: WorkoutListData): RawHtml {
     return html`
       <div class="vstack">
         <div class="hstack justify-between gap-2">

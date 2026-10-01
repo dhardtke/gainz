@@ -1,36 +1,28 @@
-import { errorMessage } from '../../http/errors.ts';
 import type { RawHtml } from '../../ui/html.ts';
-import { define, GzElement } from '../../ui/base.ts';
+import { define } from '../../ui/base.ts';
 import { html } from '../../ui/html.ts';
 import { formatDate, formatVolume, plural, relativeDay, todayIso } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
 import type { SummaryDto } from '../../../shared/dto/stats.ts';
 import type { WorkoutWithStatsDto } from '../../../shared/dto/workout.ts';
 import { toastError } from '../../ui/toast.ts';
+import { GzView } from '../../ui/view.ts';
 import { workoutFacade } from '../workouts/workouts.facade.ts';
 import { statsFacade } from './stats.facade.ts';
 import '../../ui/tile/gz-tile.component.ts';
 
-type DashboardState = { status: 'loading' } | { status: 'ready'; summary: SummaryDto; workouts: WorkoutWithStatsDto[] } | { status: 'error'; message: string };
+interface DashboardData {
+  summary: SummaryDto;
+  workouts: WorkoutWithStatsDto[];
+}
 
 /** Landing view: the numbers that answer "am I actually progressing?". */
-export class GzDashboardComponent extends GzElement {
-  #state: DashboardState = { status: 'loading' };
+export class GzDashboardComponent extends GzView<DashboardData> {
+  override loadingText = 'Loading your log…';
 
-  override connectedCallback(): void {
-    super.connectedCallback();
-    this.ready = this.#load();
-  }
-
-  async #load(): Promise<void> {
-    try {
-      const [summary, page] = await Promise.all([statsFacade.summary(), workoutFacade.list({ limit: 5 })]);
-      this.#state = { status: 'ready', summary, workouts: page.items };
-    } catch (error) {
-      this.#state = { status: 'error', message: errorMessage(error) };
-      toastError(error);
-    }
-    this.render();
+  override async load(): Promise<DashboardData> {
+    const [summary, page] = await Promise.all([statsFacade.summary(), workoutFacade.list({ limit: 5 })]);
+    return { summary, workouts: page.items };
   }
 
   override async handleAction(action: string): Promise<void> {
@@ -45,16 +37,7 @@ export class GzDashboardComponent extends GzElement {
     }
   }
 
-  override template(): RawHtml {
-    if (this.#state.status === 'loading') {
-      return html`<p aria-busy="true">Loading your log…</p>`;
-    }
-    if (this.#state.status === 'error') {
-      return html`<p class="error-text">${this.#state.message}</p>`;
-    }
-
-    const { summary, workouts } = this.#state;
-
+  override readyTemplate({ summary, workouts }: DashboardData): RawHtml {
     return html`
       <div class="vstack">
         <div class="hstack justify-between gap-2">
