@@ -128,7 +128,7 @@ export class GzAddSetFormComponent extends GzElement {
               </div>
               <div class="field field-num">
                 <label for="weight">Weight (${UNIT})</label>
-                <input id="weight" name="weight" type="number" step="0.25" min="0" value="${last?.weight ?? ''}" required />
+                <input id="weight" name="weight" type="number" step="any" min="0" value="${last?.weight ?? ''}" required />
               </div>
               <div class="field field-num">
                 <label for="reps">Reps</label>

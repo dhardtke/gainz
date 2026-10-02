@@ -117,7 +117,7 @@ export class GzSetRowComponent extends GzElement {
         </div>
         <div class="field field-num">
           <label>Weight (${UNIT})</label>
-          <input name="weight" type="number" step="0.25" min="0" value="${set.weight}" required />
+          <input name="weight" type="number" step="any" min="0" value="${set.weight}" required />
         </div>
         <div class="field field-num">
           <label>Reps</label>
