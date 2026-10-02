@@ -150,7 +150,6 @@ export class GzSetRowComponent extends GzElement {
           ✓
         </button>
         <span class="index">${this.#index}</span>
-        <a class="exercise" href="/exercises/${set.exerciseId}">${set.exerciseName}</a>
         <span class="load">${formatNumber(set.weight)} ${UNIT} × ${set.reps}</span>
         <span class="note">${set.notes ?? ''}</span>
         <div class="actions">

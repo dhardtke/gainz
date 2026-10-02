@@ -6,8 +6,50 @@
   flex-wrap: wrap;
 }
 
+/* One Oat accordion item per exercise; the header holds the name, a summary badge and actions. */
+summary {
+  & .exercise-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  & .badge {
+    flex: none;
+  }
+
+  & .actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex: none;
+  }
+}
+
 .sets {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+}
+
+/* The name keeps the first line beside the chevron; the badge and the actions take a line each. */
+@media (max-width: 720px) {
+  summary {
+    flex-wrap: wrap;
+
+    & .exercise-name {
+      flex-basis: calc(100% - 2em);
+    }
+
+    & .badge {
+      order: 1;
+    }
+
+    & .actions {
+      order: 2;
+      flex-basis: 100%;
+    }
+  }
 }

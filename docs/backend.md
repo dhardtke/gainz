@@ -110,7 +110,7 @@ a DTO is never built there. The third exempts `*.translator.ts` from
 `typescript/no-unsafe-type-assertion`, since casting a body onto a DTO is part of a translator's job.
 The facades are not pure delegation: their write methods validate and map the request with the
 facade's own `#validateCreate` / `#validateEdit` methods before calling the repository.
-Composition across facades, like `GET /api/workouts/:id` reading a workout and its sets, still
+Composition across facades, like `GET /api/workouts/:id` reading a workout, its exercises and its sets, still
 lives in the controller, and the facade is where it goes if it ever needs to move further down.
 
 The facades take request DTOs and publish rows, so the rule above it is unchanged: the controller
@@ -129,7 +129,7 @@ carry the web root without reaching into `static/internal/`; `createDevFacade()`
 and `staticRoutes()` builds a dev facade in turn, to inject the hot-reload client. All SQL lives in a feature's `internal/`; `db/sql.ts` keeps
 only what names no table — `buildUpdate`, `isUniqueViolation` and `isForeignKeyViolation`.
 Repositories reference each other only with `import type` and take what they need through their
-constructor — `SetRepository(db, workouts)`, wired in `createWorkoutFacades` — so there is no
+constructor — `SetRepository(db, workouts, workoutExercises)`, wired in `createWorkoutFacades` — so there is no
 runtime cycle to trip over.
 
 Error handling is by throwing: controllers throw `HttpError`, directly or through the facades they
@@ -146,11 +146,13 @@ into the 400.
 
 A write that needs more than one statement belongs in a single repository method wrapped in
 `db.transaction()` — `WorkoutRepository.create(input, { copyFrom })` is the example, where the
-workout and its copied sets commit together or not at all. Neither the route files nor the
-controllers ever open a transaction; if a controller finds itself sequencing two writes, the
+workout, its copied sets and its copied exercise order commit together or not at all. Set create
+and set delete are two more, each keeping `workout_exercises` in step with the set it writes.
+Neither the route files nor the controllers ever open a transaction; if a controller finds itself sequencing two writes, the
 sequence belongs in the repository instead.
 
-Three tables, `exercises ──< sets >── workouts`, and `sets` is the fact table: one row per set
+Four tables, `exercises ──< sets >── workouts` and `exercises ──< workout_exercises >── workouts`,
+and `sets` is the fact table: one row per set
 performed, carrying `reps`, `weight`, free-text `notes` and a `position` that preserves the order
 within a session. Its two foreign keys are deliberately asymmetric. `workout_id` is
 `ON DELETE CASCADE`, so deleting a workout takes its sets with it; `exercise_id` is
@@ -161,6 +163,17 @@ can be thrown away deliberately, but it cannot silently lose its meaning.
 source's positions as they are, and nothing changes it afterwards, so sets list in the order they
 were logged (`position, id`). A set's exercise is likewise fixed at creation: `PATCH /api/sets/:id`
 does not take `exerciseId`, and one in the body is ignored like any unknown key.
+
+`workout_exercises (workout_id, exercise_id, position)` holds the order of a workout's exercises,
+keyed by the pair, with `workout_id` cascading and `exercise_id` restricting like the set's. A row
+exists exactly while the workout has a set of that exercise: `SetRepository.create` appends one at
+`MAX(position) + 1` when it logs the first set of an exercise, `SetRepository.delete` removes it
+with the exercise's last set, "Repeat" copies the source's rows, and deleting a workout cascades.
+`003-workout-exercises.sql` created the table and backfilled it from the sets already there, in the
+order each exercise first appears (`position, id`). `GET /api/workouts/:id`, like the answer to
+`POST /api/workouts`, is therefore a `WorkoutWithExercisesDto`: the workout, its `done`, and
+`exercises` in that order, each `{ exerciseId, exerciseName, position, sets }` with its sets in
+logged order. `GET /api/workouts/:id/sets` still answers the flat list.
 
 A set also carries `done`, an integer held to 0 or 1 that the API turns into a boolean: a set not
 done is a plan — what "Repeat" copies into a new session — and a done set is history. New sets,

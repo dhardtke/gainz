@@ -60,6 +60,12 @@ test('offers every action on a set not done', () => {
   expect(actions(row)).toEqual(['toggle-done', 'edit', 'duplicate', 'delete']);
 });
 
+test('leaves the exercise to its group: no name, no link', () => {
+  const row = mountRow(set({ id: 7, exerciseId: 4, exerciseName: 'Bench Press' }));
+  expect(shadow(row).querySelector("a[href^='/exercises/']")).toBeNull();
+  expect(shadow(row).textContent).not.toContain('Bench Press');
+});
+
 test('edits reps, weight and notes but not the exercise', async () => {
   const changed = collect('sets-changed');
   const row = mountRow(set({ id: 7, reps: 5, weight: 60, notes: 'Easy' }));

@@ -15,7 +15,9 @@ const NEW_EXERCISE = '__new__';
 /**
  * The "Add a set" form of a workout. It starts from the workout's last set — its exercise,
  * weight and reps — creates a new exercise when asked, logs the set, and tells its parent with
- * a `set-logged` event, which reloads and so hands it the sets again.
+ * a `set-logged` event, which reloads and so hands it the sets again. The event's detail is
+ * `{ exerciseId }`, the exercise the set was logged against (the created one for a new exercise),
+ * so the parent can open it.
  */
 export class GzAddSetFormComponent extends GzElement {
   #workoutId: WorkoutId | null = null;
@@ -69,7 +71,7 @@ export class GzAddSetFormComponent extends GzElement {
         weight: Number(values.weight),
         notes: values.notes,
       });
-      this.emit('set-logged');
+      this.emit('set-logged', { exerciseId: Number(exerciseId) });
     } catch (error) {
       toastError(error);
     }

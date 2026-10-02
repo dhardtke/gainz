@@ -56,9 +56,9 @@ export class WorkoutRepository {
   }
 
   /**
-   * Creates a workout, optionally copying every set of an earlier session into it — "repeat this
-   * session". The insert and the copy commit together, so an unknown `copyFrom` fails without
-   * leaving an empty workout behind.
+   * Creates a workout, optionally copying every set of an earlier session into it, and the order of
+   * its exercises — "repeat this session". The insert and the copy commit together, so an unknown
+   * `copyFrom` fails without leaving an empty workout behind.
    */
   create(input: CreateWorkout, options: { copyFrom?: WorkoutId } = {}): Workout {
     return this.#db.transaction(() => {
@@ -83,6 +83,13 @@ export class WorkoutRepository {
             `INSERT INTO sets (workout_id, exercise_id, reps, weight, notes, position)
              SELECT ?, exercise_id, reps, weight, notes, position
                FROM sets WHERE workout_id = ?`,
+          )
+          .run(row.id, copyFrom);
+        this.#db
+          .query<unknown, [WorkoutId, WorkoutId]>(
+            `INSERT INTO workout_exercises (workout_id, exercise_id, position)
+             SELECT ?, exercise_id, position
+               FROM workout_exercises WHERE workout_id = ?`,
           )
           .run(row.id, copyFrom);
       }

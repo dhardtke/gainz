@@ -1,11 +1,17 @@
 import { describe, expect, test } from 'bun:test';
-import type { WorkoutDto, WorkoutPageDto, WorkoutWithSetsDto, WorkoutWithStatsDto } from '../../../shared/dto/workout.ts';
+import type { LiftSetDto } from '../../../shared/dto/set.ts';
+import type { WorkoutDto, WorkoutPageDto, WorkoutWithExercisesDto, WorkoutWithStatsDto } from '../../../shared/dto/workout.ts';
 import type { WorkoutId } from '../../../shared/flavors.ts';
 import { at, body, useServer } from '../../testing.ts';
 import { createExercise } from '../exercises/exercises.fixtures.ts';
 import { createSet, createWorkout, markDone } from './workouts.fixtures.ts';
 
 const { api, post, patch } = useServer();
+
+/** Every set of the workout, group by group. */
+function sets(workout: WorkoutWithExercisesDto): LiftSetDto[] {
+  return workout.exercises.flatMap((group) => group.sets);
+}
 
 describe('workouts', () => {
   test('defaults the workout date to today', async () => {
@@ -36,9 +42,9 @@ describe('workouts', () => {
 
     const res = await post('/api/workouts', { performedOn: '2026-01-12', copyFromWorkoutId: source.id });
     expect(res.status).toBe(201);
-    const copy = await body<WorkoutWithSetsDto>(res);
-    expect(copy.sets).toHaveLength(2);
-    expect(copy.sets.map((s) => s.weight)).toEqual([60, 65]);
+    const copy = await body<WorkoutWithExercisesDto>(res);
+    expect(sets(copy)).toHaveLength(2);
+    expect(sets(copy).map((s) => s.weight)).toEqual([60, 65]);
   });
 
   test('copies done sets as not done', async () => {
@@ -47,8 +53,8 @@ describe('workouts', () => {
     const set = await createSet(post, source.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
     await markDone(patch, set.id);
 
-    const copy = await body<WorkoutWithSetsDto>(await post('/api/workouts', { performedOn: '2026-01-12', copyFromWorkoutId: source.id }));
-    expect(copy.sets.map((s) => s.done)).toEqual([false]);
+    const copy = await body<WorkoutWithExercisesDto>(await post('/api/workouts', { performedOn: '2026-01-12', copyFromWorkoutId: source.id }));
+    expect(sets(copy).map((s) => s.done)).toEqual([false]);
   });
 
   test('copying from a missing workout creates nothing', async () => {
@@ -99,10 +105,40 @@ describe("a workout's sets", () => {
     });
     await createSet(post, workout.id, { exerciseId: exercise.id, reps: 6, weight: 70 });
 
-    const detail = await body<WorkoutWithSetsDto>(await api(`/api/workouts/${workout.id}`));
-    expect(detail.sets).toHaveLength(2);
-    expect(detail.sets[0]).toMatchObject({ reps: 8, weight: 60, notes: 'warm-up', exerciseName: 'Bench Press' });
-    expect(at(detail.sets, 1).position).toBeGreaterThan(at(detail.sets, 0).position);
+    const detail = await body<WorkoutWithExercisesDto>(await api(`/api/workouts/${workout.id}`));
+    expect(sets(detail)).toHaveLength(2);
+    expect(sets(detail)[0]).toMatchObject({ reps: 8, weight: 60, notes: 'warm-up', exerciseName: 'Bench Press' });
+    expect(at(sets(detail), 1).position).toBeGreaterThan(at(sets(detail), 0).position);
+  });
+
+  test('groups interleaved sets by exercise, in the order each exercise was first logged', async () => {
+    const bench = await createExercise(post);
+    const row = await createExercise(post, 'Barbell Row');
+    const workout = await createWorkout(post);
+    const first = await createSet(post, workout.id, { exerciseId: bench.id, reps: 5, weight: 80 });
+    const rowed = await createSet(post, workout.id, { exerciseId: row.id, reps: 8, weight: 60 });
+    const second = await createSet(post, workout.id, { exerciseId: bench.id, reps: 5, weight: 82.5 });
+
+    const detail = await body<WorkoutWithExercisesDto>(await api(`/api/workouts/${workout.id}`));
+    expect(detail.exercises.map(({ exerciseId, exerciseName, position }) => ({ exerciseId, exerciseName, position }))).toEqual([
+      { exerciseId: bench.id, exerciseName: 'Bench Press', position: 1 },
+      { exerciseId: row.id, exerciseName: 'Barbell Row', position: 2 },
+    ]);
+    expect(detail.exercises.map((group) => group.sets.map((set) => set.id))).toEqual([[first.id, second.id], [rowed.id]]);
+  });
+
+  test('"Repeat" copies the order of the exercises', async () => {
+    const bench = await createExercise(post);
+    const row = await createExercise(post, 'Barbell Row');
+    const source = await createWorkout(post, '2026-01-05');
+    await createSet(post, source.id, { exerciseId: row.id, reps: 8, weight: 60 });
+    await createSet(post, source.id, { exerciseId: bench.id, reps: 5, weight: 80 });
+
+    const copy = await body<WorkoutWithExercisesDto>(await post('/api/workouts', { performedOn: '2026-01-12', copyFromWorkoutId: source.id }));
+    expect(copy.exercises.map((group) => [group.exerciseId, group.position])).toEqual([
+      [row.id, 1],
+      [bench.id, 2],
+    ]);
   });
 
   test('rejects non-positive reps, and an exercise that does not exist, with 400', async () => {
@@ -117,7 +153,7 @@ describe("a workout's sets", () => {
 
 describe("a workout's done state", () => {
   async function doneState(id: WorkoutId): Promise<{ detail: boolean; listed: Partial<WorkoutWithStatsDto> | undefined }> {
-    const detail = await body<WorkoutWithSetsDto>(await api(`/api/workouts/${id}`));
+    const detail = await body<WorkoutWithExercisesDto>(await api(`/api/workouts/${id}`));
     const page = await body<WorkoutPageDto>(await api('/api/workouts'));
     const listed = page.items.find((item) => item.id === id);
     return { detail: detail.done, listed: listed && { done: listed.done, doneSetCount: listed.doneSetCount } };

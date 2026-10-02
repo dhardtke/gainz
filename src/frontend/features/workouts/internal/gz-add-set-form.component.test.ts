@@ -85,7 +85,18 @@ test('logs the set and emits set-logged', async () => {
   const posted = fake.requests.filter((request) => request.method === 'POST');
   expect(posted.map((request) => request.url)).toEqual(['/api/workouts/3/sets']);
   expect(posted[0]?.body).toEqual({ exerciseId: 2, weight: 100, reps: 6, notes: 'Paused' });
-  expect(logged).toHaveLength(1);
+  expect(logged).toEqual([{ exerciseId: 2 }]);
+});
+
+test('names the created exercise in set-logged when logging against a new one', async () => {
+  const logged = collect('set-logged');
+  fake.respondTo('POST /api/exercises', 201, JSON.stringify(exercise({ id: 9, name: 'Incline Press' })));
+  const form = mountForm(EXERCISES, SETS);
+  choose(exerciseSelect(form), '__new__');
+  field(form, 'newExercise').value = 'Incline Press';
+  submit(find(shadow(form), 'form'));
+  await settle();
+  expect(logged).toEqual([{ exerciseId: 9 }]);
 });
 
 test('toasts a failed post and emits nothing', async () => {

@@ -172,8 +172,8 @@ describe('the real migrations', () => {
 
     const result = migrate(legacy);
 
-    expect(result.applied.map((migration) => migration.version)).toEqual([1, 2]);
-    expect(schemaVersion(legacy)).toBe(2);
+    expect(result.applied.map((migration) => migration.version)).toEqual([1, 2, 3]);
+    expect(schemaVersion(legacy)).toBe(3);
     // The row it already held is untouched.
     expect(legacy.query<{ name: string }, []>('SELECT name FROM exercises').all()).toEqual([{ name: 'Back Squat' }]);
 
@@ -192,6 +192,28 @@ describe('the real migrations', () => {
 
     expect(legacy.query<{ done: number }, []>('SELECT done FROM sets ORDER BY id').all()).toEqual([{ done: 1 }, { done: 0 }]);
     expect(() => legacy.run('UPDATE sets SET done = 2 WHERE id = 1')).toThrow();
+
+    legacy.close();
+  });
+
+  test("backfill each workout's exercises in the order their first set appears", () => {
+    const legacy = new Database(':memory:', { create: true });
+    legacy.run(readFileSync(join(MIGRATIONS_DIR, '001-initial-schema.sql'), 'utf8'));
+    legacy.run("INSERT INTO exercises (name) VALUES ('Bench Press'), ('Barbell Row')");
+    legacy.run("INSERT INTO workouts (performed_on) VALUES ('2026-01-05'), ('2026-01-07')");
+    legacy.run('INSERT INTO sets (workout_id, exercise_id, reps, weight, position) VALUES (1, 2, 5, 60, 1), (1, 1, 5, 80, 2), (1, 2, 5, 60, 3)');
+
+    migrate(legacy);
+
+    const rows = legacy
+      .query<{ workout_id: number; exercise_id: number; position: number }, []>(
+        'SELECT workout_id, exercise_id, position FROM workout_exercises ORDER BY workout_id, position',
+      )
+      .all();
+    expect(rows).toEqual([
+      { workout_id: 1, exercise_id: 2, position: 1 },
+      { workout_id: 1, exercise_id: 1, position: 2 },
+    ]);
 
     legacy.close();
   });

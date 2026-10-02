@@ -1,4 +1,4 @@
-import type { Iso8601Date, Iso8601DateTime, WorkoutId } from '../flavors.ts';
+import type { ExerciseId, Iso8601Date, Iso8601DateTime, WorkoutId } from '../flavors.ts';
 import type { LiftSetDto } from './set.ts';
 
 export interface WorkoutDto {
@@ -19,8 +19,18 @@ export interface WorkoutWithStatsDto extends WorkoutDto {
   done: boolean;
 }
 
-export interface WorkoutWithSetsDto extends WorkoutDto {
+/** One exercise of a workout, in the workout's order, with its sets. */
+export interface WorkoutExerciseDto {
+  exerciseId: ExerciseId;
+  exerciseName: string;
+  /** 1-based place of the exercise in the workout. */
+  position: number;
+  /** Oldest first. */
   sets: LiftSetDto[];
+}
+
+export interface WorkoutWithExercisesDto extends WorkoutDto {
+  exercises: WorkoutExerciseDto[];
   /** At least one set, and every one of them done. */
   done: boolean;
 }

@@ -1,5 +1,5 @@
 import type { CreateSetDto, EditSetDto, LiftSetDto } from '../../../shared/dto/set.ts';
-import type { CreateWorkoutDto, EditWorkoutDto, WorkoutDto, WorkoutPageDto, WorkoutWithSetsDto } from '../../../shared/dto/workout.ts';
+import type { CreateWorkoutDto, EditWorkoutDto, WorkoutDto, WorkoutPageDto, WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
 import type { LiftSetId, WorkoutId } from '../../../shared/flavors.ts';
 import { SetApi } from './internal/set.api.ts';
 import { WorkoutApi } from './internal/workout.api.ts';
@@ -15,15 +15,15 @@ export class WorkoutFacade {
     return this.#api.list(page);
   }
 
-  get(id: WorkoutId): Promise<WorkoutWithSetsDto> {
+  get(id: WorkoutId): Promise<WorkoutWithExercisesDto> {
     return this.#api.get(id);
   }
 
-  create(dto: CreateWorkoutDto): Promise<WorkoutWithSetsDto> {
+  create(dto: CreateWorkoutDto): Promise<WorkoutWithExercisesDto> {
     return this.#api.create(dto);
   }
 
-  /** Updates the header only — the response carries no `sets`. */
+  /** Updates the header only — the response carries no `exercises`. */
   update(id: WorkoutId, dto: EditWorkoutDto): Promise<WorkoutDto> {
     return this.#api.update(id, dto);
   }

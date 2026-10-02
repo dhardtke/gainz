@@ -2,6 +2,7 @@ import type { DB } from '../../../db/db.ts';
 import { badRequest, conflict, notFound } from '../../../http/errors.ts';
 import { buildUpdate, isForeignKeyViolation } from '../../../db/sql.ts';
 import type { WorkoutRepository } from './workout.repository.ts';
+import type { WorkoutExerciseRepository } from './workout-exercise.repository.ts';
 import type { ExerciseId, LiftSetId, WorkoutId } from '../../../../shared/flavors.ts';
 import type { LiftSet } from '../ports/set.ts';
 import { SET_COLUMNS } from '../ports/sql.ts';
@@ -28,15 +29,19 @@ export class SetRepository {
 
   readonly #workouts: WorkoutRepository;
 
+  readonly #workoutExercises: WorkoutExerciseRepository;
+
   /**
    * `workouts` is injected rather than imported as a value because both repositories live in this
    * feature and either import would be as good as the other; taking it as an argument keeps
    * `createWorkoutFacades` the one place that decides which workout repository a set repository
-   * reads.
+   * reads. `workoutExercises` is injected for the same reason: a set write keeps the workout's
+   * exercise order in step with it.
    */
-  constructor(db: DB, workouts: WorkoutRepository) {
+  constructor(db: DB, workouts: WorkoutRepository, workoutExercises: WorkoutExerciseRepository) {
     this.#db = db;
     this.#workouts = workouts;
+    this.#workoutExercises = workoutExercises;
   }
 
   list(workoutId: WorkoutId): LiftSet[] {
@@ -66,31 +71,36 @@ export class SetRepository {
   /**
    * The workout id comes from the path, so an unknown one is a 404. The exercise id comes from the
    * body, and the foreign key is left to catch an unknown one — hence the 400 rather than a 404.
+   * The first set of an exercise appends the exercise to the workout, in the same transaction.
    */
   create(workoutId: WorkoutId, input: CreateSet): LiftSet {
-    this.#workouts.require(workoutId);
+    return this.#db.transaction(() => {
+      this.#workouts.require(workoutId);
 
-    const position =
-      this.#db.query<{ next: number }, [WorkoutId]>('SELECT COALESCE(MAX(position), 0) + 1 AS next FROM sets WHERE workout_id = ?').get(workoutId)?.next ?? 1;
+      const position =
+        this.#db.query<{ next: number }, [WorkoutId]>('SELECT COALESCE(MAX(position), 0) + 1 AS next FROM sets WHERE workout_id = ?').get(workoutId)?.next ?? 1;
 
-    try {
-      const inserted = this.#db
-        .query<{ id: LiftSetId }, [WorkoutId, ExerciseId, number, number, string | null, number]>(
-          `INSERT INTO sets (workout_id, exercise_id, reps, weight, notes, position)
-           VALUES (?, ?, ?, ?, ?, ?)
-           RETURNING id`,
-        )
-        .get(workoutId, input.exercise_id, input.reps, input.weight, input.notes, position);
-      if (!inserted) {
-        throw new Error('Insert of set returned no row');
+      try {
+        const inserted = this.#db
+          .query<{ id: LiftSetId }, [WorkoutId, ExerciseId, number, number, string | null, number]>(
+            `INSERT INTO sets (workout_id, exercise_id, reps, weight, notes, position)
+             VALUES (?, ?, ?, ?, ?, ?)
+             RETURNING id`,
+          )
+          .get(workoutId, input.exercise_id, input.reps, input.weight, input.notes, position);
+        if (!inserted) {
+          throw new Error('Insert of set returned no row');
+        }
+        // After the insert, so an unknown exercise is still the set's foreign key failing.
+        this.#workoutExercises.append(workoutId, input.exercise_id);
+        return this.require(inserted.id);
+      } catch (err) {
+        if (isForeignKeyViolation(err)) {
+          throw badRequest('"exerciseId" must name an existing exercise');
+        }
+        throw err;
       }
-      return this.require(inserted.id);
-    } catch (err) {
-      if (isForeignKeyViolation(err)) {
-        throw badRequest('"exerciseId" must name an existing exercise');
-      }
-      throw err;
-    }
+    })();
   }
 
   /**
@@ -111,10 +121,15 @@ export class SetRepository {
     return this.require(id);
   }
 
+  /** Deleting an exercise's last set in the workout takes the exercise out of the workout too. */
   delete(id: LiftSetId): void {
-    if (this.require(id).done === 1) {
-      throw conflict('Set is done; mark it as not done before deleting it');
-    }
-    this.#db.query('DELETE FROM sets WHERE id = ?').run(id);
+    this.#db.transaction(() => {
+      const set = this.require(id);
+      if (set.done === 1) {
+        throw conflict('Set is done; mark it as not done before deleting it');
+      }
+      this.#db.query('DELETE FROM sets WHERE id = ?').run(id);
+      this.#workoutExercises.removeIfUnused(set.workout_id, set.exercise_id);
+    })();
   }
 }

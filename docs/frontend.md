@@ -68,14 +68,38 @@ select offers every exercise — never through anything in `exercises/internal/`
 `gz-add-set-form` creates a new exercise through `exerciseFacade` too; `gz-dashboard` takes its
 summary from `statsFacade` and its recent workouts from `workoutFacade`.
 
-`gz-set-row` leads with a done toggle, a button the size of +1 that is `.outline` while the set is
-not done and Oat's default fill once it is, with `aria-pressed` to match. A click PATCHes
+`gz-workout-detail` groups the workout's sets by exercise in Oat's accordion: one
+`<details name="exercises">` per exercise, in the workout's order, rendered in the view's own shadow
+root rather than by a per-exercise component, because `name` exclusivity only groups `<details>`
+within one tree. At most one exercise is open, and all may be collapsed. The view remembers which
+in `#openExerciseId`, for the same reason it keeps `#edits`: every reload re-renders. `undefined`
+means the first load has not decided yet, and it then opens the exercise of the first set not done,
+otherwise the last exercise. After that a `toggle` listener on each `<details>` (the event does not
+bubble) records the one opened and clears the id when that one closes; a set logged through
+`gz-add-set-form` opens its exercise, since the form's `set-logged` event carries `{ exerciseId }`
+(the created exercise's id for a new one); and an id no longer among the groups, its last set
+deleted, collapses them all. Every other change to a set leaves the open exercise open.
+
+Each header (`<summary>`) shows the exercise name, an outline badge "N sets · x/y done · volume"
+(with "✓ Done" in the middle once all of its sets are), and a `<span class="actions">` — a
+`<summary>` takes phrasing content only — holding an "Exercise" link button,
+`<a class="button outline" href="/exercises/:id">`, so `gz-app` routes it and Ctrl-click opens a
+tab. A click on the link activates the link, not the summary, so it does not toggle; a click
+listener on `.actions` prevents the default of every other click there, which covers disabled
+buttons and the gaps between them, but spares a click through an `<a>`, because `gz-app` leaves a
+default-prevented click alone. The view hands `gz-add-set-form` the sets back in logged order
+(`position`, then `id`): the form starts from the last set it is given, which in group order would
+be the last exercise's.
+
+`gz-set-row` leaves the exercise to its group: it shows no exercise name, and its number counts
+within its exercise. It leads with a done toggle, a button the size of +1 that is `.outline` while
+the set is not done and Oat's default fill once it is, with `aria-pressed` to match. A click PATCHes
 `{ done }` through `setFacade` and emits `sets-changed`, like every other change to a row, so the
 view reloads rather than patching the row. A done row mirrors the backend's lock: it leaves out
-Edit and ×, keeps +1, and mutes its exercise and load. The row's edit form edits reps, weight and
-notes only, since a set's exercise is fixed once it is saved. `gz-workout-detail` adds an "x/y done"
-badge to its totals once the session has sets, and swaps it for a success "✓ Done" badge when the
-workout is done; `gz-workout-list` shows that "✓ Done" badge on done workouts' cards only.
+Edit and ×, keeps +1, and mutes its load. The row's edit form edits reps, weight and notes only,
+since a set's exercise is fixed once it is saved. `gz-workout-detail` adds an "x/y done" badge to
+its totals once the session has sets, and swaps it for a success "✓ Done" badge when the workout
+is done; `gz-workout-list` shows that "✓ Done" badge on done workouts' cards only.
 
 A feature's routes live in `<f>.routes.ts` beside its facade, the way the backend keeps one
 `*.routes.ts` per feature and spreads them in `src/backend/http/routes.ts`. Each route is a regex
