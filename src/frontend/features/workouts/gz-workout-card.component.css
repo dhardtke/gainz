@@ -1,0 +1,5 @@
+/* One workout in a list: Oat's .card with shared.css's .open-card, green once the workout is done. */
+
+article.done {
+  border-color: var(--success);
+}

@@ -1,6 +1,6 @@
 /** Test-only. Workout data for any feature's component tests; never embedded in the build. */
 import type { LiftSetDto } from '../../../shared/dto/set.ts';
-import type { WorkoutExerciseDto } from '../../../shared/dto/workout.ts';
+import type { WorkoutExerciseDto, WorkoutWithStatsDto } from '../../../shared/dto/workout.ts';
 
 export function set(overrides: Partial<LiftSetDto> = {}): LiftSetDto {
   const id = overrides.id ?? 1;
@@ -26,6 +26,24 @@ export function group(overrides: Partial<WorkoutExerciseDto> = {}): WorkoutExerc
     exerciseName: 'Bench Press',
     position: 1,
     sets: [],
+    ...overrides,
+  };
+}
+
+/** A workout as the log lists it, with its totals. */
+export function listedWorkout(overrides: Partial<WorkoutWithStatsDto> = {}): WorkoutWithStatsDto {
+  return {
+    id: 1,
+    performedOn: '2026-09-20',
+    title: 'Push day',
+    notes: null,
+    createdAt: '2026-09-20T10:00:00Z',
+    setCount: 2,
+    exerciseCount: 1,
+    totalReps: 10,
+    totalVolume: 600,
+    doneSetCount: 0,
+    done: false,
     ...overrides,
   };
 }

@@ -1,14 +1,16 @@
 import type { RawHtml } from '../../ui/html.ts';
 import { define } from '../../ui/base.ts';
 import { html } from '../../ui/html.ts';
-import { formatDate, formatVolume, plural, relativeDay, todayIso } from '../../ui/format.ts';
+import { plural, todayIso } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
 import { PAGE_SIZE, pageCount, pageOffset, pagePath, parsePage } from '../../ui/pagination/pagination.ts';
 import '../../ui/pagination/gz-pagination.component.ts';
 import type { WorkoutWithStatsDto } from '../../../shared/dto/workout.ts';
-import { toast, toastError } from '../../ui/toast.ts';
+import { toastError } from '../../ui/toast.ts';
 import { GzView } from '../../ui/view.ts';
 import { workoutFacade } from './workouts.facade.ts';
+import type { GzWorkoutCardComponent } from './gz-workout-card.component.ts';
+import './gz-workout-card.component.ts';
 
 /** One page of the log; `total` counts every workout. */
 interface WorkoutListData {
@@ -56,24 +58,6 @@ export class GzWorkoutListComponent extends GzView<WorkoutListData> {
     }
   }
 
-  override async handleAction(action: string, element: HTMLElement): Promise<void> {
-    const id = Number(element.dataset.id);
-
-    if (action === 'repeat') {
-      try {
-        const workout = await workoutFacade.create({
-          performedOn: todayIso(),
-          title: element.dataset.title,
-          copyFromWorkoutId: id,
-        });
-        toast(`Copied ${plural(workout.exercises.flatMap((group) => group.sets).length, 'set')} into a new session`, 'success');
-        navigate(`/workouts/${workout.id}`);
-      } catch (error) {
-        toastError(error);
-      }
-    }
-  }
-
   #newWorkoutForm(): RawHtml {
     return html`
       <article class="card vstack gap-2">
@@ -99,32 +83,6 @@ export class GzWorkoutListComponent extends GzView<WorkoutListData> {
     `;
   }
 
-  #card(workout: WorkoutWithStatsDto): RawHtml {
-    return html`
-      <article class="card open-card">
-        <div class="grow">
-          <a class="open" href="/workouts/${workout.id}">${workout.title ?? formatDate(workout.performedOn)}</a>
-          <div class="text-light">${formatDate(workout.performedOn)} · ${relativeDay(workout.performedOn)}</div>
-        </div>
-        <span class="badge outline">
-          ${plural(workout.setCount, 'set')} · ${plural(workout.exerciseCount, 'exercise')} · ${formatVolume(workout.totalVolume)}
-        </span>
-        ${workout.done ? html`<span class="badge" data-variant="success">✓ Done</span>` : ''}
-        <div class="actions">
-          <button
-            class="outline"
-            data-action="repeat"
-            data-id="${workout.id}"
-            data-title="${workout.title ?? ''}"
-            title="Copy these sets into a new session dated today"
-          >
-            Repeat
-          </button>
-        </div>
-      </article>
-    `;
-  }
-
   /** The page's cards and the pager; past the last page, the pager alone says so. */
   #page(items: WorkoutWithStatsDto[], total: number, page: number): RawHtml {
     const pages = pageCount(total, PAGE_SIZE);
@@ -134,10 +92,16 @@ export class GzWorkoutListComponent extends GzView<WorkoutListData> {
     }
     return html`
       <div class="vstack gap-2">
-        ${items.length === 0 ? html`<p class="empty">No sessions logged yet. Start one above.</p>` : items.map((workout) => this.#card(workout))}
+        ${items.length === 0 ? html`<p class="empty">No sessions logged yet. Start one above.</p>` : items.map((workout) => html`<gz-workout-card data-id="${workout.id}"></gz-workout-card>`)}
       </div>
       ${pager}
     `;
+  }
+
+  override afterRender(): void {
+    for (const card of this.$$<GzWorkoutCardComponent>('gz-workout-card')) {
+      card.workout = this.data?.items.find((workout) => workout.id === Number(card.dataset.id));
+    }
   }
 
   override readyTemplate({ items, total, page }: WorkoutListData): RawHtml {

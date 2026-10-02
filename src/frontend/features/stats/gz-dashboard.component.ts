@@ -1,13 +1,15 @@
 import type { RawHtml } from '../../ui/html.ts';
 import { define } from '../../ui/base.ts';
 import { html } from '../../ui/html.ts';
-import { formatDate, formatVolume, plural, relativeDay, todayIso } from '../../ui/format.ts';
+import { formatVolume, plural, relativeDay, todayIso } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
 import type { SummaryDto } from '../../../shared/dto/stats.ts';
 import type { WorkoutWithStatsDto } from '../../../shared/dto/workout.ts';
 import { toastError } from '../../ui/toast.ts';
 import { GzView } from '../../ui/view.ts';
 import { workoutFacade } from '../workouts/workouts.facade.ts';
+import type { GzWorkoutCardComponent } from '../workouts/gz-workout-card.component.ts';
+import '../workouts/gz-workout-card.component.ts';
 import { statsFacade } from './stats.facade.ts';
 import '../../ui/tile/gz-tile.component.ts';
 
@@ -34,6 +36,12 @@ export class GzDashboardComponent extends GzView<DashboardData> {
       navigate(`/workouts/${workout.id}`);
     } catch (error) {
       toastError(error);
+    }
+  }
+
+  override afterRender(): void {
+    for (const card of this.$$<GzWorkoutCardComponent>('gz-workout-card')) {
+      card.workout = this.data?.workouts.find((workout) => workout.id === Number(card.dataset.id));
     }
   }
 
@@ -65,17 +73,7 @@ export class GzDashboardComponent extends GzView<DashboardData> {
           ${
             workouts.length === 0
               ? html`<p class="empty">No workouts yet. Log one and it will show up here.</p>`
-              : workouts.map(
-                  (workout) => html`
-                    <article class="card open-card">
-                      <div class="grow">
-                        <a class="open" href="/workouts/${workout.id}">${workout.title ?? formatDate(workout.performedOn)}</a>
-                        <div class="text-light">${relativeDay(workout.performedOn)}</div>
-                      </div>
-                      <span class="badge outline">${plural(workout.setCount, 'set')} · ${formatVolume(workout.totalVolume)}</span>
-                    </article>
-                  `,
-                )
+              : workouts.map((workout) => html`<gz-workout-card data-id="${workout.id}"></gz-workout-card>`)
           }
         </section>
       </div>

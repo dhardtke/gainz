@@ -15,7 +15,7 @@ src/frontend/
 └── features/
     ├── exercises/  exercises.routes.ts, exercises.facade.ts, gz-exercise-list, gz-exercise-detail
     │   └── internal/  exercise.api.ts, gz-chart, gz-progress-chart, gz-session-table
-    ├── workouts/   workouts.routes.ts, workouts.facade.ts, gz-workout-list, gz-workout-detail
+    ├── workouts/   workouts.routes.ts, workouts.facade.ts, gz-workout-list, gz-workout-detail, gz-workout-card
     │   └── internal/  workout.api.ts, set.api.ts, gz-set-row, gz-add-set-form
     └── stats/      stats.routes.ts, stats.facade.ts, gz-dashboard
         └── internal/  stats.api.ts
@@ -52,6 +52,7 @@ the first frame.
 Everything else is a feature, shaped like its backend counterpart and named the same:
 `exercises`, `workouts` and `stats`, which owns the dashboard. `features/workouts/` keeps its
 route views, `gz-workout-list` and `gz-workout-detail`, at its root beside `workouts.facade.ts`,
+and beside them `gz-workout-card`, which is not `internal/` because the dashboard renders it too,
 the feature's front door, and keeps what only it uses in `internal/`: one API class per URL prefix
 — `workout.api.ts` owns every `/api/workouts/**` URL, `set.api.ts` every `/api/sets/**` one — and
 the `gz-set-row` and `gz-add-set-form` child components. The facade module holds thin classes named after entities,
@@ -66,7 +67,12 @@ through `workoutFacade` and the exercises for `gz-add-set-form`'s select through
 `exerciseFacade` from `features/exercises/` — `list()` without a `limit`, the unpaged list, so a
 select offers every exercise — never through anything in `exercises/internal/`, and
 `gz-add-set-form` creates a new exercise through `exerciseFacade` too; `gz-dashboard` takes its
-summary from `statsFacade` and its recent workouts from `workoutFacade`.
+summary from `statsFacade` and its recent workouts from `workoutFacade`, and shows them as the
+same `gz-workout-card`s the log does. The card is the one place a listed workout is drawn: the
+open-card link, the date, an outline totals badge, Repeat — which copies the sets into a new session
+dated today through `workoutFacade` and opens it — and, on a done workout, a `--success` border
+and a success "✓ Done" badge. Each view renders `<gz-workout-card data-id>` and hands every card
+its workout in `afterRender()`, as `gz-workout-detail` does its set rows.
 
 `gz-workout-detail` groups the workout's sets by exercise in Oat's accordion: one
 `<details name="exercises">` per exercise, in the workout's order, rendered in the view's own shadow
@@ -121,7 +127,7 @@ a new line), PATCHes the details that differ from the workout, and the reload pu
 the field by its id while `#edits` keeps its text. A done row mirrors the backend's lock: it reads rather than
 edits, leaves out ×, keeps +1, and mutes its load. `gz-workout-detail` adds an "x/y done" badge to
 its totals once the session has sets, and swaps it for a success "✓ Done" badge when the workout
-is done; `gz-workout-list` shows that "✓ Done" badge on done workouts' cards only.
+is done; `gz-workout-card` shows that "✓ Done" badge on done workouts' cards only.
 
 A feature's routes live in `<f>.routes.ts` beside its facade, the way the backend keeps one
 `*.routes.ts` per feature and spreads them in `src/backend/http/routes.ts`. Each route is a regex
