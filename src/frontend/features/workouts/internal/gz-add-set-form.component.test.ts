@@ -98,8 +98,8 @@ test('toasts a failed post and emits nothing', async () => {
   expect(logged).toHaveLength(0);
 });
 
-test('focusWeight() puts focus in the weight field', () => {
+test('focusReps() puts focus in the reps field', () => {
   const form = mountForm(EXERCISES, SETS);
-  form.focusWeight();
-  expect(form.shadowRoot?.activeElement).toBe(field(form, 'weight'));
+  form.focusReps();
+  expect(form.shadowRoot?.activeElement).toBe(field(form, 'reps'));
 });

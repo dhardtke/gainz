@@ -14,7 +14,6 @@
 
 - Breadcrumbs through the whole app
 - PWA
-- Swap Weight and Reps
 - Track sets per exercise and show sets collapsed, not as flat list
 - Add workout templates that can be used with a desired number of sets and reps
 

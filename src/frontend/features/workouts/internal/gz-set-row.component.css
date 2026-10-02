@@ -69,6 +69,18 @@ form.edit {
   & .field-notes {
     flex: 3 1 12rem;
   }
+
+  /* The exercise and the notes take a row each; reps and weight share the one between. */
+  @media (max-width: 720px) {
+    & .field-exercise,
+    & .field-notes {
+      flex-basis: 100%;
+    }
+
+    & .field-num {
+      flex: 1 1 0;
+    }
+  }
 }
 
 @media (max-width: 720px) {

@@ -42,7 +42,7 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     });
     // Only a set logged through the form puts focus back in it, not a row's "+1" or delete.
     this.root.addEventListener('set-logged', () => {
-      void this.reload().then(() => this.$<GzAddSetFormComponent>('gz-add-set-form')?.focusWeight());
+      void this.reload().then(() => this.$<GzAddSetFormComponent>('gz-add-set-form')?.focusReps());
     });
   }
 
