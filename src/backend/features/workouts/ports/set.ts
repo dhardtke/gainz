@@ -9,5 +9,6 @@ export interface LiftSet {
   weight: number;
   notes: string | null;
   position: number;
+  done: 0 | 1;
   created_at: Iso8601DateTime;
 }

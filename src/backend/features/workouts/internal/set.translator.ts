@@ -20,6 +20,7 @@ export function translateToEditSetDto(body: Record<string, unknown>): EditSetDto
     weight: body.weight as number | undefined,
     notes: body.notes as string | null | undefined,
     position: body.position as number | undefined,
+    done: body.done as boolean | undefined,
   };
 }
 
@@ -50,6 +51,9 @@ export function translateDtoToEditSet(dto: EditSetDto): EditSet {
   if (dto.position !== undefined) {
     patch.position = dto.position;
   }
+  if (dto.done !== undefined) {
+    patch.done = dto.done ? 1 : 0;
+  }
   return patch;
 }
 
@@ -63,6 +67,7 @@ export function translateToLiftSetDto(row: LiftSet): LiftSetDto {
     weight: row.weight,
     notes: row.notes,
     position: row.position,
+    done: row.done === 1,
     createdAt: row.created_at,
   };
 }

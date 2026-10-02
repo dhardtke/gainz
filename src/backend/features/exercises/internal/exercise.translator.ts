@@ -111,6 +111,7 @@ function translateToBestSetDto(row: LiftSet & { performed_on: Iso8601Date }): Be
     weight: row.weight,
     notes: row.notes,
     position: row.position,
+    done: row.done === 1,
     createdAt: row.created_at,
     performedOn: row.performed_on,
   };

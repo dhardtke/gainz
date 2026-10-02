@@ -2,7 +2,7 @@
 
 .row-view {
   display: grid;
-  grid-template-columns: 2.2rem minmax(7rem, 1.4fr) auto minmax(0, 1.6fr) auto;
+  grid-template-columns: auto 2.2rem minmax(7rem, 1.4fr) auto minmax(0, 1.6fr) auto;
   align-items: center;
   gap: 0.6rem;
   padding: 0.5rem 0.65rem;
@@ -38,6 +38,10 @@
 .note {
   color: var(--muted-foreground);
   overflow-wrap: anywhere;
+}
+
+.row-view.done :is(.exercise, .load) {
+  color: var(--muted-foreground);
 }
 
 .actions {
@@ -85,11 +89,14 @@ form.edit {
 
 @media (max-width: 720px) {
   .row-view {
-    grid-template-columns: 2rem 1fr auto;
+    grid-template-columns: auto 2rem 1fr auto;
     grid-template-areas:
-      "i e l"
-      ". n n"
-      ". a a";
+      "t i e l"
+      ". . n n"
+      ". . a a";
+  }
+  .toggle {
+    grid-area: t;
   }
   .index {
     grid-area: i;

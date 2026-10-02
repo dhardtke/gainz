@@ -58,4 +58,24 @@ describe('SetFacade validation', () => {
     const set = sets.create(workout.id, { exerciseId, reps: 5, weight: 60, notes: 'Easy' });
     expect(sets.update(set.id, { notes: '' })).toMatchObject({ reps: 5, notes: null });
   });
+
+  test('update stores done as 1', () => {
+    const { workouts, sets, exerciseId } = setup();
+    const workout = workouts.create({});
+    const set = sets.create(workout.id, { exerciseId, reps: 5, weight: 60 });
+    expect(sets.update(set.id, { done: true }).done).toBe(1);
+  });
+
+  test('update and delete refuse a done set with 409', () => {
+    const { workouts, sets, exerciseId } = setup();
+    const workout = workouts.create({});
+    const set = sets.create(workout.id, { exerciseId, reps: 5, weight: 60 });
+    sets.update(set.id, { done: true });
+    expect(thrown(() => sets.update(set.id, { reps: 6 })).status).toBe(409);
+    expect(
+      thrown(() => {
+        sets.delete(set.id);
+      }).status,
+    ).toBe(409);
+  });
 });

@@ -94,12 +94,16 @@ function main(): void {
           const weight = lift.start + (weeks - 1 - week) * lift.step;
 
           lift.reps.forEach((reps, setIndex) => {
-            sets.create(workout.id, {
+            const logged = sets.create(workout.id, {
               exerciseId,
               reps,
               weight,
               notes: SET_NOTES[(created + setIndex) % SET_NOTES.length] ?? null,
             });
+            // Today's session is still under way, so its sets are left to be checked off.
+            if (daysAgo > 0) {
+              sets.update(logged.id, { done: true });
+            }
           });
         }
         created++;

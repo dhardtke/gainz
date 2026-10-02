@@ -1,5 +1,5 @@
 import { beforeAll, expect, test } from 'bun:test';
-import { choose, find, mount, settle, shadow, submit, type, useDom, useFetch, useToasts } from '../../testing.ts';
+import { choose, find, mount, settle, shadow, submit, text, type, useDom, useFetch, useToasts } from '../../testing.ts';
 import type { ExercisePageDto } from '../../../shared/dto/exercise.ts';
 import type { WorkoutWithSetsDto } from '../../../shared/dto/workout.ts';
 import { exercise } from '../exercises/exercises.fixtures.ts';
@@ -32,6 +32,7 @@ const WORKOUT: WorkoutWithSetsDto = {
   title: 'Push day',
   notes: null,
   createdAt: '2026-09-20T10:00:00Z',
+  done: false,
   sets: [
     set({ id: 11, exerciseId: 1, exerciseName: 'Bench Press', weight: 80 }),
     set({ id: 12, exerciseId: 1, exerciseName: 'Bench Press', weight: 82.5 }),
@@ -39,8 +40,8 @@ const WORKOUT: WorkoutWithSetsDto = {
   ],
 };
 
-async function mountView(): Promise<HTMLElement> {
-  fake.respondTo('GET /api/workouts/3', 200, JSON.stringify(WORKOUT));
+async function mountView(workout: WorkoutWithSetsDto = WORKOUT): Promise<HTMLElement> {
+  fake.respondTo('GET /api/workouts/3', 200, JSON.stringify(workout));
   fake.respondTo('GET /api/exercises', 200, JSON.stringify(EXERCISES));
   const view = mount('gz-workout-detail', { 'workout-id': '3' });
   await settle();
@@ -90,6 +91,30 @@ test('totals the sets, exercises, reps and volume', async () => {
   const badges = Array.from(shadow(view).querySelectorAll('.totals .badge')).map((badge) => badge.textContent);
   expect(badges.slice(0, 3)).toEqual(['3 sets', '2 exercises', '15 reps']);
   expect(badges[3]).toEndWith('total volume');
+});
+
+function totals(view: HTMLElement): (string | null)[] {
+  return Array.from(shadow(view).querySelectorAll('.totals .badge')).map((badge) => badge.textContent);
+}
+
+test('counts the sets done so far', async () => {
+  const sets = WORKOUT.sets.map((item, index) => ({ ...item, done: index === 0 }));
+  const view = await mountView({ ...WORKOUT, sets });
+  expect(totals(view)).toContain('1/3 done');
+  expect(shadow(view).querySelector(".totals .badge[data-variant='success']")).toBeNull();
+});
+
+test('shows a done workout as done', async () => {
+  const sets = WORKOUT.sets.map((item) => ({ ...item, done: true }));
+  const view = await mountView({ ...WORKOUT, sets, done: true });
+  expect(text(view, ".totals .badge[data-variant='success']")).toBe('✓ Done');
+  expect(totals(view)).not.toContain('3/3 done');
+});
+
+test('shows no done badge for a workout without sets', async () => {
+  const view = await mountView({ ...WORKOUT, sets: [] });
+  // Sets, exercises, reps and volume: nothing after them.
+  expect(totals(view)).toHaveLength(4);
 });
 
 test('preselects the exercise of the last set', async () => {

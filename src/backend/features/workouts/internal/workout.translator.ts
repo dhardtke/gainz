@@ -61,6 +61,11 @@ export function translateToWorkoutDto(row: Workout): WorkoutDto {
   };
 }
 
+/** Derived, never stored: unchecking any set makes its workout not done again. */
+function isDone(setCount: number, doneSetCount: number): boolean {
+  return setCount > 0 && doneSetCount === setCount;
+}
+
 function translateToWorkoutWithStatsDto(row: WorkoutWithStats): WorkoutWithStatsDto {
   return {
     id: row.id,
@@ -72,11 +77,17 @@ function translateToWorkoutWithStatsDto(row: WorkoutWithStats): WorkoutWithStats
     exerciseCount: row.exercise_count,
     totalReps: row.total_reps,
     totalVolume: row.total_volume,
+    doneSetCount: row.done_set_count,
+    done: isDone(row.set_count, row.done_set_count),
   };
 }
 
 export function translateToWorkoutWithSetsDto(row: Workout, sets: LiftSet[]): WorkoutWithSetsDto {
-  return { ...translateToWorkoutDto(row), sets: sets.map(translateToLiftSetDto) };
+  return {
+    ...translateToWorkoutDto(row),
+    sets: sets.map(translateToLiftSetDto),
+    done: isDone(sets.length, sets.filter((set) => set.done === 1).length),
+  };
 }
 
 export function translateToWorkoutPageDto(rows: WorkoutWithStats[], total: number, limit: number, offset: number): WorkoutPageDto {

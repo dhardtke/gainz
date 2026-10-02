@@ -25,15 +25,19 @@ export class StatsRepository {
     this.#db = db;
   }
 
+  /**
+   * The set-based numbers count done sets only, since a set not done is a plan; the workout-based
+   * ones count every workout, so a freshly repeated session already counts on its date.
+   */
   summary(): Summary {
     const totals = this.#db
       .query<SummaryTotals, []>(
-        `SELECT (SELECT COUNT(*) FROM workouts)                    AS workout_count,
-                (SELECT COUNT(*) FROM sets)                        AS set_count,
-                (SELECT COALESCE(SUM(reps), 0) FROM sets)          AS total_reps,
-                (SELECT COALESCE(SUM(reps * weight), 0) FROM sets) AS total_volume,
-                (SELECT COUNT(*) FROM exercises)                   AS exercise_count,
-                (SELECT MAX(performed_on) FROM workouts)           AS last_performed_on`,
+        `SELECT (SELECT COUNT(*) FROM workouts)                                   AS workout_count,
+                (SELECT COUNT(*) FROM sets WHERE done = 1)                        AS set_count,
+                (SELECT COALESCE(SUM(reps), 0) FROM sets WHERE done = 1)          AS total_reps,
+                (SELECT COALESCE(SUM(reps * weight), 0) FROM sets WHERE done = 1) AS total_volume,
+                (SELECT COUNT(*) FROM exercises)                                  AS exercise_count,
+                (SELECT MAX(performed_on) FROM workouts)                          AS last_performed_on`,
       )
       .get();
 
@@ -42,7 +46,7 @@ export class StatsRepository {
         `SELECT COUNT(DISTINCT w.id)                AS workouts_last_30_days,
                 COALESCE(SUM(s.reps * s.weight), 0) AS volume_last_30_days
            FROM workouts w
-           LEFT JOIN sets s ON s.workout_id = w.id
+           LEFT JOIN sets s ON s.workout_id = w.id AND s.done = 1
           WHERE w.performed_on >= date('now', '-30 day')`,
       )
       .get();

@@ -9,6 +9,7 @@ export interface LiftSetDto {
   weight: number;
   notes: string | null;
   position: number;
+  done: boolean;
   createdAt: Iso8601DateTime;
 }
 
@@ -32,4 +33,5 @@ export interface EditSetDto {
   weight?: number;
   notes?: string | null;
   position?: number;
+  done?: boolean;
 }

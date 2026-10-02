@@ -1,10 +1,11 @@
 import { describe, expect, test } from 'bun:test';
-import type { WorkoutDto, WorkoutPageDto, WorkoutWithSetsDto } from '../../../shared/dto/workout.ts';
+import type { WorkoutDto, WorkoutPageDto, WorkoutWithSetsDto, WorkoutWithStatsDto } from '../../../shared/dto/workout.ts';
+import type { WorkoutId } from '../../../shared/flavors.ts';
 import { at, body, useServer } from '../../testing.ts';
 import { createExercise } from '../exercises/exercises.fixtures.ts';
-import { createSet, createWorkout } from './workouts.fixtures.ts';
+import { createSet, createWorkout, markDone } from './workouts.fixtures.ts';
 
-const { api, post } = useServer();
+const { api, post, patch } = useServer();
 
 describe('workouts', () => {
   test('defaults the workout date to today', async () => {
@@ -38,6 +39,16 @@ describe('workouts', () => {
     const copy = await body<WorkoutWithSetsDto>(res);
     expect(copy.sets).toHaveLength(2);
     expect(copy.sets.map((s) => s.weight)).toEqual([60, 65]);
+  });
+
+  test('copies done sets as not done', async () => {
+    const exercise = await createExercise(post);
+    const source = await createWorkout(post, '2026-01-05');
+    const set = await createSet(post, source.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
+    await markDone(patch, set.id);
+
+    const copy = await body<WorkoutWithSetsDto>(await post('/api/workouts', { performedOn: '2026-01-12', copyFromWorkoutId: source.id }));
+    expect(copy.sets.map((s) => s.done)).toEqual([false]);
   });
 
   test('copying from a missing workout creates nothing', async () => {
@@ -101,5 +112,36 @@ describe("a workout's sets", () => {
     expect((await post(`/api/workouts/${workout.id}/sets`, { exerciseId: exercise.id, reps: 0, weight: 60 })).status).toBe(400);
     // The foreign key refuses the insert; the workout id in the path is what earns a 404.
     expect((await post(`/api/workouts/${workout.id}/sets`, { exerciseId: 4242, reps: 5, weight: 60 })).status).toBe(400);
+  });
+});
+
+describe("a workout's done state", () => {
+  async function doneState(id: WorkoutId): Promise<{ detail: boolean; listed: Partial<WorkoutWithStatsDto> | undefined }> {
+    const detail = await body<WorkoutWithSetsDto>(await api(`/api/workouts/${id}`));
+    const page = await body<WorkoutPageDto>(await api('/api/workouts'));
+    const listed = page.items.find((item) => item.id === id);
+    return { detail: detail.done, listed: listed && { done: listed.done, doneSetCount: listed.doneSetCount } };
+  }
+
+  test('is not done without sets', async () => {
+    const workout = await createWorkout(post);
+
+    expect(await doneState(workout.id)).toEqual({ detail: false, listed: { done: false, doneSetCount: 0 } });
+  });
+
+  test('is done once every set is, and not done again when one is unchecked', async () => {
+    const exercise = await createExercise(post);
+    const workout = await createWorkout(post);
+    const first = await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
+    const second = await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
+
+    await markDone(patch, first.id);
+    expect(await doneState(workout.id)).toEqual({ detail: false, listed: { done: false, doneSetCount: 1 } });
+
+    await markDone(patch, second.id);
+    expect(await doneState(workout.id)).toEqual({ detail: true, listed: { done: true, doneSetCount: 2 } });
+
+    expect((await patch(`/api/sets/${first.id}`, { done: false })).status).toBe(200);
+    expect(await doneState(workout.id)).toEqual({ detail: false, listed: { done: false, doneSetCount: 1 } });
   });
 });

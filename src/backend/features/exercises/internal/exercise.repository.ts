@@ -24,7 +24,12 @@ export class ExerciseRepository {
     this.#db = db;
   }
 
-  /** @param limit null for every exercise. */
+  /**
+   * Counts done sets only — a set not done is a plan, not history — but joins them in the `ON`
+   * clause, so an exercise without any still lists.
+   *
+   * @param limit null for every exercise.
+   */
   list(limit: number | null, offset: number): ExerciseWithStats[] {
     return (
       this.#db
@@ -35,7 +40,7 @@ export class ExerciseRepository {
                 MAX(w.performed_on)          AS last_performed_on,
                 MAX(s.weight)                AS best_weight
            FROM exercises e
-           LEFT JOIN sets s     ON s.exercise_id = e.id
+           LEFT JOIN sets s     ON s.exercise_id = e.id AND s.done = 1
            LEFT JOIN workouts w ON w.id = s.workout_id
           GROUP BY e.id
           ORDER BY e.name COLLATE NOCASE ASC
@@ -113,12 +118,12 @@ export class ExerciseRepository {
     this.require(id);
     const used = this.#db.query<{ n: number }, [ExerciseId]>('SELECT COUNT(*) AS n FROM sets WHERE exercise_id = ?').get(id);
     if (used && used.n > 0) {
-      throw conflict(`Exercise is used by ${used.n} logged set(s); delete those sets first to keep your history intact`);
+      throw conflict(`Exercise is used by ${used.n} set(s); delete those sets first to keep your history intact`);
     }
     this.#db.query('DELETE FROM exercises WHERE id = ?').run(id);
   }
 
-  /** Per-session aggregates for one exercise, oldest first — the progress curve. */
+  /** Per-session aggregates of one exercise's done sets, oldest first — the progress curve. */
   progress(id: ExerciseId): SessionPoint[] {
     return this.#db
       .query<SessionPoint, [ExerciseId]>(
@@ -131,14 +136,14 @@ export class ExerciseRepository {
                 MAX(${EST_1RM_SQL})    AS est_one_rep_max
            FROM sets s
            JOIN workouts w ON w.id = s.workout_id
-          WHERE s.exercise_id = ?
+          WHERE s.exercise_id = ? AND s.done = 1
           GROUP BY w.id
           ORDER BY w.performed_on ASC, w.id ASC`,
       )
       .all(id);
   }
 
-  /** The single best set ever recorded for an exercise, by estimated 1RM. */
+  /** The single best done set of an exercise, by estimated 1RM. */
   bestSet(id: ExerciseId): (LiftSet & { performed_on: Iso8601Date }) | null {
     return this.#db
       .query<LiftSet & { performed_on: Iso8601Date }, [ExerciseId]>(
@@ -146,7 +151,7 @@ export class ExerciseRepository {
            FROM sets s
            JOIN exercises e ON e.id = s.exercise_id
            JOIN workouts w  ON w.id = s.workout_id
-          WHERE s.exercise_id = ?
+          WHERE s.exercise_id = ? AND s.done = 1
           ORDER BY ${EST_1RM_SQL} DESC, s.weight DESC, s.reps DESC
           LIMIT 1`,
       )

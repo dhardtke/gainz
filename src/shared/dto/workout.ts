@@ -14,10 +14,15 @@ export interface WorkoutWithStatsDto extends WorkoutDto {
   exerciseCount: number;
   totalReps: number;
   totalVolume: number;
+  doneSetCount: number;
+  /** At least one set, and every one of them done. */
+  done: boolean;
 }
 
 export interface WorkoutWithSetsDto extends WorkoutDto {
   sets: LiftSetDto[];
+  /** At least one set, and every one of them done. */
+  done: boolean;
 }
 
 /** One page of the training log. */
