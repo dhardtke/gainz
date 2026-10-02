@@ -4,7 +4,6 @@ import { html } from '../../ui/html.ts';
 import { formatDate, formatVolume, plural, relativeDay } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
 import type { ExerciseDto } from '../../../shared/dto/exercise.ts';
-import type { SetDirection } from '../../../shared/dto/set.ts';
 import type { WorkoutWithSetsDto } from '../../../shared/dto/workout.ts';
 import type { GzAddSetFormComponent } from './internal/gz-add-set-form.component.ts';
 import type { GzSetRowComponent } from './internal/gz-set-row.component.ts';
@@ -15,21 +14,9 @@ import { workoutFacade } from './workouts.facade.ts';
 import './internal/gz-add-set-form.component.ts';
 import './internal/gz-set-row.component.ts';
 
-/** `CustomEvent.detail` is `any`, so the `set-moved` detail a row emits is checked rather than trusted. */
-function isSetMoved(detail: unknown): detail is { id: number; direction: SetDirection } {
-  return (
-    typeof detail === 'object' &&
-    detail !== null &&
-    'id' in detail &&
-    typeof detail.id === 'number' &&
-    'direction' in detail &&
-    (detail.direction === 'up' || detail.direction === 'down')
-  );
-}
-
 interface WorkoutDetailData {
   workout: WorkoutWithSetsDto;
-  /** Every exercise, for the rows' and the add-set form's selects. */
+  /** Every exercise, for the add-set form's select. */
   exercises: ExerciseDto[];
 }
 
@@ -56,13 +43,6 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     // Only a set logged through the form puts focus back in it, not a row's "+1" or delete.
     this.root.addEventListener('set-logged', () => {
       void this.reload().then(() => this.$<GzAddSetFormComponent>('gz-add-set-form')?.focusReps());
-    });
-    // A move re-renders every row, so focus goes back to the moved row's arrow for the next press.
-    this.root.addEventListener('set-moved', (event) => {
-      if (event instanceof CustomEvent && isSetMoved(event.detail)) {
-        const { id, direction } = event.detail;
-        void this.reload().then(() => this.$<GzSetRowComponent>(`gz-set-row[data-id='${id}']`)?.focusMove(direction));
-      }
     });
   }
 
@@ -106,9 +86,7 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     const { workout, exercises } = this.data;
 
     for (const row of this.$$<GzSetRowComponent>('gz-set-row')) {
-      row.exercises = exercises;
       row.index = Number(row.dataset.index);
-      row.last = row.dataset.last === 'true';
       row.set = workout.sets.find((candidate) => candidate.id === Number(row.dataset.id));
     }
 
@@ -199,11 +177,7 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
           ${
             sets.length === 0
               ? html`<p class="empty">No sets logged for this session yet.</p>`
-              : html`
-                  <div class="sets">
-                    ${sets.map((set, index) => html`<gz-set-row data-id="${set.id}" data-index="${index + 1}" data-last="${index === sets.length - 1}"></gz-set-row>`)}
-                  </div>
-                `
+              : html` <div class="sets">${sets.map((set, index) => html`<gz-set-row data-id="${set.id}" data-index="${index + 1}"></gz-set-row>`)}</div> `
           }
         </section>
 

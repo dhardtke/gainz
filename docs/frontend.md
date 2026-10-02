@@ -62,7 +62,7 @@ custom elements cannot take constructor arguments, there is nothing to inject, a
 built every facade would statically pull every feature's API module into every view. A component
 reads data only through a facade; composition across facades stays in the component, as it stays
 in the backend controller. That holds across features too: `gz-workout-detail` loads a workout
-through `workoutFacade` and the exercises for its rows' and `gz-add-set-form`'s selects through
+through `workoutFacade` and the exercises for `gz-add-set-form`'s select through
 `exerciseFacade` from `features/exercises/` — `list()` without a `limit`, the unpaged list, so a
 select offers every exercise — never through anything in `exercises/internal/`, and
 `gz-add-set-form` creates a new exercise through `exerciseFacade` too; `gz-dashboard` takes its
@@ -72,20 +72,10 @@ summary from `statsFacade` and its recent workouts from `workoutFacade`.
 not done and Oat's default fill once it is, with `aria-pressed` to match. A click PATCHes
 `{ done }` through `setFacade` and emits `sets-changed`, like every other change to a row, so the
 view reloads rather than patching the row. A done row mirrors the backend's lock: it leaves out
-Edit and ×, keeps +1, and mutes its exercise and load. `gz-workout-detail` adds an "x/y done"
+Edit and ×, keeps +1, and mutes its exercise and load. The row's edit form edits reps, weight and
+notes only, since a set's exercise is fixed once it is saved. `gz-workout-detail` adds an "x/y done"
 badge to its totals once the session has sets, and swaps it for a success "✓ Done" badge when the
 workout is done; `gz-workout-list` shows that "✓ Done" badge on done workouts' cards only.
-
-Right after the volume, `.actions` holds a ▲▼ pair: two `outline` buttons, the size of +1, in Oat's
-`fieldset.group`, whose bottom margin and shared border the row's stylesheet resets, since Oat only
-joins grouped inputs. `.actions` is a `<div>` for that reason — a `<fieldset>` is not valid inside a
-`<span>`. ▲ is disabled on the first row and ▼ on the last, which the row learns from `index` and a
-`last` property `gz-workout-detail` sets from `data-last`. The pair shows on done rows too, because
-order is not part of the backend's lock. A click POSTs the move through `setFacade.move()` and emits
-`set-moved` with `{ id, direction }` rather than `sets-changed`: the detail view checks that detail
-(a `CustomEvent`'s `detail` is `any`), reloads, and calls the moved row's `focusMove(direction)`,
-which focuses the same arrow, or the other one once the set has reached that edge. Keyboard focus
-thus stays on the moved row, so repeated presses keep moving it.
 
 A feature's routes live in `<f>.routes.ts` beside its facade, the way the backend keeps one
 `*.routes.ts` per feature and spreads them in `src/backend/http/routes.ts`. Each route is a regex

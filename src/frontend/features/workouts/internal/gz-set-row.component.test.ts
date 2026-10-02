@@ -1,5 +1,5 @@
 import { beforeAll, expect, test } from 'bun:test';
-import { collect, find, mount, settle, shadow, useDom, useFetch } from '../../../testing.ts';
+import { collect, find, mount, settle, shadow, submit, useDom, useFetch } from '../../../testing.ts';
 import type { LiftSetDto } from '../../../../shared/dto/set.ts';
 import { set } from '../workouts.fixtures.ts';
 import type { GzSetRowComponent } from './gz-set-row.component.ts';
@@ -11,10 +11,9 @@ beforeAll(async () => {
   await import('./gz-set-row.component.ts');
 });
 
-function mountRow(value: LiftSetDto, { index = 1, last = false }: { index?: number; last?: boolean } = {}): GzSetRowComponent {
+function mountRow(value: LiftSetDto, { index = 1 }: { index?: number } = {}): GzSetRowComponent {
   const row = mount<GzSetRowComponent>('gz-set-row');
   row.index = index;
-  row.last = last;
   row.set = value;
   return row;
 }
@@ -53,53 +52,23 @@ function actions(row: HTMLElement): (string | undefined)[] {
 
 test('freezes a done set: only the toggle and +1 remain', () => {
   const row = mountRow(set({ id: 7, done: true }));
-  expect(actions(row)).toEqual(['toggle-done', 'move-up', 'move-down', 'duplicate']);
+  expect(actions(row)).toEqual(['toggle-done', 'duplicate']);
 });
 
 test('offers every action on a set not done', () => {
   const row = mountRow(set({ id: 7 }));
-  expect(actions(row)).toEqual(['toggle-done', 'move-up', 'move-down', 'edit', 'duplicate', 'delete']);
+  expect(actions(row)).toEqual(['toggle-done', 'edit', 'duplicate', 'delete']);
 });
 
-function arrow(row: HTMLElement, direction: 'up' | 'down'): HTMLButtonElement {
-  return find<HTMLButtonElement>(shadow(row), `[data-action='move-${direction}']`);
-}
-
-test('disables ▲ on the first row and ▼ on the last', () => {
-  const first = mountRow(set({ id: 7 }), { index: 1 });
-  expect([arrow(first, 'up').disabled, arrow(first, 'down').disabled]).toEqual([true, false]);
-
-  const middle = mountRow(set({ id: 8 }), { index: 2 });
-  expect([arrow(middle, 'up').disabled, arrow(middle, 'down').disabled]).toEqual([false, false]);
-
-  const last = mountRow(set({ id: 9 }), { index: 3, last: true });
-  expect([arrow(last, 'up').disabled, arrow(last, 'down').disabled]).toEqual([false, true]);
-});
-
-test('moves a set down and emits set-moved rather than sets-changed', async () => {
-  const moved = collect('set-moved');
+test('edits reps, weight and notes but not the exercise', async () => {
   const changed = collect('sets-changed');
-  const row = mountRow(set({ id: 7 }), { index: 2 });
-  arrow(row, 'down').click();
+  const row = mountRow(set({ id: 7, reps: 5, weight: 60, notes: 'Easy' }));
+  find<HTMLButtonElement>(shadow(row), "[data-action='edit']").click();
   await settle();
-  expect(fake.sent('POST /api/sets/7/move')).toEqual([{ direction: 'down' }]);
-  expect(moved).toEqual([{ id: 7, direction: 'down' }]);
-  expect(changed).toEqual([]);
-});
-
-test('moves a done set', async () => {
-  const row = mountRow(set({ id: 7, done: true }), { index: 2 });
-  arrow(row, 'up').click();
+  expect(shadow(row).querySelector('select')).toBeNull();
+  find<HTMLInputElement>(shadow(row), "[name='reps']").value = '6';
+  submit(find<HTMLFormElement>(shadow(row), "form[data-action='save']"));
   await settle();
-  expect(fake.sent('POST /api/sets/7/move')).toEqual([{ direction: 'up' }]);
-});
-
-test('focuses the arrow that moved the set, or the other one at an edge', () => {
-  const first = mountRow(set({ id: 7 }), { index: 1 });
-  first.focusMove('up');
-  expect(shadow(first).activeElement).toBe(arrow(first, 'down'));
-
-  const middle = mountRow(set({ id: 8 }), { index: 2 });
-  middle.focusMove('down');
-  expect(shadow(middle).activeElement).toBe(arrow(middle, 'down'));
+  expect(fake.sent('PATCH /api/sets/7')).toEqual([{ reps: 6, weight: 60, notes: 'Easy' }]);
+  expect(changed).toHaveLength(1);
 });

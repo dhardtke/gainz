@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { type DB, openDatabase } from '../../db/db.ts';
-import { at, thrown } from '../../testing.ts';
+import { thrown } from '../../testing.ts';
 import { today } from '../../shared/validate.ts';
 import { createExerciseFacade } from '../exercises/exercises.facade.ts';
 import { createWorkoutFacades } from './workouts.facade.ts';
@@ -65,6 +65,16 @@ describe('SetFacade validation', () => {
     expect(sets.update(set.id, dto)).toMatchObject({ reps: 6, position: set.position });
   });
 
+  test("update keeps the set's exercise", () => {
+    const { db, workouts, sets, exerciseId } = setup();
+    const other = createExerciseFacade(db).create({ name: 'Bench' }).id;
+    const workout = workouts.create({});
+    const set = sets.create(workout.id, { exerciseId, reps: 5, weight: 60 });
+
+    const dto = { reps: 6, exerciseId: other };
+    expect(sets.update(set.id, dto)).toMatchObject({ reps: 6, exercise_id: exerciseId });
+  });
+
   test('create rejects zero reps', () => {
     const { workouts, sets, exerciseId } = setup();
     const workout = workouts.create({});
@@ -96,44 +106,5 @@ describe('SetFacade validation', () => {
         sets.delete(set.id);
       }).status,
     ).toBe(409);
-  });
-});
-
-describe('SetFacade.move', () => {
-  function threeSets(): ReturnType<typeof setup> & { workoutId: number; ids: number[] } {
-    const facades = setup();
-    const workoutId = facades.workouts.create({}).id;
-    const ids = [5, 6, 7].map((reps) => facades.sets.create(workoutId, { exerciseId: facades.exerciseId, reps, weight: 60 }).id);
-    return { ...facades, workoutId, ids };
-  }
-
-  test('orders tied positions by id, then swaps', () => {
-    const { db, sets, workoutId, ids } = threeSets();
-    db.query('UPDATE sets SET position = 0 WHERE workout_id = ?').run(workoutId);
-
-    const edge = sets.move(at(ids, 0), { direction: 'up' });
-    expect(edge.map((set) => set.id)).toEqual(ids);
-    expect(edge.map((set) => set.position)).toEqual([1, 2, 3]);
-
-    expect(sets.move(at(ids, 0), { direction: 'down' }).map((set) => set.id)).toEqual([at(ids, 1), at(ids, 0), at(ids, 2)]);
-  });
-
-  test('renumbers positions with gaps to 1..n', () => {
-    const { db, sets, ids } = threeSets();
-    const renumber = db.query('UPDATE sets SET position = ? WHERE id = ?');
-    for (const [index, position] of [5, 9, 40].entries()) {
-      renumber.run(position, at(ids, index));
-    }
-
-    const moved = sets.move(at(ids, 2), { direction: 'up' });
-    expect(moved.map((set) => set.id)).toEqual([at(ids, 0), at(ids, 2), at(ids, 1)]);
-    expect(moved.map((set) => set.position)).toEqual([1, 2, 3]);
-  });
-
-  test('an unknown set is a 404 and a bad direction a 400', () => {
-    const { sets, ids } = threeSets();
-    expect(thrown(() => sets.move(999999, { direction: 'up' })).status).toBe(404);
-    // @ts-expect-error -- a client may send any string; the facade must reject it
-    expect(thrown(() => sets.move(at(ids, 0), { direction: 'sideways' })).status).toBe(400);
   });
 });
