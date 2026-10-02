@@ -40,8 +40,8 @@ export class GzSetRowComponent extends GzElement {
     if (action === 'edit') {
       this.#editing = true;
       this.render();
-      const weight = this.$<HTMLInputElement>("[name='weight']");
-      weight?.focus();
+      const reps = this.$<HTMLInputElement>("[name='reps']");
+      reps?.focus();
       return;
     }
 
@@ -116,12 +116,12 @@ export class GzSetRowComponent extends GzElement {
           </select>
         </div>
         <div class="field field-num">
-          <label>Weight (${UNIT})</label>
-          <input name="weight" type="number" step="any" min="0" value="${set.weight}" required />
-        </div>
-        <div class="field field-num">
           <label>Reps</label>
           <input name="reps" type="number" step="1" min="1" value="${set.reps}" required />
+        </div>
+        <div class="field field-num">
+          <label>Weight (${UNIT})</label>
+          <input name="weight" type="number" step="any" min="0" value="${set.weight}" required />
         </div>
         <div class="field field-notes">
           <label>Notes</label>

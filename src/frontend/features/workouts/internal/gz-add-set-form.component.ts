@@ -41,8 +41,8 @@ export class GzAddSetFormComponent extends GzElement {
     }
   }
 
-  focusWeight(): void {
-    this.$<HTMLInputElement>("input[name='weight']")?.focus();
+  focusReps(): void {
+    this.$<HTMLInputElement>("input[name='reps']")?.focus();
   }
 
   override async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
@@ -127,12 +127,12 @@ export class GzAddSetFormComponent extends GzElement {
                 <input id="newExercise" name="newExercise" type="text" maxlength="120" placeholder="Incline Press" />
               </div>
               <div class="field field-num">
-                <label for="weight">Weight (${UNIT})</label>
-                <input id="weight" name="weight" type="number" step="any" min="0" value="${last?.weight ?? ''}" required />
-              </div>
-              <div class="field field-num">
                 <label for="reps">Reps</label>
                 <input id="reps" name="reps" type="number" step="1" min="1" value="${last?.reps ?? ''}" required />
+              </div>
+              <div class="field field-num">
+                <label for="weight">Weight (${UNIT})</label>
+                <input id="weight" name="weight" type="number" step="any" min="0" value="${last?.weight ?? ''}" required />
               </div>
               <div class="field field-notes">
                 <label for="set-notes">Notes</label>

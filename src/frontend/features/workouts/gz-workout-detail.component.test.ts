@@ -105,17 +105,17 @@ test('reveals the name field when a new exercise is chosen', async () => {
   expect(newExercise?.hasAttribute('hidden')).toBe(false);
 });
 
-test('logs a set, reloads and puts focus back in the weight field', async () => {
+test('logs a set, reloads and puts focus back in the reps field', async () => {
   const view = await mountView();
   const loads = fake.requests.length;
-  field(addSetForm(view), 'weight').value = '102.5';
   field(addSetForm(view), 'reps').value = '3';
+  field(addSetForm(view), 'weight').value = '102.5';
   submit(addSetForm(view));
   await settle();
   expect(fake.sent('POST /api/workouts/3/sets')).toEqual([{ exerciseId: 2, weight: 102.5, reps: 3, notes: '' }]);
   expect(fake.requests.slice(loads).filter((request) => request.method === 'GET' && request.url === '/api/workouts/3')).toHaveLength(1);
-  const weight = field(addSetForm(view), 'weight');
-  expect(focused(weight)).toBe(true);
+  const reps = field(addSetForm(view), 'reps');
+  expect(focused(reps)).toBe(true);
 });
 
 test('creates a new exercise first and logs the set against it', async () => {
