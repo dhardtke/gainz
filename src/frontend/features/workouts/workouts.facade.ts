@@ -1,6 +1,6 @@
 import type { CreateSetDto, EditSetDto, LiftSetDto } from '../../../shared/dto/set.ts';
-import type { CreateWorkoutDto, EditWorkoutDto, WorkoutDto, WorkoutPageDto, WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
-import type { LiftSetId, WorkoutId } from '../../../shared/flavors.ts';
+import type { CreateWorkoutDto, EditWorkoutDto, MoveDirection, WorkoutDto, WorkoutPageDto, WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
+import type { ExerciseId, LiftSetId, WorkoutId } from '../../../shared/flavors.ts';
 import { SetApi } from './internal/set.api.ts';
 import { WorkoutApi } from './internal/workout.api.ts';
 
@@ -30,6 +30,11 @@ export class WorkoutFacade {
 
   delete(id: WorkoutId): Promise<null> {
     return this.#api.delete(id);
+  }
+
+  /** Swaps the exercise with its neighbor; answers with the workout in its new order. */
+  moveExercise(id: WorkoutId, exerciseId: ExerciseId, direction: MoveDirection): Promise<WorkoutWithExercisesDto> {
+    return this.#api.moveExercise(id, exerciseId, { direction });
   }
 }
 

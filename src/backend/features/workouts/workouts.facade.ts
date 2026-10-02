@@ -1,8 +1,8 @@
 import type { CreateSetDto, EditSetDto } from '../../../shared/dto/set.ts';
-import type { CreateWorkoutDto, EditWorkoutDto } from '../../../shared/dto/workout.ts';
-import type { LiftSetId, WorkoutId } from '../../../shared/flavors.ts';
+import type { CreateWorkoutDto, EditWorkoutDto, MoveWorkoutExerciseDto } from '../../../shared/dto/workout.ts';
+import type { ExerciseId, LiftSetId, WorkoutId } from '../../../shared/flavors.ts';
 import type { DB } from '../../db/db.ts';
-import { optionalString, requiredBoolean, requiredDate, requiredInt, requiredNumber } from '../../shared/validate.ts';
+import { optionalString, requiredBoolean, requiredDate, requiredInt, requiredNumber, requiredOneOf } from '../../shared/validate.ts';
 import { SetRepository } from './internal/set.repository.ts';
 import { translateDtoToCreateSet, translateDtoToEditSet } from './internal/set.translator.ts';
 import { WorkoutRepository } from './internal/workout.repository.ts';
@@ -44,6 +44,13 @@ export class WorkoutFacade {
   /** The workout's exercises, in its order. */
   exercises(id: WorkoutId): WorkoutExercise[] {
     return this.#exercises.list(id);
+  }
+
+  /** Validates first, so a bad direction on an unknown workout is a 400, as elsewhere. */
+  moveExercise(id: WorkoutId, exerciseId: ExerciseId, dto: MoveWorkoutExerciseDto): void {
+    const direction = requiredOneOf(dto, 'direction', ['up', 'down'] as const);
+    this.#workouts.require(id);
+    this.#exercises.move(id, exerciseId, direction);
   }
 
   create(dto: CreateWorkoutDto): Workout {

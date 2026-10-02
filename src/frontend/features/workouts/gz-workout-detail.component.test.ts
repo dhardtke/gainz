@@ -335,3 +335,61 @@ test("keeps a click among the header's actions from toggling the group, but lets
   expect(clickPrevented(find(groupOf(view, 1), 'summary .actions'))).toBe(true);
   expect(clickPrevented(find(groupOf(view, 1), 'summary a.button'))).toBe(false);
 });
+
+function arrow(view: HTMLElement, exerciseId: number, direction: 'up' | 'down'): HTMLButtonElement {
+  return find<HTMLButtonElement>(groupOf(view, exerciseId), `[data-action='move-exercise-${direction}']`);
+}
+
+function workoutLoads(): number {
+  return fake.requests.filter((request) => request.method === 'GET' && request.url === '/api/workouts/3').length;
+}
+
+test('disables ▲ on the first exercise and ▼ on the last', async () => {
+  const view = await mountView();
+  expect([1, 2].map((id) => [arrow(view, id, 'up').disabled, arrow(view, id, 'down').disabled])).toEqual([
+    [true, false],
+    [false, true],
+  ]);
+});
+
+test('moves an exercise up, reloads in the new order, keeps the open one open and focus on the moved arrow', async () => {
+  const view = await mountView();
+  const loads = workoutLoads();
+  fake.respondTo(
+    'GET /api/workouts/3',
+    200,
+    JSON.stringify({
+      ...WORKOUT,
+      exercises: [
+        { ...SQUAT, position: 1 },
+        { ...BENCH, position: 2 },
+      ],
+    }),
+  );
+  arrow(view, 2, 'up').click();
+  await settle();
+  expect(fake.sent('POST /api/workouts/3/exercises/2/move')).toEqual([{ direction: 'up' }]);
+  expect(workoutLoads()).toBe(loads + 1);
+  expect(groups(view).map((item) => item.dataset.exerciseId)).toEqual(['2', '1']);
+  expect(openGroups(view)).toEqual(['1']);
+  // Now first, so ▲ is disabled and focus lands on ▼.
+  expect(arrow(view, 2, 'up').disabled).toBe(true);
+  expect(shadow(view).activeElement).toBe(arrow(view, 2, 'down'));
+});
+
+test('keeps a click on an arrow from toggling its group', async () => {
+  const view = await mountView();
+  expect(clickPrevented(arrow(view, 2, 'up'))).toBe(true);
+  await settle();
+  expect(groupOf(view, 2).open).toBe(false);
+});
+
+test('toasts a failed move and does not reload', async () => {
+  const view = await mountView();
+  const loads = workoutLoads();
+  fake.respondTo('POST /api/workouts/3/exercises/2/move', 404, JSON.stringify({ error: 'Exercise in this workout not found' }));
+  arrow(view, 2, 'up').click();
+  await settle();
+  expect(toasts).toEqual(['Exercise in this workout not found']);
+  expect(workoutLoads()).toBe(loads);
+});

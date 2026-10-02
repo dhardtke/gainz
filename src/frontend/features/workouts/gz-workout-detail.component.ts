@@ -4,7 +4,7 @@ import { html } from '../../ui/html.ts';
 import { formatDate, formatVolume, plural, relativeDay } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
 import type { ExerciseDto } from '../../../shared/dto/exercise.ts';
-import type { WorkoutExerciseDto, WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
+import type { MoveDirection, WorkoutExerciseDto, WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
 import type { ExerciseId } from '../../../shared/flavors.ts';
 import type { GzAddSetFormComponent } from './internal/gz-add-set-form.component.ts';
 import type { GzSetRowComponent } from './internal/gz-set-row.component.ts';
@@ -70,7 +70,21 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     return { workout, exercises };
   }
 
-  override async handleAction(action: string): Promise<void> {
+  override async handleAction(action: string, element: HTMLElement): Promise<void> {
+    if (action === 'move-exercise-up' || action === 'move-exercise-down') {
+      const exerciseId = Number(element.dataset.exerciseId);
+      const direction = action === 'move-exercise-up' ? 'up' : 'down';
+      try {
+        await workoutFacade.moveExercise(this.numericAttribute('workout-id'), exerciseId, direction);
+      } catch (error) {
+        toastError(error);
+        return;
+      }
+      await this.reload();
+      this.#focusMove(exerciseId, direction);
+      return;
+    }
+
     if (action !== 'delete-workout' || !confirm('Delete this workout and all of its sets? This cannot be undone.')) {
       return;
     }
@@ -82,6 +96,18 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
       toastError(error);
     }
   }
+
+  /**
+   * A move re-renders every group, so focus goes back to the moved exercise's arrow for the next
+   * press, or to the other one once the exercise has reached that edge.
+   */
+  #focusMove(exerciseId: ExerciseId, direction: MoveDirection): void {
+    const arrow = (to: MoveDirection): HTMLButtonElement | null =>
+      this.$<HTMLButtonElement>(`[data-action='move-exercise-${to}'][data-exercise-id='${exerciseId}']`);
+    const moved = arrow(direction);
+    (moved?.disabled === false ? moved : arrow(direction === 'up' ? 'down' : 'up'))?.focus();
+  }
+
   override async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
     if (action !== 'save-workout') {
       return;
@@ -220,14 +246,21 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     return `${plural(count, 'set')} · ${progress} · ${formatVolume(volume)}`;
   }
 
-  #groupTemplate(group: WorkoutExerciseDto, open: ExerciseId | null): RawHtml {
+  #groupTemplate(group: WorkoutExerciseDto, open: ExerciseId | null, first: boolean, last: boolean): RawHtml {
+    const { exerciseId: id, exerciseName: name } = group;
     return html`
-      <details name="exercises" data-exercise-id="${group.exerciseId}" ${group.exerciseId === open ? 'open' : ''}>
+      <details name="exercises" data-exercise-id="${id}" ${id === open ? 'open' : ''}>
         <summary>
-          <span class="exercise-name">${group.exerciseName}</span>
+          <span class="exercise-name">${name}</span>
           <span class="badge outline">${this.#groupSummary(group)}</span>
           <span class="actions">
-            <a class="button outline" href="/exercises/${group.exerciseId}">Exercise</a>
+            <fieldset class="group move">
+              <button class="outline" data-action="move-exercise-up" data-exercise-id="${id}" aria-label="Move ${name} up" ${first ? 'disabled' : ''}>▲</button>
+              <button class="outline" data-action="move-exercise-down" data-exercise-id="${id}" aria-label="Move ${name} down" ${last ? 'disabled' : ''}>
+                ▼
+              </button>
+            </fieldset>
+            <a class="button outline" href="/exercises/${id}">Exercise</a>
           </span>
         </summary>
         <div class="sets">${group.sets.map((set, index) => html`<gz-set-row data-id="${set.id}" data-index="${index + 1}"></gz-set-row>`)}</div>
@@ -260,7 +293,9 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
           ${
             sets.length === 0
               ? html`<p class="empty">No sets logged for this session yet.</p>`
-              : html`<div class="exercises">${workout.exercises.map((group) => this.#groupTemplate(group, open))}</div>`
+              : html`<div class="exercises">
+                  ${workout.exercises.map((group, index, all) => this.#groupTemplate(group, open, index === 0, index === all.length - 1))}
+                </div>`
           }
         </section>
 

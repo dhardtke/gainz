@@ -35,6 +35,13 @@ export interface WorkoutWithExercisesDto extends WorkoutDto {
   done: boolean;
 }
 
+export type MoveDirection = 'up' | 'down';
+
+export interface MoveWorkoutExerciseDto {
+  /** Toward the start (`up`) or the end (`down`) of the workout. */
+  direction: MoveDirection;
+}
+
 /** One page of the training log. */
 export interface WorkoutPageDto {
   items: WorkoutWithStatsDto[];

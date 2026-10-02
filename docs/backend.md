@@ -175,6 +175,16 @@ order each exercise first appears (`position, id`). `GET /api/workouts/:id`, lik
 `exercises` in that order, each `{ exerciseId, exerciseName, position, sets }` with its sets in
 logged order. `GET /api/workouts/:id/sets` still answers the flat list.
 
+`POST /api/workouts/:id/exercises/:exerciseId/move` with `{ "direction": "up" | "down" }` swaps an
+exercise with its neighbor. `WorkoutExerciseRepository.move` does it in one transaction: it renumbers
+the workout's exercises 1..n in their current `position, exercise_id` order with the two swapped, so
+ties and gaps vanish on first touch, and a move at an edge is a 200 with the order unchanged. It
+answers the whole `WorkoutWithExercisesDto`, since that is what the page reloads anyway. The
+direction is validated first, so a missing or unknown one is a 400 even on an unknown workout; then
+an unknown workout is a 404, as is an exercise the workout has no row for, and a non-numeric id in
+the path is a 400. Order is not part of the done lock below: an exercise whose sets are all done
+still moves, because the order a session is listed in is not performed history.
+
 A set also carries `done`, an integer held to 0 or 1 that the API turns into a boolean: a set not
 done is a plan — what "Repeat" copies into a new session — and a done set is history. New sets,
 including copied ones, start at 0, and `PATCH /api/sets/:id` with `{ "done": true | false }`

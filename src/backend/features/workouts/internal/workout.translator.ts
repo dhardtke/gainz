@@ -1,6 +1,8 @@
 import type {
   CreateWorkoutDto,
   EditWorkoutDto,
+  MoveDirection,
+  MoveWorkoutExerciseDto,
   WorkoutDto,
   WorkoutExerciseDto,
   WorkoutPageDto,
@@ -29,6 +31,12 @@ export function translateToEditWorkoutDto(body: Record<string, unknown>): EditWo
     performedOn: body.performedOn as Iso8601Date | undefined,
     title: body.title as string | null | undefined,
     notes: body.notes as string | null | undefined,
+  };
+}
+
+export function translateToMoveWorkoutExerciseDto(body: Record<string, unknown>): MoveWorkoutExerciseDto {
+  return {
+    direction: body.direction as MoveDirection,
   };
 }
 
