@@ -23,8 +23,6 @@ export interface CreateSetDto {
   reps: number;
   weight: number;
   notes?: string | null;
-  /** Appended to the workout when left out. */
-  position?: number;
 }
 
 export interface EditSetDto {
@@ -32,6 +30,12 @@ export interface EditSetDto {
   reps?: number;
   weight?: number;
   notes?: string | null;
-  position?: number;
   done?: boolean;
+}
+
+export type SetDirection = 'up' | 'down';
+
+export interface MoveSetDto {
+  /** Toward the start (`up`) or the end (`down`) of the workout. */
+  direction: SetDirection;
 }

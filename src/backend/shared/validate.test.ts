@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { optionalString, requiredDate, requiredInt, requiredNumber, requiredString } from './validate.ts';
+import { optionalString, requiredDate, requiredInt, requiredNumber, requiredOneOf, requiredString } from './validate.ts';
 
 describe('requiredString', () => {
   test('trims the value', () => {
@@ -59,5 +59,20 @@ describe('requiredDate', () => {
   test('accepts an ISO date and rejects any other format', () => {
     expect(requiredDate({ performedOn: '2026-09-12' }, 'performedOn')).toBe('2026-09-12');
     expect(() => requiredDate({ performedOn: '12.09.2026' }, 'performedOn')).toThrow('"performedOn" must be a date in YYYY-MM-DD format');
+  });
+});
+
+describe('requiredOneOf', () => {
+  const directions = ['up', 'down'] as const;
+
+  test('returns a listed value', () => {
+    expect(requiredOneOf({ direction: 'down' }, 'direction', directions)).toBe('down');
+  });
+
+  test('rejects an unlisted string, another case, a number and a missing field', () => {
+    const dtos: { direction?: unknown }[] = [{ direction: 'sideways' }, { direction: 'UP' }, { direction: 1 }, {}];
+    for (const dto of dtos) {
+      expect(() => requiredOneOf(dto, 'direction', directions)).toThrow('"direction" must be one of: up, down');
+    }
   });
 });

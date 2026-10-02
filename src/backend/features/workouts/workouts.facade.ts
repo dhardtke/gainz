@@ -1,8 +1,8 @@
-import type { CreateSetDto, EditSetDto } from '../../../shared/dto/set.ts';
+import type { CreateSetDto, EditSetDto, MoveSetDto } from '../../../shared/dto/set.ts';
 import type { CreateWorkoutDto, EditWorkoutDto } from '../../../shared/dto/workout.ts';
 import type { LiftSetId, WorkoutId } from '../../../shared/flavors.ts';
 import type { DB } from '../../db/db.ts';
-import { optionalString, requiredBoolean, requiredDate, requiredInt, requiredNumber } from '../../shared/validate.ts';
+import { optionalString, requiredBoolean, requiredDate, requiredInt, requiredNumber, requiredOneOf } from '../../shared/validate.ts';
 import { SetRepository } from './internal/set.repository.ts';
 import { translateDtoToCreateSet, translateDtoToEditSet } from './internal/set.translator.ts';
 import { WorkoutRepository } from './internal/workout.repository.ts';
@@ -101,6 +101,11 @@ export class SetFacade {
     return this.#sets.update(id, translateDtoToEditSet(this.#validateEdit(dto)));
   }
 
+  /** Validates first, so a bad direction on an unknown set is a 400, as elsewhere. */
+  move(id: LiftSetId, dto: MoveSetDto): LiftSet[] {
+    return this.#sets.move(id, requiredOneOf(dto, 'direction', ['up', 'down'] as const));
+  }
+
   delete(id: LiftSetId): void {
     this.#sets.delete(id);
   }
@@ -111,7 +116,6 @@ export class SetFacade {
       reps: requiredInt(dto, 'reps', { min: 1, max: 1000 }),
       weight: requiredNumber(dto, 'weight', { min: 0, max: 100000 }),
       notes: optionalString(dto, 'notes', MAX_WORKOUT_NOTES_LENGTH),
-      ...(dto.position !== undefined ? { position: requiredInt(dto, 'position', { min: 0 }) } : {}),
     };
   }
 
@@ -128,9 +132,6 @@ export class SetFacade {
     }
     if (dto.notes !== undefined) {
       valid.notes = optionalString(dto, 'notes', MAX_WORKOUT_NOTES_LENGTH);
-    }
-    if (dto.position !== undefined) {
-      valid.position = requiredInt(dto, 'position', { min: 0 });
     }
     if (dto.done !== undefined) {
       valid.done = requiredBoolean(dto, 'done');

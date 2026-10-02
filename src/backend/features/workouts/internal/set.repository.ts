@@ -11,12 +11,13 @@ export interface CreateSet {
   reps: number;
   weight: number;
   notes: string | null;
-  position?: number;
 }
 
 export type EditSet = Partial<CreateSet> & { done?: 0 | 1 };
 
-const FIELDS = ['exercise_id', 'reps', 'weight', 'notes', 'position', 'done'] as const;
+export type MoveDirection = 'up' | 'down';
+
+const FIELDS = ['exercise_id', 'reps', 'weight', 'notes', 'done'] as const;
 
 export class SetRepository {
   readonly #db: DB;
@@ -66,9 +67,7 @@ export class SetRepository {
     this.#workouts.require(workoutId);
 
     const position =
-      input.position ??
-      this.#db.query<{ next: number }, [WorkoutId]>('SELECT COALESCE(MAX(position), 0) + 1 AS next FROM sets WHERE workout_id = ?').get(workoutId)?.next ??
-      1;
+      this.#db.query<{ next: number }, [WorkoutId]>('SELECT COALESCE(MAX(position), 0) + 1 AS next FROM sets WHERE workout_id = ?').get(workoutId)?.next ?? 1;
 
     try {
       const inserted = this.#db
@@ -113,6 +112,32 @@ export class SetRepository {
       }
     }
     return this.require(id);
+  }
+
+  /**
+   * Swaps a set with its neighbor and returns the workout's sets in their new order. Every move
+   * renumbers the whole workout 1..n, so ties and gaps left by "Repeat" vanish on first touch, and a
+   * move at an edge only renumbers. The done lock does not apply: order is not performed history.
+   */
+  move(id: LiftSetId, direction: MoveDirection): LiftSet[] {
+    return this.#db.transaction(() => {
+      const { workout_id: workoutId } = this.require(id);
+      const ids = this.#db
+        .query<{ id: LiftSetId }, [WorkoutId]>('SELECT id FROM sets WHERE workout_id = ? ORDER BY position ASC, id ASC')
+        .all(workoutId)
+        .map((row) => row.id);
+      const from = ids.indexOf(id);
+      const to = direction === 'up' ? from - 1 : from + 1;
+      if (to >= 0 && to < ids.length) {
+        ids.splice(from, 1);
+        ids.splice(to, 0, id);
+      }
+      const renumber = this.#db.query<unknown, [number, LiftSetId]>('UPDATE sets SET position = ? WHERE id = ?');
+      for (const [index, setId] of ids.entries()) {
+        renumber.run(index + 1, setId);
+      }
+      return this.list(workoutId);
+    })();
   }
 
   delete(id: LiftSetId): void {

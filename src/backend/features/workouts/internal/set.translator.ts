@@ -1,4 +1,4 @@
-import type { CreateSetDto, EditSetDto, LiftSetDto } from '../../../../shared/dto/set.ts';
+import type { CreateSetDto, EditSetDto, LiftSetDto, MoveSetDto, SetDirection } from '../../../../shared/dto/set.ts';
 import type { ExerciseId } from '../../../../shared/flavors.ts';
 import type { LiftSet } from '../ports/set.ts';
 import type { CreateSet, EditSet } from './set.repository.ts';
@@ -9,7 +9,6 @@ export function translateToCreateSetDto(body: Record<string, unknown>): CreateSe
     reps: body.reps as number,
     weight: body.weight as number,
     notes: body.notes as string | null | undefined,
-    position: body.position as number | undefined,
   };
 }
 
@@ -19,8 +18,13 @@ export function translateToEditSetDto(body: Record<string, unknown>): EditSetDto
     reps: body.reps as number | undefined,
     weight: body.weight as number | undefined,
     notes: body.notes as string | null | undefined,
-    position: body.position as number | undefined,
     done: body.done as boolean | undefined,
+  };
+}
+
+export function translateToMoveSetDto(body: Record<string, unknown>): MoveSetDto {
+  return {
+    direction: body.direction as SetDirection,
   };
 }
 
@@ -30,7 +34,6 @@ export function translateDtoToCreateSet(dto: CreateSetDto): CreateSet {
     reps: dto.reps,
     weight: dto.weight,
     notes: dto.notes ?? null,
-    ...(dto.position === undefined ? {} : { position: dto.position }),
   };
 }
 
@@ -47,9 +50,6 @@ export function translateDtoToEditSet(dto: EditSetDto): EditSet {
   }
   if (dto.notes !== undefined) {
     patch.notes = dto.notes;
-  }
-  if (dto.position !== undefined) {
-    patch.position = dto.position;
   }
   if (dto.done !== undefined) {
     patch.done = dto.done ? 1 : 0;
