@@ -5,19 +5,14 @@ import { UNIT } from '../../../ui/format.ts';
 import type { ExerciseDto } from '../../../../shared/dto/exercise.ts';
 import type { LiftSetDto } from '../../../../shared/dto/set.ts';
 import type { ExerciseId, WorkoutId } from '../../../../shared/flavors.ts';
-import { toast, toastError } from '../../../ui/toast.ts';
-import { exerciseFacade } from '../../exercises/exercises.facade.ts';
+import { toastError } from '../../../ui/toast.ts';
 import { setFacade } from '../workouts.facade.ts';
-
-/** The select's value for "create an exercise named in the field beside me". */
-const NEW_EXERCISE = '__new__';
 
 /**
  * The "Add a set" form of a workout. It starts from the workout's last set — its exercise,
- * weight and reps — creates a new exercise when asked, logs the set, and tells its parent with
- * a `set-logged` event, which reloads and so hands it the sets again. The event's detail is
- * `{ exerciseId }`, the exercise the set was logged against (the created one for a new exercise),
- * so the parent can open it.
+ * weight and reps — logs the set, and tells its parent with a `set-logged` event, which reloads
+ * and so hands it the sets again. The event's detail is `{ exerciseId }`, the exercise the set was
+ * logged against, so the parent can open it. Exercises are created on the exercises page only.
  */
 export class GzAddSetFormComponent extends GzElement {
   #workoutId: WorkoutId | null = null;
@@ -54,24 +49,14 @@ export class GzAddSetFormComponent extends GzElement {
     }
     const values = this.formData(form);
     try {
-      let exerciseId: string | number = values.exerciseId ?? '';
-
-      if (exerciseId === NEW_EXERCISE) {
-        if (!values.newExercise) {
-          toast('Give the new exercise a name', 'error');
-          return;
-        }
-        const created = await exerciseFacade.create({ name: values.newExercise });
-        exerciseId = created.id;
-      }
-
+      const exerciseId = Number(values.exerciseId);
       await setFacade.create(workoutId, {
-        exerciseId: Number(exerciseId),
+        exerciseId,
         reps: Number(values.reps),
         weight: Number(values.weight),
         notes: values.notes,
       });
-      this.emit('set-logged', { exerciseId: Number(exerciseId) });
+      this.emit('set-logged', { exerciseId });
     } catch (error) {
       toastError(error);
     }
@@ -80,7 +65,6 @@ export class GzAddSetFormComponent extends GzElement {
   override afterRender(): void {
     const select = this.$<HTMLSelectElement>("select[name='exerciseId']");
     select?.addEventListener('change', () => {
-      this.$('.field-new-exercise')?.toggleAttribute('hidden', select.value !== NEW_EXERCISE);
       this.#prefillFrom(Number(select.value));
     });
   }
@@ -105,9 +89,16 @@ export class GzAddSetFormComponent extends GzElement {
     if (!this.#sets) {
       return html``;
     }
+    if (this.#exercises.length === 0) {
+      return html`
+        <section class="vstack gap-2">
+          <h2>Add a set</h2>
+          <p class="empty">No exercises yet. <a href="/exercises">Add the lifts you train</a> to log sets against them.</p>
+        </section>
+      `;
+    }
     const last = this.#sets.at(-1);
-    // With no exercise defined yet, the inline "new exercise" field covers a cold start.
-    const selected = last?.exerciseId ?? this.#exercises[0]?.id ?? NEW_EXERCISE;
+    const selected = last?.exerciseId ?? this.#exercises[0]?.id;
 
     return html`
       <section class="vstack gap-2">
@@ -121,12 +112,7 @@ export class GzAddSetFormComponent extends GzElement {
                   ${this.#exercises.map(
                     (exercise) => html` <option value="${exercise.id}" ${exercise.id === selected ? 'selected' : ''}>${exercise.name}</option> `,
                   )}
-                  <option value="${NEW_EXERCISE}" ${selected === NEW_EXERCISE ? 'selected' : ''}>＋ New exercise…</option>
                 </select>
-              </div>
-              <div class="field field-exercise field-new-exercise" ${selected === NEW_EXERCISE ? '' : 'hidden'}>
-                <label for="newExercise">New exercise name</label>
-                <input id="newExercise" name="newExercise" type="text" maxlength="120" placeholder="Incline Press" />
               </div>
               <div class="field field-num">
                 <label for="reps">Reps</label>

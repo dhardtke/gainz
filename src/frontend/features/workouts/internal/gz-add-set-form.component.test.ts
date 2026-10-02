@@ -39,10 +39,6 @@ function exerciseSelect(form: HTMLElement): HTMLSelectElement {
   return find<HTMLSelectElement>(shadow(form), 'select');
 }
 
-function newExerciseShown(form: HTMLElement): boolean {
-  return form.shadowRoot?.querySelector('.field-new-exercise')?.hasAttribute('hidden') === false;
-}
-
 test('renders nothing until it has the sets', () => {
   const form = mount('gz-add-set-form');
   expect(form.shadowRoot?.querySelector('form')).toBeNull();
@@ -53,7 +49,12 @@ test('starts from the last set: its exercise, weight and reps', () => {
   expect(exerciseSelect(form).value).toBe('2');
   expect(field(form, 'weight').value).toBe('100');
   expect(field(form, 'reps').value).toBe('6');
-  expect(newExerciseShown(form)).toBe(false);
+});
+
+test('offers only existing exercises', () => {
+  const form = mountForm(EXERCISES, SETS);
+  expect(Array.from(exerciseSelect(form).options).map((option) => option.value)).toEqual(['1', '2']);
+  expect(form.shadowRoot?.querySelector("input[name='newExercise']")).toBeNull();
 });
 
 test('without sets, preselects the first exercise with empty numbers', () => {
@@ -63,10 +64,10 @@ test('without sets, preselects the first exercise with empty numbers', () => {
   expect(field(form, 'reps').value).toBe('');
 });
 
-test('without exercises, offers a new one straight away', () => {
+test('without exercises, links to the exercises page instead of a form', () => {
   const form = mountForm([], []);
-  expect(exerciseSelect(form).value).toBe('__new__');
-  expect(newExerciseShown(form)).toBe(true);
+  expect(form.shadowRoot?.querySelector('form')).toBeNull();
+  expect(form.shadowRoot?.querySelector("a[href='/exercises']")).not.toBeNull();
 });
 
 test('prefills from the last set of the exercise chosen', () => {
@@ -86,17 +87,6 @@ test('logs the set and emits set-logged', async () => {
   expect(posted.map((request) => request.url)).toEqual(['/api/workouts/3/sets']);
   expect(posted[0]?.body).toEqual({ exerciseId: 2, weight: 100, reps: 6, notes: 'Paused' });
   expect(logged).toEqual([{ exerciseId: 2 }]);
-});
-
-test('names the created exercise in set-logged when logging against a new one', async () => {
-  const logged = collect('set-logged');
-  fake.respondTo('POST /api/exercises', 201, JSON.stringify(exercise({ id: 9, name: 'Incline Press' })));
-  const form = mountForm(EXERCISES, SETS);
-  choose(exerciseSelect(form), '__new__');
-  field(form, 'newExercise').value = 'Incline Press';
-  submit(find(shadow(form), 'form'));
-  await settle();
-  expect(logged).toEqual([{ exerciseId: 9 }]);
 });
 
 test('toasts a failed post and emits nothing', async () => {
