@@ -85,6 +85,10 @@ article.open-card {
     }
   }
 
+  &:hover {
+    background-color: var(--muted);
+  }
+
   &:hover .open {
     color: var(--primary);
   }
