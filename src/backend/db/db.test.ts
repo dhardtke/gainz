@@ -15,7 +15,7 @@ describe('the real migrations', () => {
     for (const table of ['exercises', 'workouts', 'sets', 'schema_migrations']) {
       expect(tables(real)).toContain(table);
     }
-    expect(schemaVersion(real)).toBe(1);
+    expect(schemaVersion(real)).toBe(2);
 
     real.close();
   });

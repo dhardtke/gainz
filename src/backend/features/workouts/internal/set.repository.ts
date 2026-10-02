@@ -1,5 +1,5 @@
 import type { DB } from '../../../db/db.ts';
-import { badRequest, notFound } from '../../../http/errors.ts';
+import { badRequest, conflict, notFound } from '../../../http/errors.ts';
 import { buildUpdate, isForeignKeyViolation } from '../../../db/sql.ts';
 import type { WorkoutRepository } from './workout.repository.ts';
 import type { ExerciseId, LiftSetId, WorkoutId } from '../../../../shared/flavors.ts';
@@ -14,9 +14,9 @@ export interface CreateSet {
   position?: number;
 }
 
-export type EditSet = Partial<CreateSet>;
+export type EditSet = Partial<CreateSet> & { done?: 0 | 1 };
 
-const FIELDS = ['exercise_id', 'reps', 'weight', 'notes', 'position'] as const;
+const FIELDS = ['exercise_id', 'reps', 'weight', 'notes', 'position', 'done'] as const;
 
 export class SetRepository {
   readonly #db: DB;
@@ -90,8 +90,16 @@ export class SetRepository {
     }
   }
 
+  /**
+   * A done set is frozen: the only change it takes is `done` itself, so unlocking it and editing it
+   * are two requests. The stored state decides, which a stale tab cannot get around. A set not done
+   * may be edited and marked done in one go.
+   */
   update(id: LiftSetId, patch: EditSet): LiftSet {
-    this.require(id);
+    const current = this.require(id);
+    if (current.done === 1 && Object.keys(patch).some((field) => field !== 'done')) {
+      throw conflict('Set is done; mark it as not done before changing it');
+    }
 
     const update = buildUpdate('sets', FIELDS, patch);
     if (update) {
@@ -108,7 +116,9 @@ export class SetRepository {
   }
 
   delete(id: LiftSetId): void {
-    this.require(id);
+    if (this.require(id).done === 1) {
+      throw conflict('Set is done; mark it as not done before deleting it');
+    }
     this.#db.query('DELETE FROM sets WHERE id = ?').run(id);
   }
 }

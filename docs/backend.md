@@ -157,6 +157,34 @@ within a session. Its two foreign keys are deliberately asymmetric. `workout_id`
 `ON DELETE RESTRICT`, so deleting an exercise is refused while any set still points at it. History
 can be thrown away deliberately, but it cannot silently lose its meaning.
 
+A set also carries `done`, an integer held to 0 or 1 that the API turns into a boolean: a set not
+done is a plan — what "Repeat" copies into a new session — and a done set is history. New sets,
+including copied ones, start at 0, and `PATCH /api/sets/:id` with `{ "done": true | false }`
+toggles it; nothing but a JSON boolean is accepted. `002-set-done.sql` added the column and marked
+every set that existed before it as done, since each of those was really performed.
+
+A done set is locked. `SetRepository` decides by the stored state, not by the request, so a stale
+tab or a hand-written request cannot get around it: a PATCH to a done set may hold `done` and
+nothing else — any other field, `position` included and even alongside `"done": false`, is a 409 —
+and a DELETE of a done set is a 409. Unchecking and editing are therefore two requests, while a set
+not done may be edited and marked done in one. Validation still runs first, so a malformed body is
+a 400 whatever the set's state, and deleting a workout still cascades to its done sets.
+
+A workout is done when it has at least one set and every one of them is done. That is derived and
+never stored, so it cannot drift from the sets: unchecking any set makes the workout not done
+again. The list computes it from `done_set_count`, a column of its one aggregate, and ships both as
+`done` and `doneSetCount`; `GET /api/workouts/:id` computes `done` from the sets it returns.
+
+Because a set not done is a plan, the history aggregates count done sets only: the exercise list's
+`setCount`, `workoutCount`, `lastPerformedOn` and `bestWeight` (its join carries `s.done = 1` in the
+`ON` clause, so an exercise without done sets still lists, with zero counts), the progress points,
+the best set, and the stats summary's `setCount`, `totalReps`, `totalVolume` and
+`volumeLast30Days`. The rest counts every set or workout: a workout's own totals, on its card and
+its page, describe the whole session, planned sets included; the exercise delete guard refuses
+while any set uses the exercise, done or not; and the summary's `workoutCount`,
+`workoutsLast30Days` and `lastPerformedOn` count workouts, so a freshly repeated session counts on
+its date before anything in it is checked.
+
 The schema lives in `src/backend/db/migrations`, one numbered `.sql` file per change. `openDatabase()`
 applies whatever is pending on every start: each file runs in its own transaction and is recorded in
 `schema_migrations`, so a half-applied migration cannot exist. Foreign keys are switched off for the

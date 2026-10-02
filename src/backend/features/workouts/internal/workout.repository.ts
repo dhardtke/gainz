@@ -28,7 +28,8 @@ export class WorkoutRepository {
                 COUNT(s.id)                         AS set_count,
                 COUNT(DISTINCT s.exercise_id)       AS exercise_count,
                 COALESCE(SUM(s.reps), 0)            AS total_reps,
-                COALESCE(SUM(s.reps * s.weight), 0) AS total_volume
+                COALESCE(SUM(s.reps * s.weight), 0) AS total_volume,
+                COALESCE(SUM(s.done), 0)            AS done_set_count
            FROM workouts w
            LEFT JOIN sets s ON s.workout_id = w.id
           GROUP BY w.id

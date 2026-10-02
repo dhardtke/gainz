@@ -4,7 +4,7 @@ import type { ExercisePageDto, ExercisePositionDto, ExerciseProgressDto } from '
 import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import { at, body, useServer } from '../../testing.ts';
 import { createExercise } from './exercises.fixtures.ts';
-import { createSet, createWorkout } from '../workouts/workouts.fixtures.ts';
+import { createSet, createWorkout, markDone } from '../workouts/workouts.fixtures.ts';
 
 const { api, post, patch } = useServer();
 
@@ -105,8 +105,10 @@ describe('progress', () => {
       ['2026-01-12', 65],
     ] as const) {
       const workout = await createWorkout(post, date);
-      topSets.push(await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight }));
-      await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: weight - 5 });
+      const top = await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight });
+      const backOff = await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: weight - 5 });
+      topSets.push(await markDone(patch, top.id));
+      await markDone(patch, backOff.id);
     }
 
     const progress = await body<ExerciseProgressDto>(await api(`/api/exercises/${exercise.id}/progress`));
@@ -124,9 +126,47 @@ describe('progress', () => {
       weight: 65,
       notes: null,
       position: 1,
+      done: true,
       createdAt: at(topSets, 1).createdAt,
       performedOn: '2026-01-12',
     });
     expect(at(progress.sessions, 1).estOneRepMax).toBeCloseTo(75.83, 1);
+  });
+});
+
+describe('sets not done', () => {
+  test('are left out of the list, the progress and the best set', async () => {
+    const exercise = await createExercise(post);
+    const done = await createWorkout(post, '2026-01-05');
+    const planned = await createWorkout(post, '2026-01-12');
+    await markDone(patch, (await createSet(post, done.id, { exerciseId: exercise.id, reps: 5, weight: 60 })).id);
+    await createSet(post, planned.id, { exerciseId: exercise.id, reps: 5, weight: 100 });
+
+    const page = await body<ExercisePageDto>(await api('/api/exercises'));
+    expect(page.items.find((item) => item.id === exercise.id)).toMatchObject({
+      setCount: 1,
+      workoutCount: 1,
+      lastPerformedOn: '2026-01-05',
+      bestWeight: 60,
+    });
+
+    const progress = await body<ExerciseProgressDto>(await api(`/api/exercises/${exercise.id}/progress`));
+    expect(progress.sessions.map((point) => point.workoutId)).toEqual([done.id]);
+    expect(progress.bestSet).toMatchObject({ weight: 60, done: true });
+  });
+
+  test('still list an exercise only they use, which cannot be deleted', async () => {
+    const exercise = await createExercise(post);
+    const workout = await createWorkout(post);
+    await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
+
+    const page = await body<ExercisePageDto>(await api('/api/exercises'));
+    expect(page.items.find((item) => item.id === exercise.id)).toMatchObject({
+      setCount: 0,
+      workoutCount: 0,
+      lastPerformedOn: null,
+      bestWeight: null,
+    });
+    expect((await api(`/api/exercises/${exercise.id}`, { method: 'DELETE' })).status).toBe(409);
   });
 });

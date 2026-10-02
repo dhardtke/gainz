@@ -109,6 +109,7 @@ export class GzWorkoutListComponent extends GzView<WorkoutListData> {
         <span class="badge outline">
           ${plural(workout.setCount, 'set')} · ${plural(workout.exerciseCount, 'exercise')} · ${formatVolume(workout.totalVolume)}
         </span>
+        ${workout.done ? html`<span class="badge" data-variant="success">✓ Done</span>` : ''}
         <div class="actions">
           <button
             class="outline"

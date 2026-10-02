@@ -13,4 +13,5 @@ export interface WorkoutWithStats extends Workout {
   exercise_count: number;
   total_reps: number;
   total_volume: number;
+  done_set_count: number;
 }

@@ -143,11 +143,23 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     `;
   }
 
+  /** Progress through the session's sets, or nothing for a session without any. */
+  #doneBadge(done: boolean, doneCount: number, setCount: number): RawHtml {
+    if (setCount === 0) {
+      return html``;
+    }
+    if (done) {
+      return html`<span class="badge" data-variant="success">✓ Done</span>`;
+    }
+    return html`<span class="badge outline">${doneCount}/${setCount} done</span>`;
+  }
+
   override readyTemplate({ workout }: WorkoutDetailData): RawHtml {
     const sets = workout.sets;
     const volume = sets.reduce((total, set) => total + set.reps * set.weight, 0);
     const reps = sets.reduce((total, set) => total + set.reps, 0);
     const exercises = new Set(sets.map((set) => set.exerciseId)).size;
+    const doneCount = sets.filter((set) => set.done).length;
 
     return html`
       <div class="vstack">
@@ -158,6 +170,7 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
           <span class="badge outline">${plural(exercises, 'exercise')}</span>
           <span class="badge outline">${plural(reps, 'rep')}</span>
           <span class="badge outline">${formatVolume(volume)} total volume</span>
+          ${this.#doneBadge(workout.done, doneCount, sets.length)}
         </div>
 
         <section class="vstack gap-2">

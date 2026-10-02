@@ -2,7 +2,7 @@
 import { expect } from 'bun:test';
 import type { CreateSetDto, LiftSetDto } from '../../../shared/dto/set.ts';
 import type { WorkoutWithSetsDto } from '../../../shared/dto/workout.ts';
-import type { WorkoutId } from '../../../shared/flavors.ts';
+import type { LiftSetId, WorkoutId } from '../../../shared/flavors.ts';
 import { body, type TestServer } from '../../testing.ts';
 
 export async function createWorkout(post: TestServer['post'], performedOn = '2026-01-05'): Promise<WorkoutWithSetsDto> {
@@ -14,5 +14,12 @@ export async function createWorkout(post: TestServer['post'], performedOn = '202
 export async function createSet(post: TestServer['post'], workoutId: WorkoutId, set: CreateSetDto): Promise<LiftSetDto> {
   const res = await post(`/api/workouts/${workoutId}/sets`, set);
   expect(res.status).toBe(201);
+  return body<LiftSetDto>(res);
+}
+
+/** For a test whose set must count in the history aggregates, which skip sets not done. */
+export async function markDone(patch: TestServer['patch'], setId: LiftSetId): Promise<LiftSetDto> {
+  const res = await patch(`/api/sets/${setId}`, { done: true });
+  expect(res.status).toBe(200);
   return body<LiftSetDto>(res);
 }

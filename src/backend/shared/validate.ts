@@ -63,6 +63,15 @@ export function requiredNumber<T extends object>(dto: T, field: keyof T & string
   return Math.round(num * 100) / 100;
 }
 
+/** Only a JSON boolean: unlike the number validators, no string is coerced. */
+export function requiredBoolean<T extends object>(dto: T, field: keyof T & string): boolean {
+  const value: unknown = dto[field];
+  if (typeof value !== 'boolean') {
+    throw badRequest(`"${field}" must be true or false`);
+  }
+  return value;
+}
+
 export function requiredDate<T extends object>(dto: T, field: keyof T & string): Iso8601Date {
   const value = requiredString(dto, field, 10);
   if (!ISO_DATE.test(value) || Number.isNaN(Date.parse(value))) {

@@ -2,7 +2,7 @@ import type { CreateSetDto, EditSetDto } from '../../../shared/dto/set.ts';
 import type { CreateWorkoutDto, EditWorkoutDto } from '../../../shared/dto/workout.ts';
 import type { LiftSetId, WorkoutId } from '../../../shared/flavors.ts';
 import type { DB } from '../../db/db.ts';
-import { optionalString, requiredDate, requiredInt, requiredNumber } from '../../shared/validate.ts';
+import { optionalString, requiredBoolean, requiredDate, requiredInt, requiredNumber } from '../../shared/validate.ts';
 import { SetRepository } from './internal/set.repository.ts';
 import { translateDtoToCreateSet, translateDtoToEditSet } from './internal/set.translator.ts';
 import { WorkoutRepository } from './internal/workout.repository.ts';
@@ -131,6 +131,9 @@ export class SetFacade {
     }
     if (dto.position !== undefined) {
       valid.position = requiredInt(dto, 'position', { min: 0 });
+    }
+    if (dto.done !== undefined) {
+      valid.done = requiredBoolean(dto, 'done');
     }
     return valid;
   }

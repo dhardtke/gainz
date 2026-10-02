@@ -68,6 +68,14 @@ select offers every exercise — never through anything in `exercises/internal/`
 `gz-add-set-form` creates a new exercise through `exerciseFacade` too; `gz-dashboard` takes its
 summary from `statsFacade` and its recent workouts from `workoutFacade`.
 
+`gz-set-row` leads with a done toggle, an `.icon.small` button that is `.outline` while the set is
+not done and Oat's default fill once it is, with `aria-pressed` to match. A click PATCHes
+`{ done }` through `setFacade` and emits `sets-changed`, like every other change to a row, so the
+view reloads rather than patching the row. A done row mirrors the backend's lock: it leaves out
+Edit and ×, keeps +1, and mutes its exercise and load. `gz-workout-detail` adds an "x/y done"
+badge to its totals once the session has sets, and swaps it for a success "✓ Done" badge when the
+workout is done; `gz-workout-list` shows that "✓ Done" badge on done workouts' cards only.
+
 A feature's routes live in `<f>.routes.ts` beside its facade, the way the backend keeps one
 `*.routes.ts` per feature and spreads them in `src/backend/http/routes.ts`. Each route is a regex
 `pattern`, the `keys` naming its capture groups, and a `view(params)` that `import()`s the view
