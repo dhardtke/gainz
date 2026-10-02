@@ -11,10 +11,6 @@
   margin: 0;
 }
 
-:host(:hover) .row-view {
-  background: var(--muted);
-}
-
 .index {
   color: var(--muted-foreground);
   font-variant-numeric: tabular-nums;
