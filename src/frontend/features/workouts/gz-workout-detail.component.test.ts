@@ -75,7 +75,7 @@ function addSetForm(view: HTMLElement): HTMLFormElement {
 }
 
 function detailsForm(view: HTMLElement): HTMLFormElement {
-  return find<HTMLFormElement>(shadow(view), "form[data-action='save-workout']");
+  return find<HTMLFormElement>(shadow(view), 'form.details');
 }
 
 function field(form: HTMLFormElement, name: string): HTMLInputElement {
@@ -193,15 +193,61 @@ test('keeps unsaved text in the details form across logging a set', async () => 
   expect(field(detailsForm(view), 'title').value).toBe('Heavy push day');
 });
 
-test('saves the details', async () => {
+/** Types into a details field and commits it, as leaving the field does. */
+function commit(input: HTMLInputElement, value: string): void {
+  type(input, value);
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+test('has no save button for the details', async () => {
   const view = await mountView();
-  type(field(detailsForm(view), 'title'), ' Heavy push day ');
-  submit(detailsForm(view));
+  expect(detailsForm(view).querySelector('button')).toBeNull();
+});
+
+test('saves a committed detail, sending only what differs, without a toast', async () => {
+  const view = await mountView();
+  commit(field(detailsForm(view), 'title'), ' Heavy push day ');
   await settle();
-  const patch = fake.requests.find((request) => request.method === 'PATCH');
-  expect(patch?.url).toBe('/api/workouts/3');
-  expect(patch?.body).toEqual({ performedOn: '2026-09-20', title: 'Heavy push day', notes: '' });
-  expect(toasts).toEqual(['Workout updated']);
+  expect(fake.sent('PATCH /api/workouts/3')).toEqual([{ title: 'Heavy push day' }]);
+  expect(toasts).toEqual([]);
+});
+
+test('saves the details on Enter, once, even when the change is committed too', async () => {
+  const view = await mountView();
+  // The reload after the save then reads back what it sent, as the server would answer.
+  fake.respondTo('GET /api/workouts/3', 200, JSON.stringify({ ...WORKOUT, title: 'Heavy push day' }));
+  const title = field(detailsForm(view), 'title');
+  type(title, 'Heavy push day');
+  title.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  title.dispatchEvent(new Event('change', { bubbles: true }));
+  await settle();
+  expect(fake.sent('PATCH /api/workouts/3')).toEqual([{ title: 'Heavy push day' }]);
+});
+
+test('saves no details when nothing differs', async () => {
+  const view = await mountView();
+  commit(field(detailsForm(view), 'title'), 'Push day ');
+  await settle();
+  expect(fake.sent('PATCH /api/workouts/3')).toEqual([]);
+});
+
+test('saves no details while the date is missing', async () => {
+  const view = await mountView();
+  commit(field(detailsForm(view), 'performedOn'), '');
+  await settle();
+  expect(fake.sent('PATCH /api/workouts/3')).toEqual([]);
+});
+
+test('keeps focus, and what was typed, in the details field the save moved it to', async () => {
+  const view = await mountView();
+  const notes = (): HTMLInputElement => field(detailsForm(view), 'notes');
+  commit(field(detailsForm(view), 'title'), 'Heavy push day');
+  notes().focus();
+  type(notes(), 'Felt strong');
+  await settle();
+  expect(fake.sent('PATCH /api/workouts/3')).toHaveLength(1);
+  expect(focused(notes())).toBe(true);
+  expect(notes().value).toBe('Felt strong');
 });
 
 test('shows a missing workout with a way back, without a toast', async () => {
@@ -392,4 +438,14 @@ test('toasts a failed move and does not reload', async () => {
   await settle();
   expect(toasts).toEqual(['Exercise in this workout not found']);
   expect(workoutLoads()).toBe(loads);
+});
+
+test("hands focus, and what was typed, back to a set's field after a reload", async () => {
+  const view = await mountView();
+  const weight = (): HTMLInputElement => find<HTMLInputElement>(shadow(find(shadow(view), "gz-set-row[data-id='12']")), "[name='weight']");
+  weight().focus();
+  weight().value = '85';
+  await changeSets(view);
+  expect(shadow(find(shadow(view), "gz-set-row[data-id='12']")).activeElement).toBe(weight());
+  expect(weight().value).toBe('85');
 });

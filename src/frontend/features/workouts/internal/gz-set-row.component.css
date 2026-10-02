@@ -1,4 +1,4 @@
-/* One logged set: a dense read-only row that swaps into an edit form. */
+/* One logged set: a dense row, editable in place until the set is done. */
 
 .row-view {
   display: grid;
@@ -8,6 +8,7 @@
   padding: 0.5rem 0.65rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-medium);
+  margin: 0;
 }
 
 :host(:hover) .row-view {
@@ -20,14 +21,29 @@
 }
 
 .load {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
   white-space: nowrap;
+
+  & fieldset {
+    margin: 0;
+  }
+
+  & input {
+    width: 5.5rem;
+  }
 }
 
-.note {
+span.note {
   color: var(--muted-foreground);
   overflow-wrap: anywhere;
+}
+
+input.note {
+  margin: 0;
 }
 
 .row-view.done .load {
@@ -44,32 +60,6 @@
 .volume {
   color: var(--muted-foreground);
   margin-right: 0.25rem;
-}
-
-form.edit {
-  padding: 0.65rem;
-  border: 1px solid var(--primary);
-  border-radius: var(--radius-medium);
-  margin: 0;
-
-  & .field-num {
-    flex: 0 1 7rem;
-  }
-
-  & .field-notes {
-    flex: 3 1 12rem;
-  }
-
-  /* Reps and weight share a row; the notes take the next one. */
-  @media (max-width: 720px) {
-    & .field-notes {
-      flex-basis: 100%;
-    }
-
-    & .field-num {
-      flex: 1 1 0;
-    }
-  }
 }
 
 @media (max-width: 720px) {
