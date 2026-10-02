@@ -1,5 +1,5 @@
 import { beforeAll, expect, test } from 'bun:test';
-import { collect, find, mount, settle, shadow, submit, useDom, useFetch } from '../../../testing.ts';
+import { collect, find, mount, settle, shadow, useDom, useFetch } from '../../../testing.ts';
 import type { LiftSetDto } from '../../../../shared/dto/set.ts';
 import { set } from '../workouts.fixtures.ts';
 import type { GzSetRowComponent } from './gz-set-row.component.ts';
@@ -50,14 +50,15 @@ function actions(row: HTMLElement): (string | undefined)[] {
   return Array.from(shadow(row).querySelectorAll<HTMLElement>('[data-action]')).map((element) => element.dataset.action);
 }
 
-test('freezes a done set: only the toggle and +1 remain', () => {
+test('freezes a done set: only the toggle and +1 remain, and nothing is editable', () => {
   const row = mountRow(set({ id: 7, done: true }));
   expect(actions(row)).toEqual(['toggle-done', 'duplicate']);
+  expect(shadow(row).querySelector('input')).toBeNull();
 });
 
-test('offers every action on a set not done', () => {
+test('offers every action on a set not done, and no Edit button', () => {
   const row = mountRow(set({ id: 7 }));
-  expect(actions(row)).toEqual(['toggle-done', 'edit', 'duplicate', 'delete']);
+  expect(actions(row)).toEqual(['toggle-done', 'duplicate', 'delete']);
 });
 
 test('leaves the exercise to its group: no name, no link', () => {
@@ -66,15 +67,76 @@ test('leaves the exercise to its group: no name, no link', () => {
   expect(shadow(row).textContent).not.toContain('Bench Press');
 });
 
-test('edits reps, weight and notes but not the exercise', async () => {
+function input(row: HTMLElement, name: string): HTMLInputElement {
+  return find<HTMLInputElement>(shadow(row), `[name='${name}']`);
+}
+
+function change(field: HTMLInputElement, value: string): void {
+  field.value = value;
+  field.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+test('shows a set not done as inputs for reps, weight and notes, but not the exercise', () => {
+  const row = mountRow(set({ id: 7, reps: 5, weight: 60, notes: 'Easy' }));
+  expect([input(row, 'reps').value, input(row, 'weight').value, input(row, 'notes').value]).toEqual(['5', '60', 'Easy']);
+  expect(shadow(row).querySelector('select')).toBeNull();
+});
+
+test('saves a committed change, sending only the field that differs', async () => {
   const changed = collect('sets-changed');
   const row = mountRow(set({ id: 7, reps: 5, weight: 60, notes: 'Easy' }));
-  find<HTMLButtonElement>(shadow(row), "[data-action='edit']").click();
+  change(input(row, 'reps'), '6');
   await settle();
-  expect(shadow(row).querySelector('select')).toBeNull();
-  find<HTMLInputElement>(shadow(row), "[name='reps']").value = '6';
-  submit(find<HTMLFormElement>(shadow(row), "form[data-action='save']"));
-  await settle();
-  expect(fake.sent('PATCH /api/sets/7')).toEqual([{ reps: 6, weight: 60, notes: 'Easy' }]);
+  expect(fake.sent('PATCH /api/sets/7')).toEqual([{ reps: 6 }]);
   expect(changed).toHaveLength(1);
+});
+
+test('has no save button', () => {
+  const row = mountRow(set({ id: 7 }));
+  expect(shadow(row).querySelector("[type='submit']")).toBeNull();
+});
+
+test('saves on Enter, once, even when the change is committed too', async () => {
+  const row = mountRow(set({ id: 7, weight: 60 }));
+  const weight = input(row, 'weight');
+  weight.value = '62.5';
+  weight.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  weight.dispatchEvent(new Event('change', { bubbles: true }));
+  await settle();
+  expect(fake.sent('PATCH /api/sets/7')).toEqual([{ weight: 62.5 }]);
+});
+
+test('saves nothing when nothing differs', async () => {
+  const changed = collect('sets-changed');
+  const row = mountRow(set({ id: 7, notes: null }));
+  change(input(row, 'notes'), '  ');
+  await settle();
+  expect(fake.sent('PATCH /api/sets/7')).toEqual([]);
+  expect(changed).toHaveLength(0);
+});
+
+test('saves nothing while a field is invalid', async () => {
+  const row = mountRow(set({ id: 7 }));
+  change(input(row, 'reps'), '');
+  await settle();
+  expect(fake.sent('PATCH /api/sets/7')).toEqual([]);
+});
+
+test('saves a pending change before marking the set done', async () => {
+  const row = mountRow(set({ id: 7, reps: 5 }));
+  change(input(row, 'reps'), '8');
+  toggle(row).click();
+  await settle();
+  expect(fake.requests.map(({ body }) => body)).toEqual([{ reps: 8 }, { done: true }]);
+});
+
+test('hands back the focused field and what it holds', () => {
+  const row = mountRow(set({ id: 7, weight: 60 }));
+  input(row, 'weight').focus();
+  input(row, 'weight').value = '70';
+  expect(row.focusedField()).toEqual({ name: 'weight', value: '70' });
+  const next = mountRow(set({ id: 7, weight: 60 }));
+  next.restoreField({ name: 'weight', value: '70' });
+  expect(shadow(next).activeElement).toBe(input(next, 'weight'));
+  expect(input(next, 'weight').value).toBe('70');
 });

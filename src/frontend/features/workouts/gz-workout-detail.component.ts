@@ -4,16 +4,15 @@ import { html } from '../../ui/html.ts';
 import { formatDate, formatVolume, plural, relativeDay } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
 import type { ExerciseDto } from '../../../shared/dto/exercise.ts';
-import type { MoveDirection, WorkoutExerciseDto, WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
+import type { EditWorkoutDto, MoveDirection, WorkoutExerciseDto, WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
 import type { ExerciseId } from '../../../shared/flavors.ts';
 import type { GzAddSetFormComponent } from './internal/gz-add-set-form.component.ts';
-import type { GzSetRowComponent } from './internal/gz-set-row.component.ts';
+import { GzSetRowComponent } from './internal/gz-set-row.component.ts';
 import { toast, toastError } from '../../ui/toast.ts';
 import { GzView } from '../../ui/view.ts';
 import { exerciseFacade } from '../exercises/exercises.facade.ts';
 import { workoutFacade } from './workouts.facade.ts';
 import './internal/gz-add-set-form.component.ts';
-import './internal/gz-set-row.component.ts';
 
 /** `CustomEvent.detail` is `any`, so the `set-logged` detail the form emits is checked rather than trusted. */
 function isSetLogged(detail: unknown): detail is { exerciseId: number } {
@@ -27,7 +26,7 @@ interface WorkoutDetailData {
 }
 
 /**
- * The logging screen for one session: edit the header, add sets, see totals. The sets are grouped
+ * The logging screen for one session: edit the header, which saves itself, add sets, see totals. The sets are grouped
  * by exercise in Oat's accordion, one exercise open at a time.
  */
 export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
@@ -40,9 +39,13 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
    *
    * The form is always on screen and every logged set re-renders the view, so
    * the template — not the DOM — has to own these values. `null` means "show
-   * what the server returned", which is also what a successful save restores.
+   * what the server returned". A save leaves them be: they match what it sent,
+   * and whatever was typed into the next field while it ran is still to save.
    */
   #edits: Record<string, string> | null = null;
+
+  /** The details form's saves, one after another, so Enter and the change it commits save once. */
+  #saving: Promise<void> = Promise.resolve();
 
   /**
    * The exercise whose group is open, `null` for all collapsed, and `undefined` until the first
@@ -54,7 +57,7 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
   override connectedCallback(): void {
     super.connectedCallback();
     this.root.addEventListener('sets-changed', () => {
-      void this.reload();
+      void this.#reloadKeepingFocus();
     });
     // Only a set logged through the form puts focus back in it, not a row's "+1" or delete.
     this.root.addEventListener('set-logged', (event) => {
@@ -63,6 +66,24 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
       }
       void this.reload().then(() => this.$<GzAddSetFormComponent>('gz-add-set-form')?.focusReps());
     });
+  }
+
+  /**
+   * Reloads after a save. A field saves when it loses focus, usually to another field, which the
+   * reload re-renders, so focus goes back to it: a row's field through the row that replaces its
+   * own, with what was typed there by then, and a details field by its id, `#edits` keeping its text.
+   */
+  async #reloadKeepingFocus(): Promise<void> {
+    const active = this.root.activeElement;
+    const row = active instanceof GzSetRowComponent ? active : null;
+    const rowField = row?.focusedField() ?? null;
+    const detailsField = active instanceof HTMLElement && active.closest('form.details') ? active.id : '';
+    await this.reload();
+    if (row && rowField) {
+      this.$<GzSetRowComponent>(`gz-set-row[data-id='${row.dataset.id}']`)?.restoreField(rowField);
+    } else if (detailsField) {
+      this.$<HTMLElement>(`#${detailsField}`)?.focus();
+    }
   }
 
   override async load(): Promise<WorkoutDetailData> {
@@ -108,16 +129,29 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     (moved?.disabled === false ? moved : arrow(direction === 'up' ? 'down' : 'up'))?.focus();
   }
 
-  override async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
-    if (action !== 'save-workout') {
+  /** Saves the details that differ from the workout; nothing when none do or one is invalid. */
+  async #saveDetails(form: HTMLFormElement): Promise<void> {
+    const workout = this.data?.workout;
+    if (!workout || !form.reportValidity()) {
       return;
     }
-    const { performedOn, title, notes } = this.formData(form);
+    const { performedOn = '', title = '', notes = '' } = this.formData(form);
+    const changes: EditWorkoutDto = {};
+    if (performedOn !== workout.performedOn) {
+      changes.performedOn = performedOn;
+    }
+    if (title !== (workout.title ?? '')) {
+      changes.title = title;
+    }
+    if (notes !== (workout.notes ?? '')) {
+      changes.notes = notes;
+    }
+    if (Object.keys(changes).length === 0) {
+      return;
+    }
     try {
-      await workoutFacade.update(this.numericAttribute('workout-id'), { performedOn, title, notes });
-      this.#edits = null;
-      toast('Workout updated', 'success');
-      await this.reload();
+      await workoutFacade.update(workout.id, changes);
+      await this.#reloadKeepingFocus();
     } catch (error) {
       toastError(error);
     }
@@ -158,9 +192,23 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
       });
     }
 
-    const details = this.$<HTMLFormElement>("form[data-action='save-workout']");
+    const details = this.$<HTMLFormElement>('form.details');
     details?.addEventListener('input', () => {
       this.#edits = this.formData(details);
+    });
+    const save = (form: HTMLFormElement): void => {
+      this.#saving = this.#saving.then(() => this.#saveDetails(form));
+    };
+    details?.addEventListener('change', () => {
+      save(details);
+    });
+    // A form of several fields and no submit button ignores Enter, so the form saves on it itself;
+    // in the notes, Enter is a new line.
+    details?.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && event.target instanceof HTMLInputElement) {
+        event.preventDefault();
+        save(details);
+      }
     });
 
     const addSet = this.$<GzAddSetFormComponent>('gz-add-set-form');
@@ -203,7 +251,7 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
         <button data-variant="danger" data-action="delete-workout">Delete</button>
       </div>
       <article class="card">
-        <form class="vstack gap-2" data-action="save-workout">
+        <form class="details vstack gap-2">
           <div class="fields">
             <div class="field">
               <label for="performedOn">Date</label>
@@ -217,9 +265,6 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
           <div class="field">
             <label for="notes">Session notes</label>
             <textarea id="notes" name="notes" maxlength="2000" placeholder="How did it feel?">${edits.notes}</textarea>
-          </div>
-          <div class="hstack gap-2">
-            <button type="submit">Save</button>
           </div>
         </form>
       </article>

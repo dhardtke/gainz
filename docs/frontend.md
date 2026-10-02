@@ -105,9 +105,21 @@ be the last exercise's.
 within its exercise. It leads with a done toggle, a button the size of +1 that is `.outline` while
 the set is not done and Oat's default fill once it is, with `aria-pressed` to match. A click PATCHes
 `{ done }` through `setFacade` and emits `sets-changed`, like every other change to a row, so the
-view reloads rather than patching the row. A done row mirrors the backend's lock: it leaves out
-Edit and ×, keeps +1, and mutes its load. The row's edit form edits reps, weight and notes only,
-since a set's exercise is fixed once it is saved. `gz-workout-detail` adds an "x/y done" badge to
+view reloads rather than patching the row. A set not done has no Edit button: the row is a form
+whose weight and reps are inputs in Oat's `fieldset.group`, with the unit and "reps" as labels
+beside them, and whose notes are a third input — reps, weight and notes only, since a set's
+exercise is fixed once it is saved. There is no save button: a committed `change` (blur) or
+Enter, which the row catches on `keydown` because a form of several fields without a submit button
+ignores it, PATCHes just the fields that differ from the set, and nothing when none do or a field is
+invalid. The row runs its requests one after another, so a change saved by the blur of a click on
+the done toggle lands before the set is locked. Every save reloads the view, which would drop focus
+from the field the blur moved to, so `gz-workout-detail` asks the focused row for
+`focusedField()` before reloading and hands it to the replacing row's `restoreField()`, with
+whatever was typed there by then. The workout's details form above the sets saves the same way,
+without a button or a toast: a committed change, or Enter in the date or title (in the notes it is
+a new line), PATCHes the details that differ from the workout, and the reload puts focus back in
+the field by its id while `#edits` keeps its text. A done row mirrors the backend's lock: it reads rather than
+edits, leaves out ×, keeps +1, and mutes its load. `gz-workout-detail` adds an "x/y done" badge to
 its totals once the session has sets, and swaps it for a success "✓ Done" badge when the workout
 is done; `gz-workout-list` shows that "✓ Done" badge on done workouts' cards only.
 

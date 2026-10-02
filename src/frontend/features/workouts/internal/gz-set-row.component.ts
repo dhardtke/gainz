@@ -2,23 +2,33 @@ import type { RawHtml } from '../../../ui/html.ts';
 import { define, GzElement } from '../../../ui/base.ts';
 import { html } from '../../../ui/html.ts';
 import { formatNumber, formatVolume, UNIT } from '../../../ui/format.ts';
-import type { LiftSetDto } from '../../../../shared/dto/set.ts';
+import type { EditSetDto, LiftSetDto } from '../../../../shared/dto/set.ts';
 import { toast, toastError } from '../../../ui/toast.ts';
 import { setFacade } from '../workouts.facade.ts';
 
+/** The field a row had focus in, and what it held, so a re-rendered row can carry on. */
+export interface FocusedField {
+  name: string;
+  value: string;
+}
+
 /**
- * One logged set. Reads in place, edits in place, toggles done, and tells its
- * parent to reload with a `sets-changed` event rather than trying to patch the list.
- * A done set is frozen until it is toggled back, so it offers neither Edit nor ×.
- * A set's exercise is fixed once it is saved, so the edit form covers reps, weight
- * and notes only.
+ * One logged set. A set not done is always editable: its reps, weight and notes are inputs,
+ * and a committed change (blur or Enter) saves what differs from the set. It toggles done, and
+ * tells its parent to reload with a `sets-changed` event rather than trying to patch the list.
+ * A done set is frozen until it is toggled back, so it reads rather than edits and offers no ×.
+ * A set's exercise is fixed once it is saved, so the inputs cover reps, weight and notes only.
  */
 export class GzSetRowComponent extends GzElement {
-  #editing = false;
-
   #set: LiftSetDto | null = null;
 
   #index = 0;
+
+  /**
+   * The row's requests, one after another: a change saved on blur must land before the click
+   * that caused the blur marks the set done, or the locked set would refuse it.
+   */
+  #pending: Promise<void> = Promise.resolve();
 
   set set(value: LiftSetDto | undefined) {
     this.#set = value ?? null;
@@ -32,21 +42,31 @@ export class GzSetRowComponent extends GzElement {
     this.#index = Number.isFinite(value) ? value : 0;
   }
 
-  override async handleAction(action: string): Promise<void> {
-    if (action === 'edit') {
-      this.#editing = true;
-      this.render();
-      const reps = this.$<HTMLInputElement>("[name='reps']");
-      reps?.focus();
-      return;
-    }
+  /** The input holding focus, if any, for the parent to hand back after a reload. */
+  focusedField(): FocusedField | null {
+    const input = this.root.activeElement;
+    return input instanceof HTMLInputElement && input.name ? { name: input.name, value: input.value } : null;
+  }
 
-    if (action === 'cancel') {
-      this.#editing = false;
-      this.render();
-      return;
+  /** Puts focus back in a field, with what it held; nothing when the set no longer has it. */
+  restoreField({ name, value }: FocusedField): void {
+    const input = this.$<HTMLInputElement>(`input[name='${name}']`);
+    if (input) {
+      input.value = value;
+      input.focus();
     }
+  }
 
+  #enqueue(request: () => Promise<void>): Promise<void> {
+    this.#pending = this.#pending.then(request);
+    return this.#pending;
+  }
+
+  override handleAction(action: string): Promise<void> {
+    return this.#enqueue(() => this.#run(action));
+  }
+
+  async #run(action: string): Promise<void> {
     const set = this.#set;
     if (!set) {
       return;
@@ -91,42 +111,75 @@ export class GzSetRowComponent extends GzElement {
     }
   }
 
-  override async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
-    if (action !== 'save' || !this.#set) {
+  /** Saves the fields that differ from the set; Enter and the change it commits both land here. */
+  async #save(form: HTMLFormElement): Promise<void> {
+    const set = this.#set;
+    if (!set || !form.reportValidity()) {
       return;
     }
     const values = this.formData(form);
+    const changes: EditSetDto = {};
+    if (Number(values.reps) !== set.reps) {
+      changes.reps = Number(values.reps);
+    }
+    if (Number(values.weight) !== set.weight) {
+      changes.weight = Number(values.weight);
+    }
+    if ((values.notes ?? '') !== (set.notes ?? '')) {
+      changes.notes = values.notes;
+    }
+    if (Object.keys(changes).length === 0) {
+      return;
+    }
     try {
-      await setFacade.update(this.#set.id, {
-        reps: Number(values.reps),
-        weight: Number(values.weight),
-        notes: values.notes,
-      });
-      this.#editing = false;
+      await setFacade.update(set.id, changes);
+      this.#set = { ...set, ...changes };
       this.emit('sets-changed');
     } catch (error) {
       toastError(error);
     }
   }
 
-  #editTemplate(set: LiftSetDto): RawHtml {
+  override afterRender(): void {
+    const form = this.$<HTMLFormElement>('form');
+    form?.addEventListener('change', () => {
+      void this.#enqueue(() => this.#save(form));
+    });
+    // A form of several fields and no submit button ignores Enter, so the row saves on it itself.
+    form?.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && event.target instanceof HTMLInputElement) {
+        event.preventDefault();
+        void this.#enqueue(() => this.#save(form));
+      }
+    });
+  }
+
+  #toggleTemplate(set: LiftSetDto): RawHtml {
     return html`
-      <form class="edit fields" data-action="save">
-        <div class="field field-num">
-          <label>Reps</label>
-          <input name="reps" type="number" step="1" min="1" value="${set.reps}" required />
+      <button
+        type="button"
+        class="${set.done ? '' : 'outline'} toggle"
+        data-action="toggle-done"
+        aria-pressed="${set.done ? 'true' : 'false'}"
+        aria-label="${set.done ? 'Mark set as not done' : 'Mark set as done'}"
+      >
+        ✓
+      </button>
+    `;
+  }
+
+  #doneTemplate(set: LiftSetDto): RawHtml {
+    return html`
+      <div class="row-view done">
+        ${this.#toggleTemplate(set)}
+        <span class="index">${this.#index}</span>
+        <span class="load">${formatNumber(set.weight)} ${UNIT} × ${set.reps}</span>
+        <span class="note">${set.notes ?? ''}</span>
+        <div class="actions">
+          <span class="volume mono">${formatVolume(set.weight * set.reps)}</span>
+          <button type="button" class="outline" data-action="duplicate" title="Log another set just like this one">+1</button>
         </div>
-        <div class="field field-num">
-          <label>Weight (${UNIT})</label>
-          <input name="weight" type="number" step="any" min="0" value="${set.weight}" required />
-        </div>
-        <div class="field field-notes">
-          <label>Notes</label>
-          <input name="notes" type="text" maxlength="2000" value="${set.notes ?? ''}" />
-        </div>
-        <button type="submit">Save</button>
-        <button class="outline" type="button" data-action="cancel">Cancel</button>
-      </form>
+      </div>
     `;
   }
 
@@ -135,30 +188,32 @@ export class GzSetRowComponent extends GzElement {
     if (!set) {
       return html``;
     }
-    if (this.#editing) {
-      return this.#editTemplate(set);
+    if (set.done) {
+      return this.#doneTemplate(set);
     }
 
     return html`
-      <div class="row-view ${set.done ? 'done' : ''}">
-        <button
-          class="${set.done ? '' : 'outline'} toggle"
-          data-action="toggle-done"
-          aria-pressed="${set.done ? 'true' : 'false'}"
-          aria-label="${set.done ? 'Mark set as not done' : 'Mark set as done'}"
-        >
-          ✓
-        </button>
+      <form class="row-view">
+        ${this.#toggleTemplate(set)}
         <span class="index">${this.#index}</span>
-        <span class="load">${formatNumber(set.weight)} ${UNIT} × ${set.reps}</span>
-        <span class="note">${set.notes ?? ''}</span>
+        <span class="load">
+          <fieldset class="group">
+            <input id="weight" name="weight" type="number" step="any" min="0" value="${set.weight}" aria-label="Weight" required />
+            <label for="weight">${UNIT}</label>
+          </fieldset>
+          <span aria-hidden="true">×</span>
+          <fieldset class="group">
+            <input id="reps" name="reps" type="number" step="1" min="1" value="${set.reps}" aria-label="Reps" required />
+            <label for="reps">reps</label>
+          </fieldset>
+        </span>
+        <input class="note" name="notes" type="text" maxlength="2000" value="${set.notes ?? ''}" placeholder="Notes" aria-label="Notes" />
         <div class="actions">
           <span class="volume mono">${formatVolume(set.weight * set.reps)}</span>
-          ${set.done ? '' : html`<button class="outline" data-action="edit">Edit</button>`}
-          <button class="outline" data-action="duplicate" title="Log another set just like this one">+1</button>
-          ${set.done ? '' : html`<button data-variant="danger" data-action="delete" aria-label="Delete set">×</button>`}
+          <button type="button" class="outline" data-action="duplicate" title="Log another set just like this one">+1</button>
+          <button type="button" data-variant="danger" data-action="delete" aria-label="Delete set">×</button>
         </div>
-      </div>
+      </form>
     `;
   }
 }
