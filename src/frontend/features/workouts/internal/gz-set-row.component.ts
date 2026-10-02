@@ -13,10 +13,10 @@ export interface FocusedField {
 }
 
 /**
- * One logged set. A set not done is always editable: its reps, weight and notes are inputs,
- * and a committed change (blur or Enter) saves what differs from the set. It toggles done, and
- * tells its parent to reload with a `sets-changed` event rather than trying to patch the list.
- * A done set is frozen until it is toggled back, so it reads rather than edits and offers no ×.
+ * One logged set. Its reps, weight and notes are always inputs, and a committed change (blur or
+ * Enter) saves what differs from the set. It toggles done, and tells its parent to reload with a
+ * `sets-changed` event rather than trying to patch the list. A done set is frozen until it is
+ * toggled back: its inputs and × stay in place, disabled, so the row keeps its shape.
  * A set's exercise is fixed once it is saved, so the inputs cover reps, weight and notes only.
  */
 export class GzSetRowComponent extends GzElement {
@@ -168,50 +168,33 @@ export class GzSetRowComponent extends GzElement {
     `;
   }
 
-  #doneTemplate(set: LiftSetDto): RawHtml {
-    return html`
-      <div class="row-view done">
-        ${this.#toggleTemplate(set)}
-        <span class="index">${this.#index}</span>
-        <span class="load">${formatNumber(set.weight)} ${UNIT} × ${set.reps}</span>
-        <span class="note">${set.notes ?? ''}</span>
-        <div class="actions">
-          <span class="volume mono">${formatVolume(set.weight * set.reps)}</span>
-          <button type="button" class="outline" data-action="duplicate" title="Log another set just like this one">+1</button>
-        </div>
-      </div>
-    `;
-  }
-
   override template(): RawHtml {
     const set = this.#set;
     if (!set) {
       return html``;
     }
-    if (set.done) {
-      return this.#doneTemplate(set);
-    }
+    const disabled = set.done ? 'disabled' : '';
 
     return html`
-      <form class="row-view">
+      <form class="row-view ${set.done ? 'done' : ''}">
         ${this.#toggleTemplate(set)}
         <span class="index">${this.#index}</span>
         <span class="load">
           <fieldset class="group">
-            <input id="weight" name="weight" type="number" step="any" min="0" value="${set.weight}" aria-label="Weight" required />
+            <input id="weight" name="weight" type="number" step="any" min="0" value="${set.weight}" aria-label="Weight" required ${disabled} />
             <label for="weight">${UNIT}</label>
           </fieldset>
           <span aria-hidden="true">×</span>
           <fieldset class="group">
-            <input id="reps" name="reps" type="number" step="1" min="1" value="${set.reps}" aria-label="Reps" required />
+            <input id="reps" name="reps" type="number" step="1" min="1" value="${set.reps}" aria-label="Reps" required ${disabled} />
             <label for="reps">reps</label>
           </fieldset>
         </span>
-        <input class="note" name="notes" type="text" maxlength="2000" value="${set.notes ?? ''}" placeholder="Notes" aria-label="Notes" />
+        <input class="note" name="notes" type="text" maxlength="2000" value="${set.notes ?? ''}" placeholder="Notes" aria-label="Notes" ${disabled} />
         <div class="actions">
           <span class="volume mono">${formatVolume(set.weight * set.reps)}</span>
           <button type="button" class="outline" data-action="duplicate" title="Log another set just like this one">+1</button>
-          <button type="button" data-variant="danger" data-action="delete" aria-label="Delete set">×</button>
+          <button type="button" data-variant="danger" data-action="delete" aria-label="Delete set" ${disabled}>×</button>
         </div>
       </form>
     `;

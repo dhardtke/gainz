@@ -50,15 +50,24 @@ function actions(row: HTMLElement): (string | undefined)[] {
   return Array.from(shadow(row).querySelectorAll<HTMLElement>('[data-action]')).map((element) => element.dataset.action);
 }
 
-test('freezes a done set: only the toggle and +1 remain, and nothing is editable', () => {
+test('freezes a done set: its fields and × stay visible but disabled', () => {
   const row = mountRow(set({ id: 7, done: true }));
-  expect(actions(row)).toEqual(['toggle-done', 'duplicate']);
-  expect(shadow(row).querySelector('input')).toBeNull();
+  expect(actions(row)).toEqual(['toggle-done', 'duplicate', 'delete']);
+  const fields = Array.from(shadow(row).querySelectorAll<HTMLInputElement>('input'));
+  expect(fields.map(({ name, disabled }) => [name, disabled])).toEqual([
+    ['weight', true],
+    ['reps', true],
+    ['notes', true],
+  ]);
+  expect(find<HTMLButtonElement>(shadow(row), "[data-action='delete']").disabled).toBe(true);
+  expect(toggle(row).disabled).toBe(false);
+  expect(find<HTMLButtonElement>(shadow(row), "[data-action='duplicate']").disabled).toBe(false);
 });
 
 test('offers every action on a set not done, and no Edit button', () => {
   const row = mountRow(set({ id: 7 }));
   expect(actions(row)).toEqual(['toggle-done', 'duplicate', 'delete']);
+  expect(find<HTMLButtonElement>(shadow(row), "[data-action='delete']").disabled).toBe(false);
 });
 
 test('leaves the exercise to its group: no name, no link', () => {
