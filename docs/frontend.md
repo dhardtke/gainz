@@ -65,8 +65,8 @@ reads data only through a facade; composition across facades stays in the compon
 in the backend controller. That holds across features too: `gz-workout-detail` loads a workout
 through `workoutFacade` and the exercises for `gz-add-set-form`'s select through
 `exerciseFacade` from `features/exercises/` — `list()` without a `limit`, the unpaged list, so a
-select offers every exercise — never through anything in `exercises/internal/`, and
-`gz-add-set-form` creates a new exercise through `exerciseFacade` too; `gz-dashboard` takes its
+select offers every exercise — never through anything in `exercises/internal/`; exercises are
+created on the exercises page only, so with none yet the form links there; `gz-dashboard` takes its
 summary from `statsFacade` and its recent workouts from `workoutFacade`, and shows them as the
 same `gz-workout-card`s the log does. The card is the one place a listed workout is drawn: the
 open-card link, the date, an outline totals badge, Repeat — which copies the sets into a new session

@@ -1,5 +1,5 @@
 import { beforeAll, expect, test } from 'bun:test';
-import { choose, find, mount, settle, shadow, submit, text, type, useDom, useFetch, useToasts } from '../../testing.ts';
+import { find, mount, settle, shadow, submit, text, type, useDom, useFetch, useToasts } from '../../testing.ts';
 import type { ExercisePageDto } from '../../../shared/dto/exercise.ts';
 import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import type { WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
@@ -137,14 +137,6 @@ test('preselects the exercise of the last set', async () => {
   expect(exerciseSelect(view).value).toBe('2');
 });
 
-test('reveals the name field when a new exercise is chosen', async () => {
-  const view = await mountView();
-  const newExercise = addSetRoot(view).querySelector('.field-new-exercise');
-  expect(newExercise?.hasAttribute('hidden')).toBe(true);
-  choose(exerciseSelect(view), '__new__');
-  expect(newExercise?.hasAttribute('hidden')).toBe(false);
-});
-
 test('logs a set, reloads and puts focus back in the reps field', async () => {
   const view = await mountView();
   const loads = fake.requests.length;
@@ -156,30 +148,6 @@ test('logs a set, reloads and puts focus back in the reps field', async () => {
   expect(fake.requests.slice(loads).filter((request) => request.method === 'GET' && request.url === '/api/workouts/3')).toHaveLength(1);
   const reps = field(addSetForm(view), 'reps');
   expect(focused(reps)).toBe(true);
-});
-
-test('creates a new exercise first and logs the set against it', async () => {
-  const view = await mountView();
-  fake.respondTo('POST /api/exercises', 201, JSON.stringify(exercise({ id: 9, name: 'Incline Press' })));
-  choose(exerciseSelect(view), '__new__');
-  field(addSetForm(view), 'newExercise').value = 'Incline Press';
-  field(addSetForm(view), 'weight').value = '60';
-  field(addSetForm(view), 'reps').value = '8';
-  submit(addSetForm(view));
-  await settle();
-  expect(fake.sent('POST /api/exercises')).toEqual([{ name: 'Incline Press' }]);
-  expect(fake.sent('POST /api/workouts/3/sets')).toEqual([{ exerciseId: 9, weight: 60, reps: 8, notes: '' }]);
-});
-
-test('asks for a name rather than logging a set against an unnamed new exercise', async () => {
-  const view = await mountView();
-  choose(exerciseSelect(view), '__new__');
-  field(addSetForm(view), 'weight').value = '60';
-  field(addSetForm(view), 'reps').value = '8';
-  submit(addSetForm(view));
-  await settle();
-  expect(toasts).toEqual(['Give the new exercise a name']);
-  expect(fake.requests.filter((request) => request.method === 'POST')).toEqual([]);
 });
 
 test('keeps unsaved text in the details form across logging a set', async () => {
