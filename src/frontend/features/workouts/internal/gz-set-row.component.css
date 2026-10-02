@@ -56,6 +56,15 @@
   margin-right: 0.25rem;
 }
 
+.move {
+  margin: 0;
+
+  /* Oat joins the corners of grouped buttons but not their shared border, as it does for inputs. */
+  & > button:first-child {
+    border-inline-end-color: transparent;
+  }
+}
+
 form.edit {
   padding: 0.65rem;
   border: 1px solid var(--primary);

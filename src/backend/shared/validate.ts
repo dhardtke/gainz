@@ -72,6 +72,19 @@ export function requiredBoolean<T extends object>(dto: T, field: keyof T & strin
   return value;
 }
 
+function isOneOf<V extends string>(values: readonly V[], value: unknown): value is V {
+  return typeof value === 'string' && (values as readonly string[]).includes(value);
+}
+
+/** Only one of the listed strings, compared exactly: no trimming, no case folding. */
+export function requiredOneOf<T extends object, V extends string>(dto: T, field: keyof T & string, values: readonly V[]): V {
+  const value: unknown = dto[field];
+  if (!isOneOf(values, value)) {
+    throw badRequest(`"${field}" must be one of: ${values.join(', ')}`);
+  }
+  return value;
+}
+
 export function requiredDate<T extends object>(dto: T, field: keyof T & string): Iso8601Date {
   const value = requiredString(dto, field, 10);
   if (!ISO_DATE.test(value) || Number.isNaN(Date.parse(value))) {

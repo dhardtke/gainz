@@ -3,7 +3,7 @@ import { define, GzElement } from '../../../ui/base.ts';
 import { html } from '../../../ui/html.ts';
 import { formatNumber, formatVolume, UNIT } from '../../../ui/format.ts';
 import type { ExerciseDto } from '../../../../shared/dto/exercise.ts';
-import type { LiftSetDto } from '../../../../shared/dto/set.ts';
+import type { LiftSetDto, SetDirection } from '../../../../shared/dto/set.ts';
 import { toast, toastError } from '../../../ui/toast.ts';
 import { setFacade } from '../workouts.facade.ts';
 
@@ -11,6 +11,8 @@ import { setFacade } from '../workouts.facade.ts';
  * One logged set. Reads in place, edits in place, toggles done, and tells its
  * parent to reload with a `sets-changed` event rather than trying to patch the list.
  * A done set is frozen until it is toggled back, so it offers neither Edit nor ×.
+ * Any set moves one place up or down with ▲▼; that emits `set-moved` instead, so
+ * the parent can put focus back on the moved row's arrow once it has reloaded.
  */
 export class GzSetRowComponent extends GzElement {
   #editing = false;
@@ -20,6 +22,8 @@ export class GzSetRowComponent extends GzElement {
   #exercises: ExerciseDto[] = [];
 
   #index = 0;
+
+  #last = false;
 
   set set(value: LiftSetDto | undefined) {
     this.#set = value ?? null;
@@ -35,6 +39,17 @@ export class GzSetRowComponent extends GzElement {
   set index(value: number) {
     // The parent reads this off a data attribute, so a NaN is a real possibility.
     this.#index = Number.isFinite(value) ? value : 0;
+  }
+
+  set last(value: boolean) {
+    this.#last = value;
+  }
+
+  /** Focuses the arrow that moved the set, or the other one once the set has reached that edge. */
+  focusMove(direction: SetDirection): void {
+    const arrow = this.$<HTMLButtonElement>(`[data-action='move-${direction}']`);
+    const other = this.$<HTMLButtonElement>(`[data-action='move-${direction === 'up' ? 'down' : 'up'}']`);
+    (arrow?.disabled === false ? arrow : other)?.focus();
   }
 
   override async handleAction(action: string): Promise<void> {
@@ -61,6 +76,17 @@ export class GzSetRowComponent extends GzElement {
       try {
         await setFacade.update(set.id, { done: !set.done });
         this.emit('sets-changed');
+      } catch (error) {
+        toastError(error);
+      }
+      return;
+    }
+
+    if (action === 'move-up' || action === 'move-down') {
+      const direction = action === 'move-up' ? 'up' : 'down';
+      try {
+        await setFacade.move(set.id, direction);
+        this.emit('set-moved', { id: set.id, direction });
       } catch (error) {
         toastError(error);
       }
@@ -156,7 +182,7 @@ export class GzSetRowComponent extends GzElement {
     return html`
       <div class="row-view ${set.done ? 'done' : ''}">
         <button
-          class="${set.done ? '' : 'outline'} icon small toggle"
+          class="${set.done ? '' : 'outline'} toggle"
           data-action="toggle-done"
           aria-pressed="${set.done ? 'true' : 'false'}"
           aria-label="${set.done ? 'Mark set as not done' : 'Mark set as done'}"
@@ -167,12 +193,16 @@ export class GzSetRowComponent extends GzElement {
         <a class="exercise" href="/exercises/${set.exerciseId}">${set.exerciseName}</a>
         <span class="load">${formatNumber(set.weight)} ${UNIT} × ${set.reps}</span>
         <span class="note">${set.notes ?? ''}</span>
-        <span class="actions">
+        <div class="actions">
           <span class="volume mono">${formatVolume(set.weight * set.reps)}</span>
+          <fieldset class="group move">
+            <button class="outline" data-action="move-up" aria-label="Move set up" ${this.#index <= 1 ? 'disabled' : ''}>▲</button>
+            <button class="outline" data-action="move-down" aria-label="Move set down" ${this.#last ? 'disabled' : ''}>▼</button>
+          </fieldset>
           ${set.done ? '' : html`<button class="outline" data-action="edit">Edit</button>`}
           <button class="outline" data-action="duplicate" title="Log another set just like this one">+1</button>
           ${set.done ? '' : html`<button data-variant="danger" data-action="delete" aria-label="Delete set">×</button>`}
-        </span>
+        </div>
       </div>
     `;
   }

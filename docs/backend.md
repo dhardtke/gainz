@@ -157,6 +157,14 @@ within a session. Its two foreign keys are deliberately asymmetric. `workout_id`
 `ON DELETE RESTRICT`, so deleting an exercise is refused while any set still points at it. History
 can be thrown away deliberately, but it cannot silently lose its meaning.
 
+`position` is server-owned: a new set is appended after the workout's last one, "Repeat" copies the
+source's positions as they are, and nothing else changes it but `POST /api/sets/:id/move` with
+`{ "direction": "up" | "down" }`. That move runs in one transaction in `SetRepository.move`: it
+renumbers the workout's sets 1..n in their current `position, id` order with the set and its
+neighbor swapped, and answers with the reordered list. Ties and gaps — from "Repeat" or the explicit
+create position the API used to take — therefore vanish on first touch, and a move at an edge is a
+200 with the order unchanged.
+
 A set also carries `done`, an integer held to 0 or 1 that the API turns into a boolean: a set not
 done is a plan — what "Repeat" copies into a new session — and a done set is history. New sets,
 including copied ones, start at 0, and `PATCH /api/sets/:id` with `{ "done": true | false }`
@@ -165,10 +173,12 @@ every set that existed before it as done, since each of those was really perform
 
 A done set is locked. `SetRepository` decides by the stored state, not by the request, so a stale
 tab or a hand-written request cannot get around it: a PATCH to a done set may hold `done` and
-nothing else — any other field, `position` included and even alongside `"done": false`, is a 409 —
-and a DELETE of a done set is a 409. Unchecking and editing are therefore two requests, while a set
-not done may be edited and marked done in one. Validation still runs first, so a malformed body is
-a 400 whatever the set's state, and deleting a workout still cascades to its done sets.
+nothing else — any other field, even alongside `"done": false`, is a 409 — and a DELETE of a done
+set is a 409. Unchecking and editing are therefore two requests, while a set not done may be edited
+and marked done in one. Validation still runs first, so a malformed body is a 400 whatever the set's
+state, and deleting a workout still cascades to its done sets. Moving is the one change a done set
+takes besides `done`, and it renumbers done neighbors freely, because the order a session is listed
+in is not performed history. A `position` in a PATCH body is ignored like any unknown key.
 
 A workout is done when it has at least one set and every one of them is done. That is derived and
 never stored, so it cannot drift from the sets: unchecking any set makes the workout not done

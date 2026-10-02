@@ -11,5 +11,8 @@ export function setRoutes(db: DB): RouteTable {
       PATCH: (req) => controller.update(req),
       DELETE: (req) => controller.delete(req),
     },
+    '/api/sets/:id/move': {
+      POST: (req) => controller.move(req),
+    },
   };
 }
