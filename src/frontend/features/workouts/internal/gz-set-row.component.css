@@ -56,24 +56,11 @@
   margin-right: 0.25rem;
 }
 
-.move {
-  margin: 0;
-
-  /* Oat joins the corners of grouped buttons but not their shared border, as it does for inputs. */
-  & > button:first-child {
-    border-inline-end-color: transparent;
-  }
-}
-
 form.edit {
   padding: 0.65rem;
   border: 1px solid var(--primary);
   border-radius: var(--radius-medium);
   margin: 0;
-
-  & .field-exercise {
-    flex: 2 1 11rem;
-  }
 
   & .field-num {
     flex: 0 1 7rem;
@@ -83,9 +70,8 @@ form.edit {
     flex: 3 1 12rem;
   }
 
-  /* The exercise and the notes take a row each; reps and weight share the one between. */
+  /* Reps and weight share a row; the notes take the next one. */
   @media (max-width: 720px) {
-    & .field-exercise,
     & .field-notes {
       flex-basis: 100%;
     }

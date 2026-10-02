@@ -1,4 +1,4 @@
-import type { CreateSetDto, EditSetDto, LiftSetDto, SetDirection } from '../../../shared/dto/set.ts';
+import type { CreateSetDto, EditSetDto, LiftSetDto } from '../../../shared/dto/set.ts';
 import type { CreateWorkoutDto, EditWorkoutDto, WorkoutDto, WorkoutPageDto, WorkoutWithSetsDto } from '../../../shared/dto/workout.ts';
 import type { LiftSetId, WorkoutId } from '../../../shared/flavors.ts';
 import { SetApi } from './internal/set.api.ts';
@@ -49,11 +49,6 @@ export class SetFacade {
 
   update(id: LiftSetId, dto: EditSetDto): Promise<LiftSetDto> {
     return this.#sets.update(id, dto);
-  }
-
-  /** Swaps the set with its neighbor; answers with the workout's sets in their new order. */
-  move(id: LiftSetId, direction: SetDirection): Promise<LiftSetDto[]> {
-    return this.#sets.move(id, { direction });
   }
 
   delete(id: LiftSetId): Promise<null> {

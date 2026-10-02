@@ -25,17 +25,10 @@ export interface CreateSetDto {
   notes?: string | null;
 }
 
+/** A set's exercise is fixed once it is saved, so it is not among the fields. */
 export interface EditSetDto {
-  exerciseId?: ExerciseId;
   reps?: number;
   weight?: number;
   notes?: string | null;
   done?: boolean;
-}
-
-export type SetDirection = 'up' | 'down';
-
-export interface MoveSetDto {
-  /** Toward the start (`up`) or the end (`down`) of the workout. */
-  direction: SetDirection;
 }

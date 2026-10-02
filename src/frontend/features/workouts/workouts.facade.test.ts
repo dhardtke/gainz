@@ -31,16 +31,9 @@ describe('setFacade', () => {
   test.each([
     ['update()', (): Promise<unknown> => setFacade.update(3, { reps: 6 }), 'PATCH', '/api/sets/3'],
     ['delete()', (): Promise<unknown> => setFacade.delete(3), 'DELETE', '/api/sets/3'],
-    ['move()', (): Promise<unknown> => setFacade.move(3, 'up'), 'POST', '/api/sets/3/move'],
   ] as const)('%s addresses the set by its own id', async (_name, call, method, url) => {
     await call();
 
     expect(fetch.requests).toMatchObject([{ method, url }]);
-  });
-
-  test('move() sends the direction', async () => {
-    await setFacade.move(3, 'up');
-
-    expect(fetch.sent('POST /api/sets/3/move')).toEqual([{ direction: 'up' }]);
   });
 });
