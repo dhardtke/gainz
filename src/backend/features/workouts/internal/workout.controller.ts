@@ -1,10 +1,11 @@
 import { json, noContent, pathId, queryInt, readJsonObject } from '../../../http/http.ts';
 import type { ParamRequest } from '../../../http/routing.ts';
-import type { WorkoutId } from '../../../../shared/flavors.ts';
+import type { ExerciseId, WorkoutId } from '../../../../shared/flavors.ts';
 import type { SetFacade, WorkoutFacade } from '../workouts.facade.ts';
 import {
   translateToCreateWorkoutDto,
   translateToEditWorkoutDto,
+  translateToMoveWorkoutExerciseDto,
   translateToWorkoutDto,
   translateToWorkoutPageDto,
   translateToWorkoutWithExercisesDto,
@@ -35,6 +36,14 @@ export class WorkoutController {
 
   show(req: ParamRequest): Response {
     const id: WorkoutId = pathId(req.params.id, 'workout');
+    return json(translateToWorkoutWithExercisesDto(this.#workouts.require(id), this.#workouts.exercises(id), this.#sets.list(id)));
+  }
+
+  async moveExercise(req: ParamRequest): Promise<Response> {
+    const id: WorkoutId = pathId(req.params.id, 'workout');
+    const exerciseId: ExerciseId = pathId(req.params.exerciseId, 'exercise');
+    const dto = translateToMoveWorkoutExerciseDto(await readJsonObject(req));
+    this.#workouts.moveExercise(id, exerciseId, dto);
     return json(translateToWorkoutWithExercisesDto(this.#workouts.require(id), this.#workouts.exercises(id), this.#sets.list(id)));
   }
 

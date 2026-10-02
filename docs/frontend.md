@@ -87,7 +87,17 @@ Each header (`<summary>`) shows the exercise name, an outline badge "N sets · x
 tab. A click on the link activates the link, not the summary, so it does not toggle; a click
 listener on `.actions` prevents the default of every other click there, which covers disabled
 buttons and the gaps between them, but spares a click through an `<a>`, because `gz-app` leaves a
-default-prevented click alone. The view hands `gz-add-set-form` the sets back in logged order
+default-prevented click alone.
+
+Before the link, `.actions` holds a ▲▼ pair: two `outline` buttons in Oat's `fieldset.group`,
+whose bottom margin and shared border the view's stylesheet resets, since Oat only joins grouped
+inputs. ▲ is disabled on the first exercise and ▼ on the last. They are the view's own
+`data-action`s, `move-exercise-up` and `move-exercise-down`, so no event is needed: a click POSTs
+the move through `workoutFacade.moveExercise()`, reloads, and focuses the same arrow on the moved
+exercise, or the other one once it has reached that edge, so repeated presses keep moving it. The
+open exercise stays open, and a failed move toasts without reloading.
+
+The view hands `gz-add-set-form` the sets back in logged order
 (`position`, then `id`): the form starts from the last set it is given, which in group order would
 be the last exercise's.
 

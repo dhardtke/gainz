@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { type DB, openDatabase } from '../../db/db.ts';
-import { thrown } from '../../testing.ts';
+import { at, thrown } from '../../testing.ts';
 import { today } from '../../shared/validate.ts';
 import { createExerciseFacade } from '../exercises/exercises.facade.ts';
 import { createWorkoutFacades } from './workouts.facade.ts';
@@ -116,5 +116,58 @@ describe('SetFacade validation', () => {
         sets.delete(set.id);
       }).status,
     ).toBe(409);
+  });
+});
+
+describe('WorkoutFacade.moveExercise', () => {
+  function threeExercises(): ReturnType<typeof setup> & { workoutId: number; ids: number[] } {
+    const facades = setup();
+    const exercises = createExerciseFacade(facades.db);
+    const workoutId = facades.workouts.create({}).id;
+    const ids = [facades.exerciseId, exercises.create({ name: 'Bench' }).id, exercises.create({ name: 'Row' }).id];
+    for (const exerciseId of ids) {
+      facades.sets.create(workoutId, { exerciseId, reps: 5, weight: 60 });
+    }
+    return { ...facades, workoutId, ids };
+  }
+
+  function order(workouts: ReturnType<typeof setup>['workouts'], workoutId: number): number[][] {
+    return workouts.exercises(workoutId).map((row) => [row.exercise_id, row.position]);
+  }
+
+  test('orders tied positions by exercise id, then swaps', () => {
+    const { db, workouts, workoutId, ids } = threeExercises();
+    db.query('UPDATE workout_exercises SET position = 0 WHERE workout_id = ?').run(workoutId);
+
+    workouts.moveExercise(workoutId, at(ids, 0), { direction: 'up' });
+    expect(order(workouts, workoutId)).toEqual(ids.map((id, index) => [id, index + 1]));
+
+    workouts.moveExercise(workoutId, at(ids, 0), { direction: 'down' });
+    expect(order(workouts, workoutId).map(([id]) => id)).toEqual([at(ids, 1), at(ids, 0), at(ids, 2)]);
+  });
+
+  test('renumbers positions with gaps to 1..n', () => {
+    const { db, workouts, workoutId, ids } = threeExercises();
+    const renumber = db.query('UPDATE workout_exercises SET position = ? WHERE workout_id = ? AND exercise_id = ?');
+    for (const [index, position] of [5, 9, 40].entries()) {
+      renumber.run(position, workoutId, at(ids, index));
+    }
+
+    workouts.moveExercise(workoutId, at(ids, 2), { direction: 'up' });
+    expect(order(workouts, workoutId)).toEqual([
+      [at(ids, 0), 1],
+      [at(ids, 2), 2],
+      [at(ids, 1), 3],
+    ]);
+  });
+
+  test('validates the direction before looking up the workout', () => {
+    const { workouts, ids } = threeExercises();
+    expect(
+      thrown(() => {
+        // @ts-expect-error -- a client may send any string; the facade must reject it
+        workouts.moveExercise(999999, at(ids, 0), { direction: 'sideways' });
+      }).status,
+    ).toBe(400);
   });
 });
