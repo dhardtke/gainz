@@ -1,4 +1,4 @@
-/* One logged set: a dense row, editable in place until the set is done. */
+/* One logged set: a dense row, editable in place until the set is done, then disabled. */
 
 .row-view {
   display: grid;
@@ -31,11 +31,6 @@
   & input {
     width: 5.5rem;
   }
-}
-
-span.note {
-  color: var(--muted-foreground);
-  overflow-wrap: anywhere;
 }
 
 input.note {
