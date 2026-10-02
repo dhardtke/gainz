@@ -2,7 +2,7 @@
 
 .row-view {
   display: grid;
-  grid-template-columns: auto 2.2rem minmax(7rem, 1.4fr) auto minmax(0, 1.6fr) auto;
+  grid-template-columns: auto 2.2rem auto minmax(0, 1.6fr) auto;
   align-items: center;
   gap: 0.6rem;
   padding: 0.5rem 0.65rem;
@@ -19,16 +19,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.exercise {
-  font-weight: 600;
-  color: inherit;
-  text-decoration: none;
-
-  &:hover {
-    color: var(--primary);
-  }
-}
-
 .load {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
@@ -40,7 +30,7 @@
   overflow-wrap: anywhere;
 }
 
-.row-view.done :is(.exercise, .load) {
+.row-view.done .load {
   color: var(--muted-foreground);
 }
 
@@ -84,20 +74,17 @@ form.edit {
 
 @media (max-width: 720px) {
   .row-view {
-    grid-template-columns: auto 2rem 1fr auto;
+    grid-template-columns: auto 2rem 1fr;
     grid-template-areas:
-      "t i e l"
-      ". . n n"
-      ". . a a";
+      "t i l"
+      ". . n"
+      ". . a";
   }
   .toggle {
     grid-area: t;
   }
   .index {
     grid-area: i;
-  }
-  .exercise {
-    grid-area: e;
   }
   .load {
     grid-area: l;

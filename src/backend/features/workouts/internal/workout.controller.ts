@@ -7,7 +7,7 @@ import {
   translateToEditWorkoutDto,
   translateToWorkoutDto,
   translateToWorkoutPageDto,
-  translateToWorkoutWithSetsDto,
+  translateToWorkoutWithExercisesDto,
 } from './workout.translator.ts';
 import { translateToCreateSetDto, translateToLiftSetDto } from './set.translator.ts';
 
@@ -30,12 +30,12 @@ export class WorkoutController {
 
   async create(req: Request): Promise<Response> {
     const workout = this.#workouts.create(translateToCreateWorkoutDto(await readJsonObject(req)));
-    return json(translateToWorkoutWithSetsDto(workout, this.#sets.list(workout.id)), 201);
+    return json(translateToWorkoutWithExercisesDto(workout, this.#workouts.exercises(workout.id), this.#sets.list(workout.id)), 201);
   }
 
   show(req: ParamRequest): Response {
     const id: WorkoutId = pathId(req.params.id, 'workout');
-    return json(translateToWorkoutWithSetsDto(this.#workouts.require(id), this.#sets.list(id)));
+    return json(translateToWorkoutWithExercisesDto(this.#workouts.require(id), this.#workouts.exercises(id), this.#sets.list(id)));
   }
 
   async update(req: ParamRequest): Promise<Response> {

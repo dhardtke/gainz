@@ -30,6 +30,16 @@ describe('WorkoutFacade validation', () => {
     expect(sets.list(copy.id)).toHaveLength(1);
   });
 
+  test('deleting a workout leaves no exercise order behind', () => {
+    const { db, workouts, sets, exerciseId } = setup();
+    const workout = workouts.create({});
+    sets.create(workout.id, { exerciseId, reps: 5, weight: 60 });
+    expect(workouts.exercises(workout.id)).toHaveLength(1);
+
+    workouts.delete(workout.id);
+    expect(db.query('SELECT 1 FROM workout_exercises WHERE workout_id = ?').all(workout.id)).toEqual([]);
+  });
+
   test('update validates before looking up the workout', () => {
     const { workouts } = setup();
     expect(thrown(() => workouts.update(999999, { performedOn: 'x' })).status).toBe(400);

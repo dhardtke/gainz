@@ -1,8 +1,17 @@
-import type { CreateWorkoutDto, EditWorkoutDto, WorkoutDto, WorkoutPageDto, WorkoutWithSetsDto, WorkoutWithStatsDto } from '../../../../shared/dto/workout.ts';
+import type {
+  CreateWorkoutDto,
+  EditWorkoutDto,
+  WorkoutDto,
+  WorkoutExerciseDto,
+  WorkoutPageDto,
+  WorkoutWithExercisesDto,
+  WorkoutWithStatsDto,
+} from '../../../../shared/dto/workout.ts';
 import type { Iso8601Date, WorkoutId } from '../../../../shared/flavors.ts';
 import { today } from '../../../shared/validate.ts';
 import type { LiftSet } from '../ports/set.ts';
 import type { Workout, WorkoutWithStats } from '../ports/workout.ts';
+import type { WorkoutExercise } from '../ports/workout-exercise.ts';
 import { translateToLiftSetDto } from './set.translator.ts';
 import type { CreateWorkout, EditWorkout } from './workout.repository.ts';
 
@@ -82,10 +91,20 @@ function translateToWorkoutWithStatsDto(row: WorkoutWithStats): WorkoutWithStats
   };
 }
 
-export function translateToWorkoutWithSetsDto(row: Workout, sets: LiftSet[]): WorkoutWithSetsDto {
+function translateToWorkoutExerciseDto(row: WorkoutExercise, sets: LiftSet[]): WorkoutExerciseDto {
+  return {
+    exerciseId: row.exercise_id,
+    exerciseName: row.exercise_name,
+    position: row.position,
+    sets: sets.filter((set) => set.exercise_id === row.exercise_id).map(translateToLiftSetDto),
+  };
+}
+
+/** Groups the workout's sets, in their own order, under its exercises, in theirs. */
+export function translateToWorkoutWithExercisesDto(row: Workout, exercises: WorkoutExercise[], sets: LiftSet[]): WorkoutWithExercisesDto {
   return {
     ...translateToWorkoutDto(row),
-    sets: sets.map(translateToLiftSetDto),
+    exercises: exercises.map((exercise) => translateToWorkoutExerciseDto(exercise, sets)),
     done: isDone(sets.length, sets.filter((set) => set.done === 1).length),
   };
 }

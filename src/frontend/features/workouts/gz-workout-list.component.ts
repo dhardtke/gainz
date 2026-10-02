@@ -66,7 +66,7 @@ export class GzWorkoutListComponent extends GzView<WorkoutListData> {
           title: element.dataset.title,
           copyFromWorkoutId: id,
         });
-        toast(`Copied ${plural(workout.sets.length, 'set')} into a new session`, 'success');
+        toast(`Copied ${plural(workout.exercises.flatMap((group) => group.sets).length, 'set')} into a new session`, 'success');
         navigate(`/workouts/${workout.id}`);
       } catch (error) {
         toastError(error);

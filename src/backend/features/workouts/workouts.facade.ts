@@ -6,9 +6,11 @@ import { optionalString, requiredBoolean, requiredDate, requiredInt, requiredNum
 import { SetRepository } from './internal/set.repository.ts';
 import { translateDtoToCreateSet, translateDtoToEditSet } from './internal/set.translator.ts';
 import { WorkoutRepository } from './internal/workout.repository.ts';
+import { WorkoutExerciseRepository } from './internal/workout-exercise.repository.ts';
 import { translateDtoToCreateWorkout, translateDtoToEditWorkout } from './internal/workout.translator.ts';
 import type { LiftSet } from './ports/set.ts';
 import type { Workout, WorkoutWithStats } from './ports/workout.ts';
+import type { WorkoutExercise } from './ports/workout-exercise.ts';
 
 const MAX_WORKOUT_NAME_LENGTH = 120;
 const MAX_WORKOUT_NOTES_LENGTH = 2000;
@@ -20,8 +22,11 @@ const MAX_WORKOUT_NOTES_LENGTH = 2000;
 export class WorkoutFacade {
   readonly #workouts: WorkoutRepository;
 
-  constructor(workouts: WorkoutRepository) {
+  readonly #exercises: WorkoutExerciseRepository;
+
+  constructor(workouts: WorkoutRepository, exercises: WorkoutExerciseRepository) {
     this.#workouts = workouts;
+    this.#exercises = exercises;
   }
 
   list(limit: number, offset: number): WorkoutWithStats[] {
@@ -34,6 +39,11 @@ export class WorkoutFacade {
 
   require(id: WorkoutId): Workout {
     return this.#workouts.require(id);
+  }
+
+  /** The workout's exercises, in its order. */
+  exercises(id: WorkoutId): WorkoutExercise[] {
+    return this.#exercises.list(id);
   }
 
   create(dto: CreateWorkoutDto): Workout {
@@ -133,14 +143,15 @@ export class SetFacade {
 }
 
 /**
- * Both repositories are built here because both belong to this feature: SetRepository reads
- * workouts through the WorkoutRepository it is given, and this factory is the one place that
- * decides which one that is.
+ * Every repository is built here because all of them belong to this feature: SetRepository reads
+ * workouts through the WorkoutRepository it is given and keeps the WorkoutExerciseRepository it is
+ * given in step, and this factory is the one place that decides which ones those are.
  */
 export function createWorkoutFacades(db: DB): { workouts: WorkoutFacade; sets: SetFacade } {
   const workouts = new WorkoutRepository(db);
+  const workoutExercises = new WorkoutExerciseRepository(db);
   return {
-    workouts: new WorkoutFacade(workouts),
-    sets: new SetFacade(new SetRepository(db, workouts)),
+    workouts: new WorkoutFacade(workouts, workoutExercises),
+    sets: new SetFacade(new SetRepository(db, workouts, workoutExercises)),
   };
 }

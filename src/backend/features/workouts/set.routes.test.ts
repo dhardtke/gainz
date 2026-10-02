@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { LiftSetDto } from '../../../shared/dto/set.ts';
-import type { WorkoutWithSetsDto } from '../../../shared/dto/workout.ts';
+import type { WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
 import { body, useServer } from '../../testing.ts';
 import { createExercise } from '../exercises/exercises.fixtures.ts';
 import { createSet, createWorkout, markDone } from './workouts.fixtures.ts';
@@ -18,7 +18,7 @@ describe('sets', () => {
 
     expect((await api(`/api/sets/${set.id}`, { method: 'DELETE' })).status).toBe(204);
     expect((await api(`/api/workouts/${workout.id}`)).status).toBe(200);
-    expect((await body<WorkoutWithSetsDto>(await api(`/api/workouts/${workout.id}`))).sets).toHaveLength(0);
+    expect((await body<WorkoutWithExercisesDto>(await api(`/api/workouts/${workout.id}`))).exercises).toEqual([]);
   });
 
   test("ignores an exercise in a patch: a set's exercise is fixed", async () => {
@@ -67,7 +67,7 @@ describe('sets', () => {
     for (const change of [{ reps: 6 }, { weight: 62.5 }, { notes: 'Hard' }, { done: false, reps: 6 }]) {
       expect((await patch(`/api/sets/${set.id}`, change)).status).toBe(409);
     }
-    expect((await body<WorkoutWithSetsDto>(await api(`/api/workouts/${workout.id}`))).sets).toEqual([done]);
+    expect((await body<WorkoutWithExercisesDto>(await api(`/api/workouts/${workout.id}`))).exercises.flatMap((group) => group.sets)).toEqual([done]);
   });
 
   test('changes a set again once it is unchecked', async () => {
@@ -123,6 +123,36 @@ describe('sets', () => {
       expect(res.status).toBe(200);
       expect((await body<LiftSetDto>(res)).position).toBe(set.position);
     }
+  });
+
+  test("deleting an exercise's last set removes it from the workout, and deleting one of two keeps it", async () => {
+    const bench = await createExercise(post);
+    const row = await createExercise(post, 'Barbell Row');
+    const workout = await createWorkout(post);
+    const benchSet = await createSet(post, workout.id, { exerciseId: bench.id, reps: 5, weight: 80 });
+    const firstRow = await createSet(post, workout.id, { exerciseId: row.id, reps: 8, weight: 60 });
+    await createSet(post, workout.id, { exerciseId: row.id, reps: 8, weight: 60 });
+
+    await api(`/api/sets/${firstRow.id}`, { method: 'DELETE' });
+    await api(`/api/sets/${benchSet.id}`, { method: 'DELETE' });
+
+    const detail = await body<WorkoutWithExercisesDto>(await api(`/api/workouts/${workout.id}`));
+    expect(detail.exercises.map((group) => [group.exerciseId, group.sets.length])).toEqual([[row.id, 1]]);
+  });
+
+  test('logging a set of an exercise already in the workout neither adds nor moves its group', async () => {
+    const bench = await createExercise(post);
+    const row = await createExercise(post, 'Barbell Row');
+    const workout = await createWorkout(post);
+    await createSet(post, workout.id, { exerciseId: bench.id, reps: 5, weight: 80 });
+    await createSet(post, workout.id, { exerciseId: row.id, reps: 8, weight: 60 });
+    await createSet(post, workout.id, { exerciseId: bench.id, reps: 5, weight: 80 });
+
+    const detail = await body<WorkoutWithExercisesDto>(await api(`/api/workouts/${workout.id}`));
+    expect(detail.exercises.map((group) => [group.exerciseId, group.position, group.sets.length])).toEqual([
+      [bench.id, 1, 2],
+      [row.id, 2, 1],
+    ]);
   });
 
   test('validates the body before looking up the set', async () => {
