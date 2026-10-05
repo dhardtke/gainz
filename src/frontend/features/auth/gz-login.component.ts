@@ -33,7 +33,7 @@ export class GzLoginComponent extends GzElement {
   }
 
   #showError(message: string): void {
-    const alert = this.$<HTMLElement>('p[role="alert"]');
+    const alert = this.$<HTMLElement>('[role="alert"]');
     if (alert) {
       alert.textContent = message;
       alert.hidden = false;
@@ -48,9 +48,9 @@ export class GzLoginComponent extends GzElement {
           <input type="text" name="username" autocomplete="username" value="gainz" hidden />
           <label>
             Password
-            <input type="password" name="password" autocomplete="current-password" required autofocus />
+            <input type="password" name="password" placeholder="Your password" autocomplete="current-password" required autofocus />
           </label>
-          <p class="error-text" role="alert" hidden></p>
+          <div role="alert" data-variant="error" hidden></div>
           <button type="submit">Log in</button>
         </form>
       </section>

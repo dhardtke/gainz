@@ -16,7 +16,7 @@ function logIn(password: string): ShadowRoot {
 }
 
 function alertText(root: ShadowRoot): string | null {
-  const alert = find<HTMLElement>(root, 'p[role="alert"]');
+  const alert = find<HTMLElement>(root, '[role="alert"]');
   return alert.hidden === true ? null : alert.textContent;
 }
 
