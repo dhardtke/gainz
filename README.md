@@ -39,6 +39,9 @@ The target machine needs Bun 1.4 or newer and nothing else — no checkout, no
 `bun start`. Hot reload is not available in the built file; `GAINZ_DEV` is
 ignored there.
 
+Pushes to `main` deploy automatically through GitHub Actions and a self-hosted
+runner; [`docs/deployment.md`](docs/deployment.md) describes the server setup.
+
 ## Security
 
 The server binds to all interfaces and has no authentication — it is built to run

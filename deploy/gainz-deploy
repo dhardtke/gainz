@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# Installs one gainz build as a release, backs up the database, switches the service onto the
+# release and rolls code and database back if it does not come up healthy.
+#
+#   tar -C dist -c gainz.js gainz.js.map | sudo -u gainz gainz-deploy <commit sha>
+#
+# Runs as the gainz user and drives its systemd user service; see docs/deployment.md.
+set -euo pipefail
+
+readonly APP=/home/gainz/app
+readonly BUN=/home/gainz/.bun/bin/bun
+readonly PORT=3000
+readonly GAINZ_DB=$APP/data/gainz.sqlite
+readonly RELEASES=$APP/releases
+readonly CURRENT=$APP/current
+readonly BACKUPS=$APP/backups
+readonly KEEP_RELEASES=5
+readonly KEEP_BACKUPS=10
+
+fail() {
+  echo "gainz-deploy: $*" >&2
+  exit 1
+}
+
+[[ $(id -un) == gainz ]] || fail 'run this as the gainz user'
+[[ $# -eq 1 ]] || fail 'usage: gainz-deploy <commit sha> < build.tar'
+readonly sha=$1
+[[ $sha =~ ^[0-9a-f]{40}$ ]] || fail "not a commit sha: $sha"
+
+# sudo neither points systemctl --user at this user's manager nor leaves a working directory gainz
+# may enter.
+export HOME=/home/gainz XDG_RUNTIME_DIR=/run/user/$(id -u)
+cd /
+
+exec 9>"$XDG_RUNTIME_DIR/gainz-deploy.lock"
+flock -n 9 || fail 'another deploy is running'
+
+point_current_at() {
+  ln -sfn "$1" "$CURRENT.new"
+  mv -T "$CURRENT.new" "$CURRENT"
+}
+
+healthy() {
+  for _ in $(seq 30); do
+    if curl -fsS -o /dev/null "http://127.0.0.1:$PORT/api/health"; then
+      return 0
+    fi
+    sleep 1
+  done
+  return 1
+}
+
+prune() {
+  local keep=$1 dir=$2 current
+  current=$(readlink -f "$CURRENT" || true)
+  find "$dir" -mindepth 1 -maxdepth 1 -printf '%T@ %p\n' | sort -rn | cut -d' ' -f2- | tail -n +"$((keep + 1))" |
+    while read -r old; do
+      [[ $old == "$current" ]] || rm -rf -- "$old"
+    done
+}
+
+readonly release=$RELEASES/$sha
+previous=$(readlink -f "$CURRENT" || true)
+readonly previous
+[[ $release != "$previous" ]] || {
+  echo "gainz-deploy: $sha is already the current release"
+  exit 0
+}
+
+rm -rf -- "$release.tmp"
+mkdir -p -- "$release.tmp"
+tar -x -C "$release.tmp" --no-same-owner --no-same-permissions gainz.js gainz.js.map
+[[ -f $release.tmp/gainz.js && ! -L $release.tmp/gainz.js ]] || fail 'the archive holds no gainz.js'
+rm -rf -- "$release"
+mv -T -- "$release.tmp" "$release"
+
+systemctl --user stop gainz
+
+backup=
+if [[ -f $GAINZ_DB ]]; then
+  mkdir -p -- "$BACKUPS"
+  backup=$BACKUPS/$(date -u +%Y%m%dT%H%M%SZ).sqlite
+  SRC=$GAINZ_DB DST=$backup "$BUN" -e \
+    'const { Database } = require("bun:sqlite"); new Database(process.env.SRC).run("VACUUM INTO ?", [process.env.DST]);'
+  echo "gainz-deploy: backed up the database to $backup"
+fi
+
+point_current_at "$release"
+systemctl --user start gainz
+
+if healthy; then
+  prune "$KEEP_RELEASES" "$RELEASES"
+  [[ -d $BACKUPS ]] && prune "$KEEP_BACKUPS" "$BACKUPS"
+  echo "gainz-deploy: $sha is live"
+  exit 0
+fi
+
+echo "gainz-deploy: $sha did not become healthy, rolling back" >&2
+journalctl --user -u gainz -n 50 --no-pager >&2 || true
+systemctl --user stop gainz
+if [[ -n $backup ]]; then
+  rm -f -- "$GAINZ_DB-wal" "$GAINZ_DB-shm"
+  cp -- "$backup" "$GAINZ_DB"
+fi
+if [[ -n $previous ]]; then
+  point_current_at "$previous"
+  systemctl --user start gainz
+fi
+exit 1
