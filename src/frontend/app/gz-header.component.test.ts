@@ -35,12 +35,24 @@ test('shows only the brand and the theme toggle on the login page', () => {
   expect(find(shadow(mount('gz-header')), 'nav').classList.contains('login')).toBe(true);
 });
 
-test('elsewhere, ends both link lists with Log out', () => {
+test('elsewhere, ends both link lists with Log out, shown while the server asks for a login', async () => {
   history.replaceState(null, '', '/workouts');
+  fake.respondTo('GET /api/auth/status', 200, '{"enabled":true}');
   const root = shadow(mount('gz-header'));
+  await settle();
   expect(find(root, 'nav').classList.contains('login')).toBe(false);
+  expect(find(root, 'nav').classList.contains('auth')).toBe(true);
   expect(find(root, '.links li:last-child a').textContent).toBe('Log out');
   expect(find(root, 'menu[popover] > :last-child').textContent).toBe('Log out');
+});
+
+test('hides Log out while the server asks for no login', async () => {
+  history.replaceState(null, '', '/workouts');
+  fake.respondTo('GET /api/auth/status', 200, '{"enabled":false}');
+  const root = shadow(mount('gz-header'));
+  await settle();
+  expect(fake.requests.map((request) => request.url)).toContain('/api/auth/status');
+  expect(find(root, 'nav').classList.contains('auth')).toBe(false);
 });
 
 test.each(['.links [data-action="logout"]', 'menu[popover] [data-action="logout"]'])(

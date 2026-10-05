@@ -1,4 +1,4 @@
-import { beforeAll, expect, test } from 'bun:test';
+import { beforeAll, beforeEach, expect, test } from 'bun:test';
 import { find, mount, settle, shadow, submit, type, useDom, useFetch } from '../../testing.ts';
 
 useDom();
@@ -8,10 +8,16 @@ beforeAll(async () => {
   await import('./gz-login.component.ts');
 });
 
-function logIn(password: string): ShadowRoot {
+beforeEach(() => {
+  fake.respondTo('GET /api/auth/status', 200, '{"enabled":true}');
+});
+
+async function logIn(password: string): Promise<ShadowRoot> {
   const root = shadow(mount('gz-login'));
+  await settle();
   type(find<HTMLInputElement>(root, 'input[name="password"]'), password);
   submit(find(root, 'form'));
+  await settle();
   return root;
 }
 
@@ -24,8 +30,7 @@ test('posts the password and goes to next', async () => {
   history.replaceState(null, '', '/login?next=%2Fworkouts%2F12');
   fake.respondTo('POST /api/auth/login', 204);
 
-  const root = logIn('pw');
-  await settle();
+  const root = await logIn('pw');
 
   expect(fake.sent('POST /api/auth/login')).toEqual([{ password: 'pw' }]);
   expect(location.pathname).toBe('/workouts/12');
@@ -36,8 +41,7 @@ test('a wrong password says so and stays', async () => {
   history.replaceState(null, '', '/login');
   fake.respondTo('POST /api/auth/login', 401, '{"error":"Wrong password"}');
 
-  const root = logIn('nope');
-  await settle();
+  const root = await logIn('nope');
 
   expect(alertText(root)).toBe('Wrong password.');
   expect(location.pathname).toBe('/login');
@@ -47,8 +51,18 @@ test("a lockout shows the server's message", async () => {
   history.replaceState(null, '', '/login');
   fake.respondTo('POST /api/auth/login', 429, '{"error":"Too many failed logins; try again in 60 s"}');
 
-  const root = logIn('pw');
-  await settle();
+  const root = await logIn('pw');
 
   expect(alertText(root)).toBe('Too many failed logins; try again in 60 s');
+});
+
+test('without a login on the server, goes straight to next', async () => {
+  history.replaceState(null, '', '/login?next=%2Fworkouts%2F12');
+  fake.respondTo('GET /api/auth/status', 200, '{"enabled":false}');
+
+  mount('gz-login');
+  await settle();
+
+  expect(location.pathname).toBe('/workouts/12');
+  expect(fake.sent('POST /api/auth/login')).toEqual([]);
 });

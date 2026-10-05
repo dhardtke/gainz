@@ -9,7 +9,8 @@ import './gz-theme-toggle.component.ts';
 
 /**
  * Sticky page header: brand, page links and Log out (a dropdown on narrow screens) and the theme
- * toggle. On the login page it shows only the brand and the theme toggle.
+ * toggle. Log out shows only while the server asks for a login. On the login page the header shows
+ * only the brand and the theme toggle.
  */
 class GzHeaderComponent extends GzElement {
   #unsubscribe: (() => void) | null = null;
@@ -29,6 +30,7 @@ class GzHeaderComponent extends GzElement {
 
   override afterRender(): void {
     this.#syncLinks();
+    void this.#showLogout();
     // Oat focuses, and so highlights, the first item when the menu opens. Its listener is
     // registered first (oat.js defines ot-dropdown before any module runs, so the dropdown
     // initializes as the template is inserted), so this one runs after it and moves focus on to
@@ -59,6 +61,18 @@ class GzHeaderComponent extends GzElement {
   }
 
   /**
+   * Shows Log out, hidden until then, once the server says it asks for a login. Should the
+   * request fail, Log out stays hidden: the views' own requests will toast the failure.
+   */
+  async #showLogout(): Promise<void> {
+    try {
+      this.$('nav')?.classList.toggle('auth', await authFacade.enabled());
+    } catch {
+      // Left hidden, as the comment above says.
+    }
+  }
+
+  /**
    * Marks the current page in both link lists, hides both on the login page, and closes the menu
    * after a navigation from it.
    */
@@ -86,7 +100,7 @@ class GzHeaderComponent extends GzElement {
           <a class="brand" href="/"><strong>gainz</strong><span class="tag">lifting log</span></a>
           <ul class="links unstyled">
             ${navItems.map((item) => html`<li><a href="${item.path}" data-path="${item.path}">${item.label}</a></li>`)}
-            <li><a href="/login" data-action="logout">Log out</a></li>
+            <li class="logout"><a href="/login" data-action="logout">Log out</a></li>
           </ul>
           <ot-dropdown class="menu">
             <button type="button" class="ghost icon" popovertarget="nav-menu" aria-label="Menu">
@@ -104,7 +118,7 @@ class GzHeaderComponent extends GzElement {
             </button>
             <menu popover id="nav-menu">
               ${navItems.map((item) => html`<a role="menuitem" href="${item.path}" data-path="${item.path}">${item.label}</a>`)}
-              <a role="menuitem" href="/login" data-action="logout">Log out</a>
+              <a role="menuitem" class="logout" href="/login" data-action="logout">Log out</a>
             </menu>
           </ot-dropdown>
           <gz-theme-toggle></gz-theme-toggle>

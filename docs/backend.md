@@ -302,7 +302,8 @@ than answering a Basic Auth prompt on every launch. `GAINZ_PASSWORD_HASH` holds 
 hash (argon2id from `bun run hash-password`; bcrypt is accepted too), and `main.ts` refuses to start
 when the variable holds anything else. Unset or empty, auth is off: the guard hands the tables back
 untouched, `POST /api/auth/login` validates its body and answers 204 without a cookie, the health
-check reports `"auth": false` and the startup log says `auth: off`. That is why `bun start`, the seed
+check reports `"auth": false`, `GET /api/auth/status` answers `{ "enabled": false }` (the frontend's
+cue to hide Log out and skip its login page) and the startup log says `auth: off`. That is why `bun start`, the seed
 and every route test other than `auth.routes.test.ts` need no cookie. Production cannot fall into
 that state unnoticed: the unit file requires the env file that sets the hash, and `gainz-deploy`
 rolls back a release whose health check reports `"auth": false` (see `docs/deployment.md`).
@@ -327,8 +328,8 @@ The guard is `AuthFacade.guard(table)`, applied in `allRoutes()` to the stats, e
 set tables. It wraps every handler — a bare function or each verb of a method map — and throws
 `unauthorized()` (`401 { "error": "Not logged in" }`) for a missing, malformed, tampered, expired or
 old-password cookie. A static `Response` value would bypass the wrapper, so meeting one is a startup
-error. Everything outside those tables stays public: `/api/health`, the `/api` 404s, login and
-logout, `/dev/ws`, and the whole frontend, whose code is public in the repository anyway — guarding
+error. Everything outside those tables stays public: `/api/health`, the `/api` 404s, the auth status,
+login and logout, `/dev/ws`, and the whole frontend, whose code is public in the repository anyway — guarding
 it would only need an allowlist of the modules the login page imports.
 
 `internal/login-throttle.ts` backs off wrong passwords for every client at once, since behind the

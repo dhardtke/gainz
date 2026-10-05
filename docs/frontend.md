@@ -29,12 +29,12 @@ import boundaries below. `app/` is the shell: `gz-app`, the
 `gz-header` it renders at the top with the `gz-theme-toggle` inside it, `router.ts`, a generic path router that names no route, and
 `routes.ts`, which spreads the features' route lists into the one `ROUTES` table. `app/` reaches a feature
 only through those route lists, with one exception: `gz-header` imports `features/auth/auth.facade.ts`
-for its Log out button. `http/` is the request
+for its Log out button and whether to show it. `http/` is the request
 plumbing: `http.ts` holds the `get`/`post`/`patch`/`remove` helpers over `fetch`, and `errors.ts`
 holds `ApiError` and `errorMessage`, kept apart so a component can catch an error without being
 able to make a request. `ui/` is what any component may use: `base.ts` with `GzElement` (open
 shadow root, `data-action` click/submit delegation, `template()`/`render()`) and `define()`;
-`view.ts` with `GzView`, the abstract base of every route view but `gz-login`, which loads on connect
+`view.ts` with `GzView`, the abstract base of every route view, which loads on connect
 through its `load()` hook and renders `loadingText`, then `readyTemplate()` or `errorTemplate()`
 (the message, and `backLink` below it when a view sets one),
 and whose `numericAttribute()` reads the id attribute a route sets, throwing when it is missing;
@@ -181,18 +181,21 @@ the global object before it throws the `ApiError`; it signals with an event rath
 `navigate()` because `http/` is foundation and may not import `app/`. `gz-app` listens for the event
 on `window` and, unless it is already on `/login`, navigates to `/login?next=` with the current path
 and query encoded. `toastError()` stays silent for a 401, so the view that failed to load shows no
-toast on its way out. `gz-login`, the `auth` feature's one view, is a plain `GzElement` rather than a
-`GzView`, since it loads nothing: a form with a hidden `username` field (password managers save an
+toast on its way out. `gz-login`, the `auth` feature's one view, loads only whether the server asks
+for a login, from the public `GET /api/auth/status`, and renders a form with a hidden `username` field (password managers save an
 entry only for a form that has one) and a password field, posting through `authFacade.login()`. A
 401 shows "Wrong password." inline, any other failure — the throttle's 429 among them — the server's
 message, and a success navigates to `nextPath(location.search, location.origin)` from
 `internal/next-path.ts`, which accepts `next` only when it resolves to a path on this origin other
-than the login page itself, and otherwise answers `/`. While the server has no password, the login
-simply succeeds, so `/login` passes straight through.
+than the login page itself, and otherwise answers `/`. While the server has no password, `gz-login`'s
+`load()` navigates to that same `nextPath` instead, and since `gz-app` keeps the outgoing view until
+the incoming one is ready, the form is never seen.
 
 On `/login` the header's `#syncLinks` puts a `login` class on its `<nav>`, which hides both link
 lists at every width and moves the theme toggle to the far end, so the page shows only the brand and
-the toggle. Elsewhere both lists end in Log out, a link to `/login` styled like its neighbors in each list. Its
+the toggle. Elsewhere both lists end in Log out, a link to `/login` styled like its neighbors in each list,
+hidden until the header, once rendered, has asked `authFacade.enabled()` and put an `auth` class on
+its `<nav>` — so it never shows while the server has no password, nor when that request fails. Its
 `data-action="logout"` handler cancels the click before `gz-app` routes it, posts through
 `authFacade.logout()` and then navigates to `/login`, toasting a failure instead.
 

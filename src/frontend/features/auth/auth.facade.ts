@@ -8,6 +8,11 @@ export class AuthFacade {
     this.#api = api;
   }
 
+  /** Whether the server asks for a login at all; it does not while no password is set. */
+  async enabled(): Promise<boolean> {
+    return (await this.#api.status()).enabled;
+  }
+
   login(password: string): Promise<void> {
     return this.#api.login(password);
   }

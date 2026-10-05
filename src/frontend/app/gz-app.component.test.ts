@@ -1,10 +1,11 @@
 import { beforeAll, beforeEach, expect, test } from 'bun:test';
-import { find, mount, settle, shadow, useDom } from '../testing.ts';
+import { find, mount, settle, shadow, useDom, useFetch } from '../testing.ts';
 import { navigate } from './router.ts';
 
 // Only paths no route matches, but for /login: a matched route would load a real feature view, which
-// fetches the API, and the login view is the one that does not.
+// fetches the API, and the login view fetches only the auth status, which this file answers.
 useDom();
+const fake = useFetch();
 
 beforeAll(async () => {
   await import('./gz-app.component.ts');
@@ -33,6 +34,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   history.replaceState(null, '', '/nowhere');
+  fake.respondTo('GET /api/auth/status', 200, '{"enabled":true}');
 });
 
 async function mountApp(): Promise<HTMLElement> {
@@ -126,7 +128,7 @@ test('sends a 401 to the login page, remembering where it came from', async () =
   history.replaceState(null, '', '/workouts?page=2');
   window.dispatchEvent(new Event('gz:unauthorized'));
   expect(location.pathname + location.search).toBe('/login?next=%2Fworkouts%3Fpage%3D2');
-  // The one matched route this file opens: the login view fetches nothing, but its module must land
+  // The one matched route this file opens: its module and the auth status must land
   // before the file's DOM is torn down.
   for (let i = 0; i < 50 && !app.shadowRoot?.querySelector('main > gz-login'); i++) {
     await settle();

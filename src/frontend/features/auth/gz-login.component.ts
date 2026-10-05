@@ -1,5 +1,6 @@
 import type { RawHtml } from '../../ui/html.ts';
-import { define, GzElement } from '../../ui/base.ts';
+import { define } from '../../ui/base.ts';
+import { GzView } from '../../ui/view.ts';
 import { html } from '../../ui/html.ts';
 import { ApiError, errorMessage } from '../../http/errors.ts';
 import { navigate } from '../../app/router.ts';
@@ -7,13 +8,22 @@ import { authFacade } from './auth.facade.ts';
 import { nextPath } from './internal/next-path.ts';
 
 /**
- * The login page at `/login`. It loads nothing, so it is a plain element rather than a `GzView`.
- * After a login it goes to `?next=`, where the app sent the user from, or to the dashboard.
+ * The login page at `/login`. After a login it goes to `?next=`, where the app sent the user from,
+ * or to the dashboard. It loads only whether the server asks for a login at all, and when it does
+ * not, the page goes there straight away instead: `gz-app` keeps the outgoing view until a view is
+ * ready, so the form is never seen.
  *
  * The hidden username field is there for password managers, which save an entry only for a form
  * that has one.
  */
-export class GzLoginComponent extends GzElement {
+export class GzLoginComponent extends GzView<null> {
+  override async load(): Promise<null> {
+    if (!(await authFacade.enabled())) {
+      navigate(nextPath(location.search, location.origin));
+    }
+    return null;
+  }
+
   override async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
     if (action !== 'login') {
       return;
@@ -40,7 +50,7 @@ export class GzLoginComponent extends GzElement {
     }
   }
 
-  override template(): RawHtml {
+  override readyTemplate(): RawHtml {
     return html`
       <section class="vstack gap-4">
         <h1>Log in</h1>
