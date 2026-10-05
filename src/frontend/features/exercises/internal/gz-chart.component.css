@@ -8,6 +8,7 @@
  */
 
 .chart {
+  container-type: inline-size;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   grid-template-rows: auto auto;
@@ -41,6 +42,10 @@
   position: relative;
   aspect-ratio: 60 / 22;
   min-height: 9rem;
+  /* A grid item with an aspect ratio aligns as start and takes its width from its height, which
+     min-height would turn into ~393px; stretched, the height follows the width instead. */
+  justify-self: stretch;
+  min-width: 0;
 }
 
 svg {
@@ -108,6 +113,14 @@ svg {
 
     &:last-child:not(:first-child) {
       transform: translateX(-100%);
+    }
+
+    /* A narrow chart has room for about half the labels. Counted from the end, so the latest date
+       always stays and never collides with a neighbor the stride appended it beside. */
+    @container (max-width: 28rem) {
+      &:nth-last-child(even) {
+        display: none;
+      }
     }
   }
 }

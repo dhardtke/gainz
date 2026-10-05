@@ -17,6 +17,11 @@
   `article.open-card { &:hover .open { … } & .actions { … } }`, so each block reads as one component
   and the media queries that only adjust it sit inside it. There is no preprocessor: this is the
   browser's own nesting, and `&` is always written explicitly.
+- **Every page fits a 320px-wide screen.** Narrow-screen rules live in the stylesheet of the
+  component they adjust, at the existing breakpoints (560px header, 640px open cards, 720px
+  forms and set rows), and a wide child shrinks or wraps rather than widening the page. Two traps: Oat's
+  `.table` has a 320px `min-width`, which `shared.css` undoes, and a grid item with an
+  `aspect-ratio` takes its width from its height unless it is stretched.
 - **No stylesheet declares a font size.** Body text is Oat's `1rem` everywhere, headings come from
   Oat's fluid scale, and emphasis is weight and color. Oat sets no root or `:host` font size, so
   nothing has to be pinned. For the same reason `gz-chart` draws only geometry in SVG and positions
