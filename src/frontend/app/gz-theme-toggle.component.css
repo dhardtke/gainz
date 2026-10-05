@@ -3,6 +3,13 @@
   display: flex;
 }
 
+/* The touch size at every width, not only below shared.css's breakpoint, so the header it sets the
+   height of is as tall on desktop as on a phone. */
+button {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+}
+
 svg {
   width: auto;
   height: 1.125rem;
