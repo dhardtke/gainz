@@ -14,6 +14,12 @@ const EVENT = 'gz-theme-change';
 
 export const THEMES: readonly Theme[] = ['light', 'dark'];
 
+/**
+ * The `theme-color` the status bar and title bar take on: `--card` from ui/app.css, so the bar
+ * blends into the header. Also inlined in index.html's no-flash script — keep all three in sync.
+ */
+export const THEME_COLORS: Readonly<Record<Theme, string>> = { light: '#fff', dark: '#202024' };
+
 function isTheme(value: string | null): value is Theme {
   return value === 'light' || value === 'dark';
 }
@@ -47,6 +53,7 @@ export function currentTheme(): Theme {
 
 function applyTheme(): void {
   document.documentElement.setAttribute('data-theme', current);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEME_COLORS[current]);
 }
 
 export function setTheme(theme: Theme): void {

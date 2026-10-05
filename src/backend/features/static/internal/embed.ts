@@ -13,6 +13,18 @@ function isEmbedded(url: string): boolean {
   return !url.startsWith('/dev/') && url !== '/testing.ts' && !url.endsWith('.test.ts') && !url.endsWith('.fixtures.ts');
 }
 
+/** `type` is a MIME type as `Bun.file().type` reports it, parameters included. */
+function isText(type: string): boolean {
+  const essence = type.split(';', 1)[0]?.trim() ?? '';
+  return (
+    essence.startsWith('text/') ||
+    essence.endsWith('+json') ||
+    essence.endsWith('+xml') ||
+    essence === 'application/json' ||
+    essence === 'application/javascript'
+  );
+}
+
 export async function embedWebRoot(): Promise<EmbeddedWeb> {
   const pages: Record<string, EmbeddedFile> = {};
   for await (const entry of new Bun.Glob('**/*').scan({ cwd: FRONTEND_DIR })) {
@@ -30,9 +42,10 @@ export async function embedWebRoot(): Promise<EmbeddedWeb> {
       }
       pages[url] = { body: code, type: 'text/javascript;charset=utf-8' };
     } else {
-      // The web root holds only .html, .css and .ts, so every page is text.
+      // Text stays text, so `stamp()` can still edit the index page. Anything else (the icons)
+      // goes in as base64, because `JSON.stringify` cannot carry raw bytes into gainz.js.
       const file = Bun.file(path);
-      pages[url] = { body: await file.text(), type: file.type };
+      pages[url] = isText(file.type) ? { body: await file.text(), type: file.type } : { body: (await file.bytes()).toBase64(), type: file.type, base64: true };
     }
   }
 

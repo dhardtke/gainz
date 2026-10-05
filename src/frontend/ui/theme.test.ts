@@ -29,7 +29,11 @@ beforeEach(() => {
     },
   });
   stub('matchMedia', (query: string) => ({ matches: query === '(prefers-color-scheme: dark)' && systemDark }));
-  stub('document', { documentElement: new FakeElement() });
+  themeColorMeta = new FakeElement();
+  stub('document', {
+    documentElement: new FakeElement(),
+    querySelector: (selector: string) => (selector === 'meta[name="theme-color"]' ? themeColorMeta : null),
+  });
   stub('window', new EventTarget());
 });
 
@@ -41,9 +45,15 @@ class FakeElement {
   }
 }
 
+let themeColorMeta: FakeElement;
+
 function htmlTheme(): string | undefined {
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the stub installed in beforeEach
   return (document.documentElement as unknown as FakeElement).attributes.get('data-theme');
+}
+
+function themeColor(): string | undefined {
+  return themeColorMeta.attributes.get('content');
 }
 
 let loads = 0;
@@ -183,5 +193,54 @@ describe('toggleTheme', () => {
     expect(theme.currentTheme()).toBe('light');
     expect(stored.get('gainz:theme')).toBe('light');
     expect(htmlTheme()).toBe('light');
+  });
+});
+
+describe('theme-color', () => {
+  test('at load it matches the theme: light, dark from the system, and dark stored', async () => {
+    const theme = await load();
+    expect(themeColor()).toBe(theme.THEME_COLORS.light);
+
+    systemDark = true;
+    await load();
+    expect(themeColor()).toBe(theme.THEME_COLORS.dark);
+
+    systemDark = false;
+    stored.set('gainz:theme', 'dark');
+    await load();
+    expect(themeColor()).toBe(theme.THEME_COLORS.dark);
+  });
+
+  test('setTheme and toggleTheme update it', async () => {
+    const theme = await load();
+
+    theme.setTheme('dark');
+    expect(themeColor()).toBe(theme.THEME_COLORS.dark);
+
+    theme.toggleTheme();
+    expect(themeColor()).toBe(theme.THEME_COLORS.light);
+  });
+
+  test('a document without the meta tag does not throw', async () => {
+    stub('document', { documentElement: new FakeElement(), querySelector: () => null });
+
+    const theme = await load();
+
+    expect(() => {
+      theme.toggleTheme();
+    }).not.toThrow();
+  });
+
+  test('matches --card in app.css and the inline script in index.html', async () => {
+    const { THEME_COLORS } = await load();
+    const css = await Bun.file(`${import.meta.dir}/app.css`).text();
+    const card = /--card:\s*light-dark\(\s*([^,\s]+)\s*,\s*([^)\s]+)\s*\)/.exec(css);
+    expect([card?.[1], card?.[2]]).toEqual([THEME_COLORS.light, THEME_COLORS.dark]);
+
+    // The script body only: the meta tag's own content="#fff" would always match.
+    const html = await Bun.file(`${import.meta.dir}/../index.html`).text();
+    const script = /<script>([\s\S]*?)<\/script>/.exec(html)?.[1] ?? '';
+    expect(script).toContain(`'${THEME_COLORS.light}'`);
+    expect(script).toContain(`'${THEME_COLORS.dark}'`);
   });
 });

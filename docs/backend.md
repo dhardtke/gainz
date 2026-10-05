@@ -274,7 +274,8 @@ the URLs that reach the controller.
 The static feature keeps no map of content types. Transpiled modules get a fixed `Content-Type`,
 and every plain file — vendor files included — takes `Bun.file(x).type` — the same lookup
 `new Response(Bun.file(x))` uses, off a complete MIME database (`.svg` → `image/svg+xml`, `.woff2` →
-`font/woff2`, `.png` → `image/png`, `.webp` → `image/webp`, no extension →
+`font/woff2`, `.png` → `image/png`, `.webp` → `image/webp`, `.webmanifest` →
+`application/manifest+json`, no extension →
 `application/octet-stream`, all measured on Bun 1.4.2), so a hand-written map would be a subset
 that drifts. It also does not special-case HEAD beyond letting it past the method check — Bun strips the body itself and leaves the headers
 alone, which `src/backend/features/static/static.routes.test.ts:53` holds in place. What it does do is
@@ -361,7 +362,8 @@ The watcher follows the connections, not the process. `internal/hub.ts` starts o
 `fs.watch` over the web root when the first browser connects and closes it when the last one
 leaves, so `main.ts`'s shutdown has nothing to stop and no test leaves a watcher behind. Each path
 is debounced for 25 ms, because one save reports several events, and `internal/changes.ts` turns it
-into `{ swap }` for a `.css` or `{ reload }` for a `.ts` or `.html`; anything else — including the
+into `{ swap }` for a `.css` or `{ reload }` for a `.ts`, `.html`, `.webmanifest`, `.svg` or `.png`
+(the manifest and the icons); anything else — including the
 bare directory names the watcher also reports — is dropped. The connection set is module state
 rather than a facade's field, because `devRoutes()` and `staticRoutes()` each build their own facade.
 
@@ -384,7 +386,10 @@ What is embedded comes from `StaticFacade.embed()`: every file under `src/fronte
 with whitespace minified and no source map, so names and structure survive for browser devtools.
 The frontend is embedded one module per URL rather than bundled, because bundling would change
 `import.meta.url` and break the `.ts` → `.css` lookup in `ui/styles.ts` that lazy routes depend on.
-A module that does not parse fails the build, naming the file. The migrations come from
+A module that does not parse fails the build, naming the file. A file that is not text (the icons)
+is embedded as base64 and flagged `base64: true`, because `JSON.stringify` cannot carry raw bytes;
+`EmbeddedWebFiles` decodes it once at startup, so it is served, and hashed, byte-identically to
+disk. Text files stay strings, so the stamp below can still edit the index page. The migrations come from
 `readMigrations`. The embedded `index.html` is stamped with an HTML comment right below its doctype
 naming the commit (`git rev-parse HEAD`, suffixed `-dirty` when the working tree has uncommitted
 changes, or `unknown` outside a git checkout), the build time as an ISO 8601 UTC timestamp and,

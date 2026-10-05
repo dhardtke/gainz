@@ -125,6 +125,18 @@ describe('single-file build', () => {
     expect((await get('/vendor/oat.js')).headers.get('content-type')).toStartWith('text/javascript');
   });
 
+  test('serves the manifest and the icons byte for byte as they are on disk', async () => {
+    for (const url of ['/manifest.webmanifest', '/icons/icon.svg', '/icons/icon-192.png', '/icons/icon-maskable-512.png']) {
+      const source = Bun.file(join(FRONTEND, url));
+      const res = await get(url);
+      expect({ url, status: res.status }).toEqual({ url, status: 200 });
+      expect(res.headers.get('content-type')).toBe(source.type);
+      expect(new Uint8Array(await res.arrayBuffer())).toEqual(await source.bytes());
+    }
+    expect(embedded.pages['/icons/icon-192.png']?.base64).toBe(true);
+    expect(embedded.pages['/index.html']?.base64).toBeUndefined();
+  });
+
   test('carries neither the dev client nor anything test-only', async () => {
     // Present in the sources, so its 404 proves the exclusion rather than a misspelled path.
     expect(await Bun.file(join(FRONTEND, 'features', 'exercises', 'exercises.fixtures.ts')).exists()).toBe(true);

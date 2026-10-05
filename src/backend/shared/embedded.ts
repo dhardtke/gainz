@@ -11,6 +11,8 @@ import type { MigrationSource } from '../db/migrations.ts';
 export interface EmbeddedFile {
   body: string;
   type: string;
+  /** `body` is then the base64 encoding of binary bytes (an icon) rather than the text itself. */
+  base64?: true;
 }
 
 export interface EmbeddedWeb {
