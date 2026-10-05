@@ -4,7 +4,7 @@ git_commit: 6887a423b5c4d10028b7a6f112b632f855ee2298
 branch: main
 topic: 'Move row-to-DTO translation into *.translator.ts files'
 tags: [plan, backend, ports, translators, controllers, dto, oxlint]
-status: ready
+status: implemented
 ---
 
 # PLAN: Move row-to-DTO translation into `*.translator.ts` files

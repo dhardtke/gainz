@@ -4,7 +4,7 @@ git_commit: 3102860ae44a991eb40a008d0c33f3d3ff765665
 branch: main
 topic: 'Group sets by exercise'
 tags: [plan, workouts, sets, workout-exercises, gz-workout-detail, gz-set-row, accordion, migration]
-status: ready
+status: implemented
 ---
 
 # PLAN: Group sets by exercise

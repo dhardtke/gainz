@@ -4,7 +4,7 @@ git_commit: b0c7752f7be4802f6fd2ec518a718311ae8b0f83
 branch: main
 topic: 'Migrate from Pico CSS to Oat'
 tags: [plan, frontend, styling, static, build, theming, oat, pico]
-status: ready
+status: implemented
 ---
 
 # PLAN: Migrate from Pico CSS to Oat

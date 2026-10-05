@@ -4,7 +4,7 @@ git_commit: 4dc59e8d3862f3636ae8ff679991aaac03fca594
 branch: main
 topic: 'Mark sets as done'
 tags: [plan, workouts, sets, exercises, stats, migrations, gz-set-row, gz-workout-detail, gz-workout-list]
-status: ready
+status: implemented
 ---
 
 # PLAN: Mark sets as done

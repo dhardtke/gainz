@@ -4,7 +4,7 @@ git_commit: 26619b186aeae5b52a4c47e1702988011a6bcce6
 branch: main
 topic: 'Paginate the workouts and exercises pages'
 tags: [plan, frontend, backend, router, gz-workout-list, gz-exercise-list, exercises-api]
-status: draft
+status: implemented
 ---
 
 # PLAN: Paginate the workouts and exercises pages

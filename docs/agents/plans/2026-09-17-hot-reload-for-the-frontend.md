@@ -4,7 +4,7 @@ git_commit: 267839e2d9863c37729d1ea3d5f401cc8ce16285
 branch: main
 topic: 'Hot reload for the frontend'
 tags: [plan, dev, static, frontend, styles, websocket]
-status: ready
+status: implemented
 ---
 
 # PLAN: Hot reload for the frontend

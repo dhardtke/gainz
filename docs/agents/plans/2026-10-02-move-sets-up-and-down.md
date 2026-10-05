@@ -4,7 +4,7 @@ git_commit: 5f6f80ffd4c1a4ab399ac86aab0637a0827b00fe
 branch: main
 topic: 'Move sets up and down'
 tags: [plan, workouts, sets, gz-set-row, gz-workout-detail, validate]
-status: ready
+status: implemented
 ---
 
 # PLAN: Move sets up and down
