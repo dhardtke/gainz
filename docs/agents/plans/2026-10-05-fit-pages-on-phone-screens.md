@@ -4,7 +4,7 @@ git_commit: 2c5d4fcca91b3cf9f28b87da1401f361f8eecbcb
 branch: main
 topic: 'Fit every page on a phone screen'
 tags: [plan, frontend, responsive, gz-chart, gz-session-table, gz-set-row, styling]
-status: ready
+status: implemented
 ---
 
 # PLAN: Fit every page on a phone screen
