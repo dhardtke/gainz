@@ -65,8 +65,10 @@ self-hosted runner_:
 
 ```sh
 sudo useradd --system --create-home --home-dir /var/lib/gh-runner --shell /sbin/nologin gh-runner
-# download and unpack the runner into /var/lib/gh-runner/actions-runner as that page shows, then:
+sudo -u gh-runner mkdir /var/lib/gh-runner/actions-runner
 cd /var/lib/gh-runner/actions-runner
+# as gh-runner, so config.sh can write here: the URL and version are on that page
+sudo -u gh-runner sh -c 'curl -fsSL <runner tarball URL> | tar -xz'
 sudo ./bin/installdependencies.sh
 sudo -u gh-runner ./config.sh --unattended --url https://github.com/dhardtke/gainz --token <token> \
   --labels gainz-prod --name "$(hostname)"
