@@ -43,3 +43,9 @@ test('repeats the workout into a new session dated today', async () => {
   expect(fake.sent('POST /api/workouts')).toMatchObject([{ title: 'Push day', copyFromWorkoutId: 4 }]);
   expect(toasts).toEqual(['Copied 0 sets into a new session']);
 });
+
+test('shows the totals as a muted line, not a badge', () => {
+  const card = shadow(mountCard(listedWorkout({ setCount: 3, exerciseCount: 2 })));
+  expect(find(card, '.foot .text-light').textContent).toContain('3 sets · 2 exercises');
+  expect(card.querySelector('.badge.outline')).toBeNull();
+});

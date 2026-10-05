@@ -42,16 +42,18 @@ export class GzWorkoutCardComponent extends GzElement {
     }
     return html`
       <article class="card open-card${workout.done ? ' done' : ''}">
-        <div class="grow">
+        <div class="head">
           <a class="open" href="/workouts/${workout.id}">${workout.title ?? formatDate(workout.performedOn)}</a>
-          <div class="text-light">${formatDate(workout.performedOn)} · ${relativeDay(workout.performedOn)}</div>
+          ${workout.done ? html`<span class="badge" data-variant="success">✓ Done</span>` : ''}
         </div>
-        <span class="badge outline">
-          ${plural(workout.setCount, 'set')} · ${plural(workout.exerciseCount, 'exercise')} · ${formatVolume(workout.totalVolume)}
-        </span>
-        ${workout.done ? html`<span class="badge" data-variant="success">✓ Done</span>` : ''}
-        <div class="actions">
-          <button class="outline" data-action="repeat" title="Copy these sets into a new session dated today">Repeat</button>
+        <div class="text-light">${formatDate(workout.performedOn)} · ${relativeDay(workout.performedOn)}</div>
+        <div class="foot">
+          <span class="text-light">
+            ${plural(workout.setCount, 'set')} · ${plural(workout.exerciseCount, 'exercise')} · ${formatVolume(workout.totalVolume)}
+          </span>
+          <div class="actions">
+            <button class="outline" data-action="repeat" title="Copy these sets into a new session dated today">Repeat</button>
+          </div>
         </div>
       </article>
     `;

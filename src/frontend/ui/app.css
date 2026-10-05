@@ -1,9 +1,16 @@
-/* The brand color: blue-gray instead of Oat's default. Unlayered, so it wins over Oat's theme
-   layer. */
+/* gainz's palette: Oat's tokens with blue as the brand and every text pair at WCAG AA, every
+   control border at 3:1 (ui/contrast.test.ts checks both). Light mode is a grouped surface:
+   a gray page with white cards. Unlayered, so it wins over Oat's theme layer. */
 :root {
-  --primary: light-dark(#475569, #64748b);
-  --primary-foreground: #fafafa;
-  --ring: light-dark(#475569, #64748b);
+  --background: light-dark(#f4f4f5, #09090b);
+  --card: light-dark(#fff, #202024);
+  --primary: light-dark(#2563eb, #60a5fa);
+  --primary-foreground: light-dark(#fafafa, #09090b);
+  --ring: light-dark(#2563eb, #60a5fa);
+  --muted: light-dark(#e4e4e7, #27272a);
+  --muted-foreground: light-dark(#52525b, #a1a1aa);
+  --border: light-dark(#8b8b94, #71717a);
+  --input: light-dark(#8b8b94, #71717a);
 }
 
 /* Oat colors every token with light-dark() under color-scheme: light dark; the chosen theme

@@ -45,7 +45,7 @@ class GzThemeToggleComponent extends GzElement {
 
   override template(): RawHtml {
     return html`
-      <button type="button" class="icon" data-action="toggle-theme">
+      <button type="button" class="ghost icon" data-action="toggle-theme">
         <svg
           class="sun"
           xmlns="http://www.w3.org/2000/svg"

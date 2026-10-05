@@ -45,6 +45,19 @@ hgroup > * {
   }
 }
 
+/* ------------------------------------------------------------------- touch */
+
+/* A fingertip needs 44px. Only the size changes; the colors stay Oat's variants. */
+@media (max-width: 720px) {
+  :is(button, a.button, select, input:not([type="checkbox"], [type="radio"])) {
+    min-height: 2.75rem;
+  }
+
+  :is(button, a.button).icon {
+    min-width: 2.75rem;
+  }
+}
+
 /* ------------------------------------------------------------------ typography */
 
 .mono {
@@ -62,15 +75,50 @@ hgroup > * {
 
 /* ------------------------------------------------------------------ pieces */
 
+/* Cards stand apart from the gray page by their fill; the 3:1 outlines are for controls. */
+.card {
+  border-color: transparent;
+
+  @media (max-width: 640px) {
+    padding: var(--space-4);
+  }
+}
+
+/* Oat's accordion is transparent; on the gray page it reads as a card. */
+details {
+  background-color: var(--card);
+}
+
 /* A list item that opens something. Oat's `.card` is the card; this adds only
-   the layout and the hit area. The whole box is the link's hit area, drawn as the
-   link's own ::after so it stays a real anchor: gz-app routes it, the keyboard
-   reaches it, and Ctrl-click still opens a tab. */
+   the layout and the hit area: a head line, a muted subtitle, and a foot line. The
+   whole box is the link's hit area, drawn as the link's own ::after so it stays a
+   real anchor: gz-app routes it, the keyboard reaches it, and Ctrl-click still
+   opens a tab. */
 article.open-card {
   position: relative;
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  flex-direction: column;
+  gap: var(--space-1);
+
+  /* The title, with a done badge at the end of its line. */
+  & .head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+  /* Muted stats, with the actions pushed to the end and wrapping below them when short of room. */
+  & .foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+
+    & .actions {
+      margin-inline-start: auto;
+    }
+  }
 
   & .open {
     color: inherit;
@@ -99,10 +147,6 @@ article.open-card {
     position: relative;
     display: flex;
     gap: 0.25rem;
-  }
-
-  @media (max-width: 640px) {
-    flex-wrap: wrap;
   }
 }
 

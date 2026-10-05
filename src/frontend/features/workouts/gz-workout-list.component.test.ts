@@ -1,5 +1,6 @@
-import { beforeAll, expect, test } from 'bun:test';
-import { mount, settle, shadow, useDom, useFetch } from '../../testing.ts';
+import { afterEach, beforeAll, expect, test } from 'bun:test';
+import { find, mount, settle, shadow, text, useDom, useFetch } from '../../testing.ts';
+import { todayIso } from '../../ui/format.ts';
 import type { WorkoutPageDto } from '../../../shared/dto/workout.ts';
 import { listedWorkout } from './workouts.fixtures.ts';
 
@@ -8,6 +9,11 @@ const fake = useFetch();
 
 beforeAll(async () => {
   await import('./gz-workout-list.component.ts');
+});
+
+// Starting a session navigates, and the location outlives the test.
+afterEach(() => {
+  history.replaceState(null, '', '/');
 });
 
 const PAGE: WorkoutPageDto = {
@@ -24,4 +30,22 @@ test('renders each workout as a gz-workout-card, in order', async () => {
   const cards = Array.from(shadow(view).querySelectorAll('gz-workout-card'));
   expect(cards.map((card) => shadow(card).querySelector('a.open')?.textContent)).toEqual(['Push day', 'Leg day']);
   expect(cards.map((card) => shadow(card).querySelector('article.done') !== null)).toEqual([true, false]);
+});
+
+test('shows the session count as the subtitle', async () => {
+  fake.respondTo('GET /api/workouts?limit=10&offset=0', 200, JSON.stringify(PAGE));
+  const view = mount('gz-workout-list');
+  await settle();
+  expect(text(view, 'hgroup p.text-light')).toBe('2 sessions');
+});
+
+test('starts a session dated today and opens it', async () => {
+  fake.respondTo('GET /api/workouts?limit=10&offset=0', 200, JSON.stringify(PAGE));
+  fake.respondTo('POST /api/workouts', 201, JSON.stringify({ ...listedWorkout({ id: 9 }), exercises: [] }));
+  const view = mount('gz-workout-list');
+  await settle();
+  find<HTMLButtonElement>(shadow(view), "[data-action='start-session']").click();
+  await settle();
+  expect(fake.sent('POST /api/workouts')).toEqual([{ performedOn: todayIso() }]);
+  expect(location.pathname).toBe('/workouts/9');
 });

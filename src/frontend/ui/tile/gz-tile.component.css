@@ -8,13 +8,12 @@ article.card {
 }
 
 .label {
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   color: var(--muted-foreground);
-  font-weight: 600;
 }
 
+/* The number is the tile's point: the one font size gainz sets (docs/styling-guidelines.md). */
 .value {
+  font-size: var(--text-3);
   font-weight: 650;
   line-height: 1.2;
   font-variant-numeric: tabular-nums;

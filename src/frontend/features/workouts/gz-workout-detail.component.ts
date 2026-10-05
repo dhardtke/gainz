@@ -26,8 +26,8 @@ interface WorkoutDetailData {
 }
 
 /**
- * The logging screen for one session: edit the header, which saves itself, add sets, see totals. The sets are grouped
- * by exercise in Oat's accordion, one exercise open at a time.
+ * The logging screen for one session: the sets first, grouped by exercise in Oat's accordion with one exercise open
+ * at a time, then the add-set form, then the details, which save themselves, collapsed with Delete at the bottom.
  */
 export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
   override loadingText = 'Loading workout…';
@@ -37,7 +37,7 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
   /**
    * What has been typed into the details form but not saved.
    *
-   * The form is always on screen and every logged set re-renders the view, so
+   * The form is always rendered and every logged set re-renders the view, so
    * the template — not the DOM — has to own these values. `null` means "show
    * what the server returned". A save leaves them be: they match what it sent,
    * and whatever was typed into the next field while it ran is still to save.
@@ -53,6 +53,12 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
    * the DOM has to remember it.
    */
   #openExerciseId: ExerciseId | null | undefined = undefined;
+
+  /**
+   * Whether "Details & notes" is open. Every save in it and every set change reloads the view, so,
+   * like `#openExerciseId`, the view rather than the DOM has to remember it.
+   */
+  #detailsOpen = false;
 
   override connectedCallback(): void {
     super.connectedCallback();
@@ -182,15 +188,10 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
       });
     }
 
-    // A click between or on a disabled header button would toggle the group; a link is spared,
-    // because gz-app skips a default-prevented click and would no longer route it.
-    for (const actions of this.$$('summary .actions')) {
-      actions.addEventListener('click', (event) => {
-        if (!event.composedPath().some((target) => target instanceof HTMLAnchorElement)) {
-          event.preventDefault();
-        }
-      });
-    }
+    const section = this.$<HTMLDetailsElement>('details.details-section');
+    section?.addEventListener('toggle', () => {
+      this.#detailsOpen = section.open;
+    });
 
     const details = this.$<HTMLFormElement>('form.details');
     details?.addEventListener('input', () => {
@@ -236,6 +237,19 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
   }
 
   #headerTemplate(workout: WorkoutWithExercisesDto): RawHtml {
+    return html`
+      <hgroup>
+        <h1>${workout.title ?? formatDate(workout.performedOn)}</h1>
+        <p class="text-light">${formatDate(workout.performedOn)} · ${relativeDay(workout.performedOn)}</p>
+      </hgroup>
+    `;
+  }
+
+  /**
+   * The rarely edited details and the destructive Delete, collapsed below the sets. It has no
+   * `name`, so it does not join the exercises' exclusive group.
+   */
+  #detailsTemplate(workout: WorkoutWithExercisesDto): RawHtml {
     const edits = this.#edits ?? {
       performedOn: workout.performedOn,
       title: workout.title ?? '',
@@ -243,31 +257,28 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     };
 
     return html`
-      <div class="hstack justify-between gap-2">
-        <hgroup>
-          <h1>${workout.title ?? formatDate(workout.performedOn)}</h1>
-          <p class="text-light">${formatDate(workout.performedOn)} · ${relativeDay(workout.performedOn)}</p>
-        </hgroup>
-        <button data-variant="danger" data-action="delete-workout">Delete</button>
-      </div>
-      <article class="card">
-        <form class="details vstack gap-2">
-          <div class="fields">
+      <details class="details-section" ${this.#detailsOpen ? 'open' : ''}>
+        <summary>Details & notes</summary>
+        <div class="vstack gap-2">
+          <form class="details vstack gap-2">
+            <div class="fields">
+              <div class="field">
+                <label for="performedOn">Date</label>
+                <input id="performedOn" name="performedOn" type="date" value="${edits.performedOn}" required />
+              </div>
+              <div class="field grow">
+                <label for="title">Title</label>
+                <input id="title" name="title" type="text" maxlength="120" value="${edits.title}" />
+              </div>
+            </div>
             <div class="field">
-              <label for="performedOn">Date</label>
-              <input id="performedOn" name="performedOn" type="date" value="${edits.performedOn}" required />
+              <label for="notes">Session notes</label>
+              <textarea id="notes" name="notes" maxlength="2000" placeholder="How did it feel?">${edits.notes}</textarea>
             </div>
-            <div class="field grow">
-              <label for="title">Title</label>
-              <input id="title" name="title" type="text" maxlength="120" value="${edits.title}" />
-            </div>
-          </div>
-          <div class="field">
-            <label for="notes">Session notes</label>
-            <textarea id="notes" name="notes" maxlength="2000" placeholder="How did it feel?">${edits.notes}</textarea>
-          </div>
-        </form>
-      </article>
+          </form>
+          <div><button data-variant="danger" data-action="delete-workout">Delete workout</button></div>
+        </div>
+      </details>
     `;
   }
 
@@ -296,19 +307,19 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
       <details name="exercises" data-exercise-id="${id}" ${id === open ? 'open' : ''}>
         <summary>
           <span class="exercise-name">${name}</span>
-          <span class="badge outline">${this.#groupSummary(group)}</span>
+          <span class="group-stats text-light">${this.#groupSummary(group)}</span>
           ${this.#progressBadge(doneCount, group.sets.length)}
-          <span class="actions">
-            <fieldset class="group move">
-              <button class="outline" data-action="move-exercise-up" data-exercise-id="${id}" aria-label="Move ${name} up" ${first ? 'disabled' : ''}>▲</button>
-              <button class="outline" data-action="move-exercise-down" data-exercise-id="${id}" aria-label="Move ${name} down" ${last ? 'disabled' : ''}>
-                ▼
-              </button>
-            </fieldset>
-            <a class="button outline" href="/exercises/${id}">Exercise</a>
-          </span>
         </summary>
         <div class="sets">${group.sets.map((set, index) => html`<gz-set-row data-id="${set.id}" data-index="${index + 1}"></gz-set-row>`)}</div>
+        <div class="group-actions">
+          <fieldset class="group move">
+            <button class="outline" data-action="move-exercise-up" data-exercise-id="${id}" aria-label="Move ${name} up" ${first ? 'disabled' : ''}>▲</button>
+            <button class="outline" data-action="move-exercise-down" data-exercise-id="${id}" aria-label="Move ${name} down" ${last ? 'disabled' : ''}>
+              ▼
+            </button>
+          </fieldset>
+          <a class="button outline" href="/exercises/${id}">Exercise history →</a>
+        </div>
       </details>
     `;
   }
@@ -325,11 +336,8 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
       <div class="vstack">
         ${this.#headerTemplate(workout)}
 
-        <div class="totals">
-          <span class="badge outline">${plural(sets.length, 'set')}</span>
-          <span class="badge outline">${plural(exercises, 'exercise')}</span>
-          <span class="badge outline">${plural(reps, 'rep')}</span>
-          <span class="badge outline">${formatVolume(volume)} total volume</span>
+        <div class="summary hstack gap-2">
+          <span class="text-light"> ${plural(sets.length, 'set')} · ${plural(exercises, 'exercise')} · ${plural(reps, 'rep')} · ${formatVolume(volume)} </span>
           ${this.#progressBadge(doneCount, sets.length)}
         </div>
 
@@ -345,6 +353,8 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
         </section>
 
         <gz-add-set-form></gz-add-set-form>
+
+        ${this.#detailsTemplate(workout)}
       </div>
     `;
   }
