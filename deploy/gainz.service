@@ -1,0 +1,13 @@
+[Unit]
+Description=gainz
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/app
+ExecStart=%h/.bun/bin/bun run %h/app/current/gainz.js
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

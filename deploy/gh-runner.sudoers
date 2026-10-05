@@ -1,0 +1,1 @@
+gh-runner ALL=(gainz) NOPASSWD: /usr/local/bin/gainz-deploy

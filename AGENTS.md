@@ -46,6 +46,7 @@ Details live in `docs/`:
 - `docs/frontend.md` — features and facades, components, import boundaries, loading, theming, tests, and
   why a module's URL is its path
 - `docs/coding-guidelines.md` — pinning, quote style, commits on `main`
+- `docs/deployment.md` — the CI workflow, the self-hosted runner and its privileges, server setup
 - `docs/styling-guidelines.md` — Oat, no CSS in JavaScript, no font sizes
 
 That list is the only index in the repository: a document added to `docs/` is added here in the
