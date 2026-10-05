@@ -1,13 +1,14 @@
 # Frontend (`src/frontend/`)
 
-`index.html` is the only page: it links Oat and `ui/app.css`, applies a stored theme in a small
-inline script before the first paint, loads Oat's `oat.js` deferred, and `main.ts` as a module. `main.ts` only imports the
+`index.html` is the only page: it links Oat and `ui/app.css`, the web app manifest and the barbell
+icon, applies a stored theme in a small inline script before the first paint, loads Oat's `oat.js` deferred, and `main.ts` as a module. `main.ts` only imports the
 `app/gz-app.component.ts` shell. Routes are real paths such as `/workouts/3`, and the server answers
 each with `index.html` because it carries no extension.
 
 ```
 src/frontend/
-├── index.html  main.ts
+├── index.html  main.ts  manifest.webmanifest
+├── icons/      icon.svg, icon-maskable.svg, icon-192.png, icon-512.png, icon-maskable-512.png
 ├── dev/        hot.ts (development only)
 ├── app/        gz-app, gz-header, gz-theme-toggle, router.ts, routes.ts
 ├── http/       http.ts (get/post/patch/remove), errors.ts (ApiError, errorMessage, UNAUTHORIZED_EVENT)
@@ -23,7 +24,9 @@ src/frontend/
         └── internal/  auth.api.ts, next-path.ts
 ```
 
-What belongs to no feature sits in four directories. `dev/` holds `hot.ts`, the hot-reload client
+What belongs to no feature sits in five directories, beside `manifest.webmanifest` at the root.
+`icons/` holds the app icon, which the manifest and the favicon link point at (see "Installing").
+`dev/` holds `hot.ts`, the hot-reload client
 the server injects only in development; nothing imports it, and it is deliberately not one of the
 import boundaries below. `app/` is the shell: `gz-app`, the
 `gz-header` it renders at the top with the `gz-theme-toggle` inside it, `router.ts`, a generic path router that names no route, and
@@ -358,7 +361,8 @@ Saving a `.ts` or `index.html` reloads the page, because a module cannot be eval
 `customElements.define` throws on a tag it already knows, and `define()` returns early for one, so a
 re-run module would quietly keep the old class. Before reloading, `hot.ts` sends a `HEAD` for the
 module; a file that will not parse answers 500, and rather than reload into a blank page the client
-reports it through the toast and waits for the next save.
+reports it through the toast and waits for the next save. Saving `manifest.webmanifest` or an icon
+reloads the page too.
 
 **`styles.ts` keys its sheets by pathname.** `loadStyles` receives a module's absolute
 `import.meta.url`, but `BASE_HREFS` are pathnames and the server reports a change as a pathname, so
@@ -390,10 +394,41 @@ A visitor who has never touched the theme toggle is seeded from `prefers-color-s
 The first flip stores an explicit choice that wins from then on, so the page does not follow the
 operating system around afterwards.
 
+A `<meta name="theme-color">` colors the Android status bar and an installed desktop window's title
+bar. It mirrors `--card`, so the bar blends into the header: `#fff` in light mode, `#202024` in
+dark. The inline script in `index.html` sets it before the first paint, from the stored choice or
+else the system, and `applyTheme()` keeps it in step with the toggle. The two colors therefore live
+in three places — `--card` in `app.css`, the inline script and `THEME_COLORS` in `theme.ts` —
+because the script runs before any stylesheet or module, and `theme.test.ts` keeps them equal. The
+manifest's `theme_color` and `background_color` carry the light values, because a manifest has no
+dark variant: the meta tag overrides `theme_color` once the page loads, and `background_color` only
+shows on the splash screen.
+
 Oat is served from `node_modules` at `/vendor/oat.css` and `/vendor/oat.js` through an explicit
 allowlist in `src/backend/features/static` — installing a package never publishes anything the app
 did not ask to serve. A single-file build carries both files inside it and serves them at the same
 URLs.
+
+## Installing
+
+`manifest.webmanifest` makes gainz installable from the browser menu in Chrome on Android (a real
+app, a WebAPK, not a shortcut) and in desktop Chrome and Edge; the installed app opens standalone
+at `/`. There is no service worker. Installing from the menu has not needed one since Chrome 108 on
+Android and 112 on desktop, a pass-through `fetch` handler would only slow every request, and
+offline support is a decision of its own. Without one there is no automatic install banner.
+
+The icon is a white barbell on `#2563eb`. `icons/icon.svg` is the favicon and the "any" icon, and
+`icons/icon-maskable.svg` draws the same barbell on a full-bleed background, already inside the
+maskable safe zone, for Android's adaptive mask. The PNGs beside them exist because the Android
+WebAPK needs raster icons at 192 and 512 — with SVG icons alone Chrome offers only a shortcut — and
+the manifest lists them first. iOS is not targeted, so there is no `apple-touch-icon`.
+
+The PNGs are rasterized once, by hand, whenever an SVG changes. In a Chromium browser, load the SVG
+into an `Image`, draw it with `drawImage(img, 0, 0, size, size)` onto a canvas of that size — the
+explicit size matters, because the SVGs carry only a `viewBox` — and save
+`canvas.toBlob(…, 'image/png')`: `icon-192.png` and `icon-512.png` from `icon.svg`,
+`icon-maskable-512.png` from `icon-maskable.svg`. Look at each one before committing it.
+`static.routes.test.ts` checks that every PNG's real size matches the manifest.
 
 ## Tests
 

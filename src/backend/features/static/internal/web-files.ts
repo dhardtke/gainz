@@ -4,7 +4,7 @@
  * about what to answer, so both sources behave alike.
  */
 import { basename, extname, posix } from 'node:path';
-import { EMBEDDED, type EmbeddedFile, type EmbeddedWeb } from '../../../shared/embedded.ts';
+import { EMBEDDED, type EmbeddedWeb } from '../../../shared/embedded.ts';
 import { resolveStaticPath, resolveVendorPath } from './paths.ts';
 import { transpileModule } from './transpile.ts';
 
@@ -65,12 +65,25 @@ class DiskWebFiles implements WebFiles {
   }
 }
 
+interface ServedFile {
+  body: string | Uint8Array<ArrayBuffer>;
+  type: string;
+}
+
 /** Lookups in the maps a built file carries, with the same guards `resolveStaticPath` applies. */
 class EmbeddedWebFiles implements WebFiles {
   readonly #web: EmbeddedWeb;
+  /**
+   * `web.pages` with every base64 file decoded once, here rather than per request, so its ETag
+   * hashes the same bytes as `DiskWebFiles` serves.
+   */
+  readonly #pages: Record<string, ServedFile>;
 
   constructor(web: EmbeddedWeb) {
     this.#web = web;
+    this.#pages = Object.fromEntries(
+      Object.entries(web.pages).map(([url, file]) => [url, file.base64 === true ? { body: Uint8Array.fromBase64(file.body), type: file.type } : file]),
+    );
   }
 
   page(pathname: string): Promise<WebFile> {
@@ -88,7 +101,7 @@ class EmbeddedWebFiles implements WebFiles {
     if (!url.startsWith('/') || url.includes('..')) {
       return Promise.resolve({ kind: 'invalid' });
     }
-    return Promise.resolve(found(this.#web.pages[url]));
+    return Promise.resolve(found(this.#pages[url]));
   }
 
   /** The raw pathname only, so a vendor file is reachable at its literal URL and nowhere else. */
@@ -97,7 +110,7 @@ class EmbeddedWebFiles implements WebFiles {
   }
 }
 
-function found(file: EmbeddedFile | undefined): WebFile {
+function found(file: ServedFile | undefined): WebFile {
   return file ? { kind: 'file', body: file.body, type: file.type } : { kind: 'missing' };
 }
 

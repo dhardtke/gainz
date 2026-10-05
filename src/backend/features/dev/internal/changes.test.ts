@@ -17,6 +17,12 @@ describe('changeFor', () => {
     expect(changeFor('index.html')).toEqual({ reload: '/index.html' });
   });
 
+  test('the manifest and an icon reload', () => {
+    expect(changeFor('manifest.webmanifest')).toEqual({ reload: '/manifest.webmanifest' });
+    expect(changeFor('icons\\icon.svg')).toEqual({ reload: '/icons/icon.svg' });
+    expect(changeFor('icons/icon-192.png')).toEqual({ reload: '/icons/icon-192.png' });
+  });
+
   test('a bare directory name is ignored', () => {
     expect(changeFor('ui')).toBeNull();
   });

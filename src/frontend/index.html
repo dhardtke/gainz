@@ -7,22 +7,32 @@
     <meta name="color-scheme" content="light dark" />
     <meta name="description" content="gainz — a simple log for weight-lifting progress." />
     <title>gainz — lifting log</title>
-    <link
-      rel="icon"
-      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>&#127947;</text></svg>"
-    />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#fff" />
     <script>
       // Applies a stored theme before the first paint, so choosing light on a
       // dark system does not flash dark on every load. src/frontend/ui/theme.ts owns the
       // preference from then on; the storage key is duplicated here on purpose,
       // because this must run before any module has loaded.
-      try {
-        const storedTheme = localStorage.getItem('gainz:theme');
-        if (storedTheme === 'light' || storedTheme === 'dark') {
-          document.documentElement.setAttribute('data-theme', storedTheme);
+      {
+        let storedTheme = null;
+        try {
+          storedTheme = localStorage.getItem('gainz:theme');
+          if (storedTheme === 'light' || storedTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', storedTheme);
+          }
+        } catch (error) {
+          /* Storage unavailable — fall through to following the system. */
         }
-      } catch (error) {
-        /* Storage unavailable — fall through to following the system. */
+        // Colors the status bar and title bar like the header. theme.ts and --card in
+        // ui/app.css hold the same two colors — keep them in sync.
+        try {
+          const dark = storedTheme === 'dark' || (storedTheme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#202024' : '#fff');
+        } catch (error) {
+          /* No matchMedia — keep the light default. */
+        }
       }
     </script>
     <!--

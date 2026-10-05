@@ -104,6 +104,84 @@ describe('static files', () => {
   });
 });
 
+describe('installable app', () => {
+  interface ManifestIcon {
+    src: string;
+    sizes: string;
+    type: string;
+    purpose: string;
+  }
+  interface Manifest {
+    id: string;
+    name: string;
+    short_name: string;
+    start_url: string;
+    scope: string;
+    display: string;
+    theme_color: string;
+    background_color: string;
+    icons: ManifestIcon[];
+  }
+
+  const manifest = async (): Promise<Manifest> => {
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the shape is what the tests check
+    return (await (await api('/manifest.webmanifest')).json()) as Manifest;
+  };
+
+  /** A PNG's real size, from its IHDR chunk: big-endian width and height at bytes 16 and 20. */
+  const pngSize = async (src: string): Promise<string> => {
+    const view = new DataView(await (await api(src)).arrayBuffer());
+    return `${view.getUint32(16)}x${view.getUint32(20)}`;
+  };
+
+  test('serves the manifest as application/manifest+json, revalidated like every file', async () => {
+    const res = await api('/manifest.webmanifest');
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toStartWith('application/manifest+json');
+    expect(res.headers.get('etag')).toMatch(/^"[0-9a-z]+"$/);
+    expect(res.headers.get('cache-control')).toBe('no-cache');
+
+    const json = await manifest();
+    expect(json).toMatchObject({ id: '/', start_url: '/', scope: '/', display: 'standalone' });
+    expect(json.name).not.toBe('');
+    expect(json.short_name).not.toBe('');
+    expect(json.theme_color).toMatch(/^#/);
+    expect(json.background_color).toMatch(/^#/);
+  });
+
+  test('serves every manifest icon with its declared type', async () => {
+    const { icons } = await manifest();
+    expect(icons.length).toBeGreaterThan(0);
+    for (const icon of icons) {
+      const res = await api(icon.src);
+      expect({ src: icon.src, status: res.status }).toEqual({ src: icon.src, status: 200 });
+      expect(res.headers.get('content-type')).toStartWith(icon.type);
+    }
+  });
+
+  test('carries the raster icons an Android install needs, at their real sizes', async () => {
+    const pngs = (await manifest()).icons.filter((icon) => icon.type === 'image/png');
+    for (const icon of pngs) {
+      expect({ src: icon.src, size: await pngSize(icon.src) }).toEqual({ src: icon.src, size: icon.sizes });
+    }
+    const has = (purpose: string, sizes: string): boolean => pngs.some((icon) => icon.purpose === purpose && icon.sizes === sizes);
+    expect(has('any', '192x192')).toBe(true);
+    expect(has('any', '512x512')).toBe(true);
+    expect(has('maskable', '512x512')).toBe(true);
+  });
+
+  test('the index page links the manifest, the icon and a theme-color ahead of any script', async () => {
+    const page = await (await api('/')).text();
+    expect(page).toContain('<link rel="manifest" href="/manifest.webmanifest"');
+    expect(page).toContain('<link rel="icon" href="/icons/icon.svg"');
+    expect(page).not.toContain('data:image/svg+xml');
+
+    const meta = page.indexOf('<meta name="theme-color"');
+    expect(meta).toBeGreaterThan(-1);
+    expect(meta).toBeLessThan(page.indexOf('<script'));
+  });
+});
+
 describe('revalidation', () => {
   const tagOf = async (path: string): Promise<string> => {
     const res = await api(path);
