@@ -10,6 +10,7 @@ bun start                # serve API + frontend on PORT (default 3000)
 bun run start:dev        # same, with --watch
 bun run seed             # fill an empty DB with sample workouts
 bun run migrate          # apply pending schema migrations, then exit
+bun run hash-password    # prompt for a password, print its hash for GAINZ_PASSWORD_HASH
 bun run build            # one-file deployment build: dist/gainz.js (+ .map)
 bun test --parallel      # the test suite against in-memory SQLite
 bun test --parallel src/backend/features/workouts/workout.routes.test.ts # one file

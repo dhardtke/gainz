@@ -1,7 +1,7 @@
 # Backend (`src/backend/`)
 
 The backend is organized by feature, not by layer. `features/` holds one directory per thing the
-app is about — `exercises/`, `workouts/`, `stats/`, `meta/`, `static/`, `dev/` — and each owns its routes,
+app is about — `exercises/`, `workouts/`, `stats/`, `auth/`, `meta/`, `static/`, `dev/` — and each owns its routes,
 its SQL and its mapping end to end, the mapping reached through its controllers and its facade. What is left outside `features/` is only what belongs to no
 feature: `db/` (the connection and its PRAGMAs in `db.ts`, the schema in `migrations.ts` and
 `migrations/`, and the table-agnostic statement helpers in `db/sql.ts`), `http/` (`routing.ts` for
@@ -17,7 +17,8 @@ everything about how the feature talks to its own table — the repository, its 
 translator, which translates in both directions (a body onto its request DTO, a request DTO into that
 input, and a row into its response DTO) — and the controllers, one `<x>.controller.ts` per route file and
 named after it. No module under `features/<a>/` may import from `features/<b>/internal/`, and the
-arrows in production code that do cross a feature line all land on a `ports/`: the exercises
+arrows in production code that do cross a feature line land on a `ports/` or on a facade. Facades:
+`meta` takes the `AuthFacade` to report whether auth is on. Ports: the exercises
 repository queries the sets table, so it takes `SET_COLUMNS` and `EST_1RM_SQL` from
 `features/workouts/ports/sql.ts`, and both it and `exercise.translator.ts` take `LiftSet` from
 `features/workouts/ports/set.ts`. The third place
@@ -78,8 +79,8 @@ the feature that owns the endpoint and take `post` from `useServer()` as their f
 Other features' route tests import them directly, the one cross-feature import that does not go
 through `ports/`. The static feature keeps its own private modules where the rule
 says they go — `features/static/internal/paths.ts` (the only place a URL becomes a filesystem path)
-and `internal/transpile.ts` — and reaches them through `internal/web-files.ts`. The three operator entry points — `bun run migrate`, `bun run seed`
-and `bun run build` — live outside the backend entirely, in `src/scripts/`, so that `src/backend/`
+and `internal/transpile.ts` — and reaches them through `internal/web-files.ts`. The four operator entry points — `bun run migrate`, `bun run seed`,
+`bun run build` and `bun run hash-password` — live outside the backend entirely, in `src/scripts/`, so that `src/backend/`
 holds the running server and nothing else.
 
 A route belongs to the file its URL prefix names, with no exceptions to remember — so
@@ -93,8 +94,8 @@ reads the way the router dispatches.
 
 **Every data-owning feature has a front door.** Each publishes exactly one facade module at its
 root — `exercises/exercises.facade.ts`, `workouts/workouts.facade.ts`, `stats/stats.facade.ts` —
-holding a `<Entity>Facade` per repository. A facade is not reserved for data, though: `static` and
-`dev` publish one too, with no table behind either, because another feature needs something from
+holding a `<Entity>Facade` per repository. A facade is not reserved for data, though: `static`,
+`dev` and `auth` publish one too, with no table behind any of them, because another feature needs something from
 them and the house rule is that a feature is reached through its facade. A route handler holds its controller, and the controller
 holds the facades. A repository is named only by its own feature's facade, and constructed only by
 that facade's factory, so `features/workouts/internal/` is the whole world in which `SetRepository`
@@ -119,7 +120,9 @@ compiler checks.
 There is no composition root. Each route factory takes the database and builds what it uses:
 `workoutRoutes(db)` and `setRoutes(db)` each call `createWorkoutFacades(db)`, `exerciseRoutes(db)`
 calls `createExerciseFacade(db)`, and `statsRoutes(db)` calls `createStatsFacade(db)`, then each
-builds its controller from those facades. `allRoutes(db)` only passes the database along. Building
+builds its controller from those facades. `allRoutes(db, auth)` passes the database along and builds
+the one `AuthFacade` the server has, handing it to `metaRoutes(auth)` and `authRoutes(auth)` and
+wrapping the data tables in `auth.guard()`; one instance, because it holds the login throttle. Building
 the workouts facades twice costs nothing, because a repository holds only its connection.
 `src/scripts/seed.ts` calls the same three factories and hands the facades camelCase DTOs, so
 seeded data passes the same validation as the API. `meta` has a controller but no facade, since
@@ -136,9 +139,11 @@ Error handling is by throwing: controllers throw `HttpError`, directly or throug
 call — the facades' validation and the repositories behind them — and the `error` hook in `http/server.ts` turns any throw from any
 route into a JSON `{ error }` body with the right status. It is the one error path, for the API and
 the static route alike, so a new route needs nothing to get it — Bun hands the hook a throw from a
-synchronous or async method map and from a bare-function route (measured on 1.4.2). Three statuses cover everything the API refuses —
-400 for bad input, 404 for something missing, 409 for a conflict — which is why `http/errors.ts`
-exports exactly `badRequest`, `notFound` and `conflict`. Which of the three a broken reference earns
+synchronous or async method map and from a bare-function route (measured on 1.4.2). Four statuses cover everything the API refuses —
+400 for bad input, 401 for a missing session or a wrong password, 404 for something missing, 409 for a
+conflict — which is why `http/errors.ts` exports exactly `badRequest`, `unauthorized`, `notFound` and
+`conflict`. The one other refusal, the login lockout's 429 with `Retry-After`, is not thrown: the auth
+controller answers it itself, since it carries a header. Which status a broken reference earns
 depends on where the id came from: a workout id in the path that names nothing is a 404, while an
 `exerciseId` in the body that names nothing is a 400. Nothing pre-checks the latter — the
 `ON DELETE RESTRICT` foreign key refuses the write and `isForeignKeyViolation` turns the refusal
@@ -225,8 +230,10 @@ It validates a list of `{ filename, sql }` sources rather than a directory: `rea
 them from that directory, and a built file takes them from `EMBEDDED.migrations` instead (see
 "Single-file build") — the same naming, numbering and ordering rules hold for both.
 
-`startServer(db, port)` in `http/server.ts` is the one place `Bun.serve` is called: `main.ts` passes
-`PORT`, and `useServer()` in `src/backend/testing.ts` passes port 0 and an in-memory database.
+`startServer(db, port, auth)` in `http/server.ts` is the one place `Bun.serve` is called: `main.ts` passes
+`PORT` and `GAINZ_PASSWORD_HASH`, and `useServer({ auth })` in `src/backend/testing.ts` passes port 0, an
+in-memory database and, only in a file that asks for one, a password hash and a clock — auth is off
+otherwise, so no other test needs a cookie.
 `useServer()` registers the `beforeEach`/`afterEach` pair from inside the function — so each test file gets its own hooks and
 its own database rather than sharing one through the module cache. Every `*.test.ts` sits beside
 the module it exercises, and each one covers the module declaring the routes it drives, which is
@@ -242,7 +249,10 @@ provoked over HTTP; `shared/validate.test.ts` pins the field helpers' normalizat
 each facade's validation directly, including that a bad body on an unknown id is a 400 rather than
 a 404. There are no unit tests of the repositories. `src/scripts/build.test.ts` is end-to-end over
 HTTP like the route tests, but against the built file, copied alone into a temporary directory and
-run in a child process — so it sits beside the route tests rather than among the exceptions.
+run in a child process — so it sits beside the route tests rather than among the exceptions. It runs
+the built file twice, the second time with `GAINZ_PASSWORD_HASH` set, to see the guard survive the
+build. `src/scripts/hash-password.test.ts` likewise runs its script in a child process, piping the
+password in.
 
 Static serving is deliberately narrow: `src/frontend/` with a path-escape guard, plus `VENDOR_FILES`
 in `internal/paths.ts` — an allowlist of single files into `node_modules`, of any type (`/vendor/oat.css`,
@@ -284,6 +294,52 @@ depends on the Bun version, and hashing files of this app's size costs well unde
 A `304` still reads or transpiles the file; only the transfer is saved. Vendor files used to be
 cached for an hour, which let a browser keep a stale vendor file (Pico, at the time) after
 `bun install`; they are now revalidated like everything else. Error responses carry no `ETag`.
+
+## Authentication (`features/auth/`)
+
+One password guards the API, and a long-lived cookie remembers it, so a phone logs in once rather
+than answering a Basic Auth prompt on every launch. `GAINZ_PASSWORD_HASH` holds a `Bun.password`
+hash (argon2id from `bun run hash-password`; bcrypt is accepted too), and `main.ts` refuses to start
+when the variable holds anything else. Unset or empty, auth is off: the guard hands the tables back
+untouched, `POST /api/auth/login` validates its body and answers 204 without a cookie, the health
+check reports `"auth": false` and the startup log says `auth: off`. That is why `bun start`, the seed
+and every route test other than `auth.routes.test.ts` need no cookie. Production cannot fall into
+that state unnoticed: the unit file requires the env file that sets the hash, and `gainz-deploy`
+rolls back a release whose health check reports `"auth": false` (see `docs/deployment.md`).
+
+`POST /api/auth/login` with `{ "password": "…" }` answers 204 and sets
+`gainz_session=<expiresAt>.<signature>; Path=/; Max-Age=7776000; Secure; HttpOnly; SameSite=Lax`.
+`expiresAt` is epoch milliseconds and the signature a base64url HMAC-SHA256 over
+`gainz_session.<expiresAt>`, keyed by the password hash itself (`internal/session-cookie.ts`). There
+is no sessions table and no second secret: changing the password invalidates every cookie, which is
+the "log out everywhere" for a lost phone. `POST /api/auth/logout` answers 204 with the cookie
+expired; it only clears that browser, and a copied cookie stays valid until it expires or the
+password changes. The cookie is always `Secure` — HTTPS ends at the reverse proxy in production, and
+browsers accept `Secure` cookies from `http://localhost` — and `SameSite=Lax` plus JSON request
+bodies is the CSRF protection: a cross-site form cannot send `application/json`, and a cross-site
+`fetch` does not carry a Lax cookie.
+
+Sessions slide. A cookie lives 90 days, and a guarded response re-sets a fresh one once the cookie
+it was sent was issued (`expiresAt` − 90 days) more than a day ago, so an app used now and then stays
+logged in while renewing at most once a day.
+
+The guard is `AuthFacade.guard(table)`, applied in `allRoutes()` to the stats, exercise, workout and
+set tables. It wraps every handler — a bare function or each verb of a method map — and throws
+`unauthorized()` (`401 { "error": "Not logged in" }`) for a missing, malformed, tampered, expired or
+old-password cookie. A static `Response` value would bypass the wrapper, so meeting one is a startup
+error. Everything outside those tables stays public: `/api/health`, the `/api` 404s, login and
+logout, `/dev/ws`, and the whole frontend, whose code is public in the repository anyway — guarding
+it would only need an allowlist of the modules the login page imports.
+
+`internal/login-throttle.ts` backs off wrong passwords for every client at once, since behind the
+proxy every client is `127.0.0.1` and `X-Forwarded-For` is not trusted. From the fifth consecutive
+failure on, each failure locks the login for `60 · 2^(failures − 5)` seconds, up to an hour, and a
+locked login answers `429` with `Retry-After` before any hashing. `begin()` counts an attempt as a
+failure before `Bun.password.verify` runs, so concurrent guesses cannot all slip past the check;
+`succeeded()` resets the count, as does a restart. Each lockout is logged with `console.warn`, once
+the failure that started it is confirmed. Someone hammering the login can delay your next login, but
+never a device that already holds a cookie. The facade and the throttle read an injectable `now()`
+from `AuthOptions`, which is how `auth.routes.test.ts` tests expiry and backoff without waiting.
 
 ## Hot reload (`features/dev/`)
 

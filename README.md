@@ -31,7 +31,8 @@ booting the server.
 ```sh
 bun run build                 # dist/gainz.js + dist/gainz.js.map
 scp dist/gainz.js* server:/opt/gainz/
-PORT=8080 GAINZ_DB=/var/lib/gainz/gainz.sqlite bun /opt/gainz/gainz.js
+bun run hash-password         # prompts twice, prints an argon2id hash
+PORT=8080 GAINZ_DB=/var/lib/gainz/gainz.sqlite GAINZ_PASSWORD_HASH='<hash>' bun /opt/gainz/gainz.js
 ```
 
 The target machine needs Bun 1.4 or newer and nothing else — no checkout, no
@@ -44,9 +45,15 @@ runner; [`docs/deployment.md`](docs/deployment.md) describes the server setup.
 
 ## Security
 
-The server binds to all interfaces and has no authentication — it is built to run
-on your own machine or inside a private network. Put it behind a reverse proxy
-with auth before exposing it to the internet.
+The server has a built-in password login, enabled by `GAINZ_PASSWORD_HASH`
+(create the hash with `bun run hash-password`). Once logged in, a browser keeps a
+signed cookie for 90 days, renewed as it is used; changing the password logs
+every device out. The cookie is `Secure`, so put HTTPS in front of the server
+(a reverse proxy) before exposing it; `http://localhost` works without it.
+
+Without the variable the server is open to anyone who can reach it, and it binds to all
+interfaces — fine on your own machine or inside a private network, never on the
+internet.
 
 ## Documentation
 

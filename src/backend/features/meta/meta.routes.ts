@@ -1,8 +1,10 @@
 import type { RouteTable } from '../../http/routing.ts';
+import type { AuthFacade } from '../auth/auth.facade.ts';
 import { MetaController } from './internal/meta.controller.ts';
 
-export function metaRoutes(): RouteTable {
-  const controller = new MetaController();
+/** Public whether or not auth is on: the deploy script reads `auth` from the health check. */
+export function metaRoutes(auth: AuthFacade): RouteTable {
+  const controller = new MetaController(auth);
   return {
     ...healthRoute(controller),
     ...notFoundRoute(controller),

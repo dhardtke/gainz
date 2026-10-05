@@ -163,6 +163,38 @@ describe('single-file build', () => {
   });
 });
 
+describe('single-file build with GAINZ_PASSWORD_HASH set', () => {
+  let dir = '';
+  let proc: Bun.Subprocess<'ignore', 'pipe', 'pipe'> | undefined;
+  let origin = '';
+
+  beforeAll(async () => {
+    dir = mkdtempSync(join(tmpdir(), 'gainz-build-auth-'));
+    await build(join(dir, 'out'));
+    const hash = await Bun.password.hash('right', { algorithm: 'bcrypt', cost: 4 });
+    proc = Bun.spawn([process.execPath, join(dir, 'out', 'gainz.js')], {
+      cwd: dir,
+      env: { ...process.env, PORT: '0', GAINZ_DB: join(dir, 'gainz.sqlite'), GAINZ_PASSWORD_HASH: hash },
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+    origin = new URL((await waitForUrl(proc.stdout, () => new Response(proc?.stderr).text())).url).origin;
+  }, 60_000);
+
+  afterAll(async () => {
+    if (proc) {
+      proc.kill();
+      await proc.exited;
+    }
+    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+  });
+
+  test('guards the API and says so in the health check', async () => {
+    expect((await fetch(`${origin}/api/workouts`)).status).toBe(401);
+    expect(await body<unknown>(await fetch(`${origin}/api/health`))).toMatchObject({ auth: true });
+  });
+});
+
 describe('a module that does not parse', () => {
   const tempDir = useTempDir();
 
