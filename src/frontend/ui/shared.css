@@ -117,6 +117,12 @@ article.open-card {
 
 /* ------------------------------------------------------------------ tables */
 
+/* Oat floors its scrolling .table wrapper at 320px, wider than a card's content on a phone, so
+   the page scrolled instead of the table. */
+.table {
+  min-width: 0;
+}
+
 :is(td, th).num {
   text-align: right;
   font-variant-numeric: tabular-nums;

@@ -56,10 +56,11 @@ input.note {
 @media (max-width: 720px) {
   .row-view {
     grid-template-columns: auto 2rem 1fr;
+    /* The toggle, index and actions share the first line; the load and the note take a full line each. */
     grid-template-areas:
-      "t i l"
-      ". . n"
-      ". . a";
+      "t i a"
+      "l l l"
+      "n n n";
   }
   .toggle {
     grid-area: t;
@@ -69,13 +70,25 @@ input.note {
   }
   .load {
     grid-area: l;
+    min-width: 0;
+
+    & fieldset {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    & input {
+      flex: 1 1 0;
+      width: auto;
+      min-width: 0;
+    }
   }
   .note {
     grid-area: n;
   }
   .actions {
     grid-area: a;
-    justify-content: flex-start;
+    justify-content: flex-end;
   }
   .volume {
     display: none;
