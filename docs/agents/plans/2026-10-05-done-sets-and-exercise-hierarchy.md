@@ -213,10 +213,10 @@ Make the exercise the only box and mark done sets with a green leading edge.
 
 **Manual Verification**:
 
-- [ ] In light and dark theme, an open exercise reads as one box of divided lines; done rows carry
+- [x] In light and dark theme, an open exercise reads as one box of divided lines; done rows carry
       a green bar and a green number, and every row's content lines up with the others.
-- [ ] At 320px wide the rows keep the stripe and dividers and the page does not scroll sideways.
-- [ ] The last row's stripe is not visibly clipped by the accordion item's rounded bottom corner.
+- [x] At 320px wide the rows keep the stripe and dividers and the page does not scroll sideways.
+- [x] The last row's stripe is not visibly clipped by the accordion item's rounded bottom corner.
 
 ### Phase 2: Progress badge in the exercise header
 
@@ -278,10 +278,10 @@ Show each exercise's progress as its own badge, success-colored once every set i
 
 **Manual Verification**:
 
-- [ ] With every exercise collapsed, the finished ones show a green "✓ Done" and the others an
+- [x] With every exercise collapsed, the finished ones show a green "✓ Done" and the others an
       outline "x/y done"; checking an exercise's last set turns its badge green.
-- [ ] At 320px wide both badges sit on the summary's second line without overflowing.
-- [ ] Just above the breakpoint (about 730-800px wide), where the header is still one line, a long
+- [x] At 320px wide both badges sit on the summary's second line without overflowing.
+- [x] Just above the breakpoint (about 730-800px wide), where the header is still one line, a long
       exercise name truncates with an ellipsis instead of pushing the badges or actions out.
 
 ## Implementation Notes
