@@ -1,5 +1,6 @@
-/* The exercise catalog. The cards themselves are Oat's .card with shared.css's .open-card. */
+/* The exercise catalog: a collapsed add form above the cards, which are Oat's .card with
+   shared.css's .open-card. */
 
-.new-form .field-notes {
+.add .new-form .field-notes {
   flex: 2 1 15rem;
 }

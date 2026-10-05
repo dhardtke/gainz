@@ -75,14 +75,16 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
     const subtitle = [exercise.muscleGroup, exercise.notes].filter((part) => part !== null).join(' · ');
     return html`
       <article class="card open-card">
-        <div class="grow">
+        <div class="head">
           <a class="open" href="/exercises/${exercise.id}">${exercise.name}</a>
-          ${subtitle === '' ? '' : html`<div class="text-light">${subtitle}</div>`}
         </div>
-        <span class="badge outline">
-          ${plural(exercise.setCount, 'set')} · ${exercise.bestWeight === null ? 'no best yet' : `${formatWeight(exercise.bestWeight)} best`} ·
-          ${exercise.lastPerformedOn ? relativeDay(exercise.lastPerformedOn) : 'never done'}
-        </span>
+        ${subtitle === '' ? '' : html`<div class="text-light">${subtitle}</div>`}
+        <div class="foot">
+          <span class="text-light">
+            ${plural(exercise.setCount, 'set')} · ${exercise.bestWeight === null ? 'no best yet' : `${formatWeight(exercise.bestWeight)} best`} ·
+            ${exercise.lastPerformedOn ? relativeDay(exercise.lastPerformedOn) : 'never done'}
+          </span>
+        </div>
       </article>
     `;
   }
@@ -105,13 +107,13 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
   override readyTemplate({ items, total, page }: ExerciseListData): RawHtml {
     return html`
       <div class="vstack">
-        <div class="hstack justify-between gap-2">
+        <hgroup>
           <h1>Exercises</h1>
-          <span class="badge outline">${plural(total, 'exercise')}</span>
-        </div>
+          <p class="text-light">${plural(total, 'exercise')}</p>
+        </hgroup>
 
-        <article class="card vstack gap-2">
-          <h2>Add an exercise</h2>
+        <details class="add" ${total === 0 ? 'open' : ''}>
+          <summary>Add an exercise</summary>
           <form class="new-form" data-action="create">
             <div class="fields">
               <div class="field">
@@ -129,7 +131,7 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
               <button type="submit">Add</button>
             </div>
           </form>
-        </article>
+        </details>
 
         ${this.#page(items, total, page)}
       </div>

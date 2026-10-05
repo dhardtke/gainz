@@ -71,6 +71,19 @@ test('shows four summary tiles', async () => {
   expect(shadow(view).querySelectorAll('gz-tile')).toHaveLength(4);
 });
 
+test('puts the tiles, chart and history first, and editing collapsed last', async () => {
+  const view = await mountView();
+  const order = Array.from(shadow(view).querySelectorAll('.tiles, gz-progress-chart, gz-session-table, details.edit')).map((element) =>
+    element.matches('details.edit') ? 'edit' : element.matches('.tiles') ? 'tiles' : element.localName,
+  );
+  expect(order).toEqual(['tiles', 'gz-progress-chart', 'gz-session-table', 'edit']);
+  const edit = find<HTMLDetailsElement>(shadow(view), 'details.edit');
+  expect(edit.open).toBe(false);
+  expect(find(edit, 'summary').textContent).toBe('Edit exercise');
+  expect(find(edit, "[data-action='delete-exercise']").textContent).toBe('Delete exercise');
+  expect(edit.contains(find(shadow(view), "form[data-action='save-exercise']"))).toBe(true);
+});
+
 test('charts the estimated 1RM first', async () => {
   const view = await mountView();
   expect(chartHeading(view)).toBe('Estimated 1RM');

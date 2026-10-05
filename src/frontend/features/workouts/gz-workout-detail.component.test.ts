@@ -103,33 +103,31 @@ test('shows one row per set', async () => {
   expect(shadow(view).querySelectorAll('gz-set-row')).toHaveLength(3);
 });
 
-test('totals the sets, exercises, reps and volume', async () => {
+test('totals the sets, exercises, reps and volume in one muted line', async () => {
   const view = await mountView();
-  const badges = Array.from(shadow(view).querySelectorAll('.totals .badge')).map((badge) => badge.textContent);
-  expect(badges.slice(0, 3)).toEqual(['3 sets', '2 exercises', '15 reps']);
-  expect(badges[3]).toEndWith('total volume');
+  expect(text(view, '.summary .text-light')?.trim()).toStartWith('3 sets · 2 exercises · 15 reps · ');
 });
 
-function totals(view: HTMLElement): (string | null)[] {
-  return Array.from(shadow(view).querySelectorAll('.totals .badge')).map((badge) => badge.textContent);
+/** The session's progress badges, after its totals. */
+function progress(view: HTMLElement): (string | null)[] {
+  return Array.from(shadow(view).querySelectorAll('.summary .badge')).map((badge) => badge.textContent);
 }
 
 test('counts the sets done so far', async () => {
   const view = await mountView(withSets((item, index) => ({ ...item, done: index === 0 })));
-  expect(totals(view)).toContain('1/3 done');
-  expect(shadow(view).querySelector(".totals .badge[data-variant='success']")).toBeNull();
+  expect(progress(view)).toEqual(['1/3 done']);
+  expect(shadow(view).querySelector(".summary .badge[data-variant='success']")).toBeNull();
 });
 
 test('shows a done workout as done', async () => {
   const view = await mountView({ ...withSets((item) => ({ ...item, done: true })), done: true });
-  expect(text(view, ".totals .badge[data-variant='success']")).toBe('✓ Done');
-  expect(totals(view)).not.toContain('3/3 done');
+  expect(text(view, ".summary .badge[data-variant='success']")).toBe('✓ Done');
+  expect(progress(view)).not.toContain('3/3 done');
 });
 
 test('shows no done badge for a workout without sets', async () => {
   const view = await mountView({ ...WORKOUT, exercises: [] });
-  // Sets, exercises, reps and volume: nothing after them.
-  expect(totals(view)).toHaveLength(4);
+  expect(progress(view)).toEqual([]);
 });
 
 test('preselects the exercise of the last set', async () => {
@@ -166,6 +164,31 @@ function commit(input: HTMLInputElement, value: string): void {
   type(input, value);
   input.dispatchEvent(new Event('change', { bubbles: true }));
 }
+
+function detailsSection(view: HTMLElement): HTMLDetailsElement {
+  return find<HTMLDetailsElement>(shadow(view), 'details.details-section');
+}
+
+test('collapses "Details & notes", with "Delete workout" inside, below the add-set form', async () => {
+  const view = await mountView();
+  const section = detailsSection(view);
+  expect(section.open).toBe(false);
+  expect(section.hasAttribute('name')).toBe(false);
+  expect(find(section, 'summary').textContent).toBe('Details & notes');
+  expect(find(section, "[data-action='delete-workout']").textContent).toBe('Delete workout');
+  expect(section.contains(detailsForm(view))).toBe(true);
+  expect(find(shadow(view), 'gz-add-set-form').compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+test('keeps "Details & notes" open across a reload once opened', async () => {
+  const view = await mountView();
+  setOpen(detailsSection(view), true);
+  await changeSets(view);
+  expect(detailsSection(view).open).toBe(true);
+  setOpen(detailsSection(view), false);
+  await changeSets(view);
+  expect(detailsSection(view).open).toBe(false);
+});
 
 test('has no save button for the details', async () => {
   const view = await mountView();
@@ -274,22 +297,28 @@ function headerBadges(view: HTMLElement, exerciseId: number): (string | null)[] 
   return Array.from(groupOf(view, exerciseId).querySelectorAll('summary .badge')).map((badge) => badge.textContent);
 }
 
-test("sums up each group and its progress in its header's badges", async () => {
+test("sums up each group in its header's muted stats and its progress in a badge", async () => {
   const view = await mountView(withSets((item) => ({ ...item, done: item.exerciseId === 2 })));
-  const [benchStats, benchProgress] = headerBadges(view, 1);
+  const benchStats = find(groupOf(view, 1), 'summary .group-stats').textContent;
   expect(benchStats).toStartWith('2 sets · ');
   expect(benchStats).not.toContain('done');
-  expect(benchProgress).toBe('0/2 done');
+  expect(headerBadges(view, 1)).toEqual(['0/2 done']);
   expect(groupOf(view, 1).querySelector("summary .badge[data-variant='success']")).toBeNull();
-  const [squatStats, squatProgress] = headerBadges(view, 2);
-  expect(squatStats).toStartWith('1 set · ');
-  expect(squatProgress).toBe('✓ Done');
+  expect(find(groupOf(view, 2), 'summary .group-stats').textContent).toStartWith('1 set · ');
+  expect(headerBadges(view, 2)).toEqual(['✓ Done']);
   expect(find(groupOf(view, 2), "summary .badge[data-variant='success']").textContent).toBe('✓ Done');
 });
 
-test("links each group's header to the exercise", async () => {
+test('keeps buttons and links out of the group headers', async () => {
   const view = await mountView();
-  expect(find<HTMLAnchorElement>(groupOf(view, 1), 'summary a.button').getAttribute('href')).toBe('/exercises/1');
+  expect(shadow(view).querySelectorAll('summary :is(button, a)')).toHaveLength(0);
+});
+
+test("links each group's footer to the exercise's history", async () => {
+  const view = await mountView();
+  const link = find<HTMLAnchorElement>(groupOf(view, 1), '.group-actions a.button');
+  expect(link.getAttribute('href')).toBe('/exercises/1');
+  expect(link.textContent).toBe('Exercise history →');
 });
 
 test('first opens the exercise of the first set not done', async () => {
@@ -340,27 +369,6 @@ test('collapses every group once the open one has lost its last set', async () =
   expect(openGroups(view)).toEqual([]);
 });
 
-/** Whether a cancelable click on `target` came out default-prevented; no click is let through. */
-function clickPrevented(target: Element): boolean {
-  let prevented = false;
-  document.addEventListener(
-    'click',
-    (event) => {
-      prevented = event.defaultPrevented;
-      event.preventDefault();
-    },
-    { once: true },
-  );
-  target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }));
-  return prevented;
-}
-
-test("keeps a click among the header's actions from toggling the group, but lets the link through", async () => {
-  const view = await mountView();
-  expect(clickPrevented(find(groupOf(view, 1), 'summary .actions'))).toBe(true);
-  expect(clickPrevented(find(groupOf(view, 1), 'summary a.button'))).toBe(false);
-});
-
 function arrow(view: HTMLElement, exerciseId: number, direction: 'up' | 'down'): HTMLButtonElement {
   return find<HTMLButtonElement>(groupOf(view, exerciseId), `[data-action='move-exercise-${direction}']`);
 }
@@ -379,6 +387,8 @@ test('disables ▲ on the first exercise and ▼ on the last', async () => {
 
 test('moves an exercise up, reloads in the new order, keeps the open one open and focus on the moved arrow', async () => {
   const view = await mountView();
+  // The arrows sit inside the open group, so the exercise to move is opened first.
+  setOpen(groupOf(view, 2), true);
   const loads = workoutLoads();
   fake.respondTo(
     'GET /api/workouts/3',
@@ -396,21 +406,16 @@ test('moves an exercise up, reloads in the new order, keeps the open one open an
   expect(fake.sent('POST /api/workouts/3/exercises/2/move')).toEqual([{ direction: 'up' }]);
   expect(workoutLoads()).toBe(loads + 1);
   expect(groups(view).map((item) => item.dataset.exerciseId)).toEqual(['2', '1']);
-  expect(openGroups(view)).toEqual(['1']);
+  expect(openGroups(view)).toEqual(['2']);
   // Now first, so ▲ is disabled and focus lands on ▼.
   expect(arrow(view, 2, 'up').disabled).toBe(true);
   expect(shadow(view).activeElement).toBe(arrow(view, 2, 'down'));
 });
 
-test('keeps a click on an arrow from toggling its group', async () => {
-  const view = await mountView();
-  expect(clickPrevented(arrow(view, 2, 'up'))).toBe(true);
-  await settle();
-  expect(groupOf(view, 2).open).toBe(false);
-});
-
 test('toasts a failed move and does not reload', async () => {
   const view = await mountView();
+  // The arrows sit inside the open group, so the exercise to move is opened first.
+  setOpen(groupOf(view, 2), true);
   const loads = workoutLoads();
   fake.respondTo('POST /api/workouts/3/exercises/2/move', 404, JSON.stringify({ error: 'Exercise in this workout not found' }));
   arrow(view, 2, 'up').click();

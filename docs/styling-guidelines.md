@@ -3,7 +3,9 @@
 - **Oat first.** [Oat](https://oat.ink) provides typography, colors, form controls, tables and both
   themes. Hand-written CSS is a thin layer built from Oat's unprefixed tokens (`--primary`,
   `--muted-foreground`, `--border`, `--space-*`, `--radius-medium`, …), so it follows the active
-  theme. Before writing a box of your own, check whether Oat already draws it: **a card is `.card`**,
+  theme. gainz's palette is a set of token values in `ui/app.css` — blue as the brand, the contrast
+  tokens retuned — and `ui/contrast.test.ts` holds every text pair to WCAG AA (4.5:1) and the
+  control borders to 3:1 in both themes. Before writing a box of your own, check whether Oat already draws it: **a card is `.card`**,
   a dropdown is `<ot-dropdown>`, a loading state is `aria-busy="true"`, layout is
   `.vstack` / `.hstack` / `.gap-*`, a scrolling table is `<div class="table">`, and a toast is
   `toast()` from `ui/toast.ts`, which calls `ot.toast()`. Hand-rolling one of these produces a box that
@@ -17,13 +19,21 @@
   `article.open-card { &:hover .open { … } & .actions { … } }`, so each block reads as one component
   and the media queries that only adjust it sit inside it. There is no preprocessor: this is the
   browser's own nesting, and `&` is always written explicitly.
+- **Grouped surfaces.** The page is gray (`--background`) and cards are white (`--card`) without a
+  border, so a card stands apart by its fill; `shared.css` also fills every `<details>` with
+  `--card`. The 3:1 `--border` and `--input` are for controls — inputs, outline buttons, badges —
+  not for boxes.
 - **Every page fits a 320px-wide screen.** Narrow-screen rules live in the stylesheet of the
   component they adjust, at the existing breakpoints (560px header, 640px open cards, 720px
   forms and set rows), and a wide child shrinks or wraps rather than widening the page. Two traps: Oat's
   `.table` has a 320px `min-width`, which `shared.css` undoes, and a grid item with an
-  `aspect-ratio` takes its width from its height unless it is stretched.
+  `aspect-ratio` takes its width from its height unless it is stretched. At ≤720px `shared.css`
+  gives every button, link button, select and text-like input a 44px (`2.75rem`) minimum height,
+  and an icon button the same minimum width, so each fits a fingertip.
 - **No stylesheet declares a font size.** Body text is Oat's `1rem` everywhere, headings come from
-  Oat's fluid scale, and emphasis is weight and color. Oat sets no root or `:host` font size, so
+  Oat's fluid scale, and emphasis is weight and color. There is one exception: `gz-tile`'s value
+  uses Oat's `--text-3`, because the number is the tile's point and an `<h3>` would only pollute
+  the heading outline. Oat sets no root or `:host` font size, so
   nothing has to be pinned. For the same reason `gz-chart` draws only geometry in SVG and positions
   its axis labels as HTML over the plot: a font size inside a `viewBox` is measured in user units,
   so the browser would scale the lettering with the chart instead of matching the page.

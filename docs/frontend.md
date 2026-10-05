@@ -68,13 +68,23 @@ through `workoutFacade` and the exercises for `gz-add-set-form`'s select through
 select offers every exercise — never through anything in `exercises/internal/`; exercises are
 created on the exercises page only, so with none yet the form links there; `gz-dashboard` takes its
 summary from `statsFacade` and its recent workouts from `workoutFacade`, and shows them as the
-same `gz-workout-card`s the log does. The card is the one place a listed workout is drawn: the
-open-card link, the date, an outline totals badge, Repeat — which copies the sets into a new session
-dated today through `workoutFacade` and opens it — and, on a done workout, a `--success` border
-and a success "✓ Done" badge. Each view renders `<gz-workout-card data-id>` and hands every card
+same `gz-workout-card`s the log does. The card is the one place a listed workout is drawn, in
+three lines: a head with the open-card link and, on a done workout, a success "✓ Done" badge at its
+end; the date in muted text; and a foot with the totals, also muted text rather than a badge, and
+Repeat at its end — which copies the sets into a new session dated today through `workoutFacade`
+and opens it. A done workout's card also takes a `--success` border. Each view renders `<gz-workout-card data-id>` and hands every card
 its workout in `afterRender()`, as `gz-workout-detail` does its set rows.
 
-`gz-workout-detail` groups the workout's sets by exercise in Oat's accordion: one
+`gz-workout-detail` puts the logging first. From the top: the title and the date with its relative
+day; one summary line of muted totals — sets, exercises, reps and volume — followed by the progress
+badge; the exercise groups; `gz-add-set-form`; and last a collapsed `<details>`, "Details & notes",
+holding the workout's autosaving details form and a danger "Delete workout" button, so editing the
+date or title and deleting stay out of the way and Delete is not a mis-tap beside the title. That
+section carries no `name`, so it does not join the exercises' exclusive group, and the view
+remembers whether it is open in `#detailsOpen`, through a `toggle` listener, because a save in it
+and every set change reload the view.
+
+It groups the workout's sets by exercise in Oat's accordion: one
 `<details name="exercises">` per exercise, in the workout's order, rendered in the view's own shadow
 root rather than by a per-exercise component, because `name` exclusivity only groups `<details>`
 within one tree. At most one exercise is open, and all may be collapsed. The view remembers which
@@ -86,19 +96,19 @@ bubble) records the one opened and clears the id when that one closes; a set log
 (the created exercise's id for a new one); and an id no longer among the groups, its last set
 deleted, collapses them all. Every other change to a set leaves the open exercise open.
 
-Each header (`<summary>`) shows the exercise name, an outline stats badge "N sets · volume"
-followed by a progress badge — an outline "x/y done", or a success "✓ Done" once all of its sets
-are, so a collapsed exercise shows its state at a glance — and a `<span class="actions">` — a
-`<summary>` takes phrasing content only — holding an "Exercise" link button,
-`<a class="button outline" href="/exercises/:id">`, so `gz-app` routes it and Ctrl-click opens a
-tab. A click on the link activates the link, not the summary, so it does not toggle; a click
-listener on `.actions` prevents the default of every other click there, which covers disabled
-buttons and the gaps between them, but spares a click through an `<a>`, because `gz-app` leaves a
-default-prevented click alone.
+Each header (`<summary>`) holds only the exercise name, its stats "N sets · volume" in muted text,
+and a progress badge — an outline "x/y done", or a success "✓ Done" once all of its sets are — so a
+collapsed exercise is a glanceable name, stats and state, and nothing in it can be tapped by
+mistake. On a phone the name keeps the first line beside the chevron, and the stats and badge take
+the second.
 
-Before the link, `.actions` holds a ▲▼ pair: two `outline` buttons in Oat's `fieldset.group`,
-whose bottom margin and shared border the view's stylesheet resets, since Oat only joins grouped
-inputs. ▲ is disabled on the first exercise and ▼ on the last. They are the view's own
+The open group ends in a `.group-actions` footer below its rows, edge to edge like them and divided
+by the same `--border` line. It holds a ▲▼ pair and an "Exercise history →" link button,
+`<a class="button outline" href="/exercises/:id">`, so `gz-app` routes it and Ctrl-click opens a
+tab. The pair is two `outline` buttons in Oat's `fieldset.group`, whose bottom margin and shared
+border the view's stylesheet resets, since Oat only joins grouped inputs. Reordering is done to the
+exercise you have open, so a closed group's arrows are hidden with the rest of its body. ▲ is
+disabled on the first exercise and ▼ on the last. They are the view's own
 `data-action`s, `move-exercise-up` and `move-exercise-down`, so no event is needed: a click POSTs
 the move through `workoutFacade.moveExercise()`, reloads, and focuses the same arrow on the moved
 exercise, or the other one once it has reached that edge, so repeated presses keep moving it. The
@@ -126,12 +136,12 @@ invalid. The row runs its requests one after another, so a change saved by the b
 the done toggle lands before the set is locked. Every save reloads the view, which would drop focus
 from the field the blur moved to, so `gz-workout-detail` asks the focused row for
 `focusedField()` before reloading and hands it to the replacing row's `restoreField()`, with
-whatever was typed there by then. The workout's details form above the sets saves the same way,
+whatever was typed there by then. The workout's details form in "Details & notes" saves the same way,
 without a button or a toast: a committed change, or Enter in the date or title (in the notes it is
 a new line), PATCHes the details that differ from the workout, and the reload puts focus back in
 the field by its id while `#edits` keeps its text. A done row mirrors the backend's lock: it keeps its fields and
 × in place but disabled, keeps +1, and mutes its load. `gz-workout-detail` ends
-its totals, once the session has sets, with the same progress badge as each header, derived from
+its summary line, once the session has sets, with the same progress badge as each header, derived from
 the sets rather than the workout's flag: "x/y done", and a success "✓ Done" once every set is done,
 which is how the backend derives `done`; `gz-workout-card` shows that "✓ Done" badge on done workouts' cards only.
 
@@ -145,9 +155,11 @@ route it is; when nothing matches it shows its own not-found message. A route ma
 spreads the features — so adding a list page needs no edit in `app/` beyond a new feature's spread.
 `gz-app` renders `gz-header` above its `<main>`; the header's host is the sticky element, because a
 `<header>` inside its shadow root would be only as tall as its host and could never stick.
-The header is a flex `<nav>`: the brand on the left, then the page links in `--muted-foreground`,
-with `aria-current="page"` and `--foreground` on the current page, then a thin divider and the
-theme toggle. Below 560 px the links render a second time inside Oat's `<ot-dropdown>` — a
+The header is a surface bar: `--card` with a `--border` line beneath it, rather than a band of
+brand color, since blue is kept for what is tappable or current. Inside it is a flex `<nav>`: the
+brand in `--primary` on the left, then the page links in `--muted-foreground`, with
+`aria-current="page"` making the current page `--foreground` and bold, then a thin `--border`
+divider and the theme toggle, a `.ghost.icon` button. Below 560 px the links render a second time inside Oat's `<ot-dropdown>` — a
 `.ghost.icon` hamburger with `popovertarget` and a `<menu popover>` of `role="menuitem"` links —
 and CSS shows one list at a time rather than a resize listener choosing. `ot-dropdown` works
 inside the header's shadow root because it uses no shadow DOM of its own, queries only its own
@@ -185,9 +197,23 @@ page." with a Go to page 1 button in place of the pager, and the list leaves out
 `exerciseFacade.position()`; should that request fail after the exercise was created, the list
 reloads the page it is on instead.
 
+Both lists show their count as a muted subtitle under the heading. The workouts list has no form:
+its "Start session" header button creates a workout dated today and opens it, as the dashboard's
+"Log today's workout" does, and a title, notes or a past date are set on the workout itself. The
+exercises list keeps its add form in a collapsed `<details class="add">`, "Add an exercise", which
+starts open only while there are no exercises.
+
+`gz-exercise-detail` puts the progress first: the back link, the name and muscle group, four
+`gz-tile`s, `gz-progress-chart` and `gz-session-table`, and last a collapsed `<details
+class="edit">`, "Edit exercise", holding the save form and a danger "Delete exercise" button. It
+keeps no open state, unlike the workout's "Details & notes": only a successful save reloads the
+view, which closes the section while the toast confirms the save, and a failed save or a metric
+switch re-renders nothing.
+
 A list item opens its entity the same way, and on the whole card rather than on the words: the
-card is `shared.css`'s `article.open-card`, and its hit area is the anchor's own `::after` stretched
-across the card. Because the overlay is part of the anchor, it is still a link — `gz-app` routes it,
+card is `shared.css`'s `article.open-card`, a column of lines — a `.head` with the title (and any
+badge at its end), a muted subtitle, and a `.foot` of muted stats with the actions pushed to its end
+— and its hit area is the anchor's own `::after` stretched across the card. Because the overlay is part of the anchor, it is still a link — `gz-app` routes it,
 Ctrl- and middle-click open a tab, and the keyboard reaches it — where a click handler on the card
 would be none of those things. A button on a card sits in `.actions`, which is positioned so it
 paints above the overlay and takes its own click; a click there carries no anchor in its composed
@@ -321,7 +347,9 @@ anyway.
 `ui/app.css` turns that attribute into `color-scheme: light` or `color-scheme: dark`. Oat colors
 every token with `light-dark()` under `:root { color-scheme: light dark }`, and `color-scheme` is
 an inherited property, so the choice reaches every shadow root with no per-host mirroring. With no
-attribute set, Oat's `light dark` follows the system.
+attribute set, Oat's `light dark` follows the system. The brand and contrast tokens — `--primary`,
+`--background`, `--card`, `--muted`, `--border` and the rest — are overridden in `app.css`, again
+with `light-dark()`, and `ui/contrast.test.ts` checks every pair against WCAG AA.
 The control is `gz-theme-toggle`, an icon-only `<button>` in the header that calls `toggleTheme()`.
 It holds a sun and a moon SVG and shows the sun in light mode and the moon in dark mode, and its
 `aria-label` flips between "Turn on dark mode" and "Turn off dark mode". A theme change toggles the

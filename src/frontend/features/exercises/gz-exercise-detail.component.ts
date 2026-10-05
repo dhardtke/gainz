@@ -13,7 +13,7 @@ import './internal/gz-progress-chart.component.ts';
 import './internal/gz-session-table.component.ts';
 import '../../ui/tile/gz-tile.component.ts';
 
-/** Progress view for a single exercise. */
+/** Progress view for a single exercise: tiles, chart and history first, editing collapsed at the bottom. */
 export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
   override loadingText = 'Loading progress…';
 
@@ -92,35 +92,46 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
     return html`
       <div>
         <p><a href="/exercises">← Exercises</a></p>
-        <div class="hstack justify-between gap-2">
-          <hgroup>
-            <h1>${exercise.name}</h1>
-            <p class="text-light">${exercise.muscleGroup ?? 'No muscle group set'}</p>
-          </hgroup>
-          <button data-variant="danger" data-action="delete-exercise">Delete</button>
-        </div>
+        <hgroup>
+          <h1>${exercise.name}</h1>
+          <p class="text-light">${exercise.muscleGroup ?? 'No muscle group set'}</p>
+        </hgroup>
       </div>
-      <article class="card">
-        <form class="vstack gap-2" data-action="save-exercise">
-          <div class="fields">
-            <div class="field grow">
-              <label for="name">Name</label>
-              <input id="name" name="name" type="text" maxlength="120" value="${exercise.name}" required />
+    `;
+  }
+
+  /**
+   * Editing and the destructive Delete, collapsed below the history. It keeps no open state: only
+   * a successful save reloads the view, which closes it while the toast confirms the save, and a
+   * failed save or a metric switch re-renders nothing.
+   */
+  #editTemplate(exercise: ExerciseDto): RawHtml {
+    return html`
+      <details class="edit">
+        <summary>Edit exercise</summary>
+        <div class="vstack gap-2">
+          <form class="vstack gap-2" data-action="save-exercise">
+            <div class="fields">
+              <div class="field grow">
+                <label for="name">Name</label>
+                <input id="name" name="name" type="text" maxlength="120" value="${exercise.name}" required />
+              </div>
+              <div class="field">
+                <label for="muscleGroup">Muscle group</label>
+                <input id="muscleGroup" name="muscleGroup" type="text" maxlength="60" value="${exercise.muscleGroup ?? ''}" />
+              </div>
             </div>
             <div class="field">
-              <label for="muscleGroup">Muscle group</label>
-              <input id="muscleGroup" name="muscleGroup" type="text" maxlength="60" value="${exercise.muscleGroup ?? ''}" />
+              <label for="notes">Notes</label>
+              <textarea id="notes" name="notes" maxlength="2000" placeholder="Low bar, belt over 100 kg">${exercise.notes ?? ''}</textarea>
             </div>
-          </div>
-          <div class="field">
-            <label for="notes">Notes</label>
-            <textarea id="notes" name="notes" maxlength="2000" placeholder="Low bar, belt over 100 kg">${exercise.notes ?? ''}</textarea>
-          </div>
-          <div class="hstack gap-2">
-            <button type="submit">Save</button>
-          </div>
-        </form>
-      </article>
+            <div class="hstack gap-2">
+              <button type="submit">Save</button>
+            </div>
+          </form>
+          <div><button data-variant="danger" data-action="delete-exercise">Delete exercise</button></div>
+        </div>
+      </details>
     `;
   }
 
@@ -157,6 +168,8 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
         <gz-progress-chart></gz-progress-chart>
 
         <gz-session-table></gz-session-table>
+
+        ${this.#editTemplate(progress.exercise)}
       </div>
     `;
   }

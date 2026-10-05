@@ -1,12 +1,11 @@
 /* The logging screen for one session. */
 
-.totals {
-  display: flex;
-  gap: 0.5rem;
+/* The session's totals as one muted line, with the progress badge after it. */
+.summary {
   flex-wrap: wrap;
 }
 
-/* One Oat accordion item per exercise; the header holds the name, a stats and a progress badge, and actions. */
+/* One Oat accordion item per exercise; the header holds the name, muted stats and a progress badge. */
 summary {
   & .exercise-name {
     flex: 1 1 auto;
@@ -16,24 +15,8 @@ summary {
     white-space: nowrap;
   }
 
-  & .badge {
+  & .group-stats {
     flex: none;
-  }
-
-  & .actions {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    flex: none;
-  }
-
-  & .move {
-    margin: 0;
-
-    /* Oat joins the corners of grouped buttons but not their shared border, as it does for inputs. */
-    & > button:first-child {
-      border-inline-end-color: transparent;
-    }
   }
 }
 
@@ -48,7 +31,28 @@ summary {
   }
 }
 
-/* The name keeps the first line beside the chevron; the badges and the actions take a line each. */
+/* The open exercise's own actions: reorder it, or open its history. */
+.group-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  /* Edge to edge like the rows, divided from them by the same line. */
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border);
+
+  & .move {
+    margin: 0;
+
+    /* Oat joins the corners of grouped buttons but not their shared border, as it does for inputs. */
+    & > button:first-child {
+      border-inline-end-color: transparent;
+    }
+  }
+}
+
+/* The name keeps the first line beside the chevron; the stats and the badge take the second. */
 @media (max-width: 720px) {
   summary {
     flex-wrap: wrap;
@@ -57,13 +61,8 @@ summary {
       flex-basis: calc(100% - 2em);
     }
 
-    & .badge {
+    & :is(.group-stats, .badge) {
       order: 1;
-    }
-
-    & .actions {
-      order: 2;
-      flex-basis: 100%;
     }
   }
 }
