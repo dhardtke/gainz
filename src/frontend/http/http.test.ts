@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { useFetch } from '../testing.ts';
-import { ApiError } from './errors.ts';
+import { ApiError, UNAUTHORIZED_EVENT } from './errors.ts';
 import { get, patch, post, remove } from './http.ts';
 
 const fetch = useFetch();
@@ -100,5 +100,40 @@ describe('failures', () => {
     expect(error.message).toBe('Could not reach the gainz server');
     expect(error.status).toBe(0);
     expect(error.details).toBe(cause);
+  });
+});
+
+describe('a 401', () => {
+  /** Counts `UNAUTHORIZED_EVENT`s on the global object while `run` runs. */
+  async function unauthorizedEvents(run: () => Promise<unknown>): Promise<number> {
+    let heard = 0;
+    const listener = (): void => {
+      heard++;
+    };
+    globalThis.addEventListener(UNAUTHORIZED_EVENT, listener);
+    try {
+      await run();
+    } finally {
+      globalThis.removeEventListener(UNAUTHORIZED_EVENT, listener);
+    }
+    return heard;
+  }
+
+  test('dispatches the unauthorized event once and still rejects', async () => {
+    fetch.respondWith(401, '{"error":"Not logged in"}');
+
+    let error: ApiError | undefined;
+    const heard = await unauthorizedEvents(async () => {
+      error = await rejection(get('/workouts'));
+    });
+
+    expect(heard).toBe(1);
+    expect(error?.status).toBe(401);
+  });
+
+  test('another failure dispatches nothing', async () => {
+    fetch.respondWith(404, '{"error":"Workout not found"}');
+
+    expect(await unauthorizedEvents(() => rejection(get('/workouts/9')))).toBe(0);
   });
 });

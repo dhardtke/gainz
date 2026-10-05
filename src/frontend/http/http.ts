@@ -1,10 +1,11 @@
 /** Thin client for the gainz REST API. */
 
-import { ApiError } from './errors.ts';
+import { ApiError, UNAUTHORIZED_EVENT } from './errors.ts';
 
 /**
  * @returns the parsed body, or `null` when there is no body — a 204, say.
- * @throws {ApiError} on a transport failure or a non-2xx response.
+ * @throws {ApiError} on a transport failure or a non-2xx response; a 401 also dispatches
+ *   `UNAUTHORIZED_EVENT` first.
  */
 async function request<T>(method: 'GET' | 'POST' | 'PATCH' | 'DELETE', path: string, body?: unknown): Promise<T> {
   let response: Response;
@@ -30,6 +31,10 @@ async function request<T>(method: 'GET' | 'POST' | 'PATCH' | 'DELETE', path: str
   if (!response.ok) {
     const errorBody = typeof data === 'object' && data !== null ? data : {};
     const message = 'error' in errorBody && typeof errorBody.error === 'string' ? errorBody.error : `Request failed (${response.status})`;
+    if (response.status === 401) {
+      // globalThis is `window` in a browser; the tests of this module run without a DOM.
+      globalThis.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+    }
     throw new ApiError(message, response.status, 'details' in errorBody ? errorBody.details : undefined);
   }
 

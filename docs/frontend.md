@@ -10,27 +10,31 @@ src/frontend/
 ├── index.html  main.ts
 ├── dev/        hot.ts (development only)
 ├── app/        gz-app, gz-header, gz-theme-toggle, router.ts, routes.ts
-├── http/       http.ts (get/post/patch/remove), errors.ts (ApiError, errorMessage)
+├── http/       http.ts (get/post/patch/remove), errors.ts (ApiError, errorMessage, UNAUTHORIZED_EVENT)
 ├── ui/         base.ts, view.ts, html.ts, styles.ts, theme.ts, format.ts, app.css, shared.css, toast.ts, tile/, pagination/
 └── features/
     ├── exercises/  exercises.routes.ts, exercises.facade.ts, gz-exercise-list, gz-exercise-detail
     │   └── internal/  exercise.api.ts, gz-chart, gz-progress-chart, gz-session-table
     ├── workouts/   workouts.routes.ts, workouts.facade.ts, gz-workout-list, gz-workout-detail, gz-workout-card
     │   └── internal/  workout.api.ts, set.api.ts, gz-set-row, gz-add-set-form
-    └── stats/      stats.routes.ts, stats.facade.ts, gz-dashboard
-        └── internal/  stats.api.ts
+    ├── stats/      stats.routes.ts, stats.facade.ts, gz-dashboard
+    │   └── internal/  stats.api.ts
+    └── auth/       auth.routes.ts, auth.facade.ts, gz-login
+        └── internal/  auth.api.ts, next-path.ts
 ```
 
 What belongs to no feature sits in four directories. `dev/` holds `hot.ts`, the hot-reload client
 the server injects only in development; nothing imports it, and it is deliberately not one of the
 import boundaries below. `app/` is the shell: `gz-app`, the
 `gz-header` it renders at the top with the `gz-theme-toggle` inside it, `router.ts`, a generic path router that names no route, and
-`routes.ts`, which spreads the features' route lists into the one `ROUTES` table. `http/` is the request
+`routes.ts`, which spreads the features' route lists into the one `ROUTES` table. `app/` reaches a feature
+only through those route lists, with one exception: `gz-header` imports `features/auth/auth.facade.ts`
+for its Log out button. `http/` is the request
 plumbing: `http.ts` holds the `get`/`post`/`patch`/`remove` helpers over `fetch`, and `errors.ts`
 holds `ApiError` and `errorMessage`, kept apart so a component can catch an error without being
 able to make a request. `ui/` is what any component may use: `base.ts` with `GzElement` (open
 shadow root, `data-action` click/submit delegation, `template()`/`render()`) and `define()`;
-`view.ts` with `GzView`, the abstract base of the five route views, which loads on connect
+`view.ts` with `GzView`, the abstract base of every route view but `gz-login`, which loads on connect
 through its `load()` hook and renders `loadingText`, then `readyTemplate()` or `errorTemplate()`
 (the message, and `backLink` below it when a view sets one),
 and whose `numericAttribute()` reads the id attribute a route sets, throwing when it is missing;
@@ -50,7 +54,7 @@ which is what lets a route's `view()` lazily `import()` its view and still have 
 the first frame.
 
 Everything else is a feature, shaped like its backend counterpart and named the same:
-`exercises`, `workouts` and `stats`, which owns the dashboard. `features/workouts/` keeps its
+`exercises`, `workouts`, `stats`, which owns the dashboard, and `auth`, which owns the login page. `features/workouts/` keeps its
 route views, `gz-workout-list` and `gz-workout-detail`, at its root beside `workouts.facade.ts`,
 and beside them `gz-workout-card`, which is not `internal/` because the dashboard renders it too,
 the feature's front door, and keeps what only it uses in `internal/`: one API class per URL prefix
@@ -170,6 +174,28 @@ page in both lists and closes the menu if it is open. A route file only
 `import type`s `RouteDef` from `app/router.ts`, so it loads up front at almost no cost and reaches
 its views only through `import()`.
 
+When the server has a password set (see "Authentication" in `docs/backend.md`), every API call
+without a valid session cookie is answered 401, and the frontend turns that into the login page
+without any view knowing about it. `http.ts` dispatches `UNAUTHORIZED_EVENT` (`gz:unauthorized`) on
+the global object before it throws the `ApiError`; it signals with an event rather than calling
+`navigate()` because `http/` is foundation and may not import `app/`. `gz-app` listens for the event
+on `window` and, unless it is already on `/login`, navigates to `/login?next=` with the current path
+and query encoded. `toastError()` stays silent for a 401, so the view that failed to load shows no
+toast on its way out. `gz-login`, the `auth` feature's one view, is a plain `GzElement` rather than a
+`GzView`, since it loads nothing: a form with a hidden `username` field (password managers save an
+entry only for a form that has one) and a password field, posting through `authFacade.login()`. A
+401 shows "Wrong password." inline, any other failure — the throttle's 429 among them — the server's
+message, and a success navigates to `nextPath(location.search, location.origin)` from
+`internal/next-path.ts`, which accepts `next` only when it resolves to a path on this origin other
+than the login page itself, and otherwise answers `/`. While the server has no password, the login
+simply succeeds, so `/login` passes straight through.
+
+On `/login` the header's `#syncLinks` puts a `login` class on its `<nav>`, which hides both link
+lists at every width and moves the theme toggle to the far end, so the page shows only the brand and
+the toggle. Elsewhere both lists end in Log out, a link to `/login` styled like its neighbors in each list. Its
+`data-action="logout"` handler cancels the click before `gz-app` routes it, posts through
+`authFacade.logout()` and then navigates to `/login`, toasting a failure instead.
+
 Links are plain `<a href="/…">`. `gz-app` listens for clicks on its host, finds the anchor through
 `composedPath()` because the views' and the header's shadow roots retarget the event, and routes it through
 `navigate()` when `router.ts`'s `linkPath` says it is a plain same-origin click on an
@@ -261,7 +287,7 @@ A plain `number` still assigns into a flavor, which is why `Number(element.datas
 cast on the way in.
 
 Shapes local to one module — a view's loaded data, the chart's points — are declared in that
-module; what a view is doing with that data is `GzView`'s `ViewState<Data>`. The five route views are exported so their route file can construct them with `new`, which
+module; what a view is doing with that data is `GzView`'s `ViewState<Data>`. The six route views are exported so their route file can construct them with `new`, which
 keeps each tag name written only in its `define()`. `GzChartComponent`, `GzProgressChartComponent`, `GzSessionTableComponent`, `GzSetRowComponent`
 and `GzAddSetFormComponent` are exported so their parent can type the element it drives; the other five components stay private to their module.
 
@@ -291,8 +317,9 @@ only when that view _and_ everything it renders have their scripts and their CSS
 page is fully styled on its first paint; there is no flash of unstyled content to guard against.
 
 Only the shell (`gz-app`, `gz-header`, `gz-theme-toggle`) with `ui/view.ts`, `http/errors.ts` and
-`ui/toast.ts`, which `gz-app` imports, `app/routes.ts` with the three feature route files, and Oat
-plus `ui/shared.css` load up front. `gz-app` guards against two
+`ui/toast.ts`, which `gz-app` imports, `app/routes.ts` with the four feature route files, the auth
+facade with its API class and `http/http.ts`, which `gz-header` imports for Log out, and Oat plus
+`ui/shared.css` load up front. `gz-app` guards against two
 navigations resolving out of order and reports a failed import through the toast.
 
 Styled is not the same as ready, though: a view fetches its data once connected, and until then

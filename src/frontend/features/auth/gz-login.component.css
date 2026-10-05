@@ -1,0 +1,5 @@
+/* The login page: Oat's form styles, held to a comfortable width. */
+
+section {
+  max-inline-size: 24rem;
+}

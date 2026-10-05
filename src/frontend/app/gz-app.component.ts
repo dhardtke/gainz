@@ -5,6 +5,7 @@ import { html } from '../ui/html.ts';
 import { currentPath, linkPath, matchRoute, navigate, onRouteChange } from './router.ts';
 import { ROUTES } from './routes.ts';
 import { toastError } from '../ui/toast.ts';
+import { UNAUTHORIZED_EVENT } from '../http/errors.ts';
 import './gz-header.component.ts';
 
 /** How long the outgoing view waits for the incoming one's data before giving way to its loading state. */
@@ -15,10 +16,18 @@ const SLOW_VIEW_MS = 300;
  *
  * The shell renders once; route changes only swap the element inside <main>,
  * so the header survives navigation. Toasts live in the document, not here.
+ *
+ * Any API call answered 401 sends the user to the login page, remembering where they were.
  */
 class GzAppComponent extends GzElement {
   #unsubscribe: (() => void) | null = null;
   #renderToken = 0;
+
+  readonly #onUnauthorized = (): void => {
+    if (currentPath() !== '/login') {
+      navigate(`/login?next=${encodeURIComponent(location.pathname + location.search)}`);
+    }
+  };
 
   constructor() {
     super();
@@ -43,11 +52,13 @@ class GzAppComponent extends GzElement {
     this.#unsubscribe = onRouteChange(() => {
       this.#renderView();
     });
+    window.addEventListener(UNAUTHORIZED_EVENT, this.#onUnauthorized);
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.#unsubscribe?.();
+    window.removeEventListener(UNAUTHORIZED_EVENT, this.#onUnauthorized);
   }
 
   override afterRender(): void {
