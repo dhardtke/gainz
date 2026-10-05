@@ -4,7 +4,7 @@ git_commit: e86221a2d97be6f47ec1620107dc073c8d97ec4b
 branch: main
 topic: "Clear the remaining oxlint type-aware violations"
 tags: [plan, oxlint, typescript, frontend, backend, tests]
-status: draft
+status: implemented
 ---
 
 # PLAN: Clear the remaining oxlint type-aware violations

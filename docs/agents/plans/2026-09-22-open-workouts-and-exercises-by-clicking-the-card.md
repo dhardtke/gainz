@@ -4,7 +4,7 @@ git_commit: 7e0b52b273d83bce85e0a728f693b2ffae3d16bf
 branch: main
 topic: 'Open workouts and exercises by clicking the card'
 tags: [plan, frontend, workouts, exercises, routing, forms, styling]
-status: ready
+status: implemented
 ---
 
 # PLAN: Open workouts and exercises by clicking the card

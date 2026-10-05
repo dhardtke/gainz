@@ -4,7 +4,7 @@ git_commit: b55db9ee49f7abf2ceeb72964c6c785dfb487bec
 branch: main
 topic: 'Cookie login'
 tags: [plan, auth, backend, frontend, deployment]
-status: ready
+status: implemented
 ---
 
 # PLAN: Cookie login

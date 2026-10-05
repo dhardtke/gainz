@@ -4,7 +4,7 @@ git_commit: 60e8c0262ebd3302e8cb0aff3d5fc99fbab2b09d
 branch: main
 topic: 'Path-based frontend routing'
 tags: [plan, frontend, router, gz-app]
-status: ready
+status: implemented
 ---
 
 # PLAN: Path-based frontend routing
