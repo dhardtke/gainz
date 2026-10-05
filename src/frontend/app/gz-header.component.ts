@@ -24,6 +24,15 @@ class GzHeaderComponent extends GzElement {
 
   override afterRender(): void {
     this.#syncLinks();
+    // Oat focuses, and so highlights, the first item when the menu opens. Its listener is
+    // registered first (oat.js defines ot-dropdown before any module runs, so the dropdown
+    // initializes as the template is inserted), so this one runs after it and moves focus on to
+    // the current page.
+    this.$<HTMLElement>('menu[popover]')?.addEventListener('toggle', (event) => {
+      if (event.newState === 'open') {
+        this.$<HTMLAnchorElement>('menu a[aria-current="page"]')?.focus();
+      }
+    });
   }
 
   /** Marks the current page in both link lists, and closes the menu after a navigation from it. */
