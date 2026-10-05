@@ -1,4 +1,6 @@
 import type { DB } from '../db/db.ts';
+import { type AuthOptions, createAuthFacade } from '../features/auth/auth.facade.ts';
+import { authRoutes } from '../features/auth/auth.routes.ts';
 import { devRoutes } from '../features/dev/dev.routes.ts';
 import { exerciseRoutes } from '../features/exercises/exercise.routes.ts';
 import { metaRoutes } from '../features/meta/meta.routes.ts';
@@ -14,17 +16,25 @@ import { workoutRoutes } from '../features/workouts/workout.routes.ts';
  * URL surface — the /api endpoints and, in staticRoutes(), the frontend and the
  * vendor allowlist — so there is no fetch fallback behind it.
  *
+ * The data features' tables go through `auth.guard()`, which wraps each handler to
+ * demand a session cookie while auth is on. The health check, the /api 404s, login
+ * and logout, the dev socket and the frontend stay public.
+ *
  * Spread order is for readers, not for correctness: measured on Bun 1.4.2, the
  * router matches by specificity, so /api/health wins over /api/* and /api/* over
  * /* wherever they are declared. Least specific last reads the way it dispatches.
  */
-export function allRoutes(db: DB): RouteTable {
+export function allRoutes(db: DB, authOptions: AuthOptions): RouteTable {
+  const auth = createAuthFacade(authOptions);
   return {
-    ...metaRoutes(),
-    ...statsRoutes(db),
-    ...exerciseRoutes(db),
-    ...workoutRoutes(db),
-    ...setRoutes(db),
+    ...metaRoutes(auth),
+    ...authRoutes(auth),
+    ...auth.guard({
+      ...statsRoutes(db),
+      ...exerciseRoutes(db),
+      ...workoutRoutes(db),
+      ...setRoutes(db),
+    }),
     ...devRoutes(),
     ...staticRoutes(),
   };

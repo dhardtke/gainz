@@ -9,6 +9,7 @@
     "build": "bun run src/scripts/build.ts",
     "fmt": "oxfmt .",
     "fmt:check": "oxfmt --check .",
+    "hash-password": "bun run src/scripts/hash-password.ts",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "migrate": "bun run src/scripts/migrate.ts",

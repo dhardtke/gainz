@@ -9,6 +9,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openDatabase } from './db/db.ts';
+import type { AuthOptions } from './features/auth/auth.facade.ts';
 import { HttpError } from './http/errors.ts';
 import { startServer } from './http/server.ts';
 
@@ -26,15 +27,18 @@ export interface TestServer {
  * The lifecycle hooks are registered from inside this function rather than at
  * the module's top level, so each file that calls it gets its own hooks and its
  * own database instead of sharing one through the module cache.
+ *
+ * Auth is off unless `options.auth` names a password hash; the auth feature, and with it the login
+ * throttle, is rebuilt with the server for every test.
  */
-export function useServer(): TestServer {
+export function useServer(options: { auth?: AuthOptions } = {}): TestServer {
   let db: Database;
   let server: Server<undefined>;
   let base = '';
 
   beforeEach(() => {
     db = openDatabase(':memory:');
-    server = startServer(db, 0);
+    server = startServer(db, 0, options.auth);
     base = server.url.origin;
   });
 
