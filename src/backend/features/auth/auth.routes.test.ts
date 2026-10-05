@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
+import type { AuthStatusDto } from '../../../shared/dto/auth.ts';
 import type { ErrorDto } from '../../../shared/dto/error.ts';
 import type { HealthDto } from '../../../shared/dto/meta.ts';
 import { body, useServer } from '../../testing.ts';
@@ -43,10 +44,13 @@ describe('the guard', () => {
     expect((await post('/api/workouts', { performedOn: '2026-01-01' })).status).toBe(401);
   });
 
-  test('leaves health, the /api 404s, the frontend and the vendor files public', async () => {
+  test('leaves health, the auth status, the /api 404s, the frontend and the vendor files public', async () => {
     const health = await api('/api/health');
     expect(health.status).toBe(200);
     expect((await body<HealthDto>(health)).auth).toBe(true);
+    const status = await api('/api/auth/status');
+    expect(status.status).toBe(200);
+    expect(await body<AuthStatusDto>(status)).toEqual({ enabled: true });
     expect((await api('/api/nope')).status).toBe(404);
     const page = await api('/');
     expect(page.status).toBe(200);

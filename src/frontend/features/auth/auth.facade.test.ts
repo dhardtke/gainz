@@ -4,6 +4,13 @@ import { authFacade } from './auth.facade.ts';
 
 const fetch = useFetch();
 
+test('authFacade.enabled()', async () => {
+  fetch.respondWith(200, '{"enabled":true}');
+
+  expect(await authFacade.enabled()).toBe(true);
+  expect(fetch.requests).toMatchObject([{ method: 'GET', url: '/api/auth/status' }]);
+});
+
 test('authFacade.login()', async () => {
   await authFacade.login('pw');
 

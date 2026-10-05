@@ -100,6 +100,11 @@ menu[popover] a[role="menuitem"] {
   }
 }
 
+/* Log out is hidden in both lists until gz-header learns that the server asks for a login. */
+nav:not(.auth) .logout {
+  display: none;
+}
+
 /* The login page: no page links and no Log out, only the brand and the theme toggle, at any width. */
 nav.login {
   & .links,
