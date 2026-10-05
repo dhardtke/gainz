@@ -86,12 +86,13 @@ describe('single-file build', () => {
     expect(stdout).not.toContain('hot reload: on');
   });
 
-  test('stamps the index page with the commit and the build time in UTC', async () => {
+  test('stamps the index page with the commit, the build time in UTC and any workflow run ID', async () => {
     const head = Bun.spawnSync(['git', 'rev-parse', 'HEAD']).stdout.toString().trim();
     const text = await (await get('/')).text();
-    const stamp = /^<!doctype html>\r?\n<!-- gainz ([0-9a-f]{40})(?:-dirty)?, built (\S+Z) -->\r?\n/.exec(text);
+    const stamp = /^<!doctype html>\r?\n<!-- gainz ([0-9a-f]{40})(?:-dirty)?, built (\S+Z)(?:, run (\d+))? -->\r?\n/.exec(text);
     expect(stamp?.[1]).toBe(head);
     expect(Math.abs(Date.now() - Date.parse(stamp?.[2] ?? ''))).toBeLessThan(120_000);
+    expect(stamp?.[3]).toBe(Bun.env.GITHUB_RUN_ID);
   });
 
   test('never opens a socket at /dev/ws', async () => {

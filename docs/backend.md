@@ -330,7 +330,8 @@ The frontend is embedded one module per URL rather than bundled, because bundlin
 A module that does not parse fails the build, naming the file. The migrations come from
 `readMigrations`. The embedded `index.html` is stamped with an HTML comment right below its doctype
 naming the commit (`git rev-parse HEAD`, suffixed `-dirty` when the working tree has uncommitted
-changes, or `unknown` outside a git checkout) and the build time as an ISO 8601 UTC timestamp.
+changes, or `unknown` outside a git checkout), the build time as an ISO 8601 UTC timestamp and,
+when `GITHUB_RUN_ID` is set (as it is in GitHub Actions), the workflow run ID.
 
 The server itself is built with `target: 'bun'` and `minify: true`; Bun reads the linked source map
 for stack traces. `GAINZ_DEV` is ignored in a built file. `dist/` is git-ignored, which is also what
