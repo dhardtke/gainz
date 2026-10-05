@@ -41,7 +41,8 @@ The target machine needs Bun 1.4 or newer and nothing else — no checkout, no
 ignored there.
 
 Pushes to `main` deploy automatically through GitHub Actions and a self-hosted
-runner; [`docs/deployment.md`](docs/deployment.md) describes the server setup.
+runner; [`docs/deployment.md`](docs/deployment.md) describes the server setup,
+and its "Password" section how production gets `GAINZ_PASSWORD_HASH`.
 
 ## Security
 

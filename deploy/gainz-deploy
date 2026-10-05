@@ -50,6 +50,13 @@ healthy() {
   return 1
 }
 
+# The release must ask for a password: a missing or empty GAINZ_PASSWORD_HASH would serve the log to
+# anyone. Not `curl | grep -q`: under pipefail, the SIGPIPE grep -q can cause would fail a healthy release.
+has_auth() {
+  local body
+  body=$(curl -fsS "http://127.0.0.1:$PORT/api/health") && [[ $body == *'"auth":true'* ]]
+}
+
 prune() {
   local keep=$1 dir=$2 current
   current=$(readlink -f "$CURRENT" || true)
@@ -88,22 +95,25 @@ fi
 point_current_at "$release"
 systemctl --user start gainz
 
-if healthy; then
-  prune "$KEEP_RELEASES" "$RELEASES"
-  [[ -d $BACKUPS ]] && prune "$KEEP_BACKUPS" "$BACKUPS"
-  echo "gainz-deploy: $sha is live"
-  exit 0
-fi
+# Puts the previous release and the database snapshot back, then fails the deploy.
+roll_back() {
+  echo "gainz-deploy: $*, rolling back" >&2
+  journalctl --user -u gainz -n 50 --no-pager >&2 || true
+  systemctl --user stop gainz
+  if [[ -n $backup ]]; then
+    rm -f -- "$GAINZ_DB-wal" "$GAINZ_DB-shm"
+    cp -- "$backup" "$GAINZ_DB"
+  fi
+  if [[ -n $previous ]]; then
+    point_current_at "$previous"
+    systemctl --user start gainz
+  fi
+  exit 1
+}
 
-echo "gainz-deploy: $sha did not become healthy, rolling back" >&2
-journalctl --user -u gainz -n 50 --no-pager >&2 || true
-systemctl --user stop gainz
-if [[ -n $backup ]]; then
-  rm -f -- "$GAINZ_DB-wal" "$GAINZ_DB-shm"
-  cp -- "$backup" "$GAINZ_DB"
-fi
-if [[ -n $previous ]]; then
-  point_current_at "$previous"
-  systemctl --user start gainz
-fi
-exit 1
+healthy || roll_back "$sha did not become healthy"
+has_auth || roll_back "$sha came up without auth (is GAINZ_PASSWORD_HASH in $APP/gainz.env?)"
+
+prune "$KEEP_RELEASES" "$RELEASES"
+[[ -d $BACKUPS ]] && prune "$KEEP_BACKUPS" "$BACKUPS"
+echo "gainz-deploy: $sha is live"
