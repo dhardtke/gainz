@@ -22,3 +22,10 @@ export class ApiError extends Error {
 export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
+
+/**
+ * Dispatched on the global object whenever the API answers 401, so the app shell can send the user
+ * to the login page. An event rather than a call, because `http/` is foundation and may not import
+ * the router in `app/`.
+ */
+export const UNAUTHORIZED_EVENT = 'gz:unauthorized';

@@ -1,4 +1,4 @@
-import { errorMessage } from '../http/errors.ts';
+import { ApiError, errorMessage } from '../http/errors.ts';
 
 export type ToastKind = 'info' | 'success' | 'error';
 
@@ -22,5 +22,9 @@ export function toast(message: string, kind: ToastKind = 'info'): void {
 
 /** Reports a failed API call in the user's terms. */
 export function toastError(error: unknown): void {
+  // Not logged in: the app sends the user to the login page instead, which says enough.
+  if (error instanceof ApiError && error.status === 401) {
+    return;
+  }
   toast(errorMessage(error), 'error');
 }

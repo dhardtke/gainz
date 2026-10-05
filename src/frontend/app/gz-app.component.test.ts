@@ -2,7 +2,8 @@ import { beforeAll, beforeEach, expect, test } from 'bun:test';
 import { find, mount, settle, shadow, useDom } from '../testing.ts';
 import { navigate } from './router.ts';
 
-// Only paths no route matches: a matched route would load a real feature view, which fetches the API.
+// Only paths no route matches, but for /login: a matched route would load a real feature view, which
+// fetches the API, and the login view is the one that does not.
 useDom();
 
 beforeAll(async () => {
@@ -118,4 +119,28 @@ test('stops listening once removed, and renders the current path when mounted ag
   expect(() => window.dispatchEvent(new PopStateEvent('popstate'))).not.toThrow();
   await settle(0);
   expect(notFound(await mountApp())).toBe('Nothing lives at /later.');
+});
+
+test('sends a 401 to the login page, remembering where it came from', async () => {
+  const app = await mountApp();
+  history.replaceState(null, '', '/workouts?page=2');
+  window.dispatchEvent(new Event('gz:unauthorized'));
+  expect(location.pathname + location.search).toBe('/login?next=%2Fworkouts%3Fpage%3D2');
+  // The one matched route this file opens: the login view fetches nothing, but its module must land
+  // before the file's DOM is torn down.
+  for (let i = 0; i < 50 && !app.shadowRoot?.querySelector('main > gz-login'); i++) {
+    await settle();
+  }
+  expect(app.shadowRoot?.querySelector('main > gz-login')).not.toBeNull();
+});
+
+test('ignores a 401 on the login page itself', async () => {
+  const app = await mountApp();
+  // On the login path, but with no popstate: the shell still shows its not-found line, and must not
+  // load the login view, since nothing should navigate.
+  history.replaceState(null, '', '/login?next=%2Fx');
+  window.dispatchEvent(new Event('gz:unauthorized'));
+  await settle(0);
+  expect(notFound(app)).toBe('Nothing lives at /nowhere.');
+  expect(location.pathname + location.search).toBe('/login?next=%2Fx');
 });

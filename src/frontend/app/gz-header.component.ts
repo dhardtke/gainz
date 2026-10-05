@@ -1,11 +1,16 @@
 import type { RawHtml } from '../ui/html.ts';
 import { define, GzElement } from '../ui/base.ts';
 import { html } from '../ui/html.ts';
-import { isActive, onRouteChange } from './router.ts';
+import { currentPath, isActive, navigate, onRouteChange } from './router.ts';
 import { ROUTES } from './routes.ts';
+import { toastError } from '../ui/toast.ts';
+import { authFacade } from '../features/auth/auth.facade.ts';
 import './gz-theme-toggle.component.ts';
 
-/** Sticky page header: brand, page links (a dropdown on narrow screens) and the theme toggle. */
+/**
+ * Sticky page header: brand, page links and Log out (a dropdown on narrow screens) and the theme
+ * toggle. On the login page it shows only the brand and the theme toggle.
+ */
 class GzHeaderComponent extends GzElement {
   #unsubscribe: (() => void) | null = null;
 
@@ -35,8 +40,30 @@ class GzHeaderComponent extends GzElement {
     });
   }
 
-  /** Marks the current page in both link lists, and closes the menu after a navigation from it. */
+  /**
+   * Log out is a link to `/login` so it looks like its neighbors, but the click is canceled here,
+   * before `gz-app` would route it, so the session ends before the login page opens.
+   */
+  override async handleAction(action: string, _element: HTMLElement, event: Event): Promise<void> {
+    if (action !== 'logout') {
+      return;
+    }
+    event.preventDefault();
+    try {
+      await authFacade.logout();
+    } catch (error) {
+      toastError(error);
+      return;
+    }
+    navigate('/login');
+  }
+
+  /**
+   * Marks the current page in both link lists, hides both on the login page, and closes the menu
+   * after a navigation from it.
+   */
   #syncLinks(): void {
+    this.$('nav')?.classList.toggle('login', /^\/login\/?$/.test(currentPath()));
     const links = this.$$<HTMLAnchorElement>('nav a[data-path]');
     for (const link of links) {
       if (isActive(link.dataset.path ?? '')) {
@@ -59,6 +86,7 @@ class GzHeaderComponent extends GzElement {
           <a class="brand" href="/"><strong>gainz</strong><span class="tag">lifting log</span></a>
           <ul class="links unstyled">
             ${navItems.map((item) => html`<li><a href="${item.path}" data-path="${item.path}">${item.label}</a></li>`)}
+            <li><a href="/login" data-action="logout">Log out</a></li>
           </ul>
           <ot-dropdown class="menu">
             <button type="button" class="ghost icon" popovertarget="nav-menu" aria-label="Menu">
@@ -76,6 +104,7 @@ class GzHeaderComponent extends GzElement {
             </button>
             <menu popover id="nav-menu">
               ${navItems.map((item) => html`<a role="menuitem" href="${item.path}" data-path="${item.path}">${item.label}</a>`)}
+              <a role="menuitem" href="/login" data-action="logout">Log out</a>
             </menu>
           </ot-dropdown>
           <gz-theme-toggle></gz-theme-toggle>
