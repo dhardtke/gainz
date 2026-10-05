@@ -6,7 +6,7 @@
   flex-wrap: wrap;
 }
 
-/* One Oat accordion item per exercise; the header holds the name, a summary badge and actions. */
+/* One Oat accordion item per exercise; the header holds the name, a stats and a progress badge, and actions. */
 summary {
   & .exercise-name {
     flex: 1 1 auto;
@@ -40,10 +40,15 @@ summary {
 .sets {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  /* Edge to edge: the rows are the accordion item's lines, not boxes inside it. */
+  margin: 0;
+
+  & > gz-set-row + gz-set-row {
+    border-top: 1px solid var(--border);
+  }
 }
 
-/* The name keeps the first line beside the chevron; the badge and the actions take a line each. */
+/* The name keeps the first line beside the chevron; the badges and the actions take a line each. */
 @media (max-width: 720px) {
   summary {
     flex-wrap: wrap;

@@ -86,8 +86,9 @@ bubble) records the one opened and clears the id when that one closes; a set log
 (the created exercise's id for a new one); and an id no longer among the groups, its last set
 deleted, collapses them all. Every other change to a set leaves the open exercise open.
 
-Each header (`<summary>`) shows the exercise name, an outline badge "N sets · x/y done · volume"
-(with "✓ Done" in the middle once all of its sets are), and a `<span class="actions">` — a
+Each header (`<summary>`) shows the exercise name, an outline stats badge "N sets · volume"
+followed by a progress badge — an outline "x/y done", or a success "✓ Done" once all of its sets
+are, so a collapsed exercise shows its state at a glance — and a `<span class="actions">` — a
 `<summary>` takes phrasing content only — holding an "Exercise" link button,
 `<a class="button outline" href="/exercises/:id">`, so `gz-app` routes it and Ctrl-click opens a
 tab. A click on the link activates the link, not the summary, so it does not toggle; a click
@@ -108,7 +109,11 @@ The view hands `gz-add-set-form` the sets back in logged order
 be the last exercise's.
 
 `gz-set-row` leaves the exercise to its group: it shows no exercise name, and its number counts
-within its exercise. It leads with a done toggle, a button the size of +1 that is `.outline` while
+within its exercise. The rows are not boxes of their own but the exercise's lines, edge to edge
+inside the accordion item and divided by a `--border` line the view draws between them, since a
+row's shadow root cannot see its siblings. Every row keeps a 3px leading bar, transparent until the
+set is done and `--success` after, with a `--success` number, so done sets stand out and every
+row's content stays aligned. It leads with a done toggle, a button the size of +1 that is `.outline` while
 the set is not done and Oat's default fill once it is, with `aria-pressed` to match. A click PATCHes
 `{ done }` through `setFacade` and emits `sets-changed`, like every other change to a row, so the
 view reloads rather than patching the row. A set not done has no Edit button: the row is a form
@@ -124,10 +129,11 @@ from the field the blur moved to, so `gz-workout-detail` asks the focused row fo
 whatever was typed there by then. The workout's details form above the sets saves the same way,
 without a button or a toast: a committed change, or Enter in the date or title (in the notes it is
 a new line), PATCHes the details that differ from the workout, and the reload puts focus back in
-the field by its id while `#edits` keeps its text. A done row mirrors the backend's lock: it reads rather than
-edits, leaves out ×, keeps +1, and mutes its load. `gz-workout-detail` adds an "x/y done" badge to
-its totals once the session has sets, and swaps it for a success "✓ Done" badge when the workout
-is done; `gz-workout-card` shows that "✓ Done" badge on done workouts' cards only.
+the field by its id while `#edits` keeps its text. A done row mirrors the backend's lock: it keeps its fields and
+× in place but disabled, keeps +1, and mutes its load. `gz-workout-detail` ends
+its totals, once the session has sets, with the same progress badge as each header, derived from
+the sets rather than the workout's flag: "x/y done", and a success "✓ Done" once every set is done,
+which is how the backend derives `done`; `gz-workout-card` shows that "✓ Done" badge on done workouts' cards only.
 
 A feature's routes live in `<f>.routes.ts` beside its facade, the way the backend keeps one
 `*.routes.ts` per feature and spreads them in `src/backend/http/routes.ts`. Each route is a regex
