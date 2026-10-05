@@ -270,10 +270,21 @@ test('groups the sets by exercise, in order, numbering the rows within each', as
   ]);
 });
 
-test("sums up each group in its header's badge", async () => {
+function headerBadges(view: HTMLElement, exerciseId: number): (string | null)[] {
+  return Array.from(groupOf(view, exerciseId).querySelectorAll('summary .badge')).map((badge) => badge.textContent);
+}
+
+test("sums up each group and its progress in its header's badges", async () => {
   const view = await mountView(withSets((item) => ({ ...item, done: item.exerciseId === 2 })));
-  expect(find(groupOf(view, 1), 'summary .badge').textContent).toStartWith('2 sets · 0/2 done · ');
-  expect(find(groupOf(view, 2), 'summary .badge').textContent).toStartWith('1 set · ✓ Done · ');
+  const [benchStats, benchProgress] = headerBadges(view, 1);
+  expect(benchStats).toStartWith('2 sets · ');
+  expect(benchStats).not.toContain('done');
+  expect(benchProgress).toBe('0/2 done');
+  expect(groupOf(view, 1).querySelector("summary .badge[data-variant='success']")).toBeNull();
+  const [squatStats, squatProgress] = headerBadges(view, 2);
+  expect(squatStats).toStartWith('1 set · ');
+  expect(squatProgress).toBe('✓ Done');
+  expect(find(groupOf(view, 2), "summary .badge[data-variant='success']").textContent).toBe('✓ Done');
 });
 
 test("links each group's header to the exercise", async () => {

@@ -271,33 +271,33 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     `;
   }
 
-  /** Progress through the session's sets, or nothing for a session without any. */
-  #doneBadge(done: boolean, doneCount: number, setCount: number): RawHtml {
+  /** Progress through some sets: "x/y done", "✓ Done" once all are, or nothing without any. */
+  #progressBadge(doneCount: number, setCount: number): RawHtml {
     if (setCount === 0) {
       return html``;
     }
-    if (done) {
+    if (doneCount === setCount) {
       return html`<span class="badge" data-variant="success">✓ Done</span>`;
     }
     return html`<span class="badge outline">${doneCount}/${setCount} done</span>`;
   }
 
-  /** "3 sets · 2/3 done · 1,200 kg", or "✓ Done" in the middle once every set of the group is. */
+  /** "3 sets · 1,200 kg". */
   #groupSummary(group: WorkoutExerciseDto): string {
     const count = group.sets.length;
-    const doneCount = group.sets.filter((set) => set.done).length;
     const volume = group.sets.reduce((total, set) => total + set.reps * set.weight, 0);
-    const progress = doneCount === count ? '✓ Done' : `${doneCount}/${count} done`;
-    return `${plural(count, 'set')} · ${progress} · ${formatVolume(volume)}`;
+    return `${plural(count, 'set')} · ${formatVolume(volume)}`;
   }
 
   #groupTemplate(group: WorkoutExerciseDto, open: ExerciseId | null, first: boolean, last: boolean): RawHtml {
     const { exerciseId: id, exerciseName: name } = group;
+    const doneCount = group.sets.filter((set) => set.done).length;
     return html`
       <details name="exercises" data-exercise-id="${id}" ${id === open ? 'open' : ''}>
         <summary>
           <span class="exercise-name">${name}</span>
           <span class="badge outline">${this.#groupSummary(group)}</span>
+          ${this.#progressBadge(doneCount, group.sets.length)}
           <span class="actions">
             <fieldset class="group move">
               <button class="outline" data-action="move-exercise-up" data-exercise-id="${id}" aria-label="Move ${name} up" ${first ? 'disabled' : ''}>▲</button>
@@ -330,7 +330,7 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
           <span class="badge outline">${plural(exercises, 'exercise')}</span>
           <span class="badge outline">${plural(reps, 'rep')}</span>
           <span class="badge outline">${formatVolume(volume)} total volume</span>
-          ${this.#doneBadge(workout.done, doneCount, sets.length)}
+          ${this.#progressBadge(doneCount, sets.length)}
         </div>
 
         <section class="vstack gap-2">

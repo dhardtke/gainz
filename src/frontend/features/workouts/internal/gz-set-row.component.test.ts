@@ -64,6 +64,11 @@ test('freezes a done set: its fields and × stay visible but disabled', () => {
   expect(find<HTMLButtonElement>(shadow(row), "[data-action='duplicate']").disabled).toBe(false);
 });
 
+test('marks the row of a done set, and only that one, as done', () => {
+  expect(find(shadow(mountRow(set({ id: 7, done: true }))), 'form.row-view').classList.contains('done')).toBe(true);
+  expect(find(shadow(mountRow(set({ id: 8 }))), 'form.row-view').classList.contains('done')).toBe(false);
+});
+
 test('offers every action on a set not done, and no Edit button', () => {
   const row = mountRow(set({ id: 7 }));
   expect(actions(row)).toEqual(['toggle-done', 'duplicate', 'delete']);
