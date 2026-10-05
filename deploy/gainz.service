@@ -5,6 +5,9 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=%h/app
+# GAINZ_PASSWORD_HASH. No "-" prefix on purpose: without the file the service must not start, rather
+# than come up without a password.
+EnvironmentFile=%h/app/gainz.env
 ExecStart=%h/.bun/bin/bun run %h/app/current/gainz.js
 Restart=on-failure
 RestartSec=5

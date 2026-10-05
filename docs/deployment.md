@@ -26,7 +26,8 @@ and start it as `gainz`. The build arrives on standard input rather than as a pa
 The script unpacks the build into `/home/gainz/app/releases/<sha>`, stops the service, snapshots
 the database with `VACUUM INTO` into `/home/gainz/app/backups`, points `/home/gainz/app/current`
 at the new release and starts the service again. If `/api/health` does not answer within 30
-seconds it puts both the previous release and the snapshot back. The snapshot is taken with the
+seconds, or answers without `"auth":true` — the release came up with no password and would serve
+the log to anyone — it puts both the previous release and the snapshot back. The snapshot is taken with the
 service stopped because migrations run on start: once a new release has migrated the schema, the
 old code cannot be trusted with it, so a rollback restores the database as well as the code. The
 script keeps the last five releases and ten snapshots.
@@ -49,6 +50,10 @@ sudo rm /etc/systemd/system/gainz.service && sudo systemctl daemon-reload
 sudo -u gainz sh -c 'cd /home/gainz/app && mkdir -p releases/initial \
   && mv gainz.js* releases/initial/ && ln -s releases/initial current \
   && mkdir -p /home/gainz/.config/systemd/user'
+# the env file with the password hash; see "Password" below
+sudo -u gainz sh -c 'umask 077 && cat > /home/gainz/app/gainz.env' <<'EOF'
+GAINZ_PASSWORD_HASH='<hash>'
+EOF
 sudo install -o gainz -g gainz -m 0644 deploy/gainz.service /home/gainz/.config/systemd/user/gainz.service
 sudo loginctl enable-linger gainz
 sudo systemctl --user -M gainz@ daemon-reload
@@ -87,6 +92,38 @@ In the repository, create the `production` environment (_Settings → Environmen
 its deployment branches to `main`.
 
 Bun on the server is upgraded by hand, as the `gainz` user, whenever `engines.bun` moves.
+
+## Password
+
+The app asks for a password once `GAINZ_PASSWORD_HASH` is set (see "Authentication" in
+`docs/backend.md`). In production it comes from `/home/gainz/app/gainz.env`, which the unit reads
+with `EnvironmentFile=` and no `-` prefix, so the service does not start at all without the file,
+and `gainz-deploy` rolls back a release whose health check reports `"auth":false`.
+
+1. On any machine with a checkout, run `bun run hash-password`. It asks for the password twice
+   without echoing it and prints an argon2id hash.
+2. On the server, write the hash into `/home/gainz/app/gainz.env`, owned by `gainz` with mode
+   `0600`, as the server setup above does. Keep the value in single quotes:
+   `GAINZ_PASSWORD_HASH='$argon2id$v=19$…'`. systemd would otherwise expand the `$` signs in it.
+3. Reinstall the unit and reload it, and reinstall the deploy script. The CI can do neither: it
+   only ever replaces the release.
+
+   ```sh
+   sudo install -o gainz -g gainz -m 0644 deploy/gainz.service /home/gainz/.config/systemd/user/gainz.service
+   sudo systemctl --user -M gainz@ daemon-reload
+   sudo systemctl --user -M gainz@ restart gainz
+   sudo install -m 0755 deploy/gainz-deploy /usr/local/bin/gainz-deploy
+   ```
+
+4. Push. The deploy checks for `"auth":true` itself; `curl -s http://127.0.0.1:3000/api/health`
+   shows it afterwards. A release from before the login reports no `auth` at all.
+
+The order matters: the env file before the unit, or the restarted service will not start; the unit
+before the script, or the new script would roll back every deploy of a server still running
+without a password; and both before the push that carries the login.
+
+To change the password, replace the hash in `gainz.env` and restart the service. The session
+cookies are signed with the hash, so the change logs every device out.
 
 ## Before the repository goes public
 
