@@ -137,8 +137,6 @@ class GzAppComponent extends GzElement {
       <gz-header></gz-header>
 
       <main class="container"></main>
-
-      <footer class="container">Weights in kilograms · estimated 1RM uses the Epley formula.</footer>
     `;
   }
 }

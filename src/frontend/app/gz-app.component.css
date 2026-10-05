@@ -1,4 +1,4 @@
-/* Application shell: header, centered content column, footer. */
+/* Application shell: header and centered content column. */
 
 :host {
   display: flex;
@@ -9,10 +9,4 @@
 main {
   flex: 1 0 auto;
   padding-block: var(--space-6) var(--space-12);
-}
-
-footer {
-  flex: 0 0 auto;
-  padding-bottom: 2rem;
-  color: var(--muted-foreground);
 }
