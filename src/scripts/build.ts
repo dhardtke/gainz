@@ -29,13 +29,18 @@ function commit(): string {
   return git('status', '--porcelain') === '' ? head : `${head}-dirty`;
 }
 
-/** Stamps the index page with the commit and the build time (UTC), right below the doctype. */
+/**
+ * Stamps the index page with the commit, the build time (UTC) and, when built by GitHub Actions,
+ * the workflow run ID, right below the doctype.
+ */
 function stamp(web: EmbeddedWeb, builtAt: Date): void {
   const index = web.pages['/index.html'];
   if (index === undefined) {
     throw new Error('src/frontend/index.html is missing');
   }
-  const comment = `<!-- gainz ${commit()}, built ${builtAt.toISOString()} -->`;
+  const runId = Bun.env.GITHUB_RUN_ID;
+  const run = runId === undefined ? '' : `, run ${runId}`;
+  const comment = `<!-- gainz ${commit()}, built ${builtAt.toISOString()}${run} -->`;
   const doctype = /^<!doctype html>\r?\n/i.exec(index.body)?.[0];
   if (doctype === undefined) {
     throw new Error('src/frontend/index.html must start with <!doctype html>');
