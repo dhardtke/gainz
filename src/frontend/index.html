@@ -42,10 +42,9 @@
       typography arrive by inheritance. oat.js is deferred, so it runs before the
       modules below that use ot-dropdown and window.ot. styles.ts reads the first two
       with fetch(), which a stylesheet link cannot answer, so they are preloaded for that
-      too: every component module waits on those two fetches. The server inserts the same
-      kind of preload for every module main.ts imports statically, and for the stylesheet
-      beside each, and serves every URL here but the icon's and the manifest's with a version
-      that lets the browser cache it for good.
+      too: every component module waits on those two fetches. The server serves every URL
+      here but the icon's and the manifest's with a version that lets the browser cache it
+      for good.
     -->
     <link rel="stylesheet" href="/vendor/oat.css" />
     <link rel="stylesheet" href="/ui/shared.css" />

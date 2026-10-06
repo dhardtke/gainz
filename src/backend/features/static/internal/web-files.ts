@@ -84,10 +84,6 @@ class DiskWebFiles implements WebFiles {
       return file;
     };
     return {
-      module: async (url) => {
-        const file = url.endsWith('.ts') ? await read(url) : null;
-        return file?.kind === 'file' && typeof file.body === 'string' ? file.body : null;
-      },
       tags: async () => {
         const entries = await Array.fromAsync(new Bun.Glob('**/*.{ts,css}').scan({ cwd: FRONTEND_DIR }));
         // Glob yields `ui\app.css` on Windows.

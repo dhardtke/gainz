@@ -1,0 +1,55 @@
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { createStaticFacade } from '../backend/features/static/static.facade.ts';
+import type { ProbeReport } from './build-bundle.probe.ts';
+
+const PROBE = resolve(import.meta.dir, 'build-bundle.probe.ts');
+
+/** The stylesheets a page fetches whatever it shows: Oat and the shared utilities. */
+const BASE_SHEETS = ['/vendor/oat.css', '/ui/shared.css'];
+
+function sheets(requested: string[]): string[] {
+  return requested.filter((url) => url.endsWith('.css')).toSorted();
+}
+
+describe('the built frontend bundle', () => {
+  let dir = '';
+  let report: ProbeReport;
+
+  beforeAll(async () => {
+    dir = mkdtempSync(join(tmpdir(), 'gainz-bundle-'));
+    const bundle = join(dir, 'main.js');
+    const { pages } = await createStaticFacade().embed();
+    await Bun.write(bundle, pages['/main.ts']?.body ?? '');
+
+    // A child process, for a happy-dom window of its own (see the probe's header).
+    const proc = Bun.spawn([process.execPath, PROBE, bundle], { stdout: 'pipe', stderr: 'pipe' });
+    const [stdout, stderr, code] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text(), proc.exited]);
+    if (code !== 0) {
+      throw new Error(`build-bundle.probe exited ${code}: ${stderr}`);
+    }
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- written by the probe
+    report = JSON.parse(stdout.trim().split('\n').at(-1) ?? '') as ProbeReport;
+  }, 30_000);
+
+  afterAll(() => {
+    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+  });
+
+  test('defines the shell, each component with its own stylesheet from the bundle', () => {
+    for (const tag of ['gz-app', 'gz-header', 'gz-theme-toggle', 'gz-breadcrumbs']) {
+      expect(report.beforeMount.defined).toContain(tag);
+    }
+    expect(sheets(report.beforeMount.requested)).toEqual(BASE_SHEETS.toSorted());
+    // Every fetched sheet is answered empty, so these rules can only have come from the bundle.
+    expect(report.beforeMount.appRules).toBeGreaterThan(0);
+  });
+
+  test('runs a lazily imported view only when its route opens, still fetching no component sheet', () => {
+    expect(report.beforeMount.defined).not.toContain('gz-dashboard');
+    expect(report.afterMount.defined).toContain('gz-dashboard');
+    expect(sheets(report.afterMount.requested)).toEqual(BASE_SHEETS.toSorted());
+  });
+});

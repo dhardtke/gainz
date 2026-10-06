@@ -12,7 +12,10 @@ export class StaticFacade {
     return FRONTEND_DIR;
   }
 
-  /** Every servable frontend file, transpiled and whitespace-minified, plus the vendor files. */
+  /**
+   * Every servable frontend file, the modules as one whitespace-minified bundle at `/main.ts` that
+   * carries the component stylesheets, plus the vendor files.
+   */
   embed(): Promise<EmbeddedWeb> {
     return embedWebRoot();
   }

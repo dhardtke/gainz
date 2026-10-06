@@ -1,10 +1,9 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import { unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import type { Embedded } from '../backend/shared/embedded.ts';
-import { body, opens, useLogs, useTempDir, waitForUrl } from '../backend/testing.ts';
+import { body, opens, waitForUrl } from '../backend/testing.ts';
 import { build } from './build.ts';
 
 const FRONTEND = resolve(import.meta.dir, '..', 'frontend');
@@ -75,24 +74,30 @@ describe('single-file build', () => {
     socket.close();
   });
 
-  test('serves each module at its own URL, whitespace-minified and without a source map', async () => {
-    const app = await get('/app/gz-app.component.ts');
-    expect(app.headers.get('content-type')).toStartWith('text/javascript');
-    expect(await app.text()).toBe(embedded.pages['/app/gz-app.component.ts']?.body ?? '');
+  test('serves the frontend as one whitespace-minified bundle at /main.ts, and no other module', async () => {
+    const main = await get('/main.ts');
+    expect(main.headers.get('content-type')).toStartWith('text/javascript');
+    const bundle = await main.text();
+    expect(bundle).toBe(embedded.pages['/main.ts']?.body ?? '');
+    expect(bundle).toContain('customElements.define');
+    expect(bundle).toContain('"/ui/tile/gz-tile.component.ts"');
+    // No frontend string literal contains one, so a match could only be a leftover type annotation.
+    expect(bundle).not.toContain(': string');
+    expect(bundle).not.toContain('sourceMappingURL');
+    expect(bundle).not.toContain('import.meta');
 
-    const chart = await (await get('/features/exercises/internal/gz-chart.component.ts')).text();
-    expect(chart).toContain('../../../ui/format.ts');
-    expect(chart).toContain('await define(');
-    expect(chart).not.toContain(': string');
-    expect(chart).not.toContain('sourceMappingURL');
+    for (const url of ['/app/gz-app.component.ts', '/ui/format.ts', '/ui/inline-styles.ts', '/features/exercises/internal/gz-chart.component.ts']) {
+      expect({ url, status: (await get(url)).status }).toEqual({ url, status: 404 });
+    }
   });
 
-  test('preloads the shell modules and stylesheets it carries, by versions it serves for good', async () => {
+  test('preloads only the stylesheets index.html names, by versions it serves for good', async () => {
     const page = await (await get('/')).text();
     const preloaded = [...page.matchAll(/<link rel="(?:modulepreload|preload)" href="([^"]+)"/g)].map((match) => match[1] ?? '');
-    expect(preloaded.some((url) => url.startsWith('/app/gz-app.component.ts?v='))).toBe(true);
-    expect(page).toMatch(/<link rel="preload" href="\/app\/gz-app\.component\.css\?v=\w+" as="fetch" crossorigin \/>/);
-    expect(page).toMatch(/<script type="application\/json" data-lazy-preloads>\{"\/features\/[^<]*"\/ui\/tile\/gz-tile\.component\.css\?v=\w+"/);
+    expect(page).not.toContain('rel="modulepreload"');
+    expect(page).not.toContain('data-lazy-preloads');
+    expect(preloaded.some((url) => url.startsWith('/vendor/oat.css?v='))).toBe(true);
+    expect(preloaded.some((url) => url.startsWith('/ui/shared.css?v='))).toBe(true);
     expect(page).toMatch(/<script type="importmap">\{"imports":\{"\//);
     for (const url of preloaded) {
       const res = await get(url);
@@ -195,28 +200,5 @@ describe('single-file build with GAINZ_PASSWORD_HASH set', () => {
   test('guards the API and says so in the health check', async () => {
     expect((await fetch(`${origin}/api/workouts`)).status).toBe(401);
     expect(await body<unknown>(await fetch(`${origin}/api/health`))).toMatchObject({ auth: true });
-  });
-});
-
-describe('a module that does not parse', () => {
-  const tempDir = useTempDir();
-  const logs = useLogs();
-
-  test('fails the build, naming the file', async () => {
-    const broken = join(FRONTEND, '__broken.ts');
-    await Bun.write(broken, 'export const oops: = ;\n');
-    try {
-      const failure = await build(tempDir()).then(
-        () => null,
-        (err: unknown) => err,
-      );
-      expect(failure).toBeInstanceOf(Error);
-      expect(String(failure)).toMatch(/src\/frontend\/__broken\.ts/);
-      const line = logs().find((entry) => entry.text.startsWith('static could not transpile '));
-      expect(line?.level).toBe('error');
-      expect(line?.text).toMatch(/^static could not transpile \S*__broken\.ts\n/);
-    } finally {
-      await unlink(broken);
-    }
   });
 });

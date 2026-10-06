@@ -1,14 +1,14 @@
 /**
- * What a single-file build carries of the web root: every file the browser can ask for, keyed by
- * its URL and transpiled ahead of time, so the built server answers the same URLs with the same
- * modules — one module per URL — without a source tree beside it.
+ * What a single-file build carries of the web root: every file the browser can ask for but the
+ * modules, keyed by its URL, plus one bundle of the whole frontend at `/main.ts` (see `bundle.ts`),
+ * so the built server needs no source tree beside it.
  */
 import { resolve } from 'node:path';
 import type { EmbeddedFile, EmbeddedWeb } from '../../../shared/embedded.ts';
+import { bundleFrontend } from './bundle.ts';
 import { contentTag } from './content-tag.ts';
 import { renderPage } from './page.ts';
 import { FRONTEND_DIR, isShipped, isVersioned, resolveVendorPath, vendorUrls } from './paths.ts';
-import { transpileModule } from './transpile.ts';
 
 const MODULE_TYPE = 'text/javascript;charset=utf-8';
 
@@ -29,24 +29,17 @@ export async function embedWebRoot(): Promise<EmbeddedWeb> {
   for await (const entry of new Bun.Glob('**/*').scan({ cwd: FRONTEND_DIR })) {
     // Glob yields `ui\app.css` on Windows.
     const url = `/${entry.replaceAll('\\', '/')}`;
-    if (!isShipped(url)) {
+    // The modules ship as the one bundle below.
+    if (!isShipped(url) || url.endsWith('.ts')) {
       continue;
     }
 
-    const path = resolve(FRONTEND_DIR, entry);
-    if (url.endsWith('.ts')) {
-      const code = await transpileModule(path, { minify: true });
-      if (code === null) {
-        throw new Error(`Could not transpile src/frontend${url}`);
-      }
-      pages[url] = { body: code, type: MODULE_TYPE };
-    } else {
-      // Text stays text, so `stamp()` can still edit the index page. Anything else (the icons)
-      // goes in as base64, because `JSON.stringify` cannot carry raw bytes into gainz.js.
-      const file = Bun.file(path);
-      pages[url] = isText(file.type) ? { body: await file.text(), type: file.type } : { body: (await file.bytes()).toBase64(), type: file.type, base64: true };
-    }
+    // Text stays text, so `stamp()` can still edit the index page. Anything else (the icons)
+    // goes in as base64, because `JSON.stringify` cannot carry raw bytes into gainz.js.
+    const file = Bun.file(resolve(FRONTEND_DIR, entry));
+    pages[url] = isText(file.type) ? { body: await file.text(), type: file.type } : { body: (await file.bytes()).toBase64(), type: file.type, base64: true };
   }
+  pages['/main.ts'] = { body: await bundleFrontend(), type: MODULE_TYPE };
 
   const vendor: Record<string, EmbeddedFile> = {};
   for (const url of vendorUrls()) {
@@ -65,10 +58,7 @@ export async function embedWebRoot(): Promise<EmbeddedWeb> {
   );
   for (const page of Object.values(pages)) {
     if (page.type.startsWith('text/html')) {
-      page.body = await renderPage(page.body, {
-        module: (url) => Promise.resolve(pages[url]?.type === MODULE_TYPE ? pages[url].body : null),
-        tags: () => Promise.resolve(tags),
-      });
+      page.body = await renderPage(page.body, { tags: () => Promise.resolve(tags) });
     }
   }
 

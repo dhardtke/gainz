@@ -14,7 +14,11 @@
  * before registering the element, so by the time an instance can exist,
  * `stylesFor` can answer synchronously. That is what lets a route be loaded on
  * demand without ever painting it unstyled.
+ *
+ * In a built bundle a component's sheet is carried as text in `INLINE_STYLES` and never fetched;
+ * Oat and the shared utilities always are, because the document links them too.
  */
+import { INLINE_STYLES } from './inline-styles.ts';
 
 /** Adopted by every component, in this order, before its own sheet. */
 const BASE_HREFS = ['/vendor/oat.css', '/ui/shared.css'];
@@ -58,6 +62,12 @@ function versioned(href: string): string {
 async function load(href: string, refill = false): Promise<void> {
   const sheet = sheets.get(href) ?? new CSSStyleSheet();
   sheets.set(href, sheet);
+  // Only a built bundle has text here, and it never hot reloads, so a refill always fetches.
+  const inline = INLINE_STYLES[href];
+  if (inline !== undefined) {
+    await sheet.replace(inline);
+    return;
+  }
   try {
     const response = await fetch(versioned(href), refill ? { cache: 'no-cache' } : undefined);
     if (!response.ok) {

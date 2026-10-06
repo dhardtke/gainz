@@ -79,7 +79,8 @@ the feature that owns the endpoint and take `post` from `useServer()` as their f
 Other features' route tests import them directly, the one cross-feature import that does not go
 through `ports/`. The static feature keeps its own private modules where the rule
 says they go — `features/static/internal/paths.ts` (the only place a URL becomes a filesystem path)
-and `internal/transpile.ts` — and reaches them through `internal/web-files.ts`. The four operator entry points — `bun run migrate`, `bun run seed`,
+and `internal/transpile.ts` — and reaches them through `internal/web-files.ts`; the build's
+`internal/embed.ts` and `internal/bundle.ts` it reaches through the facade's `embed()`. The four operator entry points — `bun run migrate`, `bun run seed`,
 `bun run build` and `bun run hash-password` — live outside the backend entirely, in `src/scripts/`, so that `src/backend/`
 holds the running server and nothing else.
 
@@ -240,11 +241,14 @@ otherwise, so no other test needs a cookie.
 its own database rather than sharing one through the module cache. Every `*.test.ts` sits beside
 the module it exercises, and each one covers the module declaring the routes it drives, which is
 why the two tests for `POST /api/workouts/:id/sets` are in `workout.routes.test.ts` and not beside
-`set.routes.ts`. Tests are end-to-end over HTTP, with nine exceptions: `db/db.test.ts` checks the real
+`set.routes.ts`. Tests are end-to-end over HTTP, with eleven exceptions: `db/db.test.ts` checks the real
 migrations; `db/migrations.test.ts` unit-tests the migration runner against throwaway fixture
 directories; `features/static/internal/paths.test.ts` pins the web root, which is derived by
 counting directories up from that module's own URL and would otherwise 404 every asset in silence
-if the file were moved; `http/errors.test.ts` pins that `errorResponse` renders an error and does not
+if the file were moved; `features/static/internal/bundle.test.ts` pins what the build's bundle of
+the frontend carries and that a module that does not parse fails it, naming the file;
+`src/scripts/build-bundle.test.ts` runs that bundle under happy-dom, in a child process
+(`build-bundle.probe.ts`) so it gets a window no other test file has defined components in; `http/errors.test.ts` pins that `errorResponse` renders an error and does not
 log it, while its 500 branch is covered over HTTP by `http/access-log.test.ts` through a hand-made
 route table; `shared/validate.test.ts` pins the field helpers' normalization edge cases; `shared/log.test.ts` pins
 the output format, the journald prefix and the `JOURNAL_STREAM` check;
@@ -276,7 +280,7 @@ extension-less fallback would mask a real miss, which is the thing it exists to 
 `WebFiles` interface in `internal/web-files.ts`. Under `bun start` and in the tests that is
 `DiskWebFiles` — `paths.ts` for the path-escape guard and the vendor allowlist, `transpile.ts` for
 modules, re-read on every request. In a built file it is `EmbeddedWebFiles`, lookups in the maps
-the build carries, behind the same decoding, NUL and escape guards. A `WebFile` is a `file`, a
+the build carries (made by `embed.ts`, the modules bundled by `bundle.ts`), behind the same decoding, NUL and escape guards. A `WebFile` is a `file`, a
 `missing` one (eligible for the single-page fallback), an `invalid` path (a 404, never the fallback)
 or an `error` (a 500), and the controller keeps the method check, the directory index, the
 fallback, the client injection and the ETag for both sources. Vendor files sit in their own map, so
@@ -284,8 +288,9 @@ they stay reachable only at their literal URL, exactly as on disk. `static.route
 the URLs that reach the controller.
 
 **Pages.** `internal/page.ts` prepares an HTML page in one `HTMLRewriter` pass: it versions the
-files the page loads, and it announces the page's module graph (why, and what the frontend relies
-on, is in "Loading" in `docs/frontend.md`).
+files the page loads. It announces no module graph: a deployed build is one bundle, and served from
+source the graph arrives a level of imports at a time over localhost (see "Loading" in
+`docs/frontend.md`).
 
 Every module, stylesheet and vendor file is named `<url>?v=<tag>`, where the tag is
 `contentTag()` in `internal/content-tag.ts`, the same hash the ETag carries (see the caching
@@ -294,28 +299,15 @@ the icon's and the manifest's, which have no tag. An import map from every plain
 right before the first module script, ahead of anything that loads a module, which the browser
 requires. The page can only name what it links itself, and the map versions everything else: a
 module's relative imports resolve to plain URLs, which the map rewrites, and `ui/styles.ts` looks a
-component's stylesheet up in it.
+component's stylesheet up in it. A `<` in the map's JSON is escaped as `<`, so no URL could
+end the element early.
 
-Before each `<script type="module" src>` the page gets a `<link rel="modulepreload">` per module the
-script reaches through static imports, breadth first, nearest first, and a
-`<link rel="preload" as="fetch" crossorigin>` for each `.css` file beside one, so the browser
-fetches the shell in one round trip instead of one per level of imports. Each module is scanned
-after transpiling, with `Bun.Transpiler.scanImports`, so an import that only types needed is
-already gone and `src/shared/` is never named. Only `import-statement`s are preloaded. Each dynamic
-`import()` target is walked the same way instead, minus the shell's modules, and written beside the
-links as a JSON map, `<script type="application/json" data-lazy-preloads>`, from the target to its
-files, for the frontend to preload when it opens that view; a target's own dynamic imports are
-walked in turn. Every URL in the links and the map is versioned. A `<` in either JSON is escaped as
-`\u003c`, so no URL could end the element early.
-
-A page reads the web root through a `PageSource`: the modules, and the tag of every versioned file.
-`DiskWebFiles` reads both through its own `page()` and `vendor()`, each file at most once per page,
+A page reads the web root through a `PageSource`: the tag of every versioned file.
+`DiskWebFiles` reads them through its own `page()` and `vendor()`, each file at most once per page,
 so a tag is the one that file's response carries; that transpiles the whole frontend on every
 request for the page, a few milliseconds. The build tags the strings it embeds, which
-`EmbeddedWebFiles` serves as they are. `static.routes.test.ts` holds that the shell's preloads and
-each view's map entry are closed under static imports, that no entry lists a module the shell
-preloads, that every file named is served, and that every version is the tag its plain URL's ETag
-carries.
+`EmbeddedWebFiles` serves as they are. `static.routes.test.ts` holds that the page announces no
+module graph, and that every version is the tag its plain URL's ETag carries.
 
 The static feature keeps no map of content types. Transpiled modules get a fixed `Content-Type`,
 and every plain file — vendor files included — takes `Bun.file(x).type` — the same lookup
@@ -381,7 +373,7 @@ prints no colors.
 
 `setLogSink(sink)` replaces where entries go and returns a function that restores the previous sink;
 the tests use it through `useLogs()`, which is why the suite prints nothing. Logging happens at the
-edges — `main.ts`, `http/`, the auth facade and its throttle, `transpile.ts` and the dev hub — never in
+edges — `main.ts`, `http/`, the auth facade and its throttle, `transpile.ts`, `bundle.ts` and the dev hub — never in
 a repository or a data facade; the migration runner reports through its `onMigration` callback, and
 `main.ts` logs what it reports.
 
@@ -400,6 +392,7 @@ a repository or a data facade; the migration runner reports through its `onMigra
 | `server` | error | `uncaught exception` / `unhandled rejection` + stack                    | `main.ts`, exit 1            |
 | `db`     | info  | `applied <migration>`                                                   | `main.ts` `onMigration`      |
 | `static` | error | `could not transpile <path>` + cause                                    | `transpile.ts`               |
+| `static` | error | `could not bundle <file>: <message>`                                    | `bundle.ts`                  |
 | `dev`    | info  | `hot reload watching <dir>/` / `hot reload idle`                        | `hub.ts`                     |
 
 The access log in `http/access-log.ts` writes one `http` line for every request under `/api`, and for
@@ -504,15 +497,21 @@ vendor files and the migrations; `bun:sqlite` stays external. It sits outside `f
 both `db/` and the static feature read it.
 
 What is embedded comes from `StaticFacade.embed()`: every file under `src/frontend/` except
-`dev/**`, `testing.ts`, `*.test.ts` and `*.fixtures.ts`, keyed by its URL, with each module transpiled ahead of time
-with whitespace minified and no source map, so names and structure survive for browser devtools.
-The frontend is embedded one module per URL rather than bundled, because bundling would change
-`import.meta.url` and break the `.ts` → `.css` lookup in `ui/styles.ts` that lazy routes depend on.
-A module that does not parse fails the build, naming the file. A file that is not text (the icons)
+`dev/**`, `testing.ts`, `*.test.ts` and `*.fixtures.ts`, keyed by its URL, except the modules.
+Those `internal/bundle.ts` bundles into one ES module served at `/main.ts`, with whitespace
+minified and no source map, so names survive in every trace; no other module is embedded, so the
+built server answers every other `.ts` with a 404. Its `Bun.build` plugin rewrites each module's
+`import.meta.url` to that module's own URL path, which keeps the `.ts` → `.css` lookup in
+`ui/styles.ts` working, and fills `ui/inline-styles.ts` with the text of every `*.component.css`,
+the way the build fills `embedded.ts`, so a component's sheet arrives with the bundle rather than a
+round trip after the module before it. Bun wraps a dynamically imported module, so a view still runs
+only on its first `import()`. A module the bundle reaches that does not parse fails the build,
+naming the file; one it does not reach is not shipped, and not checked. `build-bundle.test.ts` runs
+the bundle under happy-dom, in a child process. A file that is not text (the icons)
 is embedded as base64 and flagged `base64: true`, because `JSON.stringify` cannot carry raw bytes;
 `EmbeddedWebFiles` decodes it once at startup, so it is served, and hashed, byte-identically to
-disk. Text files stay strings, so the stamp below can still edit the index page, and so can the
-preloads (see "Preloads" above), inserted once every module has been transpiled. The migrations come from
+disk. Text files stay strings, so the stamp below can still edit the index page, which is
+rendered (see "Pages" above) once every file is embedded. The migrations come from
 `readMigrations`. The embedded `index.html` is stamped with an HTML comment right below its doctype
 naming the commit (`git rev-parse HEAD`, suffixed `-dirty` when the working tree has uncommitted
 changes, or `unknown` outside a git checkout), the build time as an ISO 8601 UTC timestamp and,

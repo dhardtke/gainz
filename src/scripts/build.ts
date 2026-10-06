@@ -1,7 +1,7 @@
 /**
  * Builds the server and the frontend into one minified `gainz.js` (plus a linked source map), so a
  * deployment is one file run with `bun`. The frontend, Oat and the migrations go in through a
- * replacement for `src/backend/shared/embedded.ts`; the frontend stays one module per URL, never bundled.
+ * replacement for `src/backend/shared/embedded.ts`, the frontend as one bundle at `/main.ts`.
  * Beside it, `bun-version` names the Bun that built it, which the server installs to run it.
  */
 import { relative, resolve } from 'node:path';

@@ -4,7 +4,6 @@ export const exercisesRoutes: RouteDef[] = [
   {
     pattern: /^\/exercises\/?$/,
     keys: [],
-    module: import.meta.resolve('./gz-exercise-list.component.ts'),
     view: async () => {
       const { GzExerciseListComponent } = await import('./gz-exercise-list.component.ts');
       return new GzExerciseListComponent();
@@ -15,7 +14,6 @@ export const exercisesRoutes: RouteDef[] = [
   {
     pattern: /^\/exercises\/(\d+)\/?$/,
     keys: ['id'],
-    module: import.meta.resolve('./gz-exercise-detail.component.ts'),
     view: async ({ id }) => {
       const { GzExerciseDetailComponent } = await import('./gz-exercise-detail.component.ts');
       const view = new GzExerciseDetailComponent();

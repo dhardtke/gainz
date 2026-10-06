@@ -10,9 +10,9 @@ src/frontend/
 ├── index.html  main.ts  manifest.webmanifest
 ├── icons/      icon.svg, icon-maskable.svg, icon-192.png, icon-512.png, icon-maskable-512.png
 ├── dev/        hot.ts (development only)
-├── app/        gz-app, gz-header, gz-theme-toggle, gz-breadcrumbs, router.ts, routes.ts, tab-title.ts, preload.ts
+├── app/        gz-app, gz-header, gz-theme-toggle, gz-breadcrumbs, router.ts, routes.ts, tab-title.ts
 ├── http/       http.ts (get/post/patch/remove), errors.ts (ApiError, errorMessage, UNAUTHORIZED_EVENT)
-├── ui/         base.ts, view.ts, html.ts, styles.ts, theme.ts, format.ts, app.css, shared.css, toast.ts, tile/, pagination/
+├── ui/         base.ts, view.ts, html.ts, styles.ts, inline-styles.ts, theme.ts, format.ts, app.css, shared.css, toast.ts, tile/, pagination/
 └── features/
     ├── exercises/  exercises.routes.ts, exercises.facade.ts, gz-exercise-list, gz-exercise-detail
     │   └── internal/  exercise.api.ts, gz-chart, gz-progress-chart, gz-session-table
@@ -54,7 +54,8 @@ A component is a pair of files side by side, `gz-<name>.component.ts` and `gz-<n
 directory owns it. A component module ends with `await define('<tag>', TheClass, import.meta.url)`,
 and `styles.ts` swaps the module URL's `.ts` for `.css` to find the stylesheet, fetches it once
 into a `CSSStyleSheet`, and every instance adopts it by reference — there is no manifest, and a tag
-name implies no path. A test in `static.routes.test.ts` requests the `.css` beside every
+name implies no path. In a built bundle the sheet's text comes from `ui/inline-styles.ts`, which
+the build fills, instead of a fetch (see "Loading"). A test in `static.routes.test.ts` requests the `.css` beside every
 `gz-*.component.ts`, so a component without its stylesheet fails the suite rather than painting unstyled.
 **That top-level `await` is load-bearing**: it makes "module loaded" also mean "stylesheet loaded",
 which is what lets a route's `view()` lazily `import()` its view and still have it paint styled on
@@ -159,8 +160,7 @@ which is how the backend derives `done`; `gz-workout-card` shows that "✓ Done"
 A feature's routes live in `<f>.routes.ts` beside its facade, the way the backend keeps one
 `*.routes.ts` per feature and spreads them in `src/backend/http/routes.ts`. Each route is a regex
 `pattern`, the `keys` naming its capture groups, and a `view(params)` that `import()`s the view
-module and returns `new GzXComponent()`, setting any id attribute before handing it back, beside a
-`module` naming that same file through `import.meta.resolve()`, for the preloads (see "Loading"). `gz-app` matches
+module and returns `new GzXComponent()`, setting any id attribute before handing it back. `gz-app` matches
 the current path against `ROUTES` and awaits the matching route's `view()` without knowing which
 route it is; when nothing matches it shows its own not-found message. A route may also carry
 `nav: { path, label }`, and `gz-header` builds the header from those, in the order `app/routes.ts`
@@ -351,12 +351,13 @@ and `GzAddSetFormComponent` are exported so their parent can type the element it
 
 The frontend is TypeScript on disk and JavaScript on the wire. `src/backend/features/static` runs
 each module through `Bun.Transpiler` as it is requested — around 76 µs per file, the whole
-frontend in under two milliseconds — and hands the result back as `text/javascript`. Nothing is
-written to disk and nothing is bundled: specifiers are left untouched, so a module imports
+frontend in under two milliseconds — and hands the result back as `text/javascript`. Served from
+source, nothing is written to disk and nothing is bundled: specifiers are left untouched, so a module imports
 `'../../ui/format.ts'` and the browser fetches the file of that name, and editing a module and reloading
-is the whole edit loop. A deployed build (`bun run build`) serves these same modules from memory
-instead — transpiled once at build time with whitespace minified, still one module per URL — and a
-module that does not parse fails the build rather than answering 500. `src/frontend/` is the web
+is the whole edit loop. A deployed build (`bun run build`) serves the whole frontend as one bundle
+at `/main.ts` instead, carrying every component stylesheet as text, so a component never fetches
+its own sheet there (see "Single-file build" in `docs/backend.md`). A lazily imported view still
+runs only when first opened. `src/frontend/` is the web
 root, so a module's URL is its path below it: `src/frontend/app/gz-app.component.ts` is served at
 `/app/gz-app.component.ts`.
 
@@ -373,36 +374,20 @@ only when that view _and_ everything it renders have their scripts and their CSS
 page is fully styled on its first paint; there is no flash of unstyled content to guard against.
 
 Only the shell (`gz-app`, `gz-header`, `gz-theme-toggle`, `gz-breadcrumbs`) with `ui/view.ts`,
-`http/errors.ts`, `ui/toast.ts`, `app/tab-title.ts` and `app/preload.ts`, which `gz-app` imports, `app/routes.ts` with the four feature route files, the auth
+`http/errors.ts`, `ui/toast.ts` and `app/tab-title.ts`, which `gz-app` imports, `app/routes.ts` with the four feature route files, the auth
 facade with its API class and `http/http.ts`, which `gz-header` imports for Log out, and Oat plus
 `ui/shared.css` load up front. `gz-app` guards against two
 navigations resolving out of order and reports a failed import through the toast.
 
-Unbundled, that shell would arrive as a waterfall: the browser learns of a module only once it has
-fetched and parsed the module importing it, and the chain from `main.ts` is seven imports deep.
-So the server announces the whole shell in the index page: before each `<script type="module" src>`
-it inserts a `<link rel="modulepreload">` for every module that script reaches through static
-imports, and a `<link rel="preload" as="fetch" crossorigin>` for the stylesheet beside each that has
-one (see "Preloads" in `docs/backend.md`). The shell then loads in about one round trip; measured in
-headless Edge with 100 ms of added latency, the dashboard was defined after about 1.4 s rather than
-1.9 s. `crossorigin` is load-bearing: it gives the preload the CORS mode `fetch()` uses in
-`styles.ts`, and without it the fetch would not reuse the preload and would go to the network a
-second time. `index.html` itself preloads `/vendor/oat.css` and `/ui/shared.css` for `fetch()` beside
-linking them as stylesheets, because a stylesheet link's response cannot answer a `fetch()`, and
-the top-level `await` in `styles.ts` holds back every component module until both have loaded.
-
-A lazily loaded view would be the same waterfall one level down, so it is preloaded too, but only
-once it is opened. The server writes a map into the index page, `<script type="application/json"
-data-lazy-preloads>`, from each module the app imports dynamically to the scripts and stylesheets
-its static graph adds to the shell's. A route names its view module in `module`, and `gz-app` hands
-that to `preloadModule()` in `app/preload.ts` right before calling `view()`, which adds the same
-`<link>`s the server writes for the shell, so the view's whole graph is requested with its
-`import()`. It links each file once per page load, so a stylesheet two views share is not fetched a
-second time. The `import()` in `view()` stays a literal because the server finds the views by
-scanning for it, and `module` repeats its specifier because nothing at runtime can read a function's
-import; `routes.test.ts` holds the two equal. Measured as above, the dashboard on first load was
-defined after about 1.2 s with these rather than 1.5 s with the shell preloads alone, and a
-navigation from it to `/workouts` took about 135 ms rather than 480 ms. The map is about 3.4 KB.
+Served from source, modules and stylesheets arrive a level of imports at a time: the browser learns
+of a module only once it has fetched and parsed the module importing it, and the chain from
+`main.ts` is seven imports deep. Over localhost that costs next to nothing, and the deployed bundle
+has no waterfall at all, so nothing preloads modules or component stylesheets. `index.html` itself
+preloads `/vendor/oat.css` and `/ui/shared.css` for `fetch()` beside linking them as stylesheets,
+because a stylesheet link's response cannot answer a `fetch()`, and the top-level `await` in
+`styles.ts` holds back every component module until both have loaded. `crossorigin` is load-bearing
+there: it gives the preload the CORS mode `fetch()` uses in `styles.ts`, and without it the fetch
+would not reuse the preload and would go to the network a second time.
 
 On a repeat visit nothing but the index page needs asking about. The server names every module,
 stylesheet and Oat file by a versioned URL, `/ui/format.ts?v=<content hash>`, and lets the browser
@@ -410,11 +395,12 @@ keep that for good, since the bytes behind it can never change (see "Pages" in `
 The index page links its own files by those URLs, and its import map rewrites every other one: a
 module still imports `'../../ui/format.ts'`, which resolves to the plain URL as before and is then
 mapped to the versioned one. So `import.meta.url` carries the version, and anything that keys by a
-module's URL takes its pathname, as `styles.ts` and `preloadModule()` do. `styles.ts` fetches a
+module's URL takes its pathname, as `styles.ts` does. `styles.ts` fetches a
 sheet by the versioned URL it looks up in the import map, which `import.meta.resolve()` would
 also give in a browser but not under bun test, where it resolves against the file system; a page
-without a map, as in the tests, fetches the plain URL. The preloads name the same versioned URLs,
-so they still match what is fetched. Measured as above with the cache on, opening the dashboard a
+without a map, as in the tests, fetches the plain URL. `index.html`'s preloads name the same versioned URLs,
+so they still match what is fetched. Measured from source in headless Edge with 100 ms of added
+latency and the cache on, opening the dashboard a
 second time sent 4 requests for static files rather than 49, and it was defined after about
 265 ms rather than 1175 ms; the first visit is unchanged. The import map makes the index page about
 6 KB larger, and the index page is still revalidated on every visit, since it names the versions.
@@ -539,6 +525,9 @@ which the window replaces. There is one window for the whole process, created by
 asks: bun caches a component module across files, so the class it registered keeps extending that
 window's `HTMLElement` and stays in that window's `customElements`, and a fresh window would leave
 later files with neither. Between tests `useDom()` empties `document.body` and `localStorage`.
+For the same reason `src/scripts/build-bundle.test.ts` runs the built bundle in a child process,
+`build-bundle.probe.ts`, with a window of its own: in-process, a component another file had already
+defined would make the bundle's `define()` return early.
 
 Because a static import runs before any hook, a component test `await import()`s the component in
 `beforeAll`, after `useDom()`, and then creates it by tag name and reads its open `shadowRoot` — or,

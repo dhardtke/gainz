@@ -4,7 +4,6 @@ import { GzView, PAGE_TITLE_EVENT } from '../ui/view.ts';
 import { html } from '../ui/html.ts';
 import { currentPath, linkPath, matchRoute, navigate, onRouteChange } from './router.ts';
 import type { RouteDef, RouteMatch } from './router.ts';
-import { preloadModule } from './preload.ts';
 import { ROUTES } from './routes.ts';
 import { tabTitle } from './tab-title.ts';
 import { toastError } from '../ui/toast.ts';
@@ -83,14 +82,10 @@ class GzAppComponent extends GzElement {
     this.#renderView();
   }
 
-  /** Builds the element for a route, fetching its module graph first if need be. */
+  /** Builds the element for a route. */
   async #viewElement(path: string): Promise<{ match: RouteMatch | null; view: Element }> {
     const match = matchRoute(ROUTES, path);
     if (match) {
-      // Before the import, so the view's whole graph is requested at once.
-      if (match.route.module !== undefined) {
-        preloadModule(match.route.module);
-      }
       return { match, view: await match.route.view(match.params) };
     }
 

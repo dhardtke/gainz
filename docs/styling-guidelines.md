@@ -13,7 +13,8 @@
   component or utility — `.row`, `.badge`, `.toast`, `.error`, `.small` and `.table` are all Oat's.
 - **No CSS in JavaScript.** Every rule lives in an external `.css` file — `ui/app.css` for the
   document, `ui/shared.css` for utilities adopted by every component, and a component's `<tag>.component.css`
-  beside its `<tag>.component.ts`.
+  beside its `<tag>.component.ts`. The build carries the component stylesheets as text inside its
+  bundle (`ui/inline-styles.ts`); that is output, not source, and does not bend the rule.
 - **Selectors nest.** A rule that would repeat a prefix — `article.open-card`,
   `article.open-card:hover .open`, `article.open-card .actions` — nests instead as
   `article.open-card { &:hover .open { … } & .actions { … } }`, so each block reads as one component

@@ -14,11 +14,6 @@ export interface RouteDef {
   keys: string[];
   view: (params: Record<string, string>) => Promise<Element>;
   /**
-   * The module `view` imports, as `import.meta.resolve()` of the same specifier, so `gz-app` can
-   * fetch its whole graph before importing it (see `preload.ts`).
-   */
-  module?: string;
-  /**
    * The page's name: the tab title, and the last breadcrumb until its view names what it shows.
    * Without one the tab keeps the app's own title.
    */
