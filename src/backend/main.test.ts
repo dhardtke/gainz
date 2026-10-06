@@ -73,7 +73,13 @@ describe('main', () => {
       await waitForUrl(proc.stdout, () => new Response(proc.stderr).text());
       proc.kill('SIGTERM');
       expect(await proc.exited).toBe(0);
-      expect(await new Response(proc.stdout).text()).toContain('server stopping (SIGTERM)');
+      // waitForUrl() has read from stdout, and a Response refuses a stream that was read from.
+      let rest = '';
+      const decoder = new TextDecoder();
+      for await (const chunk of proc.stdout) {
+        rest += decoder.decode(chunk, { stream: true });
+      }
+      expect(rest).toContain('server stopping (SIGTERM)');
     } finally {
       proc.kill();
       await proc.exited;
