@@ -6,6 +6,14 @@ which keeps a later `bun add` from writing a caret range and undoing that. `engi
 the required runtime, but Bun does not enforce the field on install: it documents the requirement
 rather than gating it.
 
+Upgrades arrive as pull requests from Renovate (`renovate.json`), which keeps the exact pins exact,
+moves the action SHAs in `.github/workflows/` along with their version comments, and bumps the Bun
+that CI runs through `.bun-version`. It waits until an npm release is three days old and refreshes
+the lockfile's transitive dependencies weekly. `bun` and `@types/bun` arrive in one pull request,
+as do `oxlint` and `oxlint-tsgolint`, since each pair has to move together. Nothing automerges:
+merging to `main` deploys, so every upgrade is merged by hand once its `check` job is green.
+`engines.bun` is not managed and still moves by hand.
+
 TypeScript and JavaScript use single quotes, CSS double; `bun run fmt` enforces both.
 
 A member that overrides one from its base class is marked `override`. `noImplicitOverride` makes

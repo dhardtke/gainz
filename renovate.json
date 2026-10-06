@@ -1,0 +1,15 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:best-practices", "helpers:pinGitHubActionDigestsToSemver", ":semanticCommits"],
+  "rangeStrategy": "pin",
+  "packageRules": [
+    {
+      "groupName": "bun",
+      "matchPackageNames": ["bun", "@types/bun"]
+    },
+    {
+      "groupName": "oxlint",
+      "matchPackageNames": ["oxlint", "oxlint-tsgolint"]
+    }
+  ]
+}
