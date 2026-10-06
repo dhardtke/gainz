@@ -169,7 +169,8 @@ default, not shadow roots, so they could never find a login form inside the shel
 document links `ui/shared.css` beside Oat, so they are styled as they would be in a shadow root.
 The header is a surface bar: `--card` with a `--border` line beneath it, rather than a band of
 brand color, since blue is kept for what is tappable or current. Inside it is a flex `<nav>`: the
-brand in `--primary` on the left, then the page links in `--muted-foreground`, with
+brand on the left — the app icon and "gainz" in `--primary`, which on hover underlines the name and
+grows the icon (without the motion under `prefers-reduced-motion`) — then the page links in `--muted-foreground`, with
 `aria-current="page"` making the current page `--foreground` and bold, then a thin `--border`
 divider and the theme toggle, a `.ghost.icon` button. Below 560 px the links render a second time inside Oat's `<ot-dropdown>` — a
 `.ghost.icon` hamburger with `popovertarget` and a `<menu popover>` of `role="menuitem"` links —

@@ -49,7 +49,6 @@ gz-theme-toggle {
   padding-inline-start: var(--space-2);
 }
 
-/* The same width at which the brand drops its tag line. */
 @media (max-width: 560px) {
   .links {
     display: none;
@@ -83,19 +82,37 @@ menu[popover] a[role="menuitem"] {
 
 .brand {
   display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
+  align-items: center;
+  gap: var(--space-2);
   text-decoration: none;
 
   color: var(--primary);
+
+  /* Sized to the line, so the header keeps its height. */
+  & img {
+    height: 1.75em;
+    width: auto;
+    transition: transform 150ms ease-out;
+  }
 
   & strong {
     letter-spacing: -0.02em;
   }
 
-  & .tag {
-    @media (max-width: 560px) {
-      display: none;
+  /* The name underlines like the page links, and the icon grows a little. */
+  &:hover {
+    & strong {
+      text-decoration: underline;
+    }
+
+    & img {
+      transform: scale(1.08);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    & img {
+      transition: none;
     }
   }
 }
