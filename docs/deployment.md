@@ -1,5 +1,25 @@
 # Deployment
 
+## Running a build
+
+```sh
+bun run build                 # dist/gainz.js + dist/gainz.js.map
+scp dist/gainz.js* server:/opt/gainz/
+bun run hash-password         # prompts twice, prints an argon2id hash
+PORT=8080 GAINZ_DB=/var/lib/gainz/gainz.sqlite GAINZ_PASSWORD_HASH='<hash>' bun /opt/gainz/gainz.js
+```
+
+The target machine needs Bun 1.4 or newer and nothing else — no checkout, no `node_modules` and no
+`.sql` files. Migrations apply on start, as they do under `bun start`. Hot reload is not available
+in the built file; `GAINZ_DEV` is ignored there. The session cookie is `Secure`, so put HTTPS (a
+reverse proxy) in front of the server before exposing it; `http://localhost` works without it.
+"Authentication" in `docs/backend.md` describes the login, and "Single-file build" what the build
+carries.
+
+The rest of this document describes how this repository's own server is deployed.
+
+## Continuous deployment
+
 Every push to `main` runs `.github/workflows/ci.yml`. The `check` job runs format, lint, typecheck,
 tests and the build on a GitHub-hosted runner and uploads `dist/` as an artifact. The `deploy` job
 then runs on a self-hosted runner on the server, downloads that artifact and pipes it as a tar
