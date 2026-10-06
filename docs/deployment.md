@@ -33,12 +33,30 @@ old code cannot be trusted with it, so a rollback restores the database as well 
 script keeps the last five releases and ten snapshots.
 
 The server's paths are constants at the top of the script: the app in `/home/gainz/app`, the
-database in its `data/gainz.sqlite`, Bun in `/home/gainz/.bun/bin/bun`, and port 3000, since the
+database in its `data/gainz.sqlite`, the Bun versions in its `bun/`, and port 3000, since the
 unit sets no `PORT`. A change to any of them on the server is a change to the script.
 
 The actions in the workflow are pinned to commit SHAs, matching the exact pinning of
 dependencies in `docs/coding-guidelines.md`; a tag can be moved, a SHA cannot. The Bun that CI
 runs is read from `.bun-version`, so Renovate can update it.
+
+## Bun
+
+The server runs every release on the Bun that built it, so upgrading Bun on the server is the same
+pull request that upgrades it in CI, and nothing to do by hand. `bun run build` writes the Bun
+that ran it into `dist/bun-version`, and the build travels with that file. Before stopping the
+service, `gainz-deploy` installs that version into `/home/gainz/app/bun/<version>` unless it is
+already there. It downloads the same zip from Bun's GitHub release that Bun's install script
+would, including the `-baseline` build on a CPU without AVX2. It checks the zip against the
+release's `SHASUMS256.txt` and checks that the binary reports the expected version. Then it links
+the release's `bun` to that version. The unit runs `current/bun`, so a rollback puts the previous
+Bun back with the previous code and database, and a Bun that breaks the app fails the health check
+like any other bad release. A Bun no kept release uses anymore is deleted with the release.
+
+The checksum catches a broken download, not a forged one: it comes from the same release as the
+zip, so it is only as trustworthy as GitHub serving Bun's releases over HTTPS. The download needs
+`curl` and `unzip`, which Bun's install script requires as well, and outbound HTTPS to GitHub,
+which the runner already uses.
 
 ## Server setup
 
@@ -49,7 +67,8 @@ layout and start gainz as a user service:
 sudo systemctl disable --now gainz
 sudo rm /etc/systemd/system/gainz.service && sudo systemctl daemon-reload
 sudo -u gainz sh -c 'cd /home/gainz/app && mkdir -p releases/initial \
-  && mv gainz.js* releases/initial/ && ln -s releases/initial current \
+  && mv gainz.js* releases/initial/ && ln -s /home/gainz/.bun/bin/bun releases/initial/bun \
+  && ln -s releases/initial current \
   && mkdir -p /home/gainz/.config/systemd/user'
 # the env file with the password hash; see "Password" below
 sudo -u gainz sh -c 'umask 077 && cat > /home/gainz/app/gainz.env' <<'EOF'
@@ -92,7 +111,25 @@ sudo restorecon -v /var/lib/gh-runner/actions-runner/runsvc.sh
 In the repository, create the `production` environment (_Settings → Environments_) and restrict
 its deployment branches to `main`.
 
-Bun on the server is upgraded by hand, as the `gainz` user, whenever `engines.bun` moves.
+### Moving a server onto per-release Bun
+
+A server set up before releases carried their own Bun runs every release on
+`/home/gainz/.bun/bin/bun`. Once, before pushing the commit that brought per-release Bun, link that
+Bun into each existing release, then install the script and the unit:
+
+```sh
+sudo -u gainz sh -c 'for r in /home/gainz/app/releases/*/; do [ -e "$r/bun" ] || ln -s /home/gainz/.bun/bin/bun "$r/bun"; done'
+sudo install -m 0755 deploy/gainz-deploy /usr/local/bin/gainz-deploy
+sudo install -o gainz -g gainz -m 0644 deploy/gainz.service /home/gainz/.config/systemd/user/gainz.service
+sudo systemctl --user -M gainz@ daemon-reload
+sudo systemctl --user -M gainz@ restart gainz
+```
+
+The links come first because the new unit starts `current/bun`, and `gainz-deploy` refuses to
+deploy over a release that has no `bun` to roll back to. The script goes in before the push, because
+the old one would unpack the release without its `bun-version` and the new unit could not start it.
+Once `ls -l /home/gainz/app/releases/*/bun` shows no link into `/home/gainz/.bun` anymore, five
+deploys later, `/home/gainz/.bun` can be deleted.
 
 ## Password
 

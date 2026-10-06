@@ -12,7 +12,8 @@ that CI runs through `.bun-version`. It waits until an npm release is three days
 the lockfile's transitive dependencies weekly. `bun` and `@types/bun` arrive in one pull request,
 as do `oxlint` and `oxlint-tsgolint`, since each pair has to move together. Nothing automerges:
 merging to `main` deploys, so every upgrade is merged by hand once its `check` job is green.
-`engines.bun` is not managed and still moves by hand.
+The `bun` pull request also moves the exact `engines.bun`, and the server follows on deploy (see
+"Bun" in `docs/deployment.md`).
 
 TypeScript and JavaScript use single quotes, CSS double; `bun run fmt` enforces both.
 
