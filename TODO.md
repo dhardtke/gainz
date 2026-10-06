@@ -2,8 +2,6 @@
 
 ## Architecture / Code Style
 
-- Import maps to have hashed filenames
-
 ## Features
 
 - Integrate Eufy scale and Garmin watch data
