@@ -6,7 +6,10 @@
 import { resolve } from 'node:path';
 import type { EmbeddedFile, EmbeddedWeb } from '../../../shared/embedded.ts';
 import { FRONTEND_DIR, resolveVendorPath, vendorUrls } from './paths.ts';
+import { withPreloads } from './preload.ts';
 import { transpileModule } from './transpile.ts';
+
+const MODULE_TYPE = 'text/javascript;charset=utf-8';
 
 /** Hot reload is off in a built file, and tests and their fixtures never ship. */
 function isEmbedded(url: string): boolean {
@@ -40,7 +43,7 @@ export async function embedWebRoot(): Promise<EmbeddedWeb> {
       if (code === null) {
         throw new Error(`Could not transpile src/frontend${url}`);
       }
-      pages[url] = { body: code, type: 'text/javascript;charset=utf-8' };
+      pages[url] = { body: code, type: MODULE_TYPE };
     } else {
       // Text stays text, so `stamp()` can still edit the index page. Anything else (the icons)
       // goes in as base64, because `JSON.stringify` cannot carry raw bytes into gainz.js.
@@ -49,6 +52,15 @@ export async function embedWebRoot(): Promise<EmbeddedWeb> {
     }
   }
 
+  // After the walk, so the preloads see every module as it will be served.
+  for (const page of Object.values(pages)) {
+    if (page.type.startsWith('text/html')) {
+      page.body = await withPreloads(page.body, {
+        module: (url) => Promise.resolve(pages[url]?.type === MODULE_TYPE ? pages[url].body : null),
+        exists: (url) => Promise.resolve(pages[url] !== undefined),
+      });
+    }
+  }
   const vendor: Record<string, EmbeddedFile> = {};
   for (const url of vendorUrls()) {
     const path = resolveVendorPath(url);

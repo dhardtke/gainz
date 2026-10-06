@@ -87,6 +87,16 @@ describe('single-file build', () => {
     expect(chart).not.toContain('sourceMappingURL');
   });
 
+  test('preloads the shell modules and stylesheets it carries', async () => {
+    const page = await (await get('/')).text();
+    const preloaded = [...page.matchAll(/<link rel="modulepreload" href="([^"]+)"/g)].map((match) => match[1] ?? '');
+    expect(preloaded).toContain('/app/gz-app.component.ts');
+    expect(page).toContain('<link rel="preload" href="/app/gz-app.component.css" as="fetch" crossorigin />');
+    for (const url of preloaded) {
+      expect({ url, status: (await get(url)).status }).toEqual({ url, status: 200 });
+    }
+  });
+
   test('serves every component stylesheet, the app stylesheet and Oat', async () => {
     const urls = ['/ui/app.css', '/vendor/oat.css', '/vendor/oat.js'];
     for await (const entry of new Bun.Glob('**/gz-*.component.ts').scan({ cwd: FRONTEND })) {

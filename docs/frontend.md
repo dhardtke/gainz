@@ -377,6 +377,20 @@ facade with its API class and `http/http.ts`, which `gz-header` imports for Log 
 `ui/shared.css` load up front. `gz-app` guards against two
 navigations resolving out of order and reports a failed import through the toast.
 
+Unbundled, that shell would arrive as a waterfall: the browser learns of a module only once it has
+fetched and parsed the module importing it, and the chain from `main.ts` is seven imports deep.
+So the server announces the whole shell in the index page: before each `<script type="module" src>`
+it inserts a `<link rel="modulepreload">` for every module that script reaches through static
+imports, and a `<link rel="preload" as="fetch" crossorigin>` for the stylesheet beside each that has
+one (see "Preloads" in `docs/backend.md`). The shell then loads in about one round trip; measured in
+headless Edge with 100 ms of added latency, the dashboard was defined after about 1.4 s rather than
+1.9 s. `crossorigin` is load-bearing: it gives the preload the CORS mode `fetch()` uses in
+`styles.ts`, and without it the fetch would not reuse the preload and would go to the network a
+second time. Dynamic imports are not followed, so a lazily loaded route still arrives only when
+opened. `index.html` itself preloads `/vendor/oat.css` and `/ui/shared.css` for `fetch()` beside
+linking them as stylesheets, because a stylesheet link's response cannot answer a `fetch()`, and
+the top-level `await` in `styles.ts` holds back every component module until both have loaded.
+
 Styled is not the same as ready, though: a view fetches its data once connected, and until then
 it renders a "Loading…" line. Swapped in straight away, every page switch would collapse the page
 to that line for a frame or two and expand it again. So `gz-app` keeps the outgoing view on screen

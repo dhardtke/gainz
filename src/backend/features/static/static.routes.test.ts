@@ -182,6 +182,49 @@ describe('installable app', () => {
   });
 });
 
+describe('preloads', () => {
+  const hrefs = (page: string, pattern: RegExp): string[] => [...page.matchAll(pattern)].map((match) => match[1] ?? '');
+  const modules = (page: string): string[] => hrefs(page, /<link rel="modulepreload" href="([^"]+)" \/>/g);
+  const sheets = (page: string): string[] => hrefs(page, /<link rel="preload" href="([^"]+)" as="fetch" crossorigin \/>/g);
+
+  test('announce the shell ahead of the entry point, with the stylesheet beside each component', async () => {
+    const page = await (await api('/workouts')).text();
+    expect(modules(page)).toContain('/app/gz-app.component.ts');
+    expect(modules(page)).toContain('/ui/styles.ts');
+    expect(sheets(page)).toContain('/app/gz-app.component.css');
+    expect(page.lastIndexOf('rel="modulepreload"')).toBeLessThan(page.indexOf('<script type="module" src="/main.ts">'));
+  });
+
+  test('cover every module the entry point imports statically, and nothing it does not', async () => {
+    const page = await (await api('/')).text();
+    const preloaded = new Set(modules(page));
+    const scanner = new Bun.Transpiler({ loader: 'js' });
+    for (const url of ['/main.ts', ...preloaded]) {
+      const res = await api(url);
+      expect({ url, status: res.status }).toEqual({ url, status: 200 });
+      for (const { kind, path } of scanner.scanImports(await res.text())) {
+        if (kind === 'import-statement') {
+          const target = new URL(path, `http://gainz${url}`).pathname;
+          expect({ url, imports: target, preloaded: preloaded.has(target) }).toEqual({ url, imports: target, preloaded: true });
+        }
+      }
+    }
+    // Lazily loaded routes arrive when opened, and the entry point is a script tag already.
+    expect(preloaded.has('/features/stats/gz-dashboard.component.ts')).toBe(false);
+    expect(preloaded.has('/main.ts')).toBe(false);
+  });
+
+  test('name only stylesheets that exist', async () => {
+    const page = await (await api('/')).text();
+    expect(sheets(page)).toContain('/vendor/oat.css');
+    for (const url of sheets(page)) {
+      const res = await api(url);
+      expect({ url, status: res.status }).toEqual({ url, status: 200 });
+      expect(res.headers.get('content-type')).toContain('text/css');
+    }
+  });
+});
+
 describe('revalidation', () => {
   const tagOf = async (path: string): Promise<string> => {
     const res = await api(path);

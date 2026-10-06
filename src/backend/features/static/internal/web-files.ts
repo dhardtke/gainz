@@ -6,6 +6,7 @@
 import { basename, extname, posix } from 'node:path';
 import { EMBEDDED, type EmbeddedWeb } from '../../../shared/embedded.ts';
 import { resolveStaticPath, resolveVendorPath } from './paths.ts';
+import { type PreloadSource, withPreloads } from './preload.ts';
 import { transpileModule } from './transpile.ts';
 
 export type WebFile =
@@ -46,6 +47,9 @@ class DiskWebFiles implements WebFiles {
       }
       return { kind: 'file', body: code, type: MODULE_TYPE };
     }
+    if (extname(path) === '.html') {
+      return { kind: 'file', body: await withPreloads(await file.text(), diskModules), type: file.type };
+    }
     // `file.type` is Bun's MIME database lookup, so no hand-written map is kept here.
     return { kind: 'file', body: await file.bytes(), type: file.type };
   }
@@ -64,6 +68,18 @@ class DiskWebFiles implements WebFiles {
     return { kind: 'file', body: await file.bytes(), type: file.type };
   }
 }
+
+/** The web root as `DiskWebFiles` serves it, for a page's preloads. */
+const diskModules: PreloadSource = {
+  module: async (url) => {
+    const path = resolveStaticPath(url);
+    return path !== null && extname(path) === '.ts' && (await Bun.file(path).exists()) ? transpileModule(path) : null;
+  },
+  exists: async (url) => {
+    const path = resolveStaticPath(url);
+    return path !== null && (await Bun.file(path).exists());
+  },
+};
 
 interface ServedFile {
   body: string | Uint8Array<ArrayBuffer>;

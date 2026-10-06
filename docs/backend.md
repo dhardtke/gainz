@@ -283,6 +283,19 @@ fallback, the client injection and the ETag for both sources. Vendor files sit i
 they stay reachable only at their literal URL, exactly as on disk. `static.routes.ts` only declares
 the URLs that reach the controller.
 
+**Preloads.** An HTML page is served with its static module graph announced in its `<head>`, so the
+browser fetches the shell in one round trip instead of one per level of imports (why, and what the
+frontend relies on, is in "Loading" in `docs/frontend.md`). `internal/preload.ts` finds each
+`<script type="module" src>` with `HTMLRewriter`, walks the imports from it breadth first, nearest
+first, and inserts before the script a `<link rel="modulepreload">` per module and a
+`<link rel="preload" as="fetch" crossorigin>` for each `.css` file beside one. It scans each module
+after transpiling, with `Bun.Transpiler.scanImports`, so an import that only types needed is already
+gone and `src/shared/` is never named; only `import-statement`s are followed, never a dynamic
+`import()`. It reads the web root through a `PreloadSource`: `DiskWebFiles` transpiles from disk on
+every request for the page (about two milliseconds for the shell), and the build walks the modules
+it has already transpiled. `static.routes.test.ts` holds that the preloads are closed under static
+imports and name only files that are served.
+
 The static feature keeps no map of content types. Transpiled modules get a fixed `Content-Type`,
 and every plain file — vendor files included — takes `Bun.file(x).type` — the same lookup
 `new Response(Bun.file(x))` uses, off a complete MIME database (`.svg` → `image/svg+xml`, `.woff2` →
@@ -469,7 +482,8 @@ The frontend is embedded one module per URL rather than bundled, because bundlin
 A module that does not parse fails the build, naming the file. A file that is not text (the icons)
 is embedded as base64 and flagged `base64: true`, because `JSON.stringify` cannot carry raw bytes;
 `EmbeddedWebFiles` decodes it once at startup, so it is served, and hashed, byte-identically to
-disk. Text files stay strings, so the stamp below can still edit the index page. The migrations come from
+disk. Text files stay strings, so the stamp below can still edit the index page, and so can the
+preloads (see "Preloads" above), inserted once every module has been transpiled. The migrations come from
 `readMigrations`. The embedded `index.html` is stamped with an HTML comment right below its doctype
 naming the commit (`git rev-parse HEAD`, suffixed `-dirty` when the working tree has uncommitted
 changes, or `unknown` outside a git checkout), the build time as an ISO 8601 UTC timestamp and,
