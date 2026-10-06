@@ -36,12 +36,14 @@
       }
     </script>
     <!--
-      Oat styles the document itself; the same file is also adopted into every
-      component's shadow root by src/frontend/ui/styles.ts, where its tokens (declared
-      on :root) and its body typography arrive by inheritance. oat.js is deferred, so it
-      runs before the modules below that use ot-dropdown and window.ot.
+      Oat and shared.css style the document itself, where the views and the login form
+      live; the same files are also adopted into every component's shadow root by
+      src/frontend/ui/styles.ts, where Oat's tokens (declared on :root) and its body
+      typography arrive by inheritance. oat.js is deferred, so it runs before the
+      modules below that use ot-dropdown and window.ot.
     -->
     <link rel="stylesheet" href="/vendor/oat.css" />
+    <link rel="stylesheet" href="/ui/shared.css" />
     <link rel="stylesheet" href="/ui/app.css" />
     <script src="/vendor/oat.js" defer></script>
     <script type="module" src="/main.ts"></script>

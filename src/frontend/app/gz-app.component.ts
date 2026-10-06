@@ -14,8 +14,12 @@ const SLOW_VIEW_MS = 300;
 /**
  * Application shell: a persistent header and view slot.
  *
- * The shell renders once; route changes only swap the element inside <main>,
- * so the header survives navigation. Toasts live in the document, not here.
+ * The shell renders once; route changes only swap the view, so the header survives navigation.
+ * Toasts live in the document, not here.
+ *
+ * The view is the shell's own child, in the document's light DOM, and shows through a <slot> in
+ * <main>. Password managers search the document, not shadow roots, so the login form, which gz-login
+ * keeps in its own light DOM for that reason, must not end up inside the shell's shadow root either.
  *
  * Any API call answered 401 sends the user to the login page, remembering where they were.
  */
@@ -106,9 +110,7 @@ class GzAppComponent extends GzElement {
     }
 
     // A newer route change started while this one was loading; that one wins.
-    // Re-queried after the await: a stale node would take the view silently.
-    const main = this.$('main');
-    if (token !== this.#renderToken || main?.isConnected !== true) {
+    if (token !== this.#renderToken || !this.isConnected) {
       return;
     }
 
@@ -118,7 +120,7 @@ class GzAppComponent extends GzElement {
     // Anything else, such as the not-found line, is swapped in straight away.
     if (view instanceof GzView) {
       view.hidden = true;
-      main.append(view);
+      this.append(view);
       const slow = new Promise<void>((resolve) => {
         setTimeout(resolve, SLOW_VIEW_MS);
       });
@@ -131,13 +133,13 @@ class GzAppComponent extends GzElement {
 
     // Not replaceChildren: moving a connected view would reconnect it, and it would load again.
     // A copy: `children` is live, and removing from it while iterating skips elements.
-    for (const child of Array.from(main.children)) {
+    for (const child of Array.from(this.children)) {
       if (child !== view) {
         child.remove();
       }
     }
-    if (view.parentNode !== main) {
-      main.append(view);
+    if (view.parentNode !== this) {
+      this.append(view);
     }
     view.removeAttribute('hidden');
     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -147,7 +149,7 @@ class GzAppComponent extends GzElement {
     return html`
       <gz-header></gz-header>
 
-      <main class="container"></main>
+      <main class="container"><slot></slot></main>
     `;
   }
 }

@@ -1,5 +1,6 @@
 /*
- * Adopted into every component's shadow root, right after Oat. Layout comes from Oat's utilities
+ * Adopted into every component's shadow root, right after Oat, and linked by the document too, for
+ * the views and the login form that live in its light DOM. Layout comes from Oat's utilities
  * (.vstack, .hstack, .gap-*); this file holds only what is gainz's own.
  */
 
@@ -71,6 +72,12 @@ hgroup > * {
 
 .error-text {
   color: var(--danger);
+}
+
+/* Oat's alert sets its display in a cascade layer, which outranks its own [hidden] rule in an
+   earlier layer, so a hidden alert would still show as an empty box. */
+[role="alert"][hidden] {
+  display: none;
 }
 
 /* ------------------------------------------------------------------ pieces */
