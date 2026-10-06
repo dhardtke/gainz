@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { choose, collect, find, mount, shadow, submit, text, type, useDom, useFetch, useToasts } from './testing.ts';
+import { choose, collect, find, mount, shadow, submit, testId, text, type, useDom, useFetch, useToasts } from './testing.ts';
 
 // Bun's own, kept before useDom() replaces them.
 const bun = { fetch, Response, URL, setTimeout, EventTarget };
@@ -44,7 +44,7 @@ describe('DOM helpers', () => {
   /** A host with an open shadow root holding one paragraph. */
   function host(): HTMLElement {
     const element = document.createElement('div');
-    element.attachShadow({ mode: 'open' }).innerHTML = '<p class="greeting">Hello</p>';
+    element.attachShadow({ mode: 'open' }).innerHTML = '<p data-testid="greeting">Hello</p>';
     return element;
   }
 
@@ -66,19 +66,23 @@ describe('DOM helpers', () => {
     expect(() => shadow(document.createElement('section'))).toThrow('section has no shadow root');
   });
 
+  test('testId() selects by data-testid', () => {
+    expect(testId('greeting')).toBe("[data-testid='greeting']");
+  });
+
   test('find() returns the match', () => {
     const element = host();
-    expect(find(shadow(element), '.greeting').textContent).toBe('Hello');
+    expect(find(shadow(element), testId('greeting')).textContent).toBe('Hello');
   });
 
   test('find() throws naming the selector that matches nothing', () => {
-    expect(() => find(shadow(host()), '.farewell')).toThrow('nothing matches .farewell');
+    expect(() => find(shadow(host()), testId('farewell'))).toThrow("nothing matches [data-testid='farewell']");
   });
 
   test('text() reads from the shadow root', () => {
     const element = host();
-    expect(text(element, '.greeting')).toBe('Hello');
-    expect(text(element, '.farewell')).toBeUndefined();
+    expect(text(element, testId('greeting'))).toBe('Hello');
+    expect(text(element, testId('farewell'))).toBeUndefined();
   });
 
   test('mount() sets the attributes before connectedCallback sees them, and appends to the body', () => {

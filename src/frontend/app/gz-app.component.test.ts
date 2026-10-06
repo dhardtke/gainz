@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, expect, test } from 'bun:test';
-import { find, mount, settle, shadow, useDom, useFetch } from '../testing.ts';
+import { find, mount, settle, shadow, testId, useDom, useFetch } from '../testing.ts';
 import { navigate } from './router.ts';
 
 // Only paths no route matches, but for /login: a matched route would load a real feature view, which
@@ -16,6 +16,7 @@ beforeAll(async () => {
 
       constructor() {
         super();
+        this.#anchor.dataset.testid = 'link';
         this.attachShadow({ mode: 'open' }).append(this.#anchor);
       }
 
@@ -45,7 +46,7 @@ async function mountApp(): Promise<HTMLElement> {
 }
 
 function notFound(app: HTMLElement): string | undefined {
-  return app.querySelector(':scope > p.empty')?.textContent;
+  return app.querySelector(`:scope > ${testId('not-found')}`)?.textContent;
 }
 
 function link(app: HTMLElement, attributes: Record<string, string>): HTMLAnchorElement {
@@ -54,7 +55,7 @@ function link(app: HTMLElement, attributes: Record<string, string>): HTMLAnchorE
     host.setAttribute(name, value);
   }
   app.append(host);
-  return find<HTMLAnchorElement>(shadow(host), 'a');
+  return find<HTMLAnchorElement>(shadow(host), testId('link'));
 }
 
 /** @returns whether the click's default was prevented, i.e. whether gz-app routed it. */
@@ -67,18 +68,18 @@ function click(anchor: HTMLAnchorElement, init: MouseEventInit = {}): boolean {
 test('renders the header, and the view for the current path in its light DOM', async () => {
   const app = await mountApp();
   expect(notFound(app)).toBe('Nothing lives at /nowhere.');
-  expect(app.shadowRoot?.querySelector('main > slot')).not.toBeNull();
-  expect(app.shadowRoot?.querySelector('gz-header')?.shadowRoot?.querySelector('nav')).not.toBeNull();
+  expect(app.shadowRoot?.querySelector(testId('view-slot'))).not.toBeNull();
+  expect(app.shadowRoot?.querySelector(testId('header'))?.shadowRoot?.querySelector(testId('nav'))).not.toBeNull();
 });
 
 test('routes a plain click on a link inside a shadow root, keeping the header', async () => {
   const app = await mountApp();
-  const header = app.shadowRoot?.querySelector('gz-header');
+  const header = app.shadowRoot?.querySelector(testId('header'));
   expect(click(link(app, { href: '/elsewhere' }))).toBe(true);
   await settle(0);
   expect(location.pathname).toBe('/elsewhere');
   expect(notFound(app)).toBe('Nothing lives at /elsewhere.');
-  expect(app.shadowRoot?.querySelector('gz-header')).toBe(header ?? null);
+  expect(app.shadowRoot?.querySelector(testId('header'))).toBe(header ?? null);
 });
 
 test.each<[string, Record<string, string>, MouseEventInit]>([
@@ -137,7 +138,7 @@ test('sends a 401 to the login page, remembering where it came from', async () =
   // Shown at once, form and all: a password manager judges the field when it is added.
   const login = app.querySelector(':scope > gz-login');
   expect(login?.hasAttribute('hidden')).toBe(false);
-  expect(login?.querySelector('form input[type="password"]')).not.toBeNull();
+  expect(login?.querySelector(testId('password'))).not.toBeNull();
 });
 
 test('ignores a 401 on the login page itself', async () => {

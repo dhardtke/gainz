@@ -1,5 +1,5 @@
 import { beforeAll, expect, test } from 'bun:test';
-import { collect, find, mount, settle, shadow, useDom, useFetch } from '../../../testing.ts';
+import { collect, find, mount, settle, shadow, testId, useDom, useFetch } from '../../../testing.ts';
 import type { LiftSetDto } from '../../../../shared/dto/set.ts';
 import { set } from '../workouts.fixtures.ts';
 import type { GzSetRowComponent } from './gz-set-row.component.ts';
@@ -19,7 +19,7 @@ function mountRow(value: LiftSetDto, { index = 1 }: { index?: number } = {}): Gz
 }
 
 function toggle(row: HTMLElement): HTMLButtonElement {
-  return find<HTMLButtonElement>(shadow(row), "[data-action='toggle-done']");
+  return find<HTMLButtonElement>(shadow(row), testId('toggle-done'));
 }
 
 test('offers a set not done as an outlined, unpressed toggle', () => {
@@ -59,20 +59,20 @@ test('freezes a done set: its fields and × stay visible but disabled', () => {
     ['reps', true],
     ['notes', true],
   ]);
-  expect(find<HTMLButtonElement>(shadow(row), "[data-action='delete']").disabled).toBe(true);
+  expect(find<HTMLButtonElement>(shadow(row), testId('delete')).disabled).toBe(true);
   expect(toggle(row).disabled).toBe(false);
-  expect(find<HTMLButtonElement>(shadow(row), "[data-action='duplicate']").disabled).toBe(false);
+  expect(find<HTMLButtonElement>(shadow(row), testId('duplicate')).disabled).toBe(false);
 });
 
 test('marks the row of a done set, and only that one, as done', () => {
-  expect(find(shadow(mountRow(set({ id: 7, done: true }))), 'form.row-view').classList.contains('done')).toBe(true);
-  expect(find(shadow(mountRow(set({ id: 8 }))), 'form.row-view').classList.contains('done')).toBe(false);
+  expect(find(shadow(mountRow(set({ id: 7, done: true }))), testId('row')).classList.contains('done')).toBe(true);
+  expect(find(shadow(mountRow(set({ id: 8 }))), testId('row')).classList.contains('done')).toBe(false);
 });
 
 test('offers every action on a set not done, and no Edit button', () => {
   const row = mountRow(set({ id: 7 }));
   expect(actions(row)).toEqual(['toggle-done', 'duplicate', 'delete']);
-  expect(find<HTMLButtonElement>(shadow(row), "[data-action='delete']").disabled).toBe(false);
+  expect(find<HTMLButtonElement>(shadow(row), testId('delete')).disabled).toBe(false);
 });
 
 test('leaves the exercise to its group: no name, no link', () => {
@@ -82,7 +82,7 @@ test('leaves the exercise to its group: no name, no link', () => {
 });
 
 function input(row: HTMLElement, name: string): HTMLInputElement {
-  return find<HTMLInputElement>(shadow(row), `[name='${name}']`);
+  return find<HTMLInputElement>(shadow(row), testId(name));
 }
 
 function change(field: HTMLInputElement, value: string): void {

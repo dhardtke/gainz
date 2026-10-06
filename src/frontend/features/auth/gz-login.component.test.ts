@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, expect, test } from 'bun:test';
-import { find, mount, settle, submit, type, useDom, useFetch } from '../../testing.ts';
+import { find, mount, settle, submit, testId, type, useDom, useFetch } from '../../testing.ts';
 
 useDom();
 const fake = useFetch();
@@ -15,14 +15,14 @@ beforeEach(() => {
 async function logIn(password: string): Promise<HTMLElement> {
   const view = mount('gz-login');
   await settle();
-  type(find<HTMLInputElement>(view, 'input[name="password"]'), password);
-  submit(find(view, 'form'));
+  type(find<HTMLInputElement>(view, testId('password')), password);
+  submit(find(view, testId('form')));
   await settle();
   return view;
 }
 
 function alertText(view: HTMLElement): string | null {
-  const alert = find<HTMLElement>(view, '[role="alert"]');
+  const alert = find<HTMLElement>(view, testId('alert'));
   return alert.hidden === true ? null : alert.textContent;
 }
 
@@ -30,7 +30,7 @@ test('has the form in the light DOM as soon as it connects, where password manag
   history.replaceState(null, '', '/login');
   mount('gz-login');
 
-  expect(document.querySelector('gz-login > form input[type="password"]')).not.toBeNull();
+  expect(document.querySelector(`gz-login > ${testId('form')} ${testId('password')}`)).not.toBeNull();
   await settle();
 });
 

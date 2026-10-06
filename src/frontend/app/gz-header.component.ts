@@ -96,14 +96,14 @@ class GzHeaderComponent extends GzElement {
     const navItems = ROUTES.flatMap((route) => (route.nav ? [route.nav] : []));
     return html`
       <header>
-        <nav class="container">
+        <nav class="container" data-testid="nav">
           <a class="brand" href="/">
             <img src="/icons/icon.svg" alt="" />
             <strong>gainz</strong>
           </a>
-          <ul class="links unstyled">
+          <ul class="links unstyled" data-testid="links">
             ${navItems.map((item) => html`<li><a href="${item.path}" data-path="${item.path}">${item.label}</a></li>`)}
-            <li class="logout"><a href="/login" data-action="logout">Log out</a></li>
+            <li class="logout"><a href="/login" data-action="logout" data-testid="links-logout">Log out</a></li>
           </ul>
           <ot-dropdown class="menu">
             <button type="button" class="ghost icon" popovertarget="nav-menu" aria-label="Menu">
@@ -119,9 +119,9 @@ class GzHeaderComponent extends GzElement {
                 <path d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <menu popover id="nav-menu">
+            <menu popover id="nav-menu" data-testid="menu">
               ${navItems.map((item) => html`<a role="menuitem" href="${item.path}" data-path="${item.path}">${item.label}</a>`)}
-              <a role="menuitem" class="logout" href="/login" data-action="logout">Log out</a>
+              <a role="menuitem" class="logout" href="/login" data-action="logout" data-testid="menu-logout">Log out</a>
             </menu>
           </ot-dropdown>
           <gz-theme-toggle></gz-theme-toggle>

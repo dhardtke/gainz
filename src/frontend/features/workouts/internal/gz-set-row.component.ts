@@ -160,6 +160,7 @@ export class GzSetRowComponent extends GzElement {
         type="button"
         class="${set.done ? '' : 'outline'} toggle"
         data-action="toggle-done"
+        data-testid="toggle-done"
         aria-pressed="${set.done ? 'true' : 'false'}"
         aria-label="${set.done ? 'Mark set as not done' : 'Mark set as done'}"
       >
@@ -176,25 +177,46 @@ export class GzSetRowComponent extends GzElement {
     const disabled = set.done ? 'disabled' : '';
 
     return html`
-      <form class="row-view ${set.done ? 'done' : ''}">
+      <form class="row-view ${set.done ? 'done' : ''}" data-testid="row">
         ${this.#toggleTemplate(set)}
         <span class="index">${this.#index}</span>
         <span class="load">
           <fieldset class="group">
-            <input id="weight" name="weight" type="number" step="any" min="0" value="${set.weight}" aria-label="Weight" required ${disabled} />
+            <input
+              id="weight"
+              name="weight"
+              type="number"
+              step="any"
+              min="0"
+              value="${set.weight}"
+              aria-label="Weight"
+              required
+              data-testid="weight"
+              ${disabled}
+            />
             <label for="weight">${UNIT}</label>
           </fieldset>
           <span aria-hidden="true">×</span>
           <fieldset class="group">
-            <input id="reps" name="reps" type="number" step="1" min="1" value="${set.reps}" aria-label="Reps" required ${disabled} />
+            <input id="reps" name="reps" type="number" step="1" min="1" value="${set.reps}" aria-label="Reps" required data-testid="reps" ${disabled} />
             <label for="reps">reps</label>
           </fieldset>
         </span>
-        <input class="note" name="notes" type="text" maxlength="2000" value="${set.notes ?? ''}" placeholder="Notes" aria-label="Notes" ${disabled} />
+        <input
+          class="note"
+          name="notes"
+          type="text"
+          maxlength="2000"
+          value="${set.notes ?? ''}"
+          placeholder="Notes"
+          aria-label="Notes"
+          data-testid="notes"
+          ${disabled}
+        />
         <div class="actions">
           <span class="volume mono">${formatVolume(set.weight * set.reps)}</span>
-          <button type="button" class="outline" data-action="duplicate" title="Log another set just like this one">+1</button>
-          <button type="button" data-variant="danger" data-action="delete" aria-label="Delete set" ${disabled}>×</button>
+          <button type="button" class="outline" data-action="duplicate" data-testid="duplicate" title="Log another set just like this one">+1</button>
+          <button type="button" data-variant="danger" data-action="delete" data-testid="delete" aria-label="Delete set" ${disabled}>×</button>
         </div>
       </form>
     `;

@@ -1,5 +1,5 @@
 import { beforeAll, expect, test } from 'bun:test';
-import { collect, find, mount, shadow, useDom } from '../../../testing.ts';
+import { collect, find, mount, shadow, testId, useDom } from '../../../testing.ts';
 import { session } from '../exercises.fixtures.ts';
 import type { GzChartComponent } from './gz-chart.component.ts';
 import type { GzProgressChartComponent } from './gz-progress-chart.component.ts';
@@ -25,15 +25,15 @@ function mountChart(metric?: string): GzProgressChartComponent {
 }
 
 function heading(chart: HTMLElement): string | undefined {
-  return chart.shadowRoot?.querySelector('h2')?.textContent;
+  return chart.shadowRoot?.querySelector(testId('heading'))?.textContent;
 }
 
 function button(chart: HTMLElement, metric: string): HTMLButtonElement {
-  return find<HTMLButtonElement>(shadow(chart), `button[data-metric='${metric}']`);
+  return find<HTMLButtonElement>(shadow(chart), testId(`metric-${metric}`));
 }
 
 function plotted(chart: HTMLElement): number[] {
-  const inner = chart.shadowRoot?.querySelector<GzChartComponent>('gz-chart');
+  const inner = chart.shadowRoot?.querySelector<GzChartComponent>(testId('chart'));
   return inner?.series.map((point) => point.value) ?? [];
 }
 
@@ -47,10 +47,10 @@ test('charts the estimated 1RM by default', () => {
 test('switches metric on a click and says so with metric-change', () => {
   const changes = collect('metric-change');
   const chart = mountChart();
-  const hint = chart.shadowRoot?.querySelector('p.text-light')?.textContent;
+  const hint = chart.shadowRoot?.querySelector(testId('hint'))?.textContent;
   button(chart, 'totalVolume').click();
   expect(heading(chart)).toBe('Volume');
-  expect(chart.shadowRoot?.querySelector('p.text-light')?.textContent).not.toBe(hint);
+  expect(chart.shadowRoot?.querySelector(testId('hint'))?.textContent).not.toBe(hint);
   expect(button(chart, 'totalVolume').getAttribute('aria-pressed')).toBe('true');
   expect(button(chart, 'estOneRepMax').getAttribute('aria-pressed')).not.toBe('true');
   expect(changes).toEqual(['totalVolume']);

@@ -93,7 +93,7 @@ export class GzAddSetFormComponent extends GzElement {
       return html`
         <section class="vstack gap-2">
           <h2>Add a set</h2>
-          <p class="empty">No exercises yet. <a href="/exercises">Add the lifts you train</a> to log sets against them.</p>
+          <p class="empty">No exercises yet. <a href="/exercises" data-testid="exercises-link">Add the lifts you train</a> to log sets against them.</p>
         </section>
       `;
     }
@@ -104,11 +104,11 @@ export class GzAddSetFormComponent extends GzElement {
       <section class="vstack gap-2">
         <h2>Add a set</h2>
         <article class="card add-form">
-          <form data-action="add-set">
+          <form data-action="add-set" data-testid="form">
             <div class="fields">
               <div class="field field-exercise">
                 <label for="exerciseId">Exercise</label>
-                <select id="exerciseId" name="exerciseId">
+                <select id="exerciseId" name="exerciseId" data-testid="exercise">
                   ${this.#exercises.map(
                     (exercise) => html` <option value="${exercise.id}" ${exercise.id === selected ? 'selected' : ''}>${exercise.name}</option> `,
                   )}
@@ -116,15 +116,15 @@ export class GzAddSetFormComponent extends GzElement {
               </div>
               <div class="field field-num">
                 <label for="reps">Reps</label>
-                <input id="reps" name="reps" type="number" step="1" min="1" value="${last?.reps ?? ''}" required />
+                <input id="reps" name="reps" type="number" step="1" min="1" value="${last?.reps ?? ''}" required data-testid="reps" />
               </div>
               <div class="field field-num">
                 <label for="weight">Weight (${UNIT})</label>
-                <input id="weight" name="weight" type="number" step="any" min="0" value="${last?.weight ?? ''}" required />
+                <input id="weight" name="weight" type="number" step="any" min="0" value="${last?.weight ?? ''}" required data-testid="weight" />
               </div>
               <div class="field field-notes">
                 <label for="set-notes">Notes</label>
-                <input id="set-notes" name="notes" type="text" maxlength="2000" placeholder="Paused, felt easy" />
+                <input id="set-notes" name="notes" type="text" maxlength="2000" placeholder="Paused, felt easy" data-testid="notes" />
               </div>
               <button type="submit">Log set</button>
             </div>

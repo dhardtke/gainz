@@ -78,6 +78,7 @@ class GzAppComponent extends GzElement {
 
     const view = document.createElement('p');
     view.className = 'empty';
+    view.dataset.testid = 'not-found';
     view.textContent = `Nothing lives at ${path}.`;
     return view;
   }
@@ -147,9 +148,9 @@ class GzAppComponent extends GzElement {
 
   override template(): RawHtml {
     return html`
-      <gz-header></gz-header>
+      <gz-header data-testid="header"></gz-header>
 
-      <main class="container"><slot></slot></main>
+      <main class="container"><slot data-testid="view-slot"></slot></main>
     `;
   }
 }

@@ -209,6 +209,14 @@ export function shadow(host: Element): ShadowRoot {
   return host.shadowRoot;
 }
 
+/**
+ * The selector for the elements a template marks `data-testid="<id>"`. Tests find elements by it
+ * rather than by tag, class or structure, which change with the markup and the styling.
+ */
+export function testId(id: string): string {
+  return `[data-testid='${id}']`;
+}
+
 /** The first element under `root` matching `selector`, failing the test if none does. */
 // Same once-used type parameter as ui/base.ts's $<T>, for the same reason.
 // oxlint-disable-next-line typescript/no-unnecessary-type-parameters

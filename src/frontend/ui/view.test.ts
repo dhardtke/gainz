@@ -1,5 +1,5 @@
 import { beforeAll, expect, test } from 'bun:test';
-import { mount, text, useDom, useToasts } from '../testing.ts';
+import { mount, testId, text, useDom, useToasts } from '../testing.ts';
 import { ApiError } from '../http/errors.ts';
 import type { RawHtml } from './html.ts';
 import type { GzView } from './view.ts';
@@ -25,7 +25,7 @@ beforeAll(async () => {
       }
 
       override readyTemplate(data: string): RawHtml {
-        return html`<p class="data">${data}</p>`;
+        return html`<p data-testid="data">${data}</p>`;
       }
     }
     customElements.define('gz-test-view', GzTestView);
@@ -40,7 +40,7 @@ function mountView(attributes: Record<string, string> = {}): TestView {
 
 test('renders its loading text while loading', () => {
   const view = mountView();
-  expect(text(view, 'p[aria-busy="true"]')).toBe('Loading test…');
+  expect(text(view, testId('loading'))).toBe('Loading test…');
   expect(view.data).toBeUndefined();
 });
 
@@ -48,7 +48,7 @@ test('renders the ready template and exposes the data once loaded', async () => 
   const view = mountView();
   pending.resolve('Bench');
   await view.ready;
-  expect(text(view, '.data')).toBe('Bench');
+  expect(text(view, testId('data'))).toBe('Bench');
   expect(view.data).toBe('Bench');
 });
 
@@ -56,7 +56,7 @@ test('renders the error template and toasts the message when the load fails', as
   const view = mountView();
   pending.reject(new ApiError('Server down', 500, undefined));
   await view.ready;
-  expect(text(view, '.error-text')).toBe('Server down');
+  expect(text(view, testId('error'))).toBe('Server down');
   expect(view.data).toBeUndefined();
   expect(toasts).toEqual(['Server down']);
 });
@@ -65,7 +65,7 @@ test('shows a 404 without toasting it', async () => {
   const view = mountView();
   pending.reject(new ApiError('Workout not found', 404, undefined));
   await view.ready;
-  expect(text(view, '.error-text')).toBe('Workout not found');
+  expect(text(view, testId('error'))).toBe('Workout not found');
   expect(toasts).toEqual([]);
 });
 
@@ -74,8 +74,9 @@ test('offers its back link below an error', async () => {
   view.backLink = { href: '/workouts', label: 'Back to all workouts' };
   pending.reject(new ApiError('Workout not found', 404, undefined));
   await view.ready;
-  expect(text(view, '.error-text')).toBe('Workout not found');
-  expect(text(view, "a[href='/workouts']")).toBe('Back to all workouts');
+  expect(text(view, testId('error'))).toBe('Workout not found');
+  expect(text(view, testId('back-link'))).toBe('Back to all workouts');
+  expect(view.shadowRoot?.querySelector(testId('back-link'))?.getAttribute('href')).toBe('/workouts');
 });
 
 test('settles ready after an error', async () => {
@@ -83,7 +84,7 @@ test('settles ready after an error', async () => {
   pending.reject(new Error('Broke'));
   // Awaiting it is the assertion: a rejection would fail the test.
   await view.ready;
-  expect(text(view, '.error-text')).toBe('Broke');
+  expect(text(view, testId('error'))).toBe('Broke');
 });
 
 test('reload() re-renders with new data', async () => {
@@ -92,10 +93,10 @@ test('reload() re-renders with new data', async () => {
   await view.ready;
   pending = Promise.withResolvers<string>();
   const reloaded = view.reload();
-  expect(text(view, '.data')).toBe('Bench');
+  expect(text(view, testId('data'))).toBe('Bench');
   pending.resolve('Squat');
   await reloaded;
-  expect(text(view, '.data')).toBe('Squat');
+  expect(text(view, testId('data'))).toBe('Squat');
 });
 
 test('numericAttribute() reads a numeric attribute', () => {

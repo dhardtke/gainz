@@ -109,10 +109,10 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
       <div class="vstack">
         <hgroup>
           <h1>Exercises</h1>
-          <p class="text-light">${plural(total, 'exercise')}</p>
+          <p class="text-light" data-testid="subtitle">${plural(total, 'exercise')}</p>
         </hgroup>
 
-        <details class="add" ${total === 0 ? 'open' : ''}>
+        <details class="add" data-testid="add" ${total === 0 ? 'open' : ''}>
           <summary>Add an exercise</summary>
           <form class="new-form" data-action="create">
             <div class="fields">

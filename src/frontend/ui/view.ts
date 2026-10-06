@@ -37,12 +37,12 @@ export abstract class GzView<Data> extends GzElement {
 
   errorTemplate(message: string): RawHtml {
     if (!this.backLink) {
-      return html`<p class="error-text">${message}</p>`;
+      return html`<p class="error-text" data-testid="error">${message}</p>`;
     }
     return html`
       <div class="vstack">
-        <p class="error-text">${message}</p>
-        <p><a href="${this.backLink.href}">${this.backLink.label}</a></p>
+        <p class="error-text" data-testid="error">${message}</p>
+        <p><a href="${this.backLink.href}" data-testid="back-link">${this.backLink.label}</a></p>
       </div>
     `;
   }
@@ -70,7 +70,7 @@ export abstract class GzView<Data> extends GzElement {
 
   override template(): RawHtml {
     if (this.#state.status === 'loading') {
-      return html`<p aria-busy="true">${this.loadingText}</p>`;
+      return html`<p aria-busy="true" data-testid="loading">${this.loadingText}</p>`;
     }
     if (this.#state.status === 'error') {
       return this.errorTemplate(this.#state.message);

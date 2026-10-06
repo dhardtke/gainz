@@ -1,5 +1,5 @@
 import { beforeAll, expect, test } from 'bun:test';
-import { find, mount, settle, shadow, submit, text, type, useDom, useFetch, useToasts } from '../../testing.ts';
+import { find, mount, settle, shadow, submit, testId, text, type, useDom, useFetch, useToasts } from '../../testing.ts';
 import type { ExercisePageDto } from '../../../shared/dto/exercise.ts';
 import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import type { WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
@@ -67,23 +67,23 @@ async function mountView(workout: WorkoutWithExercisesDto = WORKOUT): Promise<HT
 
 /** Where the "Add a set" form renders. */
 function addSetRoot(view: HTMLElement): ShadowRoot {
-  return shadow(find(shadow(view), 'gz-add-set-form'));
+  return shadow(find(shadow(view), testId('add-set-form')));
 }
 
 function addSetForm(view: HTMLElement): HTMLFormElement {
-  return find<HTMLFormElement>(addSetRoot(view), "form[data-action='add-set']");
+  return find<HTMLFormElement>(addSetRoot(view), testId('form'));
 }
 
 function detailsForm(view: HTMLElement): HTMLFormElement {
-  return find<HTMLFormElement>(shadow(view), 'form.details');
+  return find<HTMLFormElement>(shadow(view), testId('details-form'));
 }
 
 function field(form: HTMLFormElement, name: string): HTMLInputElement {
-  return find<HTMLInputElement>(form, `[name='${name}']`);
+  return find<HTMLInputElement>(form, testId(name));
 }
 
 function exerciseSelect(view: HTMLElement): HTMLSelectElement {
-  return find<HTMLSelectElement>(addSetForm(view), 'select');
+  return find<HTMLSelectElement>(addSetForm(view), testId('exercise'));
 }
 
 /** Asked of the input's own root, so it holds wherever the form's shadow root is. */
@@ -94,34 +94,35 @@ function focused(input: HTMLElement): boolean {
 
 test('heads the page with the title and the date', async () => {
   const view = await mountView();
-  expect(shadow(view).querySelector('h1')?.textContent).toBe('Push day');
-  expect(shadow(view).querySelector('hgroup p')?.textContent).toContain(' · ');
+  expect(shadow(view).querySelector(testId('heading'))?.textContent).toBe('Push day');
+  expect(shadow(view).querySelector(testId('subtitle'))?.textContent).toContain(' · ');
 });
 
 test('shows one row per set', async () => {
   const view = await mountView();
-  expect(shadow(view).querySelectorAll('gz-set-row')).toHaveLength(3);
+  expect(shadow(view).querySelectorAll(testId('set-row'))).toHaveLength(3);
 });
 
 test('totals the sets, exercises, reps and volume in one muted line', async () => {
   const view = await mountView();
-  expect(text(view, '.summary .text-light')?.trim()).toStartWith('3 sets · 2 exercises · 15 reps · ');
+  expect(text(view, testId('totals'))?.trim()).toStartWith('3 sets · 2 exercises · 15 reps · ');
 });
 
 /** The session's progress badges, after its totals. */
 function progress(view: HTMLElement): (string | null)[] {
-  return Array.from(shadow(view).querySelectorAll('.summary .badge')).map((badge) => badge.textContent);
+  return Array.from(find(shadow(view), testId('summary')).querySelectorAll(testId('progress'))).map((badge) => badge.textContent);
 }
 
 test('counts the sets done so far', async () => {
   const view = await mountView(withSets((item, index) => ({ ...item, done: index === 0 })));
   expect(progress(view)).toEqual(['1/3 done']);
-  expect(shadow(view).querySelector(".summary .badge[data-variant='success']")).toBeNull();
+  expect(find<HTMLElement>(find(shadow(view), testId('summary')), testId('progress')).dataset.variant).toBeUndefined();
 });
 
 test('shows a done workout as done', async () => {
   const view = await mountView({ ...withSets((item) => ({ ...item, done: true })), done: true });
-  expect(text(view, ".summary .badge[data-variant='success']")).toBe('✓ Done');
+  const badge = find<HTMLElement>(find(shadow(view), testId('summary')), testId('progress'));
+  expect([badge.textContent, badge.dataset.variant]).toEqual(['✓ Done', 'success']);
   expect(progress(view)).not.toContain('3/3 done');
 });
 
@@ -166,7 +167,7 @@ function commit(input: HTMLInputElement, value: string): void {
 }
 
 function detailsSection(view: HTMLElement): HTMLDetailsElement {
-  return find<HTMLDetailsElement>(shadow(view), 'details.details-section');
+  return find<HTMLDetailsElement>(shadow(view), testId('details-section'));
 }
 
 test('collapses "Details & notes", with "Delete workout" inside, below the add-set form', async () => {
@@ -174,10 +175,10 @@ test('collapses "Details & notes", with "Delete workout" inside, below the add-s
   const section = detailsSection(view);
   expect(section.open).toBe(false);
   expect(section.hasAttribute('name')).toBe(false);
-  expect(find(section, 'summary').textContent).toBe('Details & notes');
-  expect(find(section, "[data-action='delete-workout']").textContent).toBe('Delete workout');
+  expect(find(section, testId('details-summary')).textContent).toBe('Details & notes');
+  expect(find(section, testId('delete-workout')).textContent).toBe('Delete workout');
   expect(section.contains(detailsForm(view))).toBe(true);
-  expect(find(shadow(view), 'gz-add-set-form').compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(find(shadow(view), testId('add-set-form')).compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
 
 test('keeps "Details & notes" open across a reload once opened', async () => {
@@ -246,17 +247,30 @@ test('shows a missing workout with a way back, without a toast', async () => {
   fake.respondTo('GET /api/exercises', 200, JSON.stringify(EXERCISES));
   const view = mount('gz-workout-detail', { 'workout-id': '3' });
   await settle();
-  expect(shadow(view).querySelector('.error-text')?.textContent).toBe('Workout not found');
-  expect(shadow(view).querySelector("a[href='/workouts']")?.textContent).toBe('Back to all workouts');
+  expect(shadow(view).querySelector(testId('error'))?.textContent).toBe('Workout not found');
+  const back = find(shadow(view), testId('back-link'));
+  expect([back.textContent, back.getAttribute('href')]).toEqual(['Back to all workouts', '/workouts']);
   expect(toasts).toEqual([]);
 });
 
 function groups(view: HTMLElement): HTMLDetailsElement[] {
-  return Array.from(shadow(view).querySelectorAll<HTMLDetailsElement>("details[name='exercises']"));
+  return Array.from(shadow(view).querySelectorAll<HTMLDetailsElement>(testId('exercise-group')));
 }
 
 function groupOf(view: HTMLElement, exerciseId: number): HTMLDetailsElement {
-  return find<HTMLDetailsElement>(shadow(view), `details[data-exercise-id='${exerciseId}']`);
+  const found = groups(view).find((item) => item.dataset.exerciseId === String(exerciseId));
+  if (!found) {
+    throw new Error(`no group for exercise ${exerciseId}`);
+  }
+  return found;
+}
+
+function setRow(view: HTMLElement, setId: number): HTMLElement {
+  const found = Array.from(shadow(view).querySelectorAll<HTMLElement>(testId('set-row'))).find((row) => row.dataset.id === String(setId));
+  if (!found) {
+    throw new Error(`no row for set ${setId}`);
+  }
+  return found;
 }
 
 /** The exercise ids of the open groups. */
@@ -274,16 +288,16 @@ function setOpen(item: HTMLDetailsElement, open: boolean): void {
 
 async function changeSets(view: HTMLElement, workout: WorkoutWithExercisesDto = WORKOUT): Promise<void> {
   fake.respondTo('GET /api/workouts/3', 200, JSON.stringify(workout));
-  find(shadow(view), 'gz-set-row').dispatchEvent(new CustomEvent('sets-changed', { bubbles: true, composed: true }));
+  find(shadow(view), testId('set-row')).dispatchEvent(new CustomEvent('sets-changed', { bubbles: true, composed: true }));
   await settle();
 }
 
 test('groups the sets by exercise, in order, numbering the rows within each', async () => {
   const view = await mountView();
   expect(groups(view).map((item) => item.dataset.exerciseId)).toEqual(['1', '2']);
-  expect(groups(view).map((item) => find(item, '.exercise-name').textContent)).toEqual(['Bench Press', 'Back Squat']);
+  expect(groups(view).map((item) => find(item, testId('exercise-name')).textContent)).toEqual(['Bench Press', 'Back Squat']);
   const rowsOf = (item: HTMLElement): (string | undefined)[][] =>
-    Array.from(item.querySelectorAll<HTMLElement>('gz-set-row')).map((row) => [row.dataset.id, row.dataset.index]);
+    Array.from(item.querySelectorAll<HTMLElement>(testId('set-row'))).map((row) => [row.dataset.id, row.dataset.index]);
   expect(groups(view).map(rowsOf)).toEqual([
     [
       ['11', '1'],
@@ -294,19 +308,19 @@ test('groups the sets by exercise, in order, numbering the rows within each', as
 });
 
 function headerBadges(view: HTMLElement, exerciseId: number): (string | null)[] {
-  return Array.from(groupOf(view, exerciseId).querySelectorAll('summary .badge')).map((badge) => badge.textContent);
+  return Array.from(groupOf(view, exerciseId).querySelectorAll(testId('progress'))).map((badge) => badge.textContent);
 }
 
 test("sums up each group in its header's muted stats and its progress in a badge", async () => {
   const view = await mountView(withSets((item) => ({ ...item, done: item.exerciseId === 2 })));
-  const benchStats = find(groupOf(view, 1), 'summary .group-stats').textContent;
+  const benchStats = find(groupOf(view, 1), testId('group-stats')).textContent;
   expect(benchStats).toStartWith('2 sets · ');
   expect(benchStats).not.toContain('done');
   expect(headerBadges(view, 1)).toEqual(['0/2 done']);
-  expect(groupOf(view, 1).querySelector("summary .badge[data-variant='success']")).toBeNull();
-  expect(find(groupOf(view, 2), 'summary .group-stats').textContent).toStartWith('1 set · ');
+  expect(find<HTMLElement>(groupOf(view, 1), testId('progress')).dataset.variant).toBeUndefined();
+  expect(find(groupOf(view, 2), testId('group-stats')).textContent).toStartWith('1 set · ');
   expect(headerBadges(view, 2)).toEqual(['✓ Done']);
-  expect(find(groupOf(view, 2), "summary .badge[data-variant='success']").textContent).toBe('✓ Done');
+  expect(find<HTMLElement>(groupOf(view, 2), testId('progress')).dataset.variant).toBe('success');
 });
 
 test('keeps buttons and links out of the group headers', async () => {
@@ -316,7 +330,7 @@ test('keeps buttons and links out of the group headers', async () => {
 
 test("links each group's footer to the exercise's history", async () => {
   const view = await mountView();
-  const link = find<HTMLAnchorElement>(groupOf(view, 1), '.group-actions a.button');
+  const link = find<HTMLAnchorElement>(groupOf(view, 1), testId('history-link'));
   expect(link.getAttribute('href')).toBe('/exercises/1');
   expect(link.textContent).toBe('Exercise history →');
 });
@@ -334,7 +348,7 @@ test('first opens the last exercise once every set is done', async () => {
 test('shows no groups for a workout without sets', async () => {
   const view = await mountView({ ...WORKOUT, exercises: [] });
   expect(groups(view)).toEqual([]);
-  expect(text(view, '.empty')).toBe('No sets logged for this session yet.');
+  expect(text(view, testId('empty'))).toBe('No sets logged for this session yet.');
 });
 
 test('keeps the group the user opened open across a change to a set', async () => {
@@ -370,7 +384,7 @@ test('collapses every group once the open one has lost its last set', async () =
 });
 
 function arrow(view: HTMLElement, exerciseId: number, direction: 'up' | 'down'): HTMLButtonElement {
-  return find<HTMLButtonElement>(groupOf(view, exerciseId), `[data-action='move-exercise-${direction}']`);
+  return find<HTMLButtonElement>(groupOf(view, exerciseId), testId(`move-${direction}`));
 }
 
 function workoutLoads(): number {
@@ -426,10 +440,10 @@ test('toasts a failed move and does not reload', async () => {
 
 test("hands focus, and what was typed, back to a set's field after a reload", async () => {
   const view = await mountView();
-  const weight = (): HTMLInputElement => find<HTMLInputElement>(shadow(find(shadow(view), "gz-set-row[data-id='12']")), "[name='weight']");
+  const weight = (): HTMLInputElement => find<HTMLInputElement>(shadow(setRow(view, 12)), testId('weight'));
   weight().focus();
   weight().value = '85';
   await changeSets(view);
-  expect(shadow(find(shadow(view), "gz-set-row[data-id='12']")).activeElement).toBe(weight());
+  expect(shadow(setRow(view, 12)).activeElement).toBe(weight());
   expect(weight().value).toBe('85');
 });

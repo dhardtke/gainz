@@ -18,14 +18,14 @@ export class GzSessionTableComponent extends GzElement {
 
   override template(): RawHtml {
     if (this.#sessions.length === 0) {
-      return html`<p class="empty">No sets logged for this exercise yet.</p>`;
+      return html`<p class="empty" data-testid="empty">No sets logged for this exercise yet.</p>`;
     }
 
     return html`
       <article class="card vstack gap-2">
         <h2>Session history</h2>
         <div class="table">
-          <table>
+          <table data-testid="table">
             <thead>
               <tr>
                 <th scope="col">Date</th>
@@ -42,14 +42,16 @@ export class GzSessionTableComponent extends GzElement {
                 const change = earlier ? formatDelta(session.estOneRepMax, earlier.estOneRepMax) : '';
                 const direction = change.startsWith('+') ? 'up' : change.startsWith('−') ? 'down' : '';
                 return html`
-                  <tr>
+                  <tr data-testid="session">
                     <td class="name nowrap">
-                      <a href="/workouts/${session.workoutId}">${formatDate(session.performedOn)}</a>
+                      <a href="/workouts/${session.workoutId}" data-testid="workout-link">${formatDate(session.performedOn)}</a>
                     </td>
                     <td class="num">${session.setCount}</td>
                     <td class="num">${session.totalReps}</td>
                     <td class="num">${formatNumber(session.topWeight)} ${UNIT}</td>
-                    <td class="num">${formatNumber(session.estOneRepMax, 1)} ${change ? html`<span class="${direction}"> ${change}</span>` : ''}</td>
+                    <td class="num">
+                      ${formatNumber(session.estOneRepMax, 1)} ${change ? html`<span class="${direction}" data-testid="change"> ${change}</span>` : ''}
+                    </td>
                     <td class="num">${formatVolume(session.totalVolume)}</td>
                   </tr>
                 `;

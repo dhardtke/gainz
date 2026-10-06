@@ -1,5 +1,5 @@
 import { beforeAll, expect, test } from 'bun:test';
-import { find, mount, settle, shadow, text, useDom, useFetch } from '../../testing.ts';
+import { find, mount, settle, shadow, testId, text, useDom, useFetch } from '../../testing.ts';
 import type { ExercisePageDto, ExerciseWithStatsDto } from '../../../shared/dto/exercise.ts';
 import { exercise } from './exercises.fixtures.ts';
 
@@ -28,13 +28,13 @@ test('opens "Add an exercise" while there are no exercises', async () => {
   fake.respondTo('GET /api/exercises?limit=10&offset=0', 200, page([]));
   const view = mount('gz-exercise-list');
   await settle();
-  expect(find<HTMLDetailsElement>(shadow(view), 'details.add').open).toBe(true);
+  expect(find<HTMLDetailsElement>(shadow(view), testId('add')).open).toBe(true);
 });
 
 test('collapses "Add an exercise" once there are some, and counts them', async () => {
   fake.respondTo('GET /api/exercises?limit=10&offset=0', 200, page([listed({ id: 1, name: 'Bench Press' }), listed({ id: 2, name: 'Back Squat' })]));
   const view = mount('gz-exercise-list');
   await settle();
-  expect(find<HTMLDetailsElement>(shadow(view), 'details.add').open).toBe(false);
-  expect(text(view, 'hgroup p.text-light')).toBe('2 exercises');
+  expect(find<HTMLDetailsElement>(shadow(view), testId('add')).open).toBe(false);
+  expect(text(view, testId('subtitle'))).toBe('2 exercises');
 });

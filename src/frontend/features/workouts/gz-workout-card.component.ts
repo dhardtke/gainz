@@ -41,18 +41,18 @@ export class GzWorkoutCardComponent extends GzElement {
       return raw('');
     }
     return html`
-      <article class="card open-card${workout.done ? ' done' : ''}">
+      <article class="card open-card${workout.done ? ' done' : ''}" data-testid="card">
         <div class="head">
-          <a class="open" href="/workouts/${workout.id}">${workout.title ?? formatDate(workout.performedOn)}</a>
-          ${workout.done ? html`<span class="badge" data-variant="success">✓ Done</span>` : ''}
+          <a class="open" href="/workouts/${workout.id}" data-testid="open">${workout.title ?? formatDate(workout.performedOn)}</a>
+          ${workout.done ? html`<span class="badge" data-variant="success" data-testid="done-badge">✓ Done</span>` : ''}
         </div>
         <div class="text-light">${formatDate(workout.performedOn)} · ${relativeDay(workout.performedOn)}</div>
         <div class="foot">
-          <span class="text-light">
+          <span class="text-light" data-testid="totals">
             ${plural(workout.setCount, 'set')} · ${plural(workout.exerciseCount, 'exercise')} · ${formatVolume(workout.totalVolume)}
           </span>
           <div class="actions">
-            <button class="outline" data-action="repeat" title="Copy these sets into a new session dated today">Repeat</button>
+            <button class="outline" data-action="repeat" data-testid="repeat" title="Copy these sets into a new session dated today">Repeat</button>
           </div>
         </div>
       </article>

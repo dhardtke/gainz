@@ -239,8 +239,8 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
   #headerTemplate(workout: WorkoutWithExercisesDto): RawHtml {
     return html`
       <hgroup>
-        <h1>${workout.title ?? formatDate(workout.performedOn)}</h1>
-        <p class="text-light">${formatDate(workout.performedOn)} · ${relativeDay(workout.performedOn)}</p>
+        <h1 data-testid="heading">${workout.title ?? formatDate(workout.performedOn)}</h1>
+        <p class="text-light" data-testid="subtitle">${formatDate(workout.performedOn)} · ${relativeDay(workout.performedOn)}</p>
       </hgroup>
     `;
   }
@@ -257,26 +257,26 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     };
 
     return html`
-      <details class="details-section" ${this.#detailsOpen ? 'open' : ''}>
-        <summary>Details & notes</summary>
+      <details class="details-section" data-testid="details-section" ${this.#detailsOpen ? 'open' : ''}>
+        <summary data-testid="details-summary">Details & notes</summary>
         <div class="vstack gap-2">
-          <form class="details vstack gap-2">
+          <form class="details vstack gap-2" data-testid="details-form">
             <div class="fields">
               <div class="field">
                 <label for="performedOn">Date</label>
-                <input id="performedOn" name="performedOn" type="date" value="${edits.performedOn}" required />
+                <input id="performedOn" name="performedOn" type="date" value="${edits.performedOn}" required data-testid="performedOn" />
               </div>
               <div class="field grow">
                 <label for="title">Title</label>
-                <input id="title" name="title" type="text" maxlength="120" value="${edits.title}" />
+                <input id="title" name="title" type="text" maxlength="120" value="${edits.title}" data-testid="title" />
               </div>
             </div>
             <div class="field">
               <label for="notes">Session notes</label>
-              <textarea id="notes" name="notes" maxlength="2000" placeholder="How did it feel?">${edits.notes}</textarea>
+              <textarea id="notes" name="notes" maxlength="2000" placeholder="How did it feel?" data-testid="notes">${edits.notes}</textarea>
             </div>
           </form>
-          <div><button data-variant="danger" data-action="delete-workout">Delete workout</button></div>
+          <div><button data-variant="danger" data-action="delete-workout" data-testid="delete-workout">Delete workout</button></div>
         </div>
       </details>
     `;
@@ -288,9 +288,9 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
       return html``;
     }
     if (doneCount === setCount) {
-      return html`<span class="badge" data-variant="success">✓ Done</span>`;
+      return html`<span class="badge" data-variant="success" data-testid="progress">✓ Done</span>`;
     }
-    return html`<span class="badge outline">${doneCount}/${setCount} done</span>`;
+    return html`<span class="badge outline" data-testid="progress">${doneCount}/${setCount} done</span>`;
   }
 
   /** "3 sets · 1,200 kg". */
@@ -304,21 +304,39 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     const { exerciseId: id, exerciseName: name } = group;
     const doneCount = group.sets.filter((set) => set.done).length;
     return html`
-      <details name="exercises" data-exercise-id="${id}" ${id === open ? 'open' : ''}>
+      <details name="exercises" data-exercise-id="${id}" data-testid="exercise-group" ${id === open ? 'open' : ''}>
         <summary>
-          <span class="exercise-name">${name}</span>
-          <span class="group-stats text-light">${this.#groupSummary(group)}</span>
+          <span class="exercise-name" data-testid="exercise-name">${name}</span>
+          <span class="group-stats text-light" data-testid="group-stats">${this.#groupSummary(group)}</span>
           ${this.#progressBadge(doneCount, group.sets.length)}
         </summary>
-        <div class="sets">${group.sets.map((set, index) => html`<gz-set-row data-id="${set.id}" data-index="${index + 1}"></gz-set-row>`)}</div>
+        <div class="sets">
+          ${group.sets.map((set, index) => html`<gz-set-row data-id="${set.id}" data-index="${index + 1}" data-testid="set-row"></gz-set-row>`)}
+        </div>
         <div class="group-actions">
           <fieldset class="group move">
-            <button class="outline" data-action="move-exercise-up" data-exercise-id="${id}" aria-label="Move ${name} up" ${first ? 'disabled' : ''}>▲</button>
-            <button class="outline" data-action="move-exercise-down" data-exercise-id="${id}" aria-label="Move ${name} down" ${last ? 'disabled' : ''}>
+            <button
+              class="outline"
+              data-action="move-exercise-up"
+              data-exercise-id="${id}"
+              data-testid="move-up"
+              aria-label="Move ${name} up"
+              ${first ? 'disabled' : ''}
+            >
+              ▲
+            </button>
+            <button
+              class="outline"
+              data-action="move-exercise-down"
+              data-exercise-id="${id}"
+              data-testid="move-down"
+              aria-label="Move ${name} down"
+              ${last ? 'disabled' : ''}
+            >
               ▼
             </button>
           </fieldset>
-          <a class="button outline" href="/exercises/${id}">Exercise history →</a>
+          <a class="button outline" href="/exercises/${id}" data-testid="history-link">Exercise history →</a>
         </div>
       </details>
     `;
@@ -336,8 +354,10 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
       <div class="vstack">
         ${this.#headerTemplate(workout)}
 
-        <div class="summary hstack gap-2">
-          <span class="text-light"> ${plural(sets.length, 'set')} · ${plural(exercises, 'exercise')} · ${plural(reps, 'rep')} · ${formatVolume(volume)} </span>
+        <div class="summary hstack gap-2" data-testid="summary">
+          <span class="text-light" data-testid="totals">
+            ${plural(sets.length, 'set')} · ${plural(exercises, 'exercise')} · ${plural(reps, 'rep')} · ${formatVolume(volume)}
+          </span>
           ${this.#progressBadge(doneCount, sets.length)}
         </div>
 
@@ -345,14 +365,14 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
           <h2>Sets</h2>
           ${
             sets.length === 0
-              ? html`<p class="empty">No sets logged for this session yet.</p>`
+              ? html`<p class="empty" data-testid="empty">No sets logged for this session yet.</p>`
               : html`<div class="exercises">
                   ${workout.exercises.map((group, index, all) => this.#groupTemplate(group, open, index === 0, index === all.length - 1))}
                 </div>`
           }
         </section>
 
-        <gz-add-set-form></gz-add-set-form>
+        <gz-add-set-form data-testid="add-set-form"></gz-add-set-form>
 
         ${this.#detailsTemplate(workout)}
       </div>

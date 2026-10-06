@@ -60,7 +60,7 @@ export class GzWorkoutListComponent extends GzView<WorkoutListData> {
     }
     return html`
       <div class="vstack gap-2">
-        ${items.length === 0 ? html`<p class="empty">No sessions logged yet. Start one with Start session.</p>` : items.map((workout) => html`<gz-workout-card data-id="${workout.id}"></gz-workout-card>`)}
+        ${items.length === 0 ? html`<p class="empty">No sessions logged yet. Start one with Start session.</p>` : items.map((workout) => html`<gz-workout-card data-id="${workout.id}" data-testid="workout-card"></gz-workout-card>`)}
       </div>
       ${pager}
     `;
@@ -78,9 +78,9 @@ export class GzWorkoutListComponent extends GzView<WorkoutListData> {
         <div class="hstack justify-between gap-2">
           <hgroup>
             <h1>Workouts</h1>
-            <p class="text-light">${plural(total, 'session')}</p>
+            <p class="text-light" data-testid="subtitle">${plural(total, 'session')}</p>
           </hgroup>
-          <button data-action="start-session">Start session</button>
+          <button data-action="start-session" data-testid="start-session">Start session</button>
         </div>
 
         ${this.#page(items, total, page)}

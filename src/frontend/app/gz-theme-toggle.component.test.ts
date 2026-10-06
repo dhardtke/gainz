@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, expect, test } from 'bun:test';
-import { find, mount, shadow, useDom } from '../testing.ts';
+import { find, mount, shadow, testId, useDom } from '../testing.ts';
 // Type-only, so erased: the module itself is imported once the DOM is in place.
 import type * as ThemeModule from '../ui/theme.ts';
 
@@ -19,13 +19,13 @@ beforeEach(() => {
 });
 
 function mountToggle(): HTMLButtonElement {
-  return find<HTMLButtonElement>(shadow(mount('gz-theme-toggle')), 'button');
+  return find<HTMLButtonElement>(shadow(mount('gz-theme-toggle')), testId('toggle'));
 }
 
 function icons(button: HTMLButtonElement): { sun: boolean; moon: boolean } {
   return {
-    sun: button.querySelector('svg.sun')?.hasAttribute('hidden') === false,
-    moon: button.querySelector('svg.moon')?.hasAttribute('hidden') === false,
+    sun: button.querySelector(testId('sun'))?.hasAttribute('hidden') === false,
+    moon: button.querySelector(testId('moon'))?.hasAttribute('hidden') === false,
   };
 }
 
@@ -49,7 +49,7 @@ test('keeps its button, and the focus on it, across a click', () => {
   button.focus();
   button.click();
   const root = button.getRootNode();
-  expect(root instanceof ShadowRoot && root.querySelector('button')).toBe(button);
+  expect(root instanceof ShadowRoot && root.querySelector(testId('toggle'))).toBe(button);
   expect(root instanceof ShadowRoot && root.activeElement).toBe(button);
 });
 

@@ -73,13 +73,13 @@ export class GzLoginComponent extends GzElement {
    */
   override afterRender(): void {
     this.innerHTML = String(html`
-      <form class="vstack gap-2">
+      <form class="vstack gap-2" data-testid="form">
         <input type="text" name="username" autocomplete="username" value="gainz" hidden />
         <label>
           Password
-          <input type="password" name="password" placeholder="Your password" autocomplete="current-password" required autofocus />
+          <input type="password" name="password" placeholder="Your password" autocomplete="current-password" required autofocus data-testid="password" />
         </label>
-        <div role="alert" data-variant="error" hidden></div>
+        <div role="alert" data-variant="error" data-testid="alert" hidden></div>
         <button type="submit">Log in</button>
       </form>
     `);

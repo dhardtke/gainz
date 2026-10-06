@@ -494,7 +494,14 @@ so it resets the theme before each test.
 Beside the stubs, `testing.ts` holds the DOM helpers every component test shares. `mount(tag,
 attributes)` creates an element and sets its attributes before appending it to the body, for the
 happy-dom reason above. `shadow()` and `find()` fail the test with a message naming the host or the
-selector instead of returning null, so a test reads `find(shadow(view), 'h1')` without a guard.
+selector instead of returning null, so a test reads `find(shadow(view), testId('heading'))` without a
+guard. A test finds an element by the `data-testid` its template gives it, through `testId('heading')`,
+which builds the selector, never by tag, class or structure, which change with the markup and the
+styling. A test id only has to be unique within its shadow root, so `heading` or `empty` recurs from
+view to view. A test asserts a class or attribute on an element found that way: a done card is
+`find(card, testId('card'))` with the class `done`, not a match for `article.done`. Plain selectors
+remain only for assertions about every element of a kind, such as no `button` in the details form or
+no `select` in a set row, and for the `gz-login` element `gz-app` creates.
 `type()`, `choose()` and `submit()` dispatch the bubbling `input`, `change` and cancelable `submit`
 events a user's input would. `settle()` waits long enough for a view's faked requests, all answered
 at once, to land and render. `collect('page-change')` returns the details of each composed custom

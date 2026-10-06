@@ -93,7 +93,7 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
       <div>
         <p><a href="/exercises">← Exercises</a></p>
         <hgroup>
-          <h1>${exercise.name}</h1>
+          <h1 data-testid="heading">${exercise.name}</h1>
           <p class="text-light">${exercise.muscleGroup ?? 'No muscle group set'}</p>
         </hgroup>
       </div>
@@ -107,29 +107,29 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
    */
   #editTemplate(exercise: ExerciseDto): RawHtml {
     return html`
-      <details class="edit">
-        <summary>Edit exercise</summary>
+      <details class="edit" data-testid="edit">
+        <summary data-testid="edit-summary">Edit exercise</summary>
         <div class="vstack gap-2">
-          <form class="vstack gap-2" data-action="save-exercise">
+          <form class="vstack gap-2" data-action="save-exercise" data-testid="edit-form">
             <div class="fields">
               <div class="field grow">
                 <label for="name">Name</label>
-                <input id="name" name="name" type="text" maxlength="120" value="${exercise.name}" required />
+                <input id="name" name="name" type="text" maxlength="120" value="${exercise.name}" required data-testid="name" />
               </div>
               <div class="field">
                 <label for="muscleGroup">Muscle group</label>
-                <input id="muscleGroup" name="muscleGroup" type="text" maxlength="60" value="${exercise.muscleGroup ?? ''}" />
+                <input id="muscleGroup" name="muscleGroup" type="text" maxlength="60" value="${exercise.muscleGroup ?? ''}" data-testid="muscleGroup" />
               </div>
             </div>
             <div class="field">
               <label for="notes">Notes</label>
-              <textarea id="notes" name="notes" maxlength="2000" placeholder="Low bar, belt over 100 kg">${exercise.notes ?? ''}</textarea>
+              <textarea id="notes" name="notes" maxlength="2000" placeholder="Low bar, belt over 100 kg" data-testid="notes">${exercise.notes ?? ''}</textarea>
             </div>
             <div class="hstack gap-2">
               <button type="submit">Save</button>
             </div>
           </form>
-          <div><button data-variant="danger" data-action="delete-exercise">Delete exercise</button></div>
+          <div><button data-variant="danger" data-action="delete-exercise" data-testid="delete-exercise">Delete exercise</button></div>
         </div>
       </details>
     `;
@@ -143,19 +143,26 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
     const delta = latest && previous ? formatDelta(latest.estOneRepMax, previous.estOneRepMax) : '';
 
     return html`
-      <div class="tiles">
-        <gz-tile label="Sessions" value="${sessions.length}" hint="${latest ? `last ${relativeDay(latest.performedOn)}` : 'not trained yet'}"></gz-tile>
+      <div class="tiles" data-testid="tiles">
         <gz-tile
+          data-testid="tile"
+          label="Sessions"
+          value="${sessions.length}"
+          hint="${latest ? `last ${relativeDay(latest.performedOn)}` : 'not trained yet'}"
+        ></gz-tile>
+        <gz-tile
+          data-testid="tile"
           label="Best set"
           value="${bestSet ? `${formatNumber(bestSet.weight)} ${UNIT} × ${bestSet.reps}` : '–'}"
           hint="${bestSet ? formatDate(bestSet.performedOn) : 'no sets logged'}"
         ></gz-tile>
         <gz-tile
+          data-testid="tile"
           label="Estimated 1RM"
           value="${latest ? `${formatNumber(latest.estOneRepMax, 1)} ${UNIT}` : '–'}"
           hint="${delta ? `${delta} ${UNIT} vs. previous session` : 'needs two sessions'}"
         ></gz-tile>
-        <gz-tile label="Total volume" value="${formatVolume(totalVolume)}" hint="across all sessions"></gz-tile>
+        <gz-tile data-testid="tile" label="Total volume" value="${formatVolume(totalVolume)}" hint="across all sessions"></gz-tile>
       </div>
     `;
   }
@@ -165,9 +172,9 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
       <div class="vstack">
         ${this.#headerTemplate(progress.exercise)} ${this.#summaryTiles(progress)}
 
-        <gz-progress-chart></gz-progress-chart>
+        <gz-progress-chart data-testid="progress-chart"></gz-progress-chart>
 
-        <gz-session-table></gz-session-table>
+        <gz-session-table data-testid="session-table"></gz-session-table>
 
         ${this.#editTemplate(progress.exercise)}
       </div>

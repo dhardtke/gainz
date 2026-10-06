@@ -83,7 +83,7 @@ export class GzProgressChartComponent extends GzElement {
     return html`
       <article class="card vstack gap-2">
         <div class="hstack justify-between gap-2">
-          <h2>${current.label}</h2>
+          <h2 data-testid="heading">${current.label}</h2>
           <div class="metric-switch">
             ${METRICS.map(
               (candidate) => html`
@@ -91,6 +91,7 @@ export class GzProgressChartComponent extends GzElement {
                   class="${candidate === current ? '' : 'outline'}"
                   data-action="metric"
                   data-metric="${candidate.key}"
+                  data-testid="metric-${candidate.key}"
                   aria-pressed="${candidate === current}"
                 >
                   ${candidate.label}
@@ -99,8 +100,8 @@ export class GzProgressChartComponent extends GzElement {
             )}
           </div>
         </div>
-        <gz-chart></gz-chart>
-        <p class="text-light">${current.hint}</p>
+        <gz-chart data-testid="chart"></gz-chart>
+        <p class="text-light" data-testid="hint">${current.hint}</p>
       </article>
     `;
   }

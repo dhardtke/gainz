@@ -1,5 +1,5 @@
 import { beforeAll, expect, test } from 'bun:test';
-import { choose, collect, find, mount, settle, shadow, submit, useDom, useFetch, useToasts } from '../../../testing.ts';
+import { choose, collect, find, mount, settle, shadow, submit, testId, useDom, useFetch, useToasts } from '../../../testing.ts';
 import type { ExerciseDto } from '../../../../shared/dto/exercise.ts';
 import type { LiftSetDto } from '../../../../shared/dto/set.ts';
 import { exercise } from '../../exercises/exercises.fixtures.ts';
@@ -32,16 +32,16 @@ function mountForm(exercises: ExerciseDto[], sets: LiftSetDto[]): GzAddSetFormCo
 }
 
 function field(form: HTMLElement, name: string): HTMLInputElement {
-  return find<HTMLInputElement>(shadow(form), `input[name='${name}']`);
+  return find<HTMLInputElement>(shadow(form), testId(name));
 }
 
 function exerciseSelect(form: HTMLElement): HTMLSelectElement {
-  return find<HTMLSelectElement>(shadow(form), 'select');
+  return find<HTMLSelectElement>(shadow(form), testId('exercise'));
 }
 
 test('renders nothing until it has the sets', () => {
   const form = mount('gz-add-set-form');
-  expect(form.shadowRoot?.querySelector('form')).toBeNull();
+  expect(form.shadowRoot?.querySelector(testId('form'))).toBeNull();
 });
 
 test('starts from the last set: its exercise, weight and reps', () => {
@@ -66,8 +66,8 @@ test('without sets, preselects the first exercise with empty numbers', () => {
 
 test('without exercises, links to the exercises page instead of a form', () => {
   const form = mountForm([], []);
-  expect(form.shadowRoot?.querySelector('form')).toBeNull();
-  expect(form.shadowRoot?.querySelector("a[href='/exercises']")).not.toBeNull();
+  expect(form.shadowRoot?.querySelector(testId('form'))).toBeNull();
+  expect(form.shadowRoot?.querySelector(testId('exercises-link'))?.getAttribute('href')).toBe('/exercises');
 });
 
 test('prefills from the last set of the exercise chosen', () => {
@@ -81,7 +81,7 @@ test('logs the set and emits set-logged', async () => {
   const logged = collect('set-logged');
   const form = mountForm(EXERCISES, SETS);
   field(form, 'notes').value = ' Paused ';
-  submit(find(shadow(form), 'form'));
+  submit(find(shadow(form), testId('form')));
   await settle();
   const posted = fake.requests.filter((request) => request.method === 'POST');
   expect(posted.map((request) => request.url)).toEqual(['/api/workouts/3/sets']);
@@ -93,7 +93,7 @@ test('toasts a failed post and emits nothing', async () => {
   const logged = collect('set-logged');
   fake.respondTo('POST /api/workouts/3/sets', 400, JSON.stringify({ error: 'Reps must be positive' }));
   const form = mountForm(EXERCISES, SETS);
-  submit(find(shadow(form), 'form'));
+  submit(find(shadow(form), testId('form')));
   await settle();
   expect(toasts).toEqual(['Reps must be positive']);
   expect(logged).toHaveLength(0);
