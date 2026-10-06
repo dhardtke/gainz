@@ -20,13 +20,7 @@ function main(): void {
 
     const server = startServer(db, port, { passwordHash: passwordHash === '' ? null : passwordHash });
 
-    log.info('server', `gainz is running on ${server.url}`);
-    log.info('server', `database: ${DEFAULT_DB_PATH}`);
-    log.info('server', passwordHash === '' ? 'auth: off (GAINZ_PASSWORD_HASH is not set)' : 'auth: on');
-    if (DevFacade.enabled()) {
-      log.info('server', 'hot reload: on');
-    }
-
+    // Installed before the banner: whoever waits for it may send a signal the moment it appears.
     const shutdown = async (signal: NodeJS.Signals): Promise<void> => {
       log.info('server', `stopping (${signal})`);
       await server.stop();
@@ -39,6 +33,13 @@ function main(): void {
     process.on('SIGTERM', () => {
       void shutdown('SIGTERM');
     });
+
+    log.info('server', `gainz is running on ${server.url}`);
+    log.info('server', `database: ${DEFAULT_DB_PATH}`);
+    log.info('server', passwordHash === '' ? 'auth: off (GAINZ_PASSWORD_HASH is not set)' : 'auth: on');
+    if (DevFacade.enabled()) {
+      log.info('server', 'hot reload: on');
+    }
   } catch (err) {
     log.error('server', 'failed to start', err);
     process.exit(1);
