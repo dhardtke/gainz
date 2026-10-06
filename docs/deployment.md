@@ -37,7 +37,8 @@ database in its `data/gainz.sqlite`, Bun in `/home/gainz/.bun/bin/bun`, and port
 unit sets no `PORT`. A change to any of them on the server is a change to the script.
 
 The actions in the workflow are pinned to commit SHAs, matching the exact pinning of
-dependencies in `docs/coding-guidelines.md`; a tag can be moved, a SHA cannot.
+dependencies in `docs/coding-guidelines.md`; a tag can be moved, a SHA cannot. The Bun that CI
+runs is read from `.bun-version`, so Renovate can update it.
 
 ## Server setup
 
