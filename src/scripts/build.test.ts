@@ -173,6 +173,10 @@ describe('single-file build', () => {
     const map = await body<{ sources: string[] }>(new Response(Bun.file(join(dir, 'out', 'gainz.js.map'))));
     expect(map.sources.some((source) => source.replaceAll('\\', '/').endsWith('src/backend/main.ts'))).toBe(true);
   });
+
+  test('names the Bun that built it, for the server to run it with', () => {
+    expect(readFileSync(join(dir, 'out', 'bun-version'), 'utf8')).toBe(`${Bun.version}\n`);
+  });
 });
 
 describe('single-file build with GAINZ_PASSWORD_HASH set', () => {

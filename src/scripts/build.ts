@@ -2,6 +2,7 @@
  * Builds the server and the frontend into one minified `gainz.js` (plus a linked source map), so a
  * deployment is one file run with `bun`. The frontend, Oat and the migrations go in through a
  * replacement for `src/backend/shared/embedded.ts`; the frontend stays one module per URL, never bundled.
+ * Beside it, `bun-version` names the Bun that built it, which the server installs to run it.
  */
 import { relative, resolve } from 'node:path';
 import { MIGRATIONS_DIR, readMigrations } from '../backend/db/migrations.ts';
@@ -62,6 +63,7 @@ export async function build(outdir: string): Promise<BuildResult> {
     sourcemap: 'linked',
     files: { [resolve(SRC, 'backend/shared/embedded.ts')]: `export const EMBEDDED = ${JSON.stringify(embedded)};` },
   });
+  await Bun.write(resolve(outdir, 'bun-version'), `${Bun.version}\n`);
   const outfile = resolve(outdir, 'gainz.js');
   return { outfile, bytes: Bun.file(outfile).size, embedded };
 }
@@ -69,7 +71,7 @@ export async function build(outdir: string): Promise<BuildResult> {
 async function main(): Promise<void> {
   const { outfile, bytes, embedded } = await build('dist');
   const shown = relative(process.cwd(), outfile).replaceAll('\\', '/');
-  console.log(`built ${shown} (${Math.round(bytes / 1024)} KB) and ${shown}.map`);
+  console.log(`built ${shown} (${Math.round(bytes / 1024)} KB), ${shown}.map and bun-version (${Bun.version})`);
   const count = (n: number, noun: string): string => `${n} ${noun}${n === 1 ? '' : 's'}`;
   console.log(
     `  embedded ${count(Object.keys(embedded.pages).length, 'frontend file')}, ${count(Object.keys(embedded.vendor).length, 'vendor file')}, ${count(embedded.migrations.length, 'migration')}`,

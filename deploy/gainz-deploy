@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
-# Installs one gainz build as a release, backs up the database, switches the service onto the
-# release and rolls code and database back if it does not come up healthy.
+# Installs one gainz build as a release together with the Bun it was built with, backs up the
+# database, switches the service onto the release and rolls code, Bun and database back if it does
+# not come up healthy.
 #
-#   tar -C dist -c gainz.js gainz.js.map | sudo -u gainz gainz-deploy <commit sha>
+#   tar -C dist -c gainz.js gainz.js.map bun-version | sudo -u gainz gainz-deploy <commit sha>
 #
 # Runs as the gainz user and drives its systemd user service; see docs/deployment.md.
 set -euo pipefail
 
 readonly APP=/home/gainz/app
-readonly BUN=/home/gainz/.bun/bin/bun
+readonly BUNS=$APP/bun
 readonly PORT=3000
 readonly GAINZ_DB=$APP/data/gainz.sqlite
 readonly RELEASES=$APP/releases
@@ -66,6 +67,46 @@ prune() {
     done
 }
 
+# Installs Bun $1 into $BUNS/$1 unless it is there, from the release assets Bun's own install
+# script downloads, choosing the same build it would.
+install_bun() {
+  local version=$1 asset base
+  local download=$BUNS/.download
+  [[ -x $BUNS/$version/bun ]] && return 0
+  command -v unzip >/dev/null || fail 'unzip is missing'
+  case $(uname -m) in
+    x86_64)
+      asset=bun-linux-x64
+      grep -qw avx2 /proc/cpuinfo || asset=bun-linux-x64-baseline
+      ;;
+    aarch64) asset=bun-linux-aarch64 ;;
+    *) fail "Bun has no build for $(uname -m)" ;;
+  esac
+  base=https://github.com/oven-sh/bun/releases/download/bun-v$version
+  echo "gainz-deploy: installing Bun $version ($asset)"
+  rm -rf -- "$download"
+  mkdir -p -- "$download"
+  curl -fsSL --proto '=https' -o "$download/$asset.zip" "$base/$asset.zip"
+  curl -fsSL --proto '=https' -o "$download/SHASUMS256.txt" "$base/SHASUMS256.txt"
+  (cd "$download" && awk -v file="$asset.zip" '$2 == file' SHASUMS256.txt | sha256sum -c --quiet --strict) ||
+    fail "$asset.zip does not match the checksum Bun $version publishes"
+  unzip -q "$download/$asset.zip" -d "$download"
+  [[ $("$download/$asset/bun" --version) == "$version" ]] || fail "$asset.zip does not hold Bun $version"
+  rm -rf -- "${BUNS:?}/$version"
+  mv -T -- "$download/$asset" "$BUNS/$version"
+  rm -rf -- "$download"
+}
+
+# Removes every Bun no remaining release runs.
+prune_bun() {
+  local in_use dir link
+  in_use=$(for link in "$RELEASES"/*/bun; do readlink -- "$link" || true; done)
+  for dir in "$BUNS"/*/; do
+    dir=${dir%/}
+    grep -qxF -- "$dir/bun" <<<"$in_use" || rm -rf -- "$dir"
+  done
+}
+
 readonly release=$RELEASES/$sha
 previous=$(readlink -f "$CURRENT" || true)
 readonly previous
@@ -73,11 +114,19 @@ readonly previous
   echo "gainz-deploy: $sha is already the current release"
   exit 0
 }
+# A rollback starts the previous release with its own Bun.
+[[ -z $previous || -x $previous/bun ]] || fail "$previous has no bun to roll back to; see docs/deployment.md"
 
 rm -rf -- "$release.tmp"
 mkdir -p -- "$release.tmp"
-tar -x -C "$release.tmp" --no-same-owner --no-same-permissions gainz.js gainz.js.map
+tar -x -C "$release.tmp" --no-same-owner --no-same-permissions gainz.js gainz.js.map bun-version
 [[ -f $release.tmp/gainz.js && ! -L $release.tmp/gainz.js ]] || fail 'the archive holds no gainz.js'
+[[ -f $release.tmp/bun-version && ! -L $release.tmp/bun-version ]] || fail 'the archive holds no bun-version'
+bun_version=$(<"$release.tmp/bun-version")
+readonly bun_version
+[[ $bun_version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "not a Bun version: $bun_version"
+install_bun "$bun_version"
+ln -s -- "$BUNS/$bun_version/bun" "$release.tmp/bun"
 rm -rf -- "$release"
 mv -T -- "$release.tmp" "$release"
 
@@ -87,7 +136,7 @@ backup=
 if [[ -f $GAINZ_DB ]]; then
   mkdir -p -- "$BACKUPS"
   backup=$BACKUPS/$(date -u +%Y%m%dT%H%M%SZ).sqlite
-  SRC=$GAINZ_DB DST=$backup "$BUN" -e \
+  SRC=$GAINZ_DB DST=$backup "$release/bun" -e \
     'const { Database } = require("bun:sqlite"); new Database(process.env.SRC).run("VACUUM INTO ?", [process.env.DST]);'
   echo "gainz-deploy: backed up the database to $backup"
 fi
@@ -116,4 +165,5 @@ has_auth || roll_back "$sha came up without auth (is GAINZ_PASSWORD_HASH in $APP
 
 prune "$KEEP_RELEASES" "$RELEASES"
 [[ -d $BACKUPS ]] && prune "$KEEP_BACKUPS" "$BACKUPS"
+prune_bun
 echo "gainz-deploy: $sha is live"

@@ -46,4 +46,4 @@ jobs:
           name: gainz
           path: dist
       - shell: bash
-        run: tar -C dist -c gainz.js gainz.js.map | sudo -u gainz /usr/local/bin/gainz-deploy "$GITHUB_SHA"
+        run: tar -C dist -c gainz.js gainz.js.map bun-version | sudo -u gainz /usr/local/bin/gainz-deploy "$GITHUB_SHA"
