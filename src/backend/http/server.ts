@@ -2,6 +2,7 @@ import type { Server } from 'bun';
 import type { DB } from '../db/db.ts';
 import type { AuthOptions } from '../features/auth/auth.facade.ts';
 import { createDevFacade } from '../features/dev/dev.facade.ts';
+import { log } from '../shared/log.ts';
 import { errorResponse } from './errors.ts';
 import { allRoutes } from './routes.ts';
 
@@ -13,6 +14,10 @@ export function startServer(db: DB, port: number, auth: AuthOptions = { password
     // server names a feature. It is passed unconditionally — only the `/dev/ws` route is gated —
     // because making the option conditional flips Bun.serve's options type for no runtime gain.
     websocket: createDevFacade().webSocket(),
-    error: (err) => errorResponse(err),
+    // A safety net: the access log catches every throw from a route first, and logs it with its request.
+    error: (err) => {
+      log.error('http', 'unhandled error outside a route', err);
+      return errorResponse(err);
+    },
   });
 }

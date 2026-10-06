@@ -10,6 +10,8 @@
  * Types are erased, not checked. `bun run typecheck` is the gate; a type error
  * transpiles happily and ships.
  */
+import { log } from '../../../shared/log.ts';
+
 const transpiler = new Bun.Transpiler({ loader: 'ts', target: 'browser' });
 /** For the single-file build: whitespace only, so names and structure survive for devtools. */
 const minifier = new Bun.Transpiler({ loader: 'ts', target: 'browser', minifyWhitespace: true });
@@ -26,7 +28,7 @@ export async function transpileModule(path: string, options: { minify?: boolean 
   } catch (cause) {
     // A syntax error would otherwise reach the browser as a blank view, so name
     // the file and let gz-app's failed-import path put it in a toast.
-    console.error(`gainz: could not transpile ${path}`, cause);
+    log.error('static', `could not transpile ${path}`, cause);
     return null;
   }
 }

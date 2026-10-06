@@ -6,8 +6,8 @@ its SQL and its mapping end to end, the mapping reached through its controllers 
 feature: `db/` (the connection and its PRAGMAs in `db.ts`, the schema in `migrations.ts` and
 `migrations/`, and the table-agnostic statement helpers in `db/sql.ts`), `http/` (`routing.ts` for
 the `RouteTable` and `ParamRequest` types, `routes.ts` for the registry,
-`http.ts`, `errors.ts` and `server.ts`, with `http.ts` holding `pathId`, `queryInt` and
-`optionalQueryInt` beside `readJsonObject`), `shared/validate.ts` for the request-field rules and their length bounds, and
+`http.ts`, `errors.ts`, `access-log.ts` and `server.ts`, with `http.ts` holding `pathId`, `queryInt` and
+`optionalQueryInt` beside `readJsonObject`), `shared/validate.ts` for the request-field rules and their length bounds, `shared/log.ts`, the logger, and
 `main.ts`, the entry point that opens the database and starts the server
 through `startServer`. There is no `fetch` fallback — every URL the server answers is a declared pattern.
 
@@ -136,10 +136,12 @@ constructor — `SetRepository(db, workouts, workoutExercises)`, wired in `creat
 runtime cycle to trip over.
 
 Error handling is by throwing: controllers throw `HttpError`, directly or through the facades they
-call — the facades' validation and the repositories behind them — and the `error` hook in `http/server.ts` turns any throw from any
-route into a JSON `{ error }` body with the right status. It is the one error path, for the API and
-the static route alike, so a new route needs nothing to get it — Bun hands the hook a throw from a
-synchronous or async method map and from a bare-function route (measured on 1.4.2). Four statuses cover everything the API refuses —
+call — the facades' validation and the repositories behind them — and the access log in
+`http/access-log.ts`, the outermost wrapper around every handler, catches any throw from any route,
+answers it through `errorResponse` as a JSON `{ error }` body with the right status, and logs it with
+the request that caused it. It is the one error path, for the API and the static route alike, so a
+new route needs nothing to get it. The `error` hook in `http/server.ts` is only a safety net for an
+error outside a route, since Bun hands it the error but never the request. Four statuses cover everything the API refuses —
 400 for bad input, 401 for a missing session or a wrong password, 404 for something missing, 409 for a
 conflict — which is why `http/errors.ts` exports exactly `badRequest`, `unauthorized`, `notFound` and
 `conflict`. The one other refusal, the login lockout's 429 with `Retry-After`, is not thrown: the auth
@@ -238,12 +240,14 @@ otherwise, so no other test needs a cookie.
 its own database rather than sharing one through the module cache. Every `*.test.ts` sits beside
 the module it exercises, and each one covers the module declaring the routes it drives, which is
 why the two tests for `POST /api/workouts/:id/sets` are in `workout.routes.test.ts` and not beside
-`set.routes.ts`. Tests are end-to-end over HTTP, with eight exceptions: `db/db.test.ts` checks the real
+`set.routes.ts`. Tests are end-to-end over HTTP, with nine exceptions: `db/db.test.ts` checks the real
 migrations; `db/migrations.test.ts` unit-tests the migration runner against throwaway fixture
 directories; `features/static/internal/paths.test.ts` pins the web root, which is derived by
 counting directories up from that module's own URL and would otherwise 404 every asset in silence
-if the file were moved; `http/errors.test.ts` covers `errorResponse`, whose 500 branch cannot be
-provoked over HTTP; `shared/validate.test.ts` pins the field helpers' normalization edge cases;
+if the file were moved; `http/errors.test.ts` pins that `errorResponse` renders an error and does not
+log it, while its 500 branch is covered over HTTP by `http/access-log.test.ts` through a hand-made
+route table; `shared/validate.test.ts` pins the field helpers' normalization edge cases; `shared/log.test.ts` pins
+the output format, the journald prefix and the `JOURNAL_STREAM` check;
 `features/dev/internal/changes.test.ts` pins how a watched path becomes a URL and a change; and
 `features/exercises/exercises.facade.test.ts` and `features/workouts/workouts.facade.test.ts` drive
 each facade's validation directly, including that a bad body on an unknown id is a 400 rather than
@@ -251,8 +255,16 @@ a 404. There are no unit tests of the repositories. `src/scripts/build.test.ts` 
 HTTP like the route tests, but against the built file, copied alone into a temporary directory and
 run in a child process — so it sits beside the route tests rather than among the exceptions. It runs
 the built file twice, the second time with `GAINZ_PASSWORD_HASH` set, to see the guard survive the
-build. `src/scripts/hash-password.test.ts` likewise runs its script in a child process, piping the
+build. `src/backend/main.test.ts` likewise runs the entry point in a child process, to check the
+banner, the startup failures and the shutdown line, and so is not counted among the exceptions
+either. `src/scripts/hash-password.test.ts` likewise runs its script in a child process, piping the
 password in.
+
+The suite prints nothing. `useLogs()` in `testing.ts` swaps the logger's sink for one that captures
+each line as `{ level, text }` around every test, and `useServer()` calls it and returns `logs`
+beside `api`, `post` and `patch`, so a route test can assert what the server logged. Since one test
+sees every topic, a test that checks one feature's lines filters `logs()` by topic or uses
+`toContainEqual`.
 
 Static serving is deliberately narrow: `src/frontend/` with a path-escape guard, plus `VENDOR_FILES`
 in `internal/paths.ts` — an allowlist of single files into `node_modules`, of any type (`/vendor/oat.css`,
@@ -296,6 +308,62 @@ A `304` still reads or transpiles the file; only the transfer is saved. Vendor f
 cached for an hour, which let a browser keep a stale vendor file (Pico, at the time) after
 `bun install`; they are now revalidated like everything else. Error responses carry no `ETag`.
 
+## Logging (`shared/log.ts`)
+
+Everything the server logs goes through `log.info(topic, message)`, `log.warn(topic, message)` or
+`log.error(topic, message, err?)`, each of which writes `<topic> <message>`. The topic is one short
+word for where the line comes from (`http`, `auth`, `server`, `db`, `static`, `dev`). An error is
+appended below the line as `Bun.inspect` renders it — the stack, a `cause` and an `AggregateError`'s
+inner errors, which is where a transpile failure and a failed migration keep their reasons and which
+`err.stack` does not show. There is no level filter, no JSON format and no setting; journald adds the
+timestamps.
+
+Under systemd, journald reads a leading `<N>` as the line's syslog priority, so each line goes out
+with `<6>` (info), `<4>` (warn) or `<3>` (error), and every line of a multi-line entry carries it, a
+stack included, because journald stores each line as its own entry. That is what makes
+`journalctl -p warning` and `-p err` filter. The logger takes this mode only when `JOURNAL_STREAM`,
+which systemd sets, names stdout's own `dev:ino`, not merely when it is set: a terminal opened from a
+systemd user unit inherits the variable, and `bun start` there must still print the terminal format.
+In journald mode every level goes to stdout, so related lines stay in order in one stream. In a
+terminal each line starts with `HH:MM:SS`, warn and error lines say `WARN` or `ERROR` after the time,
+and info goes to stdout, warn and error to stderr. Output Bun writes itself before `main()` runs, such
+as a failed top-level import, stays unprefixed.
+
+`setLogSink(sink)` replaces where lines go and returns a function that restores the previous sink;
+the tests use it through `useLogs()`, which is why the suite prints nothing. Logging happens at the
+edges — `main.ts`, `http/`, the auth facade and its throttle, `transpile.ts` and the dev hub — never in
+a repository or a data facade; the migration runner reports through its `onMigration` callback, and
+`main.ts` logs what it reports.
+
+| topic    | level | text                                                                    | source                       |
+| -------- | ----- | ----------------------------------------------------------------------- | ---------------------------- |
+| `http`   | info  | `<METHOD> <path+query> <status> <ms>ms[ <body>]`                        | access log, `/api` and < 500 |
+| `http`   | error | same, then the stack when a throw caused it                             | access log, any route ≥ 500  |
+| `http`   | error | `unhandled error outside a route` + stack                               | `Bun.serve` `error` hook     |
+| `auth`   | info  | `login`                                                                 | `AuthFacade.login()`         |
+| `auth`   | warn  | `wrong password`                                                        | `AuthFacade.login()`         |
+| `auth`   | warn  | `login locked for <n> s after <m> failed attempts`                      | `LoginThrottle.failed()`     |
+| `server` | info  | `gainz is running on <url>`, `database: …`, `auth: …`, `hot reload: on` | `main.ts` banner             |
+| `server` | info  | `stopping (SIGTERM)` / `stopping (SIGINT)`                              | `main.ts` shutdown           |
+| `server` | error | `GAINZ_PASSWORD_HASH is not an argon2 or bcrypt hash; …`                | `main.ts`, exit 1            |
+| `server` | error | `failed to start` + stack                                               | `main.ts`, exit 1            |
+| `server` | error | `uncaught exception` / `unhandled rejection` + stack                    | `main.ts`, exit 1            |
+| `db`     | info  | `applied <migration>`                                                   | `main.ts` `onMigration`      |
+| `static` | error | `could not transpile <path>` + cause                                    | `transpile.ts`               |
+| `dev`    | info  | `hot reload watching <dir>/` / `hot reload idle`                        | `hub.ts`                     |
+
+The access log in `http/access-log.ts` writes one `http` line for every request under `/api`, and for
+any other route only from 500 up: one page load fetches dozens of modules, and their lines would bury
+the API calls. A `POST`, `PUT`, `PATCH` or `DELETE` adds its body after the line when there is one,
+read from a `req.clone()` taken before the handler runs and only once the line is known to be
+logged, so the handler sees the request untouched. The body is shown as compact JSON with the value
+of every key named exactly `password`, at any depth, replaced by `"[redacted]"`, and cut at 1024
+characters with `…(+<n> more)`; a body that is not JSON shows only as `[<n> bytes, not JSON]`, so a
+malformed login cannot leak a password. A line from 500 up is logged at error, followed by the error
+when a throw caused it; a WebSocket upgrade, which returns no response, is not logged.
+
+Never logged: cookies, headers, `password` values, and the text of a body that is not JSON.
+
 ## Authentication (`features/auth/`)
 
 One password guards the API, and a long-lived cookie remembers it, so a phone logs in once rather
@@ -321,6 +389,10 @@ browsers accept `Secure` cookies from `http://localhost` — and `SameSite=Lax` 
 bodies is the CSRF protection: a cross-site form cannot send `application/json`, and a cross-site
 `fetch` does not carry a Lax cookie.
 
+Each accepted password is logged as `auth login` and each rejected one as `auth wrong password`; the
+password itself never is, because the access log redacts it from the login's body. A locked attempt
+checks no password and logs nothing of its own; its 429 shows in the access log.
+
 Sessions slide. A cookie lives 90 days, and a guarded response re-sets a fresh one once the cookie
 it was sent was issued (`expiresAt` − 90 days) more than a day ago, so an app used now and then stays
 logged in while renewing at most once a day.
@@ -329,7 +401,7 @@ The guard is `AuthFacade.guard(table)`, applied in `allRoutes()` to the stats, e
 set tables. It wraps every handler — a bare function or each verb of a method map — and throws
 `unauthorized()` (`401 { "error": "Not logged in" }`) for a missing, malformed, tampered, expired or
 old-password cookie. A static `Response` value would bypass the wrapper, so meeting one is a startup
-error. Everything outside those tables stays public: `/api/health`, the `/api` 404s, the auth status,
+error. The table walk is `wrapHandlers()` in `http/routing.ts`, which the access log is built on too. Everything outside those tables stays public: `/api/health`, the `/api` 404s, the auth status,
 login and logout, `/dev/ws`, and the whole frontend, whose code is public in the repository anyway — guarding
 it would only need an allowlist of the modules the login page imports.
 
@@ -338,7 +410,7 @@ proxy every client is `127.0.0.1` and `X-Forwarded-For` is not trusted. From the
 failure on, each failure locks the login for `60 · 2^(failures − 5)` seconds, up to an hour, and a
 locked login answers `429` with `Retry-After` before any hashing. `begin()` counts an attempt as a
 failure before `Bun.password.verify` runs, so concurrent guesses cannot all slip past the check;
-`succeeded()` resets the count, as does a restart. Each lockout is logged with `console.warn`, once
+`succeeded()` resets the count, as does a restart. Each lockout is logged with `log.warn`, once
 the failure that started it is confirmed. Someone hammering the login can delay your next login, but
 never a device that already holds a cookie. The facade and the throttle read an injectable `now()`
 from `AuthOptions`, which is how `auth.routes.test.ts` tests expiry and backoff without waiting.

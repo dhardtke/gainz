@@ -3,7 +3,6 @@
 ## Architecture / Code Style
 
 - Import maps to have hashed filenames
-- Logging
 
 ## Features
 

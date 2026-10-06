@@ -20,12 +20,15 @@ export const unauthorized = (message = 'Not logged in'): HttpError => new HttpEr
 export const notFound = (what: string): HttpError => new HttpError(404, `${what} not found`);
 export const conflict = (message: string): HttpError => new HttpError(409, message);
 
+/**
+ * Renders a throw as a response: an `HttpError` with its status, anything else as a 500. It does not
+ * log; the access log, which knows the request, does.
+ */
 export function errorResponse(err: unknown): Response {
   if (err instanceof HttpError) {
     const body: ErrorDto = { error: err.message, details: err.details ?? undefined };
     return json(body, err.status);
   }
-  console.error('Unhandled error:', err);
   const body: ErrorDto = { error: 'Internal server error' };
   return json(body, 500);
 }

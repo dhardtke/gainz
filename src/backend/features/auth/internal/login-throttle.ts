@@ -1,3 +1,5 @@
+import { log } from '../../../shared/log.ts';
+
 const FREE_ATTEMPTS = 5;
 const BASE_LOCK_S = 60;
 const MAX_LOCK_S = 3600;
@@ -40,7 +42,7 @@ export class LoginThrottle {
   /** Logs the lockout a confirmed failure started; logged here, not in `begin()`, so a correct password never reports one. */
   failed(): void {
     if (this.#failures >= FREE_ATTEMPTS) {
-      console.warn(`login locked for ${this.#lockS} s after ${this.#failures} failed attempts`);
+      log.warn('auth', `login locked for ${this.#lockS} s after ${this.#failures} failed attempts`);
     }
   }
 

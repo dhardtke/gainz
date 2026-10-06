@@ -12,12 +12,39 @@ import { openDatabase } from './db/db.ts';
 import type { AuthOptions } from './features/auth/auth.facade.ts';
 import { HttpError } from './http/errors.ts';
 import { startServer } from './http/server.ts';
+import { type LogLevel, setLogSink } from './shared/log.ts';
 
-/** The request helpers a test file gets from `useServer()`. */
+/** The request helpers a test file gets from `useServer()`, and the lines the server logged. */
 export interface TestServer {
   api: (path: string, init?: RequestInit) => Promise<Response>;
   post: (path: string, body: unknown) => Promise<Response>;
   patch: (path: string, body: unknown) => Promise<Response>;
+  logs: () => LogLine[];
+}
+
+/** One line written through `log`, as `useLogs()` captures it. */
+export interface LogLine {
+  level: LogLevel;
+  text: string;
+}
+
+/** Captures every line written through `log` during each test, so the suite prints nothing. */
+export function useLogs(): () => LogLine[] {
+  let lines: LogLine[] = [];
+  let restore = (): void => {};
+
+  beforeEach(() => {
+    lines = [];
+    restore = setLogSink((level, text) => {
+      lines.push({ level, text });
+    });
+  });
+
+  afterEach(() => {
+    restore();
+  });
+
+  return () => lines;
 }
 
 /**
@@ -47,6 +74,10 @@ export function useServer(options: { auth?: AuthOptions } = {}): TestServer {
     db.close();
   });
 
+  // After the hooks above: Bun runs afterEach hooks in registration order, so the server stops
+  // while its lines are still captured.
+  const logs = useLogs();
+
   function api(path: string, init?: RequestInit): Promise<Response> {
     return fetch(`${base}${path}`, init);
   }
@@ -67,7 +98,7 @@ export function useServer(options: { auth?: AuthOptions } = {}): TestServer {
     });
   }
 
-  return { api, post, patch };
+  return { api, post, patch, logs };
 }
 
 /** A throwaway directory, made before each test and removed after it. */
@@ -142,4 +173,30 @@ export function opens(socket: WebSocket): Promise<boolean> {
       done(false);
     });
   });
+}
+
+/** Reads `stream` until a line announces the server's URL, returning that URL and everything read. */
+export async function waitForUrl(stream: ReadableStream<Uint8Array>, stderr: () => Promise<string>): Promise<{ url: string; stdout: string }> {
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  let stdout = '';
+  const read = async (): Promise<string> => {
+    for (;;) {
+      const url = /gainz is running on (\S+)/.exec(stdout)?.[1];
+      if (url !== undefined) {
+        return url;
+      }
+      const chunk = await reader.read();
+      if (chunk.done) {
+        throw new Error(`the server exited before it started: ${await stderr()}`);
+      }
+      stdout += decoder.decode(chunk.value, { stream: true });
+    }
+  };
+  const timeout = Bun.sleep(15_000).then(async () => {
+    throw new Error(`the server did not start within 15 s: ${await stderr()}`);
+  });
+  const url = await Promise.race([read(), timeout]);
+  reader.releaseLock();
+  return { url, stdout };
 }

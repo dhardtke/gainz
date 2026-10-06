@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test } from 'bun:test';
 import type { AuthStatusDto } from '../../../shared/dto/auth.ts';
 import type { ErrorDto } from '../../../shared/dto/error.ts';
 import type { HealthDto } from '../../../shared/dto/meta.ts';
-import { body, useServer } from '../../testing.ts';
+import { body, type LogLine, useServer } from '../../testing.ts';
 import { issue } from './internal/session-cookie.ts';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -13,7 +13,7 @@ beforeEach(() => {
   now = Date.UTC(2026, 0, 1);
 });
 
-const { api, post } = useServer({ auth: { passwordHash: hash, now: () => now } });
+const { api, post, logs } = useServer({ auth: { passwordHash: hash, now: () => now } });
 
 function login(password: string): Promise<Response> {
   return post('/api/auth/login', { password });
@@ -125,6 +125,7 @@ describe('login', () => {
     const locked = await login('right');
     expect(locked.status).toBe(429);
     expect(locked.headers.get('retry-after')).toBe('60');
+    expect(logs()).toContainEqual({ level: 'warn', text: 'auth login locked for 60 s after 5 failed attempts' });
   });
 
   test('a success resets the count', async () => {
@@ -164,6 +165,42 @@ describe('login', () => {
     }
     expect((await login('right')).status).toBe(429);
     expect((await workouts(cookie)).status).toBe(200);
+  });
+});
+
+describe('the auth log', () => {
+  /** The auth feature's lines, without the access log's that sit between them. */
+  function authLogs(): LogLine[] {
+    return logs().filter((line) => line.text.startsWith('auth '));
+  }
+
+  test('logs an accepted password at info', async () => {
+    await loggedIn();
+    expect(authLogs()).toEqual([{ level: 'info', text: 'auth login' }]);
+  });
+
+  test('logs a wrong password at warn', async () => {
+    await login('wrong');
+    expect(authLogs()).toEqual([{ level: 'warn', text: 'auth wrong password' }]);
+  });
+
+  test('logs the fifth wrong password, then the lockout it starts', async () => {
+    for (let i = 0; i < 5; i++) {
+      await login('wrong');
+    }
+    expect(authLogs().slice(-2)).toEqual([
+      { level: 'warn', text: 'auth wrong password' },
+      { level: 'warn', text: 'auth login locked for 60 s after 5 failed attempts' },
+    ]);
+  });
+
+  test('logs nothing for a locked attempt', async () => {
+    for (let i = 0; i < 5; i++) {
+      await login('wrong');
+    }
+    const before = authLogs().length;
+    expect((await login('right')).status).toBe(429);
+    expect(authLogs()).toHaveLength(before);
   });
 });
 

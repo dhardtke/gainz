@@ -1,12 +1,12 @@
 import type { LoginRequestDto } from '../../../shared/dto/auth.ts';
 import { badRequest, unauthorized } from '../../http/errors.ts';
-import type { RouteTable } from '../../http/routing.ts';
+import { type RouteHandler, type RouteTable, wrapHandlers } from '../../http/routing.ts';
+import { log } from '../../shared/log.ts';
 import { LoginThrottle } from './internal/login-throttle.ts';
 import { check, COOKIE_NAME, expired, issue } from './internal/session-cookie.ts';
 
 const MAX_PASSWORD_LENGTH = 1000;
 const PASSWORD_HASH = /^\$(argon2(id|i|d)|2[aby])\$/;
-const METHODS = new Set(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']);
 
 export interface AuthOptions {
   /** The `Bun.password` hash of the one password; null turns authentication off. */
@@ -16,9 +16,6 @@ export interface AuthOptions {
 }
 
 export type LoginResult = { kind: 'ok'; cookie: string | null } | { kind: 'locked'; retryAfter: number };
-
-/** A route handler as `RouteTable` declares it; it may return nothing for a WebSocket upgrade. */
-type RouteHandler = Extract<RouteTable[string], (...args: never[]) => unknown>;
 
 /** Whether `value` looks like a hash `Bun.password.verify` can check: argon2 or bcrypt. */
 export function isPasswordHash(value: string): boolean {
@@ -63,10 +60,13 @@ export class AuthFacade {
       return decision;
     }
     if (!(await Bun.password.verify(password, this.#hash))) {
+      // Before failed(), so a lockout's line follows the attempt that started it.
+      log.warn('auth', 'wrong password');
       this.#throttle.failed();
       throw unauthorized('Wrong password');
     }
     this.#throttle.succeeded();
+    log.info('auth', 'login');
     return { kind: 'ok', cookie: issue(this.#hash, this.#now()) };
   }
 
@@ -98,31 +98,8 @@ export class AuthFacade {
         }
         return res;
       };
-
-    const guarded: RouteTable = {};
-    for (const [path, value] of Object.entries(table)) {
-      if (typeof value === 'function') {
-        guarded[path] = wrap(value);
-      } else if (isMethodMap(value)) {
-        guarded[path] = Object.fromEntries(
-          Object.entries(value).map(([method, handler]) => {
-            if (typeof handler !== 'function') {
-              throw new Error(`auth guard: ${method} ${path} is a static value and cannot be guarded`);
-            }
-            return [method, wrap(handler)];
-          }),
-        );
-      } else {
-        throw new Error(`auth guard: ${path} is a static value and cannot be guarded`);
-      }
-    }
-    return guarded;
+    return wrapHandlers(table, 'auth guard', wrap);
   }
-}
-
-/** A `{ GET, POST, … }` map rather than a `Response`, file, bundle or directory. */
-function isMethodMap(value: RouteTable[string]): value is Partial<Record<Bun.Serve.HTTPMethod, RouteHandler | Response>> {
-  return typeof value === 'object' && !(value instanceof Response) && !(value instanceof Blob) && Object.keys(value).every((key) => METHODS.has(key));
 }
 
 export function createAuthFacade(options: AuthOptions): AuthFacade {

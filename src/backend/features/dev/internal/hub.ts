@@ -1,6 +1,7 @@
 import type { ServerWebSocket } from 'bun';
 import { type FSWatcher, watch } from 'node:fs';
 import { relative } from 'node:path';
+import { log } from '../../../shared/log.ts';
 import { type Change, changeFor } from './changes.ts';
 
 /**
@@ -33,7 +34,7 @@ export function attach(ws: ServerWebSocket, webRoot: string): void {
   });
   // Never the reason the process stays alive.
   watcher.unref();
-  console.log(`gainz: hot reload watching ${relative(process.cwd(), webRoot).replaceAll('\\', '/')}/`);
+  log.info('dev', `hot reload watching ${relative(process.cwd(), webRoot).replaceAll('\\', '/')}/`);
 }
 
 export function detach(ws: ServerWebSocket): void {
@@ -47,7 +48,7 @@ export function detach(ws: ServerWebSocket): void {
     clearTimeout(timer);
   }
   timers.clear();
-  console.log('gainz: hot reload idle');
+  log.info('dev', 'hot reload idle');
 }
 
 function schedule(filename: string): void {

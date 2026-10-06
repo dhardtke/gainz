@@ -84,6 +84,8 @@ sudo install -m 0440 deploy/gh-runner.sudoers /etc/sudoers.d/gh-runner
 
 From then on the service is inspected as the user's:
 `sudo systemctl --user -M gainz@ status gainz` and `sudo journalctl _SYSTEMD_USER_UNIT=gainz.service`.
+gainz tags its lines with syslog priorities, so adding `-p warning` shows only warnings and errors,
+and `-p err` only errors; `-f` follows the log.
 
 Then the runner, with a token from the repository's _Settings → Actions → Runners → New
 self-hosted runner_:

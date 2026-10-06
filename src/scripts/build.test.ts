@@ -4,36 +4,10 @@ import { unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import type { Embedded } from '../backend/shared/embedded.ts';
-import { body, opens, useTempDir } from '../backend/testing.ts';
+import { body, opens, useLogs, useTempDir, waitForUrl } from '../backend/testing.ts';
 import { build } from './build.ts';
 
 const FRONTEND = resolve(import.meta.dir, '..', 'frontend');
-
-/** Reads `stream` until a line announces the server's URL, returning that URL and everything read. */
-async function waitForUrl(stream: ReadableStream<Uint8Array>, stderr: () => Promise<string>): Promise<{ url: string; stdout: string }> {
-  const reader = stream.getReader();
-  const decoder = new TextDecoder();
-  let stdout = '';
-  const read = async (): Promise<string> => {
-    for (;;) {
-      const url = /gainz is running on (\S+)/.exec(stdout)?.[1];
-      if (url !== undefined) {
-        return url;
-      }
-      const chunk = await reader.read();
-      if (chunk.done) {
-        throw new Error(`the built server exited before it started: ${await stderr()}`);
-      }
-      stdout += decoder.decode(chunk.value, { stream: true });
-    }
-  };
-  const timeout = Bun.sleep(15_000).then(async () => {
-    throw new Error(`the built server did not start within 15 s: ${await stderr()}`);
-  });
-  const url = await Promise.race([read(), timeout]);
-  reader.releaseLock();
-  return { url, stdout };
-}
 
 describe('single-file build', () => {
   let dir = '';
@@ -213,6 +187,7 @@ describe('single-file build with GAINZ_PASSWORD_HASH set', () => {
 
 describe('a module that does not parse', () => {
   const tempDir = useTempDir();
+  const logs = useLogs();
 
   test('fails the build, naming the file', async () => {
     const broken = join(FRONTEND, '__broken.ts');
@@ -224,6 +199,9 @@ describe('a module that does not parse', () => {
       );
       expect(failure).toBeInstanceOf(Error);
       expect(String(failure)).toMatch(/src\/frontend\/__broken\.ts/);
+      const line = logs().find((entry) => entry.text.startsWith('static could not transpile '));
+      expect(line?.level).toBe('error');
+      expect(line?.text).toMatch(/^static could not transpile \S*__broken\.ts\n/);
     } finally {
       await unlink(broken);
     }

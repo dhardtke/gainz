@@ -4,10 +4,26 @@ import { resolve } from 'node:path';
 import { openDatabase } from '../../db/db.ts';
 import { startServer } from '../../http/server.ts';
 import { createStaticFacade } from '../static/static.facade.ts';
-import { opens } from '../../testing.ts';
+import { opens, useLogs } from '../../testing.ts';
 import { devRoutes } from './dev.routes.ts';
 
 const CLIENT = '/dev/hot.ts';
+
+const logs = useLogs();
+
+/**
+ * Waits up to a second for `dev hot reload idle`, which `detach()` logs on a later tick after the
+ * last socket closes, so the line cannot escape after the capturing sink is restored.
+ */
+async function idle(): Promise<void> {
+  for (let waited = 0; waited < 1000; waited += 10) {
+    if (logs().some((line) => line.text === 'dev hot reload idle')) {
+      return;
+    }
+    await Bun.sleep(10);
+  }
+  throw new Error('the hot-reload watcher never went idle');
+}
 
 /**
  * A server built with `GAINZ_DEV` set as asked. Not `useServer()`: the variable has to be set
@@ -92,5 +108,7 @@ describe('hot reload switched on', () => {
         await unlink(file);
       }
     });
+    await idle();
+    expect(logs()).toContainEqual({ level: 'info', text: 'dev hot reload watching src/frontend/' });
   });
 });
