@@ -11,7 +11,6 @@
 
 ## UI / UX
 
-- Breadcrumbs through the whole app
 - Add workout templates that can be used with a desired number of sets and reps
 
 ## Guardrails

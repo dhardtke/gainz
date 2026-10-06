@@ -1,5 +1,5 @@
 import { beforeAll, expect, test } from 'bun:test';
-import { mount, testId, text, useDom, useToasts } from '../testing.ts';
+import { collect, mount, testId, text, useDom, useToasts } from '../testing.ts';
 import { ApiError } from '../http/errors.ts';
 import type { RawHtml } from './html.ts';
 import type { GzView } from './view.ts';
@@ -26,6 +26,10 @@ beforeAll(async () => {
 
       override readyTemplate(data: string): RawHtml {
         return html`<p data-testid="data">${data}</p>`;
+      }
+
+      override titleFor(data: string): string {
+        return data;
       }
     }
     customElements.define('gz-test-view', GzTestView);
@@ -69,16 +73,6 @@ test('shows a 404 without toasting it', async () => {
   expect(toasts).toEqual([]);
 });
 
-test('offers its back link below an error', async () => {
-  const view = mountView();
-  view.backLink = { href: '/workouts', label: 'Back to all workouts' };
-  pending.reject(new ApiError('Workout not found', 404, undefined));
-  await view.ready;
-  expect(text(view, testId('error'))).toBe('Workout not found');
-  expect(text(view, testId('back-link'))).toBe('Back to all workouts');
-  expect(view.shadowRoot?.querySelector(testId('back-link'))?.getAttribute('href')).toBe('/workouts');
-});
-
 test('settles ready after an error', async () => {
   const view = mountView();
   pending.reject(new Error('Broke'));
@@ -97,6 +91,41 @@ test('reload() re-renders with new data', async () => {
   pending.resolve('Squat');
   await reloaded;
   expect(text(view, testId('data'))).toBe('Squat');
+});
+
+test('pageTitle is null while loading, then names the loaded data', async () => {
+  const view = mountView();
+  expect(view.pageTitle).toBeNull();
+  pending.resolve('Bench');
+  await view.ready;
+  expect(view.pageTitle).toBe('Bench');
+});
+
+test('pageTitle is null after a failed load', async () => {
+  const view = mountView();
+  pending.reject(new ApiError('Workout not found', 404, undefined));
+  await view.ready;
+  expect(view.pageTitle).toBeNull();
+});
+
+test('emits page-title after every load, failed or not', async () => {
+  const heard = collect('page-title');
+  const view = mountView();
+  pending.resolve('Bench');
+  await view.ready;
+  expect(heard).toHaveLength(1);
+
+  pending = Promise.withResolvers<string>();
+  const reloaded = view.reload();
+  pending.resolve('Squat');
+  await reloaded;
+  expect(heard).toHaveLength(2);
+
+  pending = Promise.withResolvers<string>();
+  const failed = view.reload();
+  pending.reject(new ApiError('Workout not found', 404, undefined));
+  await failed;
+  expect(heard).toHaveLength(3);
 });
 
 test('numericAttribute() reads a numeric attribute', () => {

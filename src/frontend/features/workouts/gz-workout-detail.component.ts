@@ -19,6 +19,11 @@ function isSetLogged(detail: unknown): detail is { exerciseId: number } {
   return typeof detail === 'object' && detail !== null && 'exerciseId' in detail && typeof detail.exerciseId === 'number';
 }
 
+/** The workout's name in its heading and the breadcrumb: its title, else its date. */
+function workoutName(workout: WorkoutWithExercisesDto): string {
+  return workout.title ?? formatDate(workout.performedOn);
+}
+
 interface WorkoutDetailData {
   workout: WorkoutWithExercisesDto;
   /** Every exercise, for the add-set form's select. */
@@ -31,8 +36,6 @@ interface WorkoutDetailData {
  */
 export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
   override loadingText = 'Loading workout…';
-
-  override backLink = { href: '/workouts', label: 'Back to all workouts' };
 
   /**
    * What has been typed into the details form but not saved.
@@ -236,10 +239,14 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     return this.#openExerciseId;
   }
 
+  override titleFor({ workout }: WorkoutDetailData): string {
+    return workoutName(workout);
+  }
+
   #headerTemplate(workout: WorkoutWithExercisesDto): RawHtml {
     return html`
       <hgroup>
-        <h1 data-testid="heading">${workout.title ?? formatDate(workout.performedOn)}</h1>
+        <h1 data-testid="heading">${workoutName(workout)}</h1>
         <p class="text-light" data-testid="subtitle">${formatDate(workout.performedOn)} · ${relativeDay(workout.performedOn)}</p>
       </hgroup>
     `;

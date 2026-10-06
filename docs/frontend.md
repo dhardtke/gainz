@@ -10,7 +10,7 @@ src/frontend/
 ├── index.html  main.ts  manifest.webmanifest
 ├── icons/      icon.svg, icon-maskable.svg, icon-192.png, icon-512.png, icon-maskable-512.png
 ├── dev/        hot.ts (development only)
-├── app/        gz-app, gz-header, gz-theme-toggle, router.ts, routes.ts
+├── app/        gz-app, gz-header, gz-theme-toggle, gz-breadcrumbs, router.ts, routes.ts, tab-title.ts
 ├── http/       http.ts (get/post/patch/remove), errors.ts (ApiError, errorMessage, UNAUTHORIZED_EVENT)
 ├── ui/         base.ts, view.ts, html.ts, styles.ts, theme.ts, format.ts, app.css, shared.css, toast.ts, tile/, pagination/
 └── features/
@@ -29,8 +29,10 @@ What belongs to no feature sits in five directories, beside `manifest.webmanifes
 `dev/` holds `hot.ts`, the hot-reload client
 the server injects only in development; nothing imports it, and it is deliberately not one of the
 import boundaries below. `app/` is the shell: `gz-app`, the
-`gz-header` it renders at the top with the `gz-theme-toggle` inside it, `router.ts`, a generic path router that names no route, and
-`routes.ts`, which spreads the features' route lists into the one `ROUTES` table. `app/` reaches a feature
+`gz-header` it renders at the top with the `gz-theme-toggle` inside it, the `gz-breadcrumbs` trail it
+renders above the view, `router.ts`, a generic path router that names no route,
+`routes.ts`, which spreads the features' route lists into the one `ROUTES` table, and `tab-title.ts`,
+which formats the browser tab's title. `app/` reaches a feature
 only through those route lists, with one exception: `gz-header` imports `features/auth/auth.facade.ts`
 for its Log out button and whether to show it. `http/` is the request
 plumbing: `http.ts` holds the `get`/`post`/`patch`/`remove` helpers over `fetch`, and `errors.ts`
@@ -39,7 +41,9 @@ able to make a request. `ui/` is what any component may use: `base.ts` with `GzE
 shadow root, `data-action` click/submit delegation, `template()`/`render()`) and `define()`;
 `view.ts` with `GzView`, the abstract base of every route view but the login page, which loads on connect
 through its `load()` hook and renders `loadingText`, then `readyTemplate()` or `errorTemplate()`
-(the message, and `backLink` below it when a view sets one),
+(the message alone), which names what it shows through its `titleFor(data)` hook (`null` by
+default) and the `pageTitle` getter (that answer for the loaded data, `null` while loading or after
+an error), and emits `PAGE_TITLE_EVENT` (`page-title`) after every `reload()`, failed or not,
 and whose `numericAttribute()` reads the id attribute a route sets, throwing when it is missing;
 `html.ts` with the escaping `html` tagged template and `raw()`; `styles.ts`, `theme.ts` and `format.ts`; the document stylesheet
 `app.css` and the utilities in `shared.css`; `toast.ts`, whose `toast()` and `toastError()` show Oat's toasts
@@ -160,7 +164,31 @@ the current path against `ROUTES` and awaits the matching route's `view()` witho
 route it is; when nothing matches it shows its own not-found message. A route may also carry
 `nav: { path, label }`, and `gz-header` builds the header from those, in the order `app/routes.ts`
 spreads the features — so adding a list page needs no edit in `app/` beyond a new feature's spread.
-`gz-app` renders `gz-header` above its `<main>`; the header's host is the sticky element, because a
+
+A route may also carry a `title`, the page's name, and `parents`, the pages above it as `{ path,
+label }` crumbs (the `Crumb` shape `nav` has too), outermost first. Every route but the dashboard
+has a title, and only the two detail routes have parents, their lists. The breadcrumb is
+location-based: it is derived from the matched route alone, never from history, so `/exercises/7`
+shows `Exercises › …` however it was reached, and Back stays the way to where you came from. A
+parent links to the bare list path, never to `?page=N`, which `linkPath` would leave to the
+browser. Only a page with parents shows a trail; the top-level pages are already marked by the
+header, and a one-item trail would repeat it. `gz-app` renders `gz-breadcrumbs` in `<main>` above
+the `<slot>` and, every time it reveals a view, hands it `{ parents, current }` or `null`. The
+current crumb is the shown view's `pageTitle` — the workout's title or else its date, the exercise's
+name — and the route's `title` (`Workout`, `Exercise`) until the view has one: while it loads past
+`SLOW_VIEW_MS`, or after its error or 404. `gz-app` reads `pageTitle` again on every `page-title`
+from the view it shows, so a rename's reload reaches the trail and the tab without a navigation;
+the event of a view still loading hidden is ignored, because the swap reads its title anyway. The
+same name sets `document.title` through `tabTitle()` in `tab-title.ts`, `<name> · gainz`, and
+`Not found · gainz` for the not-found line; the dashboard, without a title, keeps `APP_TITLE`,
+`gainz — lifting log`, which `tab-title.test.ts` holds equal to `index.html`'s `<title>`. The trail
+is `<nav aria-label="Breadcrumb"><ol>`: the parents are links in Oat's `.unstyled` style, muted and
+`--primary` on hover, a `›` drawn by CSS separates the items and is read as nothing (`content: "›" /
+""`), and the current crumb is `--foreground` text with `aria-current="page"`. It stays on one line
+at 320 px: the parents keep their width and the current crumb ends in an ellipsis.
+
+`gz-app` renders `gz-header` above its `<main>`, and `<main>` holds `gz-breadcrumbs` above the
+`<slot>`, both in the shell's shadow root; the header's host is the sticky element, because a
 `<header>` inside its shadow root would be only as tall as its host and could never stick. The view
 is not in that shadow root: it is `gz-app`'s own child, in the document's light DOM, and shows
 through a `<slot>` in `<main>`. That is for password managers, which search the document and, by
@@ -256,7 +284,7 @@ its "Start session" header button creates a workout dated today and opens it, as
 exercises list keeps its add form in a collapsed `<details class="add">`, "Add an exercise", which
 starts open only while there are no exercises.
 
-`gz-exercise-detail` puts the progress first: the back link, the name and muscle group, four
+`gz-exercise-detail` puts the progress first: the name and muscle group, four
 `gz-tile`s, `gz-progress-chart` and `gz-session-table`, and last a collapsed `<details
 class="edit">`, "Edit exercise", holding the save form and a danger "Delete exercise" button. It
 keeps no open state, unlike the workout's "Details & notes": only a successful save reloads the
@@ -315,7 +343,7 @@ cast on the way in.
 
 Shapes local to one module — a view's loaded data, the chart's points — are declared in that
 module; what a view is doing with that data is `GzView`'s `ViewState<Data>`. The six route views are exported so their route file can construct them with `new`, which
-keeps each tag name written only in its `define()`. `GzChartComponent`, `GzProgressChartComponent`, `GzSessionTableComponent`, `GzSetRowComponent`
+keeps each tag name written only in its `define()`. `GzBreadcrumbsComponent`, `GzChartComponent`, `GzProgressChartComponent`, `GzSessionTableComponent`, `GzSetRowComponent`
 and `GzAddSetFormComponent` are exported so their parent can type the element it drives; the other five components stay private to their module.
 
 ## Loading
@@ -343,8 +371,8 @@ it — so the `await import('./gz-exercise-detail.component.ts')` in the exercis
 only when that view _and_ everything it renders have their scripts and their CSS. A lazily loaded
 page is fully styled on its first paint; there is no flash of unstyled content to guard against.
 
-Only the shell (`gz-app`, `gz-header`, `gz-theme-toggle`) with `ui/view.ts`, `http/errors.ts` and
-`ui/toast.ts`, which `gz-app` imports, `app/routes.ts` with the four feature route files, the auth
+Only the shell (`gz-app`, `gz-header`, `gz-theme-toggle`, `gz-breadcrumbs`) with `ui/view.ts`,
+`http/errors.ts`, `ui/toast.ts` and `app/tab-title.ts`, which `gz-app` imports, `app/routes.ts` with the four feature route files, the auth
 facade with its API class and `http/http.ts`, which `gz-header` imports for Log out, and Oat plus
 `ui/shared.css` load up front. `gz-app` guards against two
 navigations resolving out of order and reports a failed import through the toast.
@@ -476,8 +504,10 @@ and rejects anything else with an error naming the method and URL; a test that n
 answer puts `useFetch()` on top. A test sets a component's attributes before appending it, because
 happy-dom does not call `attributeChangedCallback` for attributes already present at upgrade.
 happy-dom has no popovers, so `gz-header`'s dropdown is not tested, and with every sheet empty no
-test asserts styling. `gz-app`'s tests use only paths no route matches, so no feature view or API
-is loaded, and its hidden/`ready` view swap is not covered yet.
+test asserts styling. `gz-app`'s tests mostly use paths no route matches, so no feature view or API
+is loaded; they also open `/login` and a workout, with the API faked, for the breadcrumb and the tab
+title, and reset `document.title` before each test, since happy-dom keeps the `<title>` it wrote in
+`<head>`. Its hidden/`ready` view swap is not covered yet.
 
 `src/frontend/testing.ts` also holds the three stubs. `useFetch()` replaces `fetch` with one that
 records each request and answers `200 {}` unless told otherwise: `respondWith()` sets the answer

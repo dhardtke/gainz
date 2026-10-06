@@ -5,6 +5,8 @@ import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import type { WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
 import { exercise } from '../exercises/exercises.fixtures.ts';
 import { group, set } from './workouts.fixtures.ts';
+import { formatDate } from '../../ui/format.ts';
+import type { GzView } from '../../ui/view.ts';
 
 useDom();
 const fake = useFetch();
@@ -57,10 +59,10 @@ function withSets(change: (item: LiftSetDto, index: number) => LiftSetDto): Work
   return { ...WORKOUT, exercises: WORKOUT.exercises.map((item) => ({ ...item, sets: item.sets.map((each) => change(each, index++)) })) };
 }
 
-async function mountView(workout: WorkoutWithExercisesDto = WORKOUT): Promise<HTMLElement> {
+async function mountView(workout: WorkoutWithExercisesDto = WORKOUT): Promise<GzView<unknown>> {
   fake.respondTo('GET /api/workouts/3', 200, JSON.stringify(workout));
   fake.respondTo('GET /api/exercises', 200, JSON.stringify(EXERCISES));
-  const view = mount('gz-workout-detail', { 'workout-id': '3' });
+  const view = mount<GzView<unknown>>('gz-workout-detail', { 'workout-id': '3' });
   await settle();
   return view;
 }
@@ -242,15 +244,25 @@ test('keeps focus, and what was typed, in the details field the save moved it to
   expect(notes().value).toBe('Felt strong');
 });
 
-test('shows a missing workout with a way back, without a toast', async () => {
+test('shows a missing workout without a toast, and names nothing', async () => {
   fake.respondTo('GET /api/workouts/3', 404, JSON.stringify({ error: 'Workout not found' }));
   fake.respondTo('GET /api/exercises', 200, JSON.stringify(EXERCISES));
-  const view = mount('gz-workout-detail', { 'workout-id': '3' });
+  const view = mount<GzView<unknown>>('gz-workout-detail', { 'workout-id': '3' });
   await settle();
   expect(shadow(view).querySelector(testId('error'))?.textContent).toBe('Workout not found');
-  const back = find(shadow(view), testId('back-link'));
-  expect([back.textContent, back.getAttribute('href')]).toEqual(['Back to all workouts', '/workouts']);
   expect(toasts).toEqual([]);
+  expect(view.pageTitle).toBeNull();
+});
+
+test('names the workout by its title for the breadcrumb and the tab', async () => {
+  const view = await mountView();
+  expect(view.pageTitle).toBe('Push day');
+});
+
+test('names an untitled workout by its date, as its heading does', async () => {
+  const view = await mountView({ ...WORKOUT, title: null });
+  expect(view.pageTitle).toBe(formatDate(WORKOUT.performedOn));
+  expect(text(view, testId('heading'))).toBe(formatDate(WORKOUT.performedOn));
 });
 
 function groups(view: HTMLElement): HTMLDetailsElement[] {

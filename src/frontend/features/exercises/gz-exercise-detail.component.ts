@@ -17,8 +17,6 @@ import '../../ui/tile/gz-tile.component.ts';
 export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
   override loadingText = 'Loading progress…';
 
-  override backLink = { href: '/exercises', label: 'Back to all exercises' };
-
   /**
    * The metric last chosen in the chart, handed back to it after a save re-renders
    * this view and so recreates the chart. Remembered without re-rendering anything.
@@ -88,15 +86,16 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
     table.sessions = sessions;
   }
 
+  override titleFor(progress: ExerciseProgressDto): string {
+    return progress.exercise.name;
+  }
+
   #headerTemplate(exercise: ExerciseDto): RawHtml {
     return html`
-      <div>
-        <p><a href="/exercises">← Exercises</a></p>
-        <hgroup>
-          <h1 data-testid="heading">${exercise.name}</h1>
-          <p class="text-light">${exercise.muscleGroup ?? 'No muscle group set'}</p>
-        </hgroup>
-      </div>
+      <hgroup>
+        <h1 data-testid="heading">${exercise.name}</h1>
+        <p class="text-light">${exercise.muscleGroup ?? 'No muscle group set'}</p>
+      </hgroup>
     `;
   }
 

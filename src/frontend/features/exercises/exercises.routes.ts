@@ -8,6 +8,7 @@ export const exercisesRoutes: RouteDef[] = [
       const { GzExerciseListComponent } = await import('./gz-exercise-list.component.ts');
       return new GzExerciseListComponent();
     },
+    title: 'Exercises',
     nav: { path: '/exercises', label: 'Exercises' },
   },
   {
@@ -19,5 +20,7 @@ export const exercisesRoutes: RouteDef[] = [
       view.setAttribute('exercise-id', id ?? '');
       return view;
     },
+    title: 'Exercise',
+    parents: [{ path: '/exercises', label: 'Exercises' }],
   },
 ];

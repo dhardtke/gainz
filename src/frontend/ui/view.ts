@@ -4,6 +4,9 @@ import { html } from './html.ts';
 import type { RawHtml } from './html.ts';
 import { toastError } from './toast.ts';
 
+/** What a view emits after every load; the shell then reads its `pageTitle`. */
+export const PAGE_TITLE_EVENT = 'page-title';
+
 export type ViewState<Data> = { status: 'loading' } | { status: 'ready'; data: Data } | { status: 'error'; message: string };
 
 /**
@@ -23,12 +26,19 @@ export abstract class GzView<Data> extends GzElement {
 
   loadingText = 'Loading…';
 
-  /** Where an error offers to go instead, shown below the message; none by default. */
-  backLink: { href: string; label: string } | null = null;
-
   /** The loaded data, or undefined while loading or after an error. */
   get data(): Data | undefined {
     return this.#state.status === 'ready' ? this.#state.data : undefined;
+  }
+
+  /** The name of what the loaded data shows, for the breadcrumb and the tab; none by default. */
+  titleFor(_data: Data): string | null {
+    return null;
+  }
+
+  /** `titleFor()` of the loaded data, or null while loading or after an error. */
+  get pageTitle(): string | null {
+    return this.#state.status === 'ready' ? this.titleFor(this.#state.data) : null;
   }
 
   abstract load(): Promise<Data>;
@@ -36,15 +46,7 @@ export abstract class GzView<Data> extends GzElement {
   abstract readyTemplate(data: Data): RawHtml;
 
   errorTemplate(message: string): RawHtml {
-    if (!this.backLink) {
-      return html`<p class="error-text" data-testid="error">${message}</p>`;
-    }
-    return html`
-      <div class="vstack">
-        <p class="error-text" data-testid="error">${message}</p>
-        <p><a href="${this.backLink.href}" data-testid="back-link">${this.backLink.label}</a></p>
-      </div>
-    `;
+    return html`<p class="error-text" data-testid="error">${message}</p>`;
   }
 
   override connectedCallback(): void {
@@ -55,6 +57,7 @@ export abstract class GzView<Data> extends GzElement {
   /**
    * Loads and renders; never rejects. The last state stays on screen until the load
    * settles. An error is shown and toasted, except a 404, which the view says itself.
+   * Either way it then emits `PAGE_TITLE_EVENT`, so a rename reaches the breadcrumb and the tab.
    */
   async reload(): Promise<void> {
     try {
@@ -66,6 +69,7 @@ export abstract class GzView<Data> extends GzElement {
       }
     }
     this.render();
+    this.emit(PAGE_TITLE_EVENT);
   }
 
   override template(): RawHtml {

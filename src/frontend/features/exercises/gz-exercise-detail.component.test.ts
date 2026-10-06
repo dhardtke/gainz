@@ -1,7 +1,8 @@
 import { beforeAll, expect, test } from 'bun:test';
-import { find, mount, settle, shadow, submit, testId, type, useDom, useFetch, useToasts } from '../../testing.ts';
+import { collect, find, mount, settle, shadow, submit, testId, type, useDom, useFetch, useToasts } from '../../testing.ts';
 import type { ExerciseProgressDto, SessionPointDto } from '../../../shared/dto/exercise.ts';
 import { exercise, session } from './exercises.fixtures.ts';
+import type { GzView } from '../../ui/view.ts';
 
 useDom();
 const fake = useFetch();
@@ -28,9 +29,9 @@ const SESSIONS = [
   session({ workoutId: 3, performedOn: '2026-09-15', estOneRepMax: 92.5 }),
 ];
 
-async function mountView(answer: ExerciseProgressDto = progress(SESSIONS)): Promise<HTMLElement> {
+async function mountView(answer: ExerciseProgressDto = progress(SESSIONS)): Promise<GzView<unknown>> {
   fake.respondTo(PROGRESS, 200, JSON.stringify(answer));
-  const view = mount('gz-exercise-detail', { 'exercise-id': '7' });
+  const view = mount<GzView<unknown>>('gz-exercise-detail', { 'exercise-id': '7' });
   await settle();
   return view;
 }
@@ -138,12 +139,28 @@ test('says so when no set has been logged', async () => {
   expect(tableRoot(view).querySelector(testId('table'))).toBeNull();
 });
 
-test('shows a missing exercise with a way back, without a toast', async () => {
+test('shows a missing exercise without a toast, and names nothing', async () => {
   fake.respondTo(PROGRESS, 404, JSON.stringify({ error: 'Exercise not found' }));
-  const view = mount('gz-exercise-detail', { 'exercise-id': '7' });
+  const view = mount<GzView<unknown>>('gz-exercise-detail', { 'exercise-id': '7' });
   await settle();
   expect(shadow(view).querySelector(testId('error'))?.textContent).toBe('Exercise not found');
-  const back = find(shadow(view), testId('back-link'));
-  expect([back.textContent, back.getAttribute('href')]).toEqual(['Back to all exercises', '/exercises']);
   expect(toasts).toEqual([]);
+  expect(view.pageTitle).toBeNull();
+});
+
+test('names the exercise for the breadcrumb and the tab', async () => {
+  const view = await mountView();
+  expect(view.pageTitle).toBe('Bench Press');
+});
+
+test('names the exercise anew after a rename, and says so', async () => {
+  const view = await mountView();
+  const heard = collect('page-title');
+  // The reload after the save reads back the new name, as the server would.
+  fake.respondTo(PROGRESS, 200, JSON.stringify({ ...progress(SESSIONS), exercise: exercise({ id: 7, name: 'Paused Bench', muscleGroup: 'Chest' }) }));
+  type(field(view, 'name'), 'Paused Bench');
+  submitDetails(view);
+  await settle();
+  expect(view.pageTitle).toBe('Paused Bench');
+  expect(heard).toHaveLength(1);
 });

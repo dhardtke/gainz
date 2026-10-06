@@ -8,5 +8,6 @@ export const authRoutes: RouteDef[] = [
       const { GzLoginComponent } = await import('./gz-login.component.ts');
       return new GzLoginComponent();
     },
+    title: 'Log in',
   },
 ];

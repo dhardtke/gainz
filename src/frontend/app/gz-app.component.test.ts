@@ -1,9 +1,13 @@
 import { beforeAll, beforeEach, expect, test } from 'bun:test';
 import { find, mount, settle, shadow, testId, useDom, useFetch } from '../testing.ts';
+import type { ExercisePageDto } from '../../shared/dto/exercise.ts';
+import type { WorkoutWithExercisesDto } from '../../shared/dto/workout.ts';
+import type { GzView } from '../ui/view.ts';
 import { navigate } from './router.ts';
+import { APP_TITLE } from './tab-title.ts';
 
-// Only paths no route matches, but for /login: a matched route would load a real feature view, which
-// fetches the API, and the login view fetches only the auth status, which this file answers.
+// Mostly paths no route matches, which load no feature view. The matched ones are /login, whose view
+// fetches only the auth status, and a workout, whose two requests the tests opening it answer.
 useDom();
 const fake = useFetch();
 
@@ -36,7 +40,21 @@ beforeAll(async () => {
 beforeEach(() => {
   history.replaceState(null, '', '/nowhere');
   fake.respondTo('GET /api/auth/status', 200, '{"enabled":true}');
+  // happy-dom keeps the <title> a test wrote in <head>, which useDom() does not clear.
+  document.title = APP_TITLE;
 });
+
+const WORKOUT: WorkoutWithExercisesDto = {
+  id: 3,
+  performedOn: '2026-09-20',
+  title: 'Push day',
+  notes: null,
+  createdAt: '2026-09-20T10:00:00Z',
+  done: false,
+  exercises: [],
+};
+
+const EXERCISES: ExercisePageDto = { items: [], total: 0, limit: null, offset: 0 };
 
 async function mountApp(): Promise<HTMLElement> {
   const app = mount('gz-app');
@@ -150,4 +168,71 @@ test('ignores a 401 on the login page itself', async () => {
   await settle(0);
   expect(notFound(app)).toBe('Nothing lives at /nowhere.');
   expect(location.pathname + location.search).toBe('/login?next=%2Fx');
+});
+
+/** Waits until the shell shows a `tag` view: its module and its requests take a few turns to land. */
+async function shown(app: HTMLElement, tag: string): Promise<HTMLElement | null> {
+  for (let i = 0; i < 50 && !app.querySelector(`:scope > ${tag}:not([hidden])`); i++) {
+    await settle();
+  }
+  return app.querySelector<HTMLElement>(`:scope > ${tag}:not([hidden])`);
+}
+
+function breadcrumbs(app: HTMLElement): HTMLElement {
+  return find<HTMLElement>(shadow(app), testId('breadcrumbs'));
+}
+
+/** The trail as text, `null` while the breadcrumb is hidden. */
+function trail(app: HTMLElement): string[] | null {
+  const element = breadcrumbs(app);
+  if (element.hasAttribute('hidden')) {
+    return null;
+  }
+  const root = shadow(element);
+  const crumbs = Array.from(root.querySelectorAll(testId('crumb'))).map((crumb) => `${crumb.textContent} → ${crumb.getAttribute('href')}`);
+  return [...crumbs, root.querySelector(testId('current'))?.textContent ?? ''];
+}
+
+async function openWorkout(status = 200, body = JSON.stringify(WORKOUT)): Promise<HTMLElement> {
+  fake.respondTo('GET /api/workouts/3', status, body);
+  fake.respondTo('GET /api/exercises', 200, JSON.stringify(EXERCISES));
+  history.replaceState(null, '', '/workouts/3');
+  const app = await mountApp();
+  await shown(app, 'gz-workout-detail');
+  return app;
+}
+
+test('names a path no route matches "Not found" in the tab, with no breadcrumb', async () => {
+  const app = await mountApp();
+  expect(document.title).toBe('Not found · gainz');
+  expect(trail(app)).toBeNull();
+});
+
+test('names the login page in the tab, with no breadcrumb', async () => {
+  const app = await mountApp();
+  navigate('/login');
+  expect(await shown(app, 'gz-login')).not.toBeNull();
+  expect(document.title).toBe('Log in · gainz');
+  expect(trail(app)).toBeNull();
+});
+
+test('shows a workout below its list in the breadcrumb, and its title in the tab', async () => {
+  const app = await openWorkout();
+  expect(trail(app)).toEqual(['Workouts → /workouts', 'Push day']);
+  expect(document.title).toBe('Push day · gainz');
+});
+
+test("falls back to the route's title for a workout that cannot be loaded", async () => {
+  const app = await openWorkout(404, JSON.stringify({ error: 'Workout not found' }));
+  expect(trail(app)).toEqual(['Workouts → /workouts', 'Workout']);
+  expect(document.title).toBe('Workout · gainz');
+});
+
+test('follows a rename of the shown workout without a navigation', async () => {
+  const app = await openWorkout();
+  const view = app.querySelector<GzView<unknown>>(':scope > gz-workout-detail');
+  fake.respondTo('GET /api/workouts/3', 200, JSON.stringify({ ...WORKOUT, title: 'Leg day' }));
+  await view?.reload();
+  expect(trail(app)).toEqual(['Workouts → /workouts', 'Leg day']);
+  expect(document.title).toBe('Leg day · gainz');
 });

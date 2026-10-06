@@ -1,21 +1,26 @@
 import type { RawHtml } from '../ui/html.ts';
 import { define, GzElement } from '../ui/base.ts';
-import { GzView } from '../ui/view.ts';
+import { GzView, PAGE_TITLE_EVENT } from '../ui/view.ts';
 import { html } from '../ui/html.ts';
 import { currentPath, linkPath, matchRoute, navigate, onRouteChange } from './router.ts';
+import type { RouteDef, RouteMatch } from './router.ts';
 import { ROUTES } from './routes.ts';
+import { tabTitle } from './tab-title.ts';
 import { toastError } from '../ui/toast.ts';
 import { UNAUTHORIZED_EVENT } from '../http/errors.ts';
+import type { GzBreadcrumbsComponent } from './gz-breadcrumbs.component.ts';
+import './gz-breadcrumbs.component.ts';
 import './gz-header.component.ts';
 
 /** How long the outgoing view waits for the incoming one's data before giving way to its loading state. */
 const SLOW_VIEW_MS = 300;
 
 /**
- * Application shell: a persistent header and view slot.
+ * Application shell: a persistent header, the breadcrumb trail and the view slot.
  *
  * The shell renders once; route changes only swap the view, so the header survives navigation.
- * Toasts live in the document, not here.
+ * After every swap, and whenever the shown view reloads, it names the page in the breadcrumb and
+ * the tab title. Toasts live in the document, not here.
  *
  * The view is the shell's own child, in the document's light DOM, and shows through a <slot> in
  * <main>. Password managers search the document, not shadow roots, so the login form, which gz-login
@@ -26,6 +31,8 @@ const SLOW_VIEW_MS = 300;
 class GzAppComponent extends GzElement {
   #unsubscribe: (() => void) | null = null;
   #renderToken = 0;
+  /** The view on screen and the route it was built for, `null` for the not-found line. */
+  #shown: { route: RouteDef | null; view: Element } | null = null;
 
   readonly #onUnauthorized = (): void => {
     if (currentPath() !== '/login') {
@@ -49,6 +56,12 @@ class GzAppComponent extends GzElement {
       event.preventDefault();
       navigate(path);
     });
+    // A view still loading hidden is ignored: the swap reads its title when it reveals it.
+    this.addEventListener(PAGE_TITLE_EVENT, (event) => {
+      if (event.target === this.#shown?.view) {
+        this.#showPage();
+      }
+    });
   }
 
   override connectedCallback(): void {
@@ -70,17 +83,17 @@ class GzAppComponent extends GzElement {
   }
 
   /** Builds the element for a route, fetching its module first if need be. */
-  async #viewElement(path: string): Promise<Element> {
+  async #viewElement(path: string): Promise<{ match: RouteMatch | null; view: Element }> {
     const match = matchRoute(ROUTES, path);
     if (match) {
-      return match.route.view(match.params);
+      return { match, view: await match.route.view(match.params) };
     }
 
     const view = document.createElement('p');
     view.className = 'empty';
     view.dataset.testid = 'not-found';
     view.textContent = `Nothing lives at ${path}.`;
-    return view;
+    return { match, view };
   }
 
   /**
@@ -100,9 +113,10 @@ class GzAppComponent extends GzElement {
   }
 
   async #swapView(path: string, token: number): Promise<void> {
+    let match: RouteMatch | null;
     let view: Element;
     try {
-      view = await this.#viewElement(path);
+      ({ match, view } = await this.#viewElement(path));
     } catch (cause) {
       // Offline, or a deploy moved the file: keep what is on screen and say so,
       // rather than leaving a nav button that looks dead.
@@ -143,14 +157,32 @@ class GzAppComponent extends GzElement {
       this.append(view);
     }
     view.removeAttribute('hidden');
+    this.#shown = { route: match?.route ?? null, view };
+    this.#showPage();
     window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+
+  /** Names the shown page in the breadcrumb and the tab: the view's own name, else the route's. */
+  #showPage(): void {
+    if (!this.#shown) {
+      return;
+    }
+    const { route, view } = this.#shown;
+    const viewTitle = view instanceof GzView ? view.pageTitle : null;
+    const name = route ? (viewTitle ?? route.title ?? null) : 'Not found';
+    document.title = tabTitle(name);
+    const breadcrumbs = this.$<GzBreadcrumbsComponent>('gz-breadcrumbs');
+    if (breadcrumbs) {
+      const parents = route?.parents ?? [];
+      breadcrumbs.trail = parents.length > 0 ? { parents, current: name ?? '' } : null;
+    }
   }
 
   override template(): RawHtml {
     return html`
       <gz-header data-testid="header"></gz-header>
 
-      <main class="container"><slot data-testid="view-slot"></slot></main>
+      <main class="container"><gz-breadcrumbs data-testid="breadcrumbs"></gz-breadcrumbs><slot data-testid="view-slot"></slot></main>
     `;
   }
 }

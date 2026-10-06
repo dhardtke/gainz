@@ -2,13 +2,26 @@
  * Path-based router over the History API.
  */
 
+/** A link to a page: a header link or a breadcrumb. */
+export interface Crumb {
+  path: string;
+  label: string;
+}
+
 export interface RouteDef {
   pattern: RegExp;
   /** Names for the pattern's capture groups, in order. */
   keys: string[];
   view: (params: Record<string, string>) => Promise<Element>;
+  /**
+   * The page's name: the tab title, and the last breadcrumb until its view names what it shows.
+   * Without one the tab keeps the app's own title.
+   */
+  title?: string;
+  /** The pages above this one, outermost first; a route without any shows no breadcrumb. */
+  parents?: Crumb[];
   /** A header link; `path` is explicit because a regex cannot be turned back into an href. */
-  nav?: { path: string; label: string };
+  nav?: Crumb;
 }
 
 export interface RouteMatch {
