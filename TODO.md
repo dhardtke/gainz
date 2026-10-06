@@ -12,7 +12,6 @@
 ## UI / UX
 
 - Breadcrumbs through the whole app
-- PWA
 - Add workout templates that can be used with a desired number of sets and reps
 
 ## Guardrails
