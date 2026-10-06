@@ -25,7 +25,7 @@ describe('typescript modules', () => {
 
   test('serves the entry point index.html names', async () => {
     const page = await (await api('/')).text();
-    expect(page).toContain('src="/main.ts"');
+    expect(page).toMatch(/src="\/main\.ts\?v=\w+"/);
 
     const res = await api('/main.ts');
     expect(res.status).toBe(200);

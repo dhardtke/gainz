@@ -87,14 +87,16 @@ describe('single-file build', () => {
     expect(chart).not.toContain('sourceMappingURL');
   });
 
-  test('preloads the shell modules and stylesheets it carries', async () => {
+  test('preloads the shell modules and stylesheets it carries, by versions it serves for good', async () => {
     const page = await (await get('/')).text();
-    const preloaded = [...page.matchAll(/<link rel="modulepreload" href="([^"]+)"/g)].map((match) => match[1] ?? '');
-    expect(preloaded).toContain('/app/gz-app.component.ts');
-    expect(page).toContain('<link rel="preload" href="/app/gz-app.component.css" as="fetch" crossorigin />');
-    expect(page).toMatch(/<script type="application\/json" data-lazy-preloads>\{"\/features\/[^<]*"\/ui\/tile\/gz-tile\.component\.css"/);
+    const preloaded = [...page.matchAll(/<link rel="(?:modulepreload|preload)" href="([^"]+)"/g)].map((match) => match[1] ?? '');
+    expect(preloaded.some((url) => url.startsWith('/app/gz-app.component.ts?v='))).toBe(true);
+    expect(page).toMatch(/<link rel="preload" href="\/app\/gz-app\.component\.css\?v=\w+" as="fetch" crossorigin \/>/);
+    expect(page).toMatch(/<script type="application\/json" data-lazy-preloads>\{"\/features\/[^<]*"\/ui\/tile\/gz-tile\.component\.css\?v=\w+"/);
+    expect(page).toMatch(/<script type="importmap">\{"imports":\{"\//);
     for (const url of preloaded) {
-      expect({ url, status: (await get(url)).status }).toEqual({ url, status: 200 });
+      const res = await get(url);
+      expect({ url, status: res.status, cache: res.headers.get('cache-control') }).toEqual({ url, status: 200, cache: 'public, max-age=31536000, immutable' });
     }
   });
 

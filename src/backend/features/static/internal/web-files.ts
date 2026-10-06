@@ -5,8 +5,9 @@
  */
 import { basename, extname, posix } from 'node:path';
 import { EMBEDDED, type EmbeddedWeb } from '../../../shared/embedded.ts';
-import { resolveStaticPath, resolveVendorPath } from './paths.ts';
-import { type PreloadSource, withPreloads } from './preload.ts';
+import { contentTag } from './content-tag.ts';
+import { type PageSource, renderPage } from './page.ts';
+import { FRONTEND_DIR, isVersioned, resolveStaticPath, resolveVendorPath, vendorUrls } from './paths.ts';
 import { transpileModule } from './transpile.ts';
 
 export type WebFile =
@@ -48,7 +49,7 @@ class DiskWebFiles implements WebFiles {
       return { kind: 'file', body: code, type: MODULE_TYPE };
     }
     if (extname(path) === '.html') {
-      return { kind: 'file', body: await withPreloads(await file.text(), diskModules), type: file.type };
+      return { kind: 'file', body: await renderPage(await file.text(), this.#pageSource()), type: file.type };
     }
     // `file.type` is Bun's MIME database lookup, so no hand-written map is kept here.
     return { kind: 'file', body: await file.bytes(), type: file.type };
@@ -67,19 +68,42 @@ class DiskWebFiles implements WebFiles {
     }
     return { kind: 'file', body: await file.bytes(), type: file.type };
   }
-}
 
-/** The web root as `DiskWebFiles` serves it, for a page's preloads. */
-const diskModules: PreloadSource = {
-  module: async (url) => {
-    const path = resolveStaticPath(url);
-    return path !== null && extname(path) === '.ts' && (await Bun.file(path).exists()) ? transpileModule(path) : null;
-  },
-  exists: async (url) => {
-    const path = resolveStaticPath(url);
-    return path !== null && (await Bun.file(path).exists());
-  },
-};
+  /**
+   * The web root as this server answers it, for one page: every file read through `page()` and
+   * `vendor()`, so a version is the tag its response carries, and each at most once per page.
+   */
+  #pageSource(): PageSource {
+    const files = new Map<string, Promise<WebFile>>();
+    const read = (url: string): Promise<WebFile> => {
+      let file = files.get(url);
+      if (file === undefined) {
+        file = vendorUrls().includes(url) ? this.vendor(url) : this.page(url);
+        files.set(url, file);
+      }
+      return file;
+    };
+    return {
+      module: async (url) => {
+        const file = url.endsWith('.ts') ? await read(url) : null;
+        return file?.kind === 'file' && typeof file.body === 'string' ? file.body : null;
+      },
+      tags: async () => {
+        const entries = await Array.fromAsync(new Bun.Glob('**/*.{ts,css}').scan({ cwd: FRONTEND_DIR }));
+        // Glob yields `ui\app.css` on Windows.
+        const urls = [...entries.map((entry) => `/${entry.replaceAll('\\', '/')}`).filter(isVersioned), ...vendorUrls()];
+        const tags: Record<string, string> = {};
+        for (const url of urls) {
+          const file = await read(url);
+          if (file.kind === 'file') {
+            tags[url] = contentTag(file.body);
+          }
+        }
+        return tags;
+      },
+    };
+  }
+}
 
 interface ServedFile {
   body: string | Uint8Array<ArrayBuffer>;

@@ -11,8 +11,8 @@ describe('preloadModule', () => {
     map.type = 'application/json';
     map.dataset.lazyPreloads = '';
     map.textContent = JSON.stringify({
-      '/features/a/gz-a.component.ts': ['/features/a/gz-a.component.ts', '/features/a/gz-a.component.css', '/ui/tile/gz-tile.component.ts'],
-      '/features/b/gz-b.component.ts': ['/features/b/gz-b.component.ts', '/ui/tile/gz-tile.component.ts'],
+      '/features/a/gz-a.component.ts': ['/features/a/gz-a.component.ts?v=a', '/features/a/gz-a.component.css?v=a2', '/ui/tile/gz-tile.component.ts?v=t'],
+      '/features/b/gz-b.component.ts': ['/features/b/gz-b.component.ts?v=b', '/ui/tile/gz-tile.component.ts?v=t'],
     });
     document.head.append(map);
     ({ preloadModule } = await import('./preload.ts'));
@@ -21,12 +21,12 @@ describe('preloadModule', () => {
   const links = (): string[][] =>
     [...document.head.querySelectorAll('link')].map((link) => [link.rel, link.getAttribute('href') ?? '', link.as, link.getAttribute('crossorigin') ?? '']);
 
-  test("links a module's scripts as modulepreloads and its stylesheets for fetch()", () => {
-    preloadModule('http://localhost/features/a/gz-a.component.ts');
+  test("links a module's scripts as modulepreloads and its stylesheets for fetch(), versions and all", () => {
+    preloadModule('http://localhost/features/a/gz-a.component.ts?v=a');
     expect(links()).toEqual([
-      ['modulepreload', '/features/a/gz-a.component.ts', '', ''],
-      ['preload', '/features/a/gz-a.component.css', 'fetch', 'anonymous'],
-      ['modulepreload', '/ui/tile/gz-tile.component.ts', '', ''],
+      ['modulepreload', '/features/a/gz-a.component.ts?v=a', '', ''],
+      ['preload', '/features/a/gz-a.component.css?v=a2', 'fetch', 'anonymous'],
+      ['modulepreload', '/ui/tile/gz-tile.component.ts?v=t', '', ''],
     ]);
   });
 
@@ -34,10 +34,10 @@ describe('preloadModule', () => {
     preloadModule('http://localhost/features/a/gz-a.component.ts');
     preloadModule('http://localhost/features/b/gz-b.component.ts');
     expect(links().map(([, href]) => href)).toEqual([
-      '/features/a/gz-a.component.ts',
-      '/features/a/gz-a.component.css',
-      '/ui/tile/gz-tile.component.ts',
-      '/features/b/gz-b.component.ts',
+      '/features/a/gz-a.component.ts?v=a',
+      '/features/a/gz-a.component.css?v=a2',
+      '/ui/tile/gz-tile.component.ts?v=t',
+      '/features/b/gz-b.component.ts?v=b',
     ]);
   });
 

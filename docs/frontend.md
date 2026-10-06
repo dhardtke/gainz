@@ -404,6 +404,21 @@ import; `routes.test.ts` holds the two equal. Measured as above, the dashboard o
 defined after about 1.2 s with these rather than 1.5 s with the shell preloads alone, and a
 navigation from it to `/workouts` took about 135 ms rather than 480 ms. The map is about 3.4 KB.
 
+On a repeat visit nothing but the index page needs asking about. The server names every module,
+stylesheet and Oat file by a versioned URL, `/ui/format.ts?v=<content hash>`, and lets the browser
+keep that for good, since the bytes behind it can never change (see "Pages" in `docs/backend.md`).
+The index page links its own files by those URLs, and its import map rewrites every other one: a
+module still imports `'../../ui/format.ts'`, which resolves to the plain URL as before and is then
+mapped to the versioned one. So `import.meta.url` carries the version, and anything that keys by a
+module's URL takes its pathname, as `styles.ts` and `preloadModule()` do. `styles.ts` fetches a
+sheet by the versioned URL it looks up in the import map, which `import.meta.resolve()` would
+also give in a browser but not under bun test, where it resolves against the file system; a page
+without a map, as in the tests, fetches the plain URL. The preloads name the same versioned URLs,
+so they still match what is fetched. Measured as above with the cache on, opening the dashboard a
+second time sent 4 requests for static files rather than 49, and it was defined after about
+265 ms rather than 1175 ms; the first visit is unchanged. The import map makes the index page about
+6 KB larger, and the index page is still revalidated on every visit, since it names the versions.
+
 Styled is not the same as ready, though: a view fetches its data once connected, and until then
 it renders a "Loading…" line. Swapped in straight away, every page switch would collapse the page
 to that line for a frame or two and expand it again. So `gz-app` keeps the outgoing view on screen
@@ -429,7 +444,9 @@ backend half is described in `docs/backend.md`). `bun start` does neither, and n
 Saving a `.css` restyles the page in place, with no reload and no lost form state or scroll
 position. That costs nothing because every component adopts its `CSSStyleSheet` objects by
 reference: `reloadSheet` in `ui/styles.ts` refetches into the **same** object, and every live
-instance picks the change up without re-rendering. A stylesheet in the document rather than a
+instance picks the change up without re-rendering. It refetches with `cache: 'no-cache'`, because
+the sheet's versioned URL may sit in the browser's cache for good while the file under it has
+changed; the server answers a version that is no longer current with the current bytes. A stylesheet in the document rather than a
 shadow root — `ui/app.css`, and the `<link>`s to Oat's `oat.css` and `ui/shared.css` — is swapped for a fresh `<link>`, the old one
 removed only once the new one has loaded. A stylesheet the page has never fetched reloads the page.
 

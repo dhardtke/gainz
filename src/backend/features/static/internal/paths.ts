@@ -21,6 +21,16 @@ export function vendorUrls(): string[] {
   return Object.keys(VENDOR_FILES);
 }
 
+/** Whether the web root's file at `url` reaches a browser: hot reload and tests never ship. */
+export function isShipped(url: string): boolean {
+  return !url.startsWith('/dev/') && url !== '/testing.ts' && !url.endsWith('.test.ts') && !url.endsWith('.fixtures.ts');
+}
+
+/** Whether a page names the web root's file at `url` by a versioned URL: its modules and stylesheets. */
+export function isVersioned(url: string): boolean {
+  return isShipped(url) && (url.endsWith('.ts') || url.endsWith('.css'));
+}
+
 export function resolveVendorPath(pathname: string): string | null {
   const specifier = VENDOR_FILES[pathname];
   if (!specifier) {

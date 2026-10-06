@@ -45,7 +45,8 @@ export function preloadModule(moduleUrl: string): void {
     }
     requested.add(href);
     const link = document.createElement('link');
-    if (href.endsWith('.css')) {
+    // The pathname, because the server names each file with a `?v=` version after it.
+    if (new URL(href, location.href).pathname.endsWith('.css')) {
       // `fetch()` in styles.ts reuses only a preload made in its own CORS mode.
       link.rel = 'preload';
       link.as = 'fetch';

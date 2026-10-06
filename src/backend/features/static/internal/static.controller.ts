@@ -1,5 +1,6 @@
 import { extname } from 'node:path';
 import type { DevFacade } from '../../dev/dev.facade.ts';
+import { contentTag } from './content-tag.ts';
 import type { WebFile, WebFiles } from './web-files.ts';
 
 export class StaticController {
@@ -60,16 +61,25 @@ export class StaticController {
     return this.#respond(req, body, { 'Content-Type': file.type });
   }
 
-  /** Assets carry a hash-free URL, so every response is revalidated against its content hash. */
+  /**
+   * A versioned URL whose `v` is the content's current tag names these bytes for good, so it is
+   * cached for good. Anything else is revalidated against the tag: a plain URL, the index page, or
+   * a version a page still names after the file changed.
+   */
   #respond(req: Request, body: string | Uint8Array<ArrayBuffer>, headers: Record<string, string>): Response {
-    const etag = `"${Bun.hash(body).toString(36)}"`;
-    const cache = { ETag: etag, 'Cache-Control': 'no-cache' };
+    const tag = contentTag(body);
+    const etag = `"${tag}"`;
+    const current = new URL(req.url).searchParams.get('v') === tag;
+    const cache = { ETag: etag, 'Cache-Control': current ? IMMUTABLE : 'no-cache' };
     if (matchesEtag(req.headers.get('If-None-Match'), etag)) {
       return new Response(null, { status: 304, headers: cache });
     }
     return new Response(body, { headers: { ...headers, ...cache } });
   }
 }
+
+/** A year, the conventional "forever"; `immutable` also spares the revalidation a reload would send. */
+const IMMUTABLE = 'public, max-age=31536000, immutable';
 
 /** RFC 9110 weak comparison. */
 function matchesEtag(header: string | null, etag: string): boolean {

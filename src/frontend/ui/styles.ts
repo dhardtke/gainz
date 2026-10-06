@@ -26,16 +26,40 @@ const hrefs = new Map<string, string>();
 
 const pending = new Map<string, Promise<void>>();
 
+let importMap: Record<string, string> | undefined;
+
+/**
+ * The URL to fetch the stylesheet at path `href` from: the versioned one the page's
+ * import map names, which the server lets the browser cache for good, or `href`
+ * itself on a page without one. Read from the map rather than through
+ * `import.meta.resolve()`, which bun test resolves against the file system.
+ */
+function versioned(href: string): string {
+  if (importMap === undefined) {
+    importMap = {};
+    const script = document.querySelector('script[type="importmap"]');
+    try {
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- written by the server's page.ts
+      importMap = (JSON.parse(script?.textContent ?? '{}') as { imports?: Record<string, string> }).imports ?? {};
+    } catch (cause) {
+      console.error('gainz: could not read the import map', cause);
+    }
+  }
+  return importMap[href] ?? href;
+}
+
 /**
  * Fills the sheet for `href`, creating it on first use. A repeat call refills the
  * same object, because components adopt it by reference: that is what lets
- * `reloadSheet` restyle every live instance without re-rendering one.
+ * `reloadSheet` restyle every live instance without re-rendering one. Such a
+ * refill revalidates, because the versioned URL may be cached for good while
+ * the file under it changed on disk.
  */
-async function load(href: string): Promise<void> {
+async function load(href: string, refill = false): Promise<void> {
   const sheet = sheets.get(href) ?? new CSSStyleSheet();
   sheets.set(href, sheet);
   try {
-    const response = await fetch(href);
+    const response = await fetch(versioned(href), refill ? { cache: 'no-cache' } : undefined);
     if (!response.ok) {
       // noinspection ExceptionCaughtLocallyJS
       throw new Error(`HTTP ${response.status}`);
@@ -51,7 +75,7 @@ async function load(href: string): Promise<void> {
   }
 }
 
-await Promise.all(BASE_HREFS.map(load));
+await Promise.all(BASE_HREFS.map((href) => load(href)));
 
 /**
  * Fetches one component's stylesheet, at most once. Repeat and concurrent calls
@@ -100,6 +124,6 @@ export async function reloadSheet(href: string): Promise<boolean> {
   if (!sheets.has(href)) {
     return false;
   }
-  await load(href);
+  await load(href, true);
   return true;
 }

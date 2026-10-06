@@ -283,23 +283,39 @@ fallback, the client injection and the ETag for both sources. Vendor files sit i
 they stay reachable only at their literal URL, exactly as on disk. `static.routes.ts` only declares
 the URLs that reach the controller.
 
-**Preloads.** An HTML page is served with its static module graph announced in its `<head>`, so the
-browser fetches the shell in one round trip instead of one per level of imports (why, and what the
-frontend relies on, is in "Loading" in `docs/frontend.md`). `internal/preload.ts` finds each
-`<script type="module" src>` with `HTMLRewriter`, walks the imports from it breadth first, nearest
-first, and inserts before the script a `<link rel="modulepreload">` per module and a
-`<link rel="preload" as="fetch" crossorigin>` for each `.css` file beside one. It scans each module
-after transpiling, with `Bun.Transpiler.scanImports`, so an import that only types needed is already
-gone and `src/shared/` is never named. Only `import-statement`s are preloaded. Each dynamic
+**Pages.** `internal/page.ts` prepares an HTML page in one `HTMLRewriter` pass: it versions the
+files the page loads, and it announces the page's module graph (why, and what the frontend relies
+on, is in "Loading" in `docs/frontend.md`).
+
+Every module, stylesheet and vendor file is named `<url>?v=<tag>`, where the tag is
+`contentTag()` in `internal/content-tag.ts`, the same hash the ETag carries (see the caching
+paragraph below). The page's own `src` and `href` attributes are rewritten to those URLs, all but
+the icon's and the manifest's, which have no tag. An import map from every plain URL to its versioned one goes
+right before the first module script, ahead of anything that loads a module, which the browser
+requires. The page can only name what it links itself, and the map versions everything else: a
+module's relative imports resolve to plain URLs, which the map rewrites, and `ui/styles.ts` looks a
+component's stylesheet up in it.
+
+Before each `<script type="module" src>` the page gets a `<link rel="modulepreload">` per module the
+script reaches through static imports, breadth first, nearest first, and a
+`<link rel="preload" as="fetch" crossorigin>` for each `.css` file beside one, so the browser
+fetches the shell in one round trip instead of one per level of imports. Each module is scanned
+after transpiling, with `Bun.Transpiler.scanImports`, so an import that only types needed is
+already gone and `src/shared/` is never named. Only `import-statement`s are preloaded. Each dynamic
 `import()` target is walked the same way instead, minus the shell's modules, and written beside the
 links as a JSON map, `<script type="application/json" data-lazy-preloads>`, from the target to its
 files, for the frontend to preload when it opens that view; a target's own dynamic imports are
-walked in turn. A `<` in the JSON is escaped as `<`, so no URL could end the element early. It
-reads the web root through a `PreloadSource`: `DiskWebFiles` transpiles from disk on every request
-for the page (a few milliseconds for the whole frontend), and the build walks the modules it has
-already transpiled. `static.routes.test.ts` holds that the shell's preloads and each view's map
-entry are closed under static imports, that no entry lists a module the shell preloads, and that
-every file named is served.
+walked in turn. Every URL in the links and the map is versioned. A `<` in either JSON is escaped as
+`\u003c`, so no URL could end the element early.
+
+A page reads the web root through a `PageSource`: the modules, and the tag of every versioned file.
+`DiskWebFiles` reads both through its own `page()` and `vendor()`, each file at most once per page,
+so a tag is the one that file's response carries; that transpiles the whole frontend on every
+request for the page, a few milliseconds. The build tags the strings it embeds, which
+`EmbeddedWebFiles` serves as they are. `static.routes.test.ts` holds that the shell's preloads and
+each view's map entry are closed under static imports, that no entry lists a module the shell
+preloads, that every file named is served, and that every version is the tag its plain URL's ETag
+carries.
 
 The static feature keeps no map of content types. Transpiled modules get a fixed `Content-Type`,
 and every plain file — vendor files included — takes `Bun.file(x).type` — the same lookup
@@ -314,9 +330,16 @@ rather than a `{ GET, HEAD }` map, because a map answers an unmatched verb with 
 and there is no `fetch` behind it to say otherwise. An unmatched verb on a vendor route falls
 through to `/*` and is answered there.
 
-Assets carry hash-free URLs, so every static `200` — files, transpiled modules, the index page and
-the vendor files alike — is sent `Cache-Control: no-cache` with a strong `ETag` hashed from the
-exact body with `Bun.hash`. A `GET` or `HEAD` whose `If-None-Match` matches (in a comma-separated
+Every static `200` — files, transpiled modules, the index page and the vendor files alike — is sent
+a strong `ETag` hashed from the exact body by `contentTag()`, with `Bun.hash`. A request whose `v`
+query parameter is that tag, as every versioned URL a page names is, gets
+`Cache-Control: public, max-age=31536000, immutable`: those bytes can never change under that URL,
+so a browser keeps them a year and does not even revalidate them on a reload. Anything else gets
+`no-cache`: a plain URL, the index page, which is what names the current versions, and a `v` that
+is not the current tag. That last case is a page loaded before a file changed, such as an open tab
+during a deploy or a stylesheet hot reload swapped in place; it gets the current bytes, and they
+are not cached for good under a version they do not match. A `304` keeps the caching its `200`
+would have had. A `GET` or `HEAD` whose `If-None-Match` matches (in a comma-separated
 list, as `*`, or with a `W/` prefix, per RFC 9110 weak comparison) gets an empty `304`. Bun does
 neither of these itself: measured on 1.4.2, a `Bun.file` response has no validator, and a response
 that sets `ETag` is still a full `200` when the tag matches. The tag is a content hash rather than
@@ -324,7 +347,8 @@ mtime and size because it changes exactly when the bytes do, it covers transpile
 depends on the Bun version, and hashing files of this app's size costs well under a millisecond.
 A `304` still reads or transpiles the file; only the transfer is saved. Vendor files used to be
 cached for an hour, which let a browser keep a stale vendor file (Pico, at the time) after
-`bun install`; they are now revalidated like everything else. Error responses carry no `ETag`.
+`bun install`; a version now changes with the file, and the plain URL is revalidated. Error
+responses carry no `ETag`.
 
 ## Logging (`shared/log.ts`)
 

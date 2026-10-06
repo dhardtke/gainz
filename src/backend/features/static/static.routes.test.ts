@@ -182,17 +182,26 @@ describe('installable app', () => {
   });
 });
 
+/** A page's URL without its version. */
+const plain = (url: string): string => url.split('?', 1)[0] ?? url;
+const hrefs = (page: string, pattern: RegExp): string[] => [...page.matchAll(pattern)].map((match) => match[1] ?? '');
+const importMap = (page: string): Record<string, string> => {
+  const json = /<script type="importmap">([^<]*)<\/script>/.exec(page)?.[1] ?? '{}';
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the shape is what the tests check
+  return (JSON.parse(json) as { imports: Record<string, string> }).imports;
+};
+
 describe('preloads', () => {
-  const hrefs = (page: string, pattern: RegExp): string[] => [...page.matchAll(pattern)].map((match) => match[1] ?? '');
-  const modules = (page: string): string[] => hrefs(page, /<link rel="modulepreload" href="([^"]+)" \/>/g);
-  const sheets = (page: string): string[] => hrefs(page, /<link rel="preload" href="([^"]+)" as="fetch" crossorigin \/>/g);
+  // Without their versions, which `versions` below covers.
+  const modules = (page: string): string[] => hrefs(page, /<link rel="modulepreload" href="([^"]+)" \/>/g).map(plain);
+  const sheets = (page: string): string[] => hrefs(page, /<link rel="preload" href="([^"]+)" as="fetch" crossorigin \/>/g).map(plain);
 
   test('announce the shell ahead of the entry point, with the stylesheet beside each component', async () => {
     const page = await (await api('/workouts')).text();
     expect(modules(page)).toContain('/app/gz-app.component.ts');
     expect(modules(page)).toContain('/ui/styles.ts');
     expect(sheets(page)).toContain('/app/gz-app.component.css');
-    expect(page.lastIndexOf('rel="modulepreload"')).toBeLessThan(page.indexOf('<script type="module" src="/main.ts">'));
+    expect(page.lastIndexOf('rel="modulepreload"')).toBeLessThan(page.indexOf('<script type="module" src="/main.ts?v='));
   });
 
   test('cover every module the entry point imports statically, and nothing it does not', async () => {
@@ -219,7 +228,12 @@ describe('preloads', () => {
     const shell = new Set(modules(page));
     const json = /<script type="application\/json" data-lazy-preloads>([^<]*)<\/script>/.exec(page)?.[1] ?? '{}';
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the shape is what the test checks
-    const lazy = JSON.parse(json) as Record<string, string[]>;
+    const versioned = JSON.parse(json) as Record<string, string[]>;
+    const imports = importMap(page);
+    for (const files of Object.values(versioned)) {
+      expect(files).toEqual(files.map((url) => imports[plain(url)] ?? 'unmapped'));
+    }
+    const lazy = Object.fromEntries(Object.entries(versioned).map(([view, files]) => [view, files.map(plain)]));
     expect(Object.keys(lazy).toSorted()).toEqual([
       '/features/auth/gz-login.component.ts',
       '/features/exercises/gz-exercise-detail.component.ts',
@@ -258,6 +272,81 @@ describe('preloads', () => {
       const res = await api(url);
       expect({ url, status: res.status }).toEqual({ url, status: 200 });
       expect(res.headers.get('content-type')).toContain('text/css');
+    }
+  });
+});
+
+describe('versions', () => {
+  const IMMUTABLE = 'public, max-age=31536000, immutable';
+
+  test('the import map names every module, stylesheet and vendor file by its current tag', async () => {
+    const imports = importMap(await (await api('/')).text());
+    for (const url of ['/main.ts', '/ui/app.css', '/vendor/oat.css', '/vendor/oat.js', '/features/exercises/internal/gz-chart.component.css']) {
+      expect(imports).toHaveProperty([url]);
+    }
+    expect(Object.keys(imports).filter((url) => url.endsWith('.test.ts') || url.startsWith('/dev/') || url === '/testing.ts')).toEqual([]);
+    for (const [url, versioned] of Object.entries(imports)) {
+      const etag = (await api(url)).headers.get('etag') ?? '';
+      expect(versioned).toBe(`${url}?v=${etag.replaceAll('"', '')}`);
+    }
+  });
+
+  test("a version is served for good, under the same tag as the plain URL's", async () => {
+    const imports = importMap(await (await api('/')).text());
+    for (const url of ['/main.ts', '/ui/app.css', '/vendor/oat.css', '/vendor/oat.js']) {
+      const res = await api(imports[url] ?? '');
+      expect({ url, cache: res.headers.get('cache-control') }).toEqual({ url, cache: IMMUTABLE });
+      expect(res.headers.get('etag')).toBe((await api(url)).headers.get('etag'));
+    }
+  });
+
+  test('a version that is not the current one is revalidated, as a plain URL is', async () => {
+    for (const url of ['/main.ts?v=stale', '/ui/app.css?v=', '/vendor/oat.css?v=stale', '/ui/app.css?hot=1']) {
+      const res = await api(url);
+      expect(res.status).toBe(200);
+      expect({ url, cache: res.headers.get('cache-control') }).toEqual({ url, cache: 'no-cache' });
+    }
+  });
+
+  test('a revalidated version keeps its for-good caching on the 304', async () => {
+    const versioned = importMap(await (await api('/')).text())['/ui/app.css'] ?? '';
+    const etag = (await api(versioned)).headers.get('etag') ?? '';
+    const res = await api(versioned, { headers: { 'If-None-Match': etag } });
+    expect(res.status).toBe(304);
+    expect(res.headers.get('cache-control')).toBe(IMMUTABLE);
+  });
+
+  test("the page names its own files by those versions, all but the icon's and the manifest's", async () => {
+    const page = await (await api('/workouts')).text();
+    const imports = importMap(page);
+    const named = [...hrefs(page, /<link [^>]*href="([^"]+)"/g), ...hrefs(page, /<script [^>]*src="([^"]+)"/g)];
+    expect(named).toContain('/icons/icon.svg');
+    expect(named).toContain('/manifest.webmanifest');
+    for (const url of named.filter((url) => url !== '/icons/icon.svg' && url !== '/manifest.webmanifest')) {
+      expect(url).toBe(imports[plain(url)] ?? 'unmapped');
+    }
+  });
+
+  test('the import map comes before anything that loads a module', async () => {
+    const page = await (await api('/')).text();
+    const map = page.indexOf('<script type="importmap">');
+    expect(map).toBeGreaterThan(-1);
+    expect(map).toBeLessThan(page.indexOf('rel="modulepreload"'));
+    expect(map).toBeLessThan(page.indexOf('<script type="module"'));
+  });
+
+  test('editing a file changes its version in the next page', async () => {
+    const path = resolve(FRONTEND_DIR, '__version.css');
+    await Bun.write(path, 'a { color: red; }\n');
+    try {
+      const before = importMap(await (await api('/')).text())['/__version.css'];
+      await Bun.write(path, 'a { color: blue; }\n');
+      const after = importMap(await (await api('/')).text())['/__version.css'];
+      expect(before).toStartWith('/__version.css?v=');
+      expect(after).toStartWith('/__version.css?v=');
+      expect(after).not.toBe(before);
+    } finally {
+      await unlink(path);
     }
   });
 });
