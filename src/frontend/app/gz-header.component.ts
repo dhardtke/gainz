@@ -97,7 +97,10 @@ class GzHeaderComponent extends GzElement {
     return html`
       <header>
         <nav class="container">
-          <a class="brand" href="/"><strong>gainz</strong><span class="tag">lifting log</span></a>
+          <a class="brand" href="/">
+            <img src="/icons/icon.svg" alt="" />
+            <strong>gainz</strong>
+          </a>
           <ul class="links unstyled">
             ${navItems.map((item) => html`<li><a href="${item.path}" data-path="${item.path}">${item.label}</a></li>`)}
             <li class="logout"><a href="/login" data-action="logout">Log out</a></li>
