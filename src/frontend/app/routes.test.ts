@@ -70,6 +70,14 @@ describe('routes', () => {
     expect(withParents.map((route) => route.parents)).toEqual([[{ path: '/workouts', label: 'Workouts' }], [{ path: '/exercises', label: 'Exercises' }]]);
   });
 
+  test('every route names the module its view imports, for the preloads', () => {
+    for (const route of ROUTES) {
+      // The view is never called (see above), so its source is the only witness of what it imports.
+      const specifier = /import\("\.\/([^"]+)"\)/.exec(route.view.toString())?.[1];
+      expect(route.module).toEndWith(`/${specifier ?? 'no import() found'}`);
+    }
+  });
+
   test("every parent links to a route titled by the parent's label", () => {
     for (const parent of ROUTES.flatMap((route) => route.parents ?? [])) {
       expect(matchRoute(ROUTES, parent.path)?.route.title).toBe(parent.label);

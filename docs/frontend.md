@@ -10,7 +10,7 @@ src/frontend/
 ├── index.html  main.ts  manifest.webmanifest
 ├── icons/      icon.svg, icon-maskable.svg, icon-192.png, icon-512.png, icon-maskable-512.png
 ├── dev/        hot.ts (development only)
-├── app/        gz-app, gz-header, gz-theme-toggle, gz-breadcrumbs, router.ts, routes.ts, tab-title.ts
+├── app/        gz-app, gz-header, gz-theme-toggle, gz-breadcrumbs, router.ts, routes.ts, tab-title.ts, preload.ts
 ├── http/       http.ts (get/post/patch/remove), errors.ts (ApiError, errorMessage, UNAUTHORIZED_EVENT)
 ├── ui/         base.ts, view.ts, html.ts, styles.ts, theme.ts, format.ts, app.css, shared.css, toast.ts, tile/, pagination/
 └── features/
@@ -159,7 +159,8 @@ which is how the backend derives `done`; `gz-workout-card` shows that "✓ Done"
 A feature's routes live in `<f>.routes.ts` beside its facade, the way the backend keeps one
 `*.routes.ts` per feature and spreads them in `src/backend/http/routes.ts`. Each route is a regex
 `pattern`, the `keys` naming its capture groups, and a `view(params)` that `import()`s the view
-module and returns `new GzXComponent()`, setting any id attribute before handing it back. `gz-app` matches
+module and returns `new GzXComponent()`, setting any id attribute before handing it back, beside a
+`module` naming that same file through `import.meta.resolve()`, for the preloads (see "Loading"). `gz-app` matches
 the current path against `ROUTES` and awaits the matching route's `view()` without knowing which
 route it is; when nothing matches it shows its own not-found message. A route may also carry
 `nav: { path, label }`, and `gz-header` builds the header from those, in the order `app/routes.ts`
@@ -372,7 +373,7 @@ only when that view _and_ everything it renders have their scripts and their CSS
 page is fully styled on its first paint; there is no flash of unstyled content to guard against.
 
 Only the shell (`gz-app`, `gz-header`, `gz-theme-toggle`, `gz-breadcrumbs`) with `ui/view.ts`,
-`http/errors.ts`, `ui/toast.ts` and `app/tab-title.ts`, which `gz-app` imports, `app/routes.ts` with the four feature route files, the auth
+`http/errors.ts`, `ui/toast.ts`, `app/tab-title.ts` and `app/preload.ts`, which `gz-app` imports, `app/routes.ts` with the four feature route files, the auth
 facade with its API class and `http/http.ts`, which `gz-header` imports for Log out, and Oat plus
 `ui/shared.css` load up front. `gz-app` guards against two
 navigations resolving out of order and reports a failed import through the toast.
@@ -386,10 +387,22 @@ one (see "Preloads" in `docs/backend.md`). The shell then loads in about one rou
 headless Edge with 100 ms of added latency, the dashboard was defined after about 1.4 s rather than
 1.9 s. `crossorigin` is load-bearing: it gives the preload the CORS mode `fetch()` uses in
 `styles.ts`, and without it the fetch would not reuse the preload and would go to the network a
-second time. Dynamic imports are not followed, so a lazily loaded route still arrives only when
-opened. `index.html` itself preloads `/vendor/oat.css` and `/ui/shared.css` for `fetch()` beside
+second time. `index.html` itself preloads `/vendor/oat.css` and `/ui/shared.css` for `fetch()` beside
 linking them as stylesheets, because a stylesheet link's response cannot answer a `fetch()`, and
 the top-level `await` in `styles.ts` holds back every component module until both have loaded.
+
+A lazily loaded view would be the same waterfall one level down, so it is preloaded too, but only
+once it is opened. The server writes a map into the index page, `<script type="application/json"
+data-lazy-preloads>`, from each module the app imports dynamically to the scripts and stylesheets
+its static graph adds to the shell's. A route names its view module in `module`, and `gz-app` hands
+that to `preloadModule()` in `app/preload.ts` right before calling `view()`, which adds the same
+`<link>`s the server writes for the shell, so the view's whole graph is requested with its
+`import()`. It links each file once per page load, so a stylesheet two views share is not fetched a
+second time. The `import()` in `view()` stays a literal because the server finds the views by
+scanning for it, and `module` repeats its specifier because nothing at runtime can read a function's
+import; `routes.test.ts` holds the two equal. Measured as above, the dashboard on first load was
+defined after about 1.2 s with these rather than 1.5 s with the shell preloads alone, and a
+navigation from it to `/workouts` took about 135 ms rather than 480 ms. The map is about 3.4 KB.
 
 Styled is not the same as ready, though: a view fetches its data once connected, and until then
 it renders a "Loading…" line. Swapped in straight away, every page switch would collapse the page

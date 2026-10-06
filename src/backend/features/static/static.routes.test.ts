@@ -214,6 +214,43 @@ describe('preloads', () => {
     expect(preloaded.has('/main.ts')).toBe(false);
   });
 
+  test('map every route view to its whole graph, less what the shell already loads', async () => {
+    const page = await (await api('/')).text();
+    const shell = new Set(modules(page));
+    const json = /<script type="application\/json" data-lazy-preloads>([^<]*)<\/script>/.exec(page)?.[1] ?? '{}';
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the shape is what the test checks
+    const lazy = JSON.parse(json) as Record<string, string[]>;
+    expect(Object.keys(lazy).toSorted()).toEqual([
+      '/features/auth/gz-login.component.ts',
+      '/features/exercises/gz-exercise-detail.component.ts',
+      '/features/exercises/gz-exercise-list.component.ts',
+      '/features/stats/gz-dashboard.component.ts',
+      '/features/workouts/gz-workout-detail.component.ts',
+      '/features/workouts/gz-workout-list.component.ts',
+    ]);
+
+    const scanner = new Bun.Transpiler({ loader: 'js' });
+    for (const [view, files] of Object.entries(lazy)) {
+      expect(files[0]).toBe(view);
+      const listed = new Set(files);
+      for (const url of files) {
+        const res = await api(url);
+        expect({ url, status: res.status }).toEqual({ url, status: 200 });
+        expect({ url, inShell: shell.has(url) }).toEqual({ url, inShell: false });
+        if (!url.endsWith('.ts')) {
+          continue;
+        }
+        for (const { kind, path } of scanner.scanImports(await res.text())) {
+          const target = new URL(path, `http://gainz${url}`).pathname;
+          if (kind === 'import-statement' && !shell.has(target)) {
+            expect({ view, imports: target, listed: listed.has(target) }).toEqual({ view, imports: target, listed: true });
+          }
+        }
+      }
+    }
+    expect(lazy['/features/stats/gz-dashboard.component.ts']).toContain('/ui/tile/gz-tile.component.css');
+  });
+
   test('name only stylesheets that exist', async () => {
     const page = await (await api('/')).text();
     expect(sheets(page)).toContain('/vendor/oat.css');

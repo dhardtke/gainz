@@ -1,13 +1,17 @@
 /**
- * Announces a page's whole static module graph in its `<head>`, so the browser fetches it in one
- * round trip instead of one per level of imports.
+ * Announces a page's module graph in its `<head>`, so the browser fetches it a level at a time no
+ * longer: in one round trip for the shell, and in one for each lazily loaded view.
  *
  * Unbundled, the browser learns of a module only once it has fetched and parsed the module that
- * imports it, so the shell's import chain is a waterfall of round trips. Before each
+ * imports it, so an import chain is a waterfall of round trips. Before each
  * `<script type="module" src>` this writes a `<link rel="modulepreload">` for every module that
  * script reaches through static imports, and a `<link rel="preload" as="fetch">` for the stylesheet
  * beside each that has one, which `ui/styles.ts` would otherwise fetch only once the module runs.
- * Dynamic imports — the lazily loaded routes — are left alone.
+ *
+ * A dynamic `import()` is not preloaded, since lazy loading is its point. Instead each target gets
+ * an entry in a JSON map written beside the links, `<script type="application/json"
+ * data-lazy-preloads>`: the files its own static graph adds to the shell's, which
+ * `app/preload.ts` turns into the same links right before the view is imported.
  */
 import { posix } from 'node:path';
 
@@ -20,10 +24,17 @@ export interface PreloadSource {
 
 const scanner = new Bun.Transpiler({ loader: 'js' });
 
-/** Every module `entry` imports statically, nearest first, without `entry` itself. */
-async function staticGraph(entry: string, source: PreloadSource): Promise<string[]> {
-  const seen = new Set([entry]);
-  const queue = [entry];
+interface Graph {
+  /** `root` and every module it imports statically that `known` lacks, nearest first. */
+  modules: string[];
+  /** The targets of their dynamic imports. */
+  lazy: string[];
+}
+
+async function walk(root: string, source: PreloadSource, known: ReadonlySet<string>): Promise<Graph> {
+  const seen = new Set([root]);
+  const queue = [root];
+  const lazy: string[] = [];
   for (let url = queue.shift(); url !== undefined; url = queue.shift()) {
     const code = await source.module(url);
     if (code === null) {
@@ -31,29 +42,59 @@ async function staticGraph(entry: string, source: PreloadSource): Promise<string
     }
     // Scanned after transpiling, so an import only types needed is already gone.
     for (const { kind, path } of scanner.scanImports(code)) {
-      if (kind !== 'import-statement' || !(path.startsWith('./') || path.startsWith('../') || path.startsWith('/'))) {
+      if (!(path.startsWith('./') || path.startsWith('../') || path.startsWith('/'))) {
         continue;
       }
       const target = posix.normalize(posix.join(posix.dirname(url), path));
-      if (!seen.has(target)) {
+      if (kind === 'dynamic-import') {
+        lazy.push(target);
+      } else if (kind === 'import-statement' && !seen.has(target) && !known.has(target)) {
         seen.add(target);
         queue.push(target);
       }
     }
   }
-  return [...seen].slice(1);
+  return { modules: [...seen], lazy };
+}
+
+/** `modules`, each followed by the stylesheet beside it if there is one. */
+async function withSheets(modules: string[], source: PreloadSource): Promise<string[]> {
+  const files: string[] = [];
+  for (const url of modules) {
+    files.push(url);
+    const sheet = url.replace(/\.ts$/, '.css');
+    if (sheet !== url && (await source.exists(sheet))) {
+      files.push(sheet);
+    }
+  }
+  return files;
+}
+
+/** Every lazily imported module reachable from `shell`, with the files it adds to what is loaded. */
+async function lazyFiles(shell: Graph, source: PreloadSource): Promise<Record<string, string[]>> {
+  const known = new Set(shell.modules);
+  const map: Record<string, string[]> = {};
+  const queue = [...shell.lazy];
+  for (let url = queue.shift(); url !== undefined; url = queue.shift()) {
+    if (known.has(url) || map[url] !== undefined) {
+      continue;
+    }
+    const graph = await walk(url, source, known);
+    map[url] = await withSheets(graph.modules, source);
+    queue.push(...graph.lazy);
+  }
+  return map;
 }
 
 async function preloadTags(entry: string, source: PreloadSource): Promise<string> {
-  const tags: string[] = [];
-  for (const url of await staticGraph(entry, source)) {
-    tags.push(`<link rel="modulepreload" href="${url}" />`);
-    const sheet = url.replace(/\.ts$/, '.css');
+  const shell = await walk(entry, source, new Set());
+  const tags = (await withSheets(shell.modules.slice(1), source)).map((url) =>
     // `crossorigin` gives the preload the CORS mode `fetch()` uses, or the fetch would not reuse it.
-    if (sheet !== url && (await source.exists(sheet))) {
-      tags.push(`<link rel="preload" href="${sheet}" as="fetch" crossorigin />`);
-    }
-  }
+    url.endsWith('.css') ? `<link rel="preload" href="${url}" as="fetch" crossorigin />` : `<link rel="modulepreload" href="${url}" />`,
+  );
+  // A `</script>` inside a URL would end the element early; `<` is the same JSON string.
+  const map = JSON.stringify(await lazyFiles(shell, source)).replaceAll('<', '\\u003c');
+  tags.push(`<script type="application/json" data-lazy-preloads>${map}</script>`);
   return tags.map((tag) => `${tag}\n    `).join('');
 }
 

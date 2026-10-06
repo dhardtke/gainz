@@ -290,11 +290,16 @@ frontend relies on, is in "Loading" in `docs/frontend.md`). `internal/preload.ts
 first, and inserts before the script a `<link rel="modulepreload">` per module and a
 `<link rel="preload" as="fetch" crossorigin>` for each `.css` file beside one. It scans each module
 after transpiling, with `Bun.Transpiler.scanImports`, so an import that only types needed is already
-gone and `src/shared/` is never named; only `import-statement`s are followed, never a dynamic
-`import()`. It reads the web root through a `PreloadSource`: `DiskWebFiles` transpiles from disk on
-every request for the page (about two milliseconds for the shell), and the build walks the modules
-it has already transpiled. `static.routes.test.ts` holds that the preloads are closed under static
-imports and name only files that are served.
+gone and `src/shared/` is never named. Only `import-statement`s are preloaded. Each dynamic
+`import()` target is walked the same way instead, minus the shell's modules, and written beside the
+links as a JSON map, `<script type="application/json" data-lazy-preloads>`, from the target to its
+files, for the frontend to preload when it opens that view; a target's own dynamic imports are
+walked in turn. A `<` in the JSON is escaped as `<`, so no URL could end the element early. It
+reads the web root through a `PreloadSource`: `DiskWebFiles` transpiles from disk on every request
+for the page (a few milliseconds for the whole frontend), and the build walks the modules it has
+already transpiled. `static.routes.test.ts` holds that the shell's preloads and each view's map
+entry are closed under static imports, that no entry lists a module the shell preloads, and that
+every file named is served.
 
 The static feature keeps no map of content types. Transpiled modules get a fixed `Content-Type`,
 and every plain file — vendor files included — takes `Bun.file(x).type` — the same lookup

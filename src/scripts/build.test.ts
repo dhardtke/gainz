@@ -92,6 +92,7 @@ describe('single-file build', () => {
     const preloaded = [...page.matchAll(/<link rel="modulepreload" href="([^"]+)"/g)].map((match) => match[1] ?? '');
     expect(preloaded).toContain('/app/gz-app.component.ts');
     expect(page).toContain('<link rel="preload" href="/app/gz-app.component.css" as="fetch" crossorigin />');
+    expect(page).toMatch(/<script type="application\/json" data-lazy-preloads>\{"\/features\/[^<]*"\/ui\/tile\/gz-tile\.component\.css"/);
     for (const url of preloaded) {
       expect({ url, status: (await get(url)).status }).toEqual({ url, status: 200 });
     }
