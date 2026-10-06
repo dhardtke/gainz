@@ -2,26 +2,50 @@ import { describe, expect, test } from 'bun:test';
 import { closeSync, fstatSync, openSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { useLogs, useTempDir } from '../testing.ts';
-import { formatLines, isJournalStream, log, setLogSink } from './log.ts';
+import { formatEntry, isJournalStream, log, setLogSink } from './log.ts';
 
 const NOW = new Date(2026, 9, 6, 9, 5, 7);
 
-describe('formatLines', () => {
+const JOURNALD = { journald: true, colors: false, now: NOW };
+const TERMINAL = { journald: false, colors: false, now: NOW };
+const COLORED = { journald: false, colors: true, now: NOW };
+const STACK = 'Error: boom\n    at here';
+
+describe('formatEntry', () => {
   test('prefixes every line of a multi-line error with <3> in journald mode', () => {
-    expect(formatLines('error', 'http boom\nError: boom\n    at here', { journald: true, now: NOW })).toBe('<3>http boom\n<3>Error: boom\n<3>    at here');
+    expect(formatEntry({ level: 'error', topic: 'http', message: 'boom', error: STACK }, JOURNALD)).toBe('<3>http boom\n<3>Error: boom\n<3>    at here');
   });
 
   test('uses <6> for info and <4> for warn in journald mode', () => {
-    expect(formatLines('info', 'db applied 001', { journald: true, now: NOW })).toBe('<6>db applied 001');
-    expect(formatLines('warn', 'auth wrong password', { journald: true, now: NOW })).toBe('<4>auth wrong password');
+    expect(formatEntry({ level: 'info', topic: 'db', message: 'applied 001' }, JOURNALD)).toBe('<6>db applied 001');
+    expect(formatEntry({ level: 'warn', topic: 'auth', message: 'wrong password' }, JOURNALD)).toBe('<4>auth wrong password');
   });
 
   test('starts with the local time in a terminal, naming warn and error on the first line only', () => {
-    expect(formatLines('info', 'db applied 001', { journald: false, now: NOW })).toBe('09:05:07 db applied 001');
-    expect(formatLines('warn', 'auth wrong password', { journald: false, now: NOW })).toBe('09:05:07 WARN auth wrong password');
-    expect(formatLines('error', 'http boom\nError: boom\n    at here', { journald: false, now: NOW })).toBe(
-      '09:05:07 ERROR http boom\nError: boom\n    at here',
+    expect(formatEntry({ level: 'info', topic: 'db', message: 'applied 001' }, TERMINAL)).toBe('09:05:07 db applied 001');
+    expect(formatEntry({ level: 'warn', topic: 'auth', message: 'wrong password' }, TERMINAL)).toBe('09:05:07 WARN auth wrong password');
+    expect(formatEntry({ level: 'error', topic: 'http', message: 'boom', error: STACK }, TERMINAL)).toBe('09:05:07 ERROR http boom\nError: boom\n    at here');
+  });
+
+  test('shows a payload after the message', () => {
+    expect(formatEntry({ level: 'info', topic: 'http', message: 'POST /api/x 201 3ms', payload: '{"a":1}' }, TERMINAL)).toBe(
+      '09:05:07 http POST /api/x 201 3ms {"a":1}',
     );
+  });
+
+  test('colors the time, the level, the topic and the payload, naming info too', () => {
+    expect(formatEntry({ level: 'info', topic: 'http', message: 'POST /api/x 201 3ms', payload: '{"a":1}' }, COLORED)).toBe(
+      '\x1b[90m09:05:07\x1b[0m \x1b[1;32mINFO \x1b[0m \x1b[35mhttp\x1b[0m POST /api/x 201 3ms \x1b[36m{"a":1}\x1b[0m',
+    );
+    expect(formatEntry({ level: 'error', topic: 'http', message: 'boom', error: STACK }, COLORED)).toBe(
+      '\x1b[90m09:05:07\x1b[0m \x1b[1;31mERROR\x1b[0m \x1b[35mhttp\x1b[0m boom\nError: boom\n    at here',
+    );
+  });
+
+  test('lets Bun.inspect color an error, and never in journald mode', () => {
+    const entry = { level: 'error' as const, topic: 'db', message: 'failed', error: new Error('boom') };
+    expect(formatEntry(entry, COLORED)).toContain('\x1b[');
+    expect(formatEntry(entry, JOURNALD)).not.toContain('\x1b[');
   });
 });
 
@@ -91,11 +115,11 @@ describe('setLogSink', () => {
   test('returns a function that restores the previous sink', () => {
     const first: string[] = [];
     const second: string[] = [];
-    const restoreFirst = setLogSink((_level, text) => {
-      first.push(text);
+    const restoreFirst = setLogSink((entry) => {
+      first.push(`${entry.topic} ${entry.message}`);
     });
-    const restoreSecond = setLogSink((_level, text) => {
-      second.push(text);
+    const restoreSecond = setLogSink((entry) => {
+      second.push(`${entry.topic} ${entry.message}`);
     });
     log.info('a', 'one');
     restoreSecond();

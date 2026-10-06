@@ -29,15 +29,13 @@ export function accessLog(table: RouteTable): RouteTable {
       const ms = performance.now() - start;
       const url = new URL(req.url);
       if (url.pathname === '/api' || url.pathname.startsWith('/api/') || res.status >= 500) {
-        let line = `${req.method} ${url.pathname}${url.search} ${res.status} ${Math.round(ms)}ms`;
+        const line = `${req.method} ${url.pathname}${url.search} ${res.status} ${Math.round(ms)}ms`;
         const text = copy === null ? '' : await copy.text();
-        if (text !== '') {
-          line += ` ${describeBody(text)}`;
-        }
+        const payload = text === '' ? undefined : describeBody(text);
         if (res.status >= 500) {
-          log.error('http', line, error);
+          log.error('http', line, error, payload);
         } else {
-          log.info('http', line);
+          log.info('http', line, payload);
         }
       }
     }

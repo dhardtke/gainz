@@ -12,7 +12,7 @@ import { openDatabase } from './db/db.ts';
 import type { AuthOptions } from './features/auth/auth.facade.ts';
 import { HttpError } from './http/errors.ts';
 import { startServer } from './http/server.ts';
-import { type LogLevel, setLogSink } from './shared/log.ts';
+import { type LogLevel, entryText, setLogSink } from './shared/log.ts';
 
 /** The request helpers a test file gets from `useServer()`, and the lines the server logged. */
 export interface TestServer {
@@ -35,8 +35,8 @@ export function useLogs(): () => LogLine[] {
 
   beforeEach(() => {
     lines = [];
-    restore = setLogSink((level, text) => {
-      lines.push({ level, text });
+    restore = setLogSink((entry) => {
+      lines.push({ level: entry.level, text: entryText(entry) });
     });
   });
 

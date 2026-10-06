@@ -310,9 +310,11 @@ cached for an hour, which let a browser keep a stale vendor file (Pico, at the t
 
 ## Logging (`shared/log.ts`)
 
-Everything the server logs goes through `log.info(topic, message)`, `log.warn(topic, message)` or
-`log.error(topic, message, err?)`, each of which writes `<topic> <message>`. The topic is one short
-word for where the line comes from (`http`, `auth`, `server`, `db`, `static`, `dev`). An error is
+Everything the server logs goes through `log.info(topic, message, payload?)`, `log.warn(topic, message)` or
+`log.error(topic, message, err?, payload?)`, each of which writes `<topic> <message>`. The topic is one short
+word for where the line comes from (`http`, `auth`, `server`, `db`, `static`, `dev`). A payload, the
+data the line is about (today only the access log's request body), follows the message on the same
+line; it is passed apart from the message so the colored format can tell the two apart. An error is
 appended below the line as `Bun.inspect` renders it — the stack, a `cause` and an `AggregateError`'s
 inner errors, which is where a transpile failure and a failed migration keep their reasons and which
 `err.stack` does not show. There is no level filter, no JSON format and no setting; journald adds the
@@ -329,7 +331,13 @@ terminal each line starts with `HH:MM:SS`, warn and error lines say `WARN` or `E
 and info goes to stdout, warn and error to stderr. Output Bun writes itself before `main()` runs, such
 as a failed top-level import, stays unprefixed.
 
-`setLogSink(sink)` replaces where lines go and returns a function that restores the previous sink;
+`bun run start:dev` (`GAINZ_DEV=1`) colors the terminal format: the time gray, the level in green,
+yellow or red, the topic magenta and the payload cyan, with info named as `INFO` so every level has
+its color, and the error rendered by `Bun.inspect` with its own colors. It does so only where
+`Bun.enableANSIColors` holds, so `NO_COLOR` turns it off, and never in journald mode. `bun start`
+prints no colors.
+
+`setLogSink(sink)` replaces where entries go and returns a function that restores the previous sink;
 the tests use it through `useLogs()`, which is why the suite prints nothing. Logging happens at the
 edges — `main.ts`, `http/`, the auth facade and its throttle, `transpile.ts` and the dev hub — never in
 a repository or a data facade; the migration runner reports through its `onMigration` callback, and
