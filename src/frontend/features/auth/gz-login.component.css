@@ -1,12 +1,7 @@
-/* The login page: Oat's form styles, held to a comfortable width in the middle of the page. */
+/* The login page: held to a comfortable width in the middle of the page. The form itself is in the
+   light DOM, styled by the document's Oat and shared.css. */
 
 section {
   max-inline-size: 24rem;
   margin-inline: auto;
-}
-
-/* Oat's alert sets its display in a cascade layer, which outranks its own [hidden] rule in an
-   earlier layer, so a hidden alert would still show as an empty box. */
-[role="alert"][hidden] {
-  display: none;
 }

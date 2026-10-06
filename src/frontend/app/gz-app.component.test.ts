@@ -45,7 +45,7 @@ async function mountApp(): Promise<HTMLElement> {
 }
 
 function notFound(app: HTMLElement): string | undefined {
-  return app.shadowRoot?.querySelector('main > p.empty')?.textContent;
+  return app.querySelector(':scope > p.empty')?.textContent;
 }
 
 function link(app: HTMLElement, attributes: Record<string, string>): HTMLAnchorElement {
@@ -53,7 +53,7 @@ function link(app: HTMLElement, attributes: Record<string, string>): HTMLAnchorE
   for (const [name, value] of Object.entries(attributes)) {
     host.setAttribute(name, value);
   }
-  app.shadowRoot?.querySelector('main')?.append(host);
+  app.append(host);
   return find<HTMLAnchorElement>(shadow(host), 'a');
 }
 
@@ -64,9 +64,10 @@ function click(anchor: HTMLAnchorElement, init: MouseEventInit = {}): boolean {
   return event.defaultPrevented;
 }
 
-test('renders the header and the view for the current path', async () => {
+test('renders the header, and the view for the current path in its light DOM', async () => {
   const app = await mountApp();
   expect(notFound(app)).toBe('Nothing lives at /nowhere.');
+  expect(app.shadowRoot?.querySelector('main > slot')).not.toBeNull();
   expect(app.shadowRoot?.querySelector('gz-header')?.shadowRoot?.querySelector('nav')).not.toBeNull();
 });
 
@@ -130,10 +131,13 @@ test('sends a 401 to the login page, remembering where it came from', async () =
   expect(location.pathname + location.search).toBe('/login?next=%2Fworkouts%3Fpage%3D2');
   // The one matched route this file opens: its module and the auth status must land
   // before the file's DOM is torn down.
-  for (let i = 0; i < 50 && !app.shadowRoot?.querySelector('main > gz-login'); i++) {
+  for (let i = 0; i < 50 && !app.querySelector(':scope > gz-login'); i++) {
     await settle();
   }
-  expect(app.shadowRoot?.querySelector('main > gz-login')).not.toBeNull();
+  // Shown at once, form and all: a password manager judges the field when it is added.
+  const login = app.querySelector(':scope > gz-login');
+  expect(login?.hasAttribute('hidden')).toBe(false);
+  expect(login?.querySelector('form input[type="password"]')).not.toBeNull();
 });
 
 test('ignores a 401 on the login page itself', async () => {

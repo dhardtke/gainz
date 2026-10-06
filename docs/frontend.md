@@ -1,6 +1,6 @@
 # Frontend (`src/frontend/`)
 
-`index.html` is the only page: it links Oat and `ui/app.css`, the web app manifest and the barbell
+`index.html` is the only page: it links Oat, `ui/shared.css` and `ui/app.css`, the web app manifest and the barbell
 icon, applies a stored theme in a small inline script before the first paint, loads Oat's `oat.js` deferred, and `main.ts` as a module. `main.ts` only imports the
 `app/gz-app.component.ts` shell. Routes are real paths such as `/workouts/3`, and the server answers
 each with `index.html` because it carries no extension.
@@ -37,7 +37,7 @@ plumbing: `http.ts` holds the `get`/`post`/`patch`/`remove` helpers over `fetch`
 holds `ApiError` and `errorMessage`, kept apart so a component can catch an error without being
 able to make a request. `ui/` is what any component may use: `base.ts` with `GzElement` (open
 shadow root, `data-action` click/submit delegation, `template()`/`render()`) and `define()`;
-`view.ts` with `GzView`, the abstract base of every route view, which loads on connect
+`view.ts` with `GzView`, the abstract base of every route view but the login page, which loads on connect
 through its `load()` hook and renders `loadingText`, then `readyTemplate()` or `errorTemplate()`
 (the message, and `backLink` below it when a view sets one),
 and whose `numericAttribute()` reads the id attribute a route sets, throwing when it is missing;
@@ -161,7 +161,12 @@ route it is; when nothing matches it shows its own not-found message. A route ma
 `nav: { path, label }`, and `gz-header` builds the header from those, in the order `app/routes.ts`
 spreads the features — so adding a list page needs no edit in `app/` beyond a new feature's spread.
 `gz-app` renders `gz-header` above its `<main>`; the header's host is the sticky element, because a
-`<header>` inside its shadow root would be only as tall as its host and could never stick.
+`<header>` inside its shadow root would be only as tall as its host and could never stick. The view
+is not in that shadow root: it is `gz-app`'s own child, in the document's light DOM, and shows
+through a `<slot>` in `<main>`. That is for password managers, which search the document and, by
+default, not shadow roots, so they could never find a login form inside the shell's shadow root
+(see `gz-login` below). Because the not-found line and the login form are in the light DOM, the
+document links `ui/shared.css` beside Oat, so they are styled as they would be in a shadow root.
 The header is a surface bar: `--card` with a `--border` line beneath it, rather than a band of
 brand color, since blue is kept for what is tappable or current. Inside it is a flex `<nav>`: the
 brand in `--primary` on the left, then the page links in `--muted-foreground`, with
@@ -184,15 +189,30 @@ the global object before it throws the `ApiError`; it signals with an event rath
 `navigate()` because `http/` is foundation and may not import `app/`. `gz-app` listens for the event
 on `window` and, unless it is already on `/login`, navigates to `/login?next=` with the current path
 and query encoded. `toastError()` stays silent for a 401, so the view that failed to load shows no
-toast on its way out. `gz-login`, the `auth` feature's one view, loads only whether the server asks
-for a login, from the public `GET /api/auth/status`, and renders a form with a hidden `username` field (password managers save an
-entry only for a form that has one) and a password field, posting through `authFacade.login()`. A
-401 shows "Wrong password." inline, any other failure — the throttle's 429 among them — the server's
-message, and a success navigates to `nextPath(location.search, location.origin)` from
-`internal/next-path.ts`, which accepts `next` only when it resolves to a path on this origin other
-than the login page itself, and otherwise answers `/`. While the server has no password, `gz-login`'s
-`load()` navigates to that same `nextPath` instead, and since `gz-app` keeps the outgoing view until
-the incoming one is ready, the form is never seen.
+toast on its way out. `gz-login`, the `auth` feature's one view, renders a form with a hidden
+`username` field (password managers save an entry only for a form that has one) and a password
+field, posting through `authFacade.login()`. A 401 shows "Wrong password." inline, any other
+failure — the throttle's 429 among them — the server's message, and a success navigates to
+`nextPath(location.search, location.origin)` from `internal/next-path.ts`, which accepts `next` only
+when it resolves to a path on this origin other than the login page itself, and otherwise answers
+`/`. On connect it also asks the public `GET /api/auth/status` whether the server wants a login at
+all, and while it has no password navigates to that same `nextPath` instead; nothing links to
+`/login` then, so only an address typed by hand shows the form for that moment.
+
+`gz-login` is built for password managers in two ways. KeePassXC-Browser, like most of them, finds
+inputs in the document, and by default not inside shadow roots. Its first scan, once it has talked
+to KeePassXC, reads only the light DOM, which is often after the login page has rendered; after that
+a `MutationObserver` on the body checks each added element and the inputs in that element's own
+shadow root. So the form is `gz-login`'s light DOM, shown through a `<slot>` in a shadow root that
+holds only the heading, and together with `gz-app`'s slot the password field sits in the document.
+And it is the one route view that is a plain `GzElement` rather than a `GzView`: `gz-app` connects a
+`GzView` hidden until it has loaded and reveals it by removing `hidden`, while the extension judges
+an input's size once, when it is added, and afterwards reacts only to `class` and `style` changes —
+a form added hidden would be judged invisible and never looked at again. As a plain element,
+`gz-login` is swapped in at once and renders its form, visible, as it connects. The form is also
+the one wired with its own `submit` listener rather than a `data-action`: `GzElement` delegates from
+the shadow root, which a slotted form's events reach in browsers but not in happy-dom, so the tests
+could not see it.
 
 On `/login` the header's `#syncLinks` puts a `login` class on its `<nav>`, which hides both link
 lists at every width and moves the theme toggle to the far end, so the page shows only the brand and
@@ -354,7 +374,7 @@ Saving a `.css` restyles the page in place, with no reload and no lost form stat
 position. That costs nothing because every component adopts its `CSSStyleSheet` objects by
 reference: `reloadSheet` in `ui/styles.ts` refetches into the **same** object, and every live
 instance picks the change up without re-rendering. A stylesheet in the document rather than a
-shadow root — `ui/app.css`, and Oat's `oat.css` `<link>` — is swapped for a fresh `<link>`, the old one
+shadow root — `ui/app.css`, and the `<link>`s to Oat's `oat.css` and `ui/shared.css` — is swapped for a fresh `<link>`, the old one
 removed only once the new one has loaded. A stylesheet the page has never fetched reloads the page.
 
 Saving a `.ts` or `index.html` reloads the page, because a module cannot be evaluated a second time:
@@ -448,7 +468,8 @@ window's `HTMLElement` and stays in that window's `customElements`, and a fresh 
 later files with neither. Between tests `useDom()` empties `document.body` and `localStorage`.
 
 Because a static import runs before any hook, a component test `await import()`s the component in
-`beforeAll`, after `useDom()`, and then creates it by tag name and reads its open `shadowRoot`.
+`beforeAll`, after `useDom()`, and then creates it by tag name and reads its open `shadowRoot` — or,
+for `gz-login`'s form and `gz-app`'s view, the host's light DOM.
 Under `useDom()`, `fetch` answers a `.css` URL with an empty `200`, so stylesheets load silently,
 and rejects anything else with an error naming the method and URL; a test that needs an API
 answer puts `useFetch()` on top. A test sets a component's attributes before appending it, because
