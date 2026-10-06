@@ -76,8 +76,15 @@ gz-theme-toggle {
   height: 1.125rem;
 }
 
+/* Marked like the page links: Oat's focus background, which is all the menu otherwise shows of the
+   current page, is barely set off from the menu's own. */
 menu[popover] a[role="menuitem"] {
-  color: var(--foreground);
+  color: var(--muted-foreground);
+
+  &[aria-current="page"] {
+    color: var(--foreground);
+    font-weight: 600;
+  }
 }
 
 .brand {
