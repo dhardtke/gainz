@@ -238,7 +238,9 @@ field, posting through `authFacade.login()`. A 401 shows "Wrong password." inlin
 failure — the throttle's 429 among them — the server's message, and a success navigates to
 `nextPath(location.search, location.origin)` from `internal/next-path.ts`, which accepts `next` only
 when it resolves to a path on this origin other than the login page itself, and otherwise answers
-`/`. On connect it also asks the public `GET /api/auth/status` whether the server wants a login at
+`/`. On connect it also asks `authFacade.enabled()` — which reads the `#auth-status` JSON the
+server embeds in the page (see "Authentication" in `docs/backend.md`), with no request, and assumes
+a login should the element be missing — whether the server wants a login at
 all, and while it has no password navigates to that same `nextPath` instead; nothing links to
 `/login` then, so only an address typed by hand shows the form for that moment.
 
@@ -260,8 +262,8 @@ could not see it.
 On `/login` the header's `#syncLinks` puts a `login` class on its `<nav>`, which hides both link
 lists at every width and moves the theme toggle to the far end, so the page shows only the brand and
 the toggle. Elsewhere both lists end in Log out, a link to `/login` styled like its neighbors in each list,
-hidden until the header, once rendered, has asked `authFacade.enabled()` and put an `auth` class on
-its `<nav>` — so it never shows while the server has no password, nor when that request fails. Its
+shown once the header, as it renders, has asked `authFacade.enabled()` and put an `auth` class on
+its `<nav>` — so it never shows while the server has no password. Its
 `data-action="logout"` handler cancels the click before `gz-app` routes it, posts through
 `authFacade.logout()` and then navigates to `/login`, toasting a failure instead.
 

@@ -1,5 +1,5 @@
 import { beforeAll, expect, test } from 'bun:test';
-import { find, mount, settle, shadow, testId, useDom, useFetch } from '../testing.ts';
+import { embedAuthStatus, find, mount, settle, shadow, testId, useDom, useFetch } from '../testing.ts';
 
 useDom();
 const fake = useFetch();
@@ -32,23 +32,20 @@ test('shows only the brand and the theme toggle on the login page', () => {
   expect(find(shadow(mount('gz-header')), testId('nav')).classList.contains('login')).toBe(true);
 });
 
-test('elsewhere, ends both link lists with Log out, shown while the server asks for a login', async () => {
+test('elsewhere, ends both link lists with Log out, shown while the server asks for a login', () => {
   history.replaceState(null, '', '/workouts');
-  fake.respondTo('GET /api/auth/status', 200, '{"enabled":true}');
+  embedAuthStatus(true);
   const root = shadow(mount('gz-header'));
-  await settle();
   expect(find(root, testId('nav')).classList.contains('login')).toBe(false);
   expect(find(root, testId('nav')).classList.contains('auth')).toBe(true);
   expect(find(root, testId('links')).lastElementChild?.textContent).toBe('Log out');
   expect(find(root, testId('menu')).lastElementChild?.textContent).toBe('Log out');
 });
 
-test('hides Log out while the server asks for no login', async () => {
+test('hides Log out while the server asks for no login', () => {
   history.replaceState(null, '', '/workouts');
-  fake.respondTo('GET /api/auth/status', 200, '{"enabled":false}');
+  embedAuthStatus(false);
   const root = shadow(mount('gz-header'));
-  await settle();
-  expect(fake.requests.map((request) => request.url)).toContain('/api/auth/status');
   expect(find(root, testId('nav')).classList.contains('auth')).toBe(false);
 });
 

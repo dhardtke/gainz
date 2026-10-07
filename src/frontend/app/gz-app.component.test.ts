@@ -36,7 +36,6 @@ beforeAll(async () => {
 
 beforeEach(() => {
   history.replaceState(null, '', '/nowhere');
-  fake.respondTo('GET /api/auth/status', 200, '{"enabled":true}');
   // happy-dom keeps the <title> a test wrote in <head>, which useDom() does not clear.
   document.title = APP_TITLE;
 });

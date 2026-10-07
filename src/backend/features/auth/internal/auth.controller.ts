@@ -1,4 +1,3 @@
-import type { AuthStatusDto } from '../../../../shared/dto/auth.ts';
 import type { ErrorDto } from '../../../../shared/dto/error.ts';
 import { json, readJsonObject } from '../../../http/http.ts';
 import type { AuthFacade } from '../auth.facade.ts';
@@ -9,11 +8,6 @@ export class AuthController {
 
   constructor(auth: AuthFacade) {
     this.#auth = auth;
-  }
-
-  status(): Response {
-    const body: AuthStatusDto = { enabled: this.#auth.enabled() };
-    return json(body);
   }
 
   async login(req: Request): Promise<Response> {

@@ -292,7 +292,7 @@ modules, re-read on every request. In a built file it is `EmbeddedWebFiles`, loo
 the build carries (made by `embed.ts`, the modules bundled by `bundle.ts`), behind the same decoding, NUL and escape guards. A `WebFile` is a `file`, a
 `missing` one (eligible for the single-page fallback), an `invalid` path (a 404, never the fallback)
 or an `error` (a 500), and the controller keeps the method check, the directory index, the
-fallback, the client injection and the ETag for both sources. Vendor files sit in their own map, so
+fallback, the auth status and hot-reload client injections and the ETag for both sources. Vendor files sit in their own map, so
 they stay reachable only at their literal URL, exactly as on disk. `static.routes.ts` only declares
 the URLs that reach the controller.
 
@@ -424,11 +424,17 @@ than answering a Basic Auth prompt on every launch. `GAINZ_PASSWORD_HASH` holds 
 hash (argon2id from `bun run hash-password`; bcrypt is accepted too), and `main.ts` refuses to start
 when the variable holds anything else. Unset or empty, auth is off: the guard hands the tables back
 untouched, `POST /api/auth/login` validates its body and answers 204 without a cookie, the health
-check reports `"auth": false`, `GET /api/auth/status` answers `{ "enabled": false }` (the frontend's
-cue to hide Log out and skip its login page) and the startup log says `auth: off`. That is why `bun start`, the seed
+check reports `"auth": false`, the index page embeds `{ "enabled": false }` (the frontend's cue to hide Log out and skip its login page; see below) and the startup log says `auth: off`. That is why `bun start`, the seed
 and every route test other than `auth.routes.test.ts` need no cookie. Production cannot fall into
 that state unnoticed: the unit file requires the env file that sets the hash, and `gainz-deploy`
 rolls back a release whose health check reports `"auth": false` (see `docs/deployment.md`).
+
+The status cannot change while the server runs, so the server writes it into the page, and there is no endpoint
+for it: `StaticController` passes every HTML page through `embedAuthStatus()`
+in `static/internal/page.ts`, which adds `<script type="application/json" id="auth-status">` holding
+the same `AuthStatusDto` to the end of `<head>`. That happens at serve time, not at build time,
+because a built file is configured with the password hash only when it starts. Like the hot-reload
+client, it is added before the page is hashed, so the ETag covers it.
 
 `POST /api/auth/login` with `{ "password": "…" }` answers 204 and sets
 `gainz_session=<expiresAt>.<signature>; Path=/; Max-Age=7776000; Secure; HttpOnly; SameSite=Lax`.
@@ -454,7 +460,7 @@ The guard is `AuthFacade.guard(table)`, applied in `allRoutes()` to the stats, e
 set tables. It wraps every handler — a bare function or each verb of a method map — and throws
 `unauthorized()` (`401 { "error": "Not logged in" }`) for a missing, malformed, tampered, expired or
 old-password cookie. A static `Response` value would bypass the wrapper, so meeting one is a startup
-error. The table walk is `wrapHandlers()` in `http/routing.ts`, which the access log is built on too. Everything outside those tables stays public: `/api/health`, the `/api` 404s, the auth status,
+error. The table walk is `wrapHandlers()` in `http/routing.ts`, which the access log is built on too. Everything outside those tables stays public: `/api/health`, the `/api` 404s,
 login and logout, `/dev/ws`, and the whole frontend, whose code is public in the repository anyway — guarding
 it would only need an allowlist of the modules the login page imports.
 

@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test';
-import type { AuthStatusDto } from '../../../shared/dto/auth.ts';
 import type { ErrorDto } from '../../../shared/dto/error.ts';
 import { body, useServer } from '../../testing.ts';
 
@@ -29,8 +28,10 @@ describe('health and routing', () => {
 });
 
 describe('with auth off', () => {
-  test('the auth status says so', async () => {
-    expect(await body<AuthStatusDto>(await api('/api/auth/status'))).toEqual({ enabled: false });
+  test('the page says so, for every route', async () => {
+    for (const path of ['/', '/workouts']) {
+      expect(await (await api(path)).text()).toContain('<script type="application/json" id="auth-status">{"enabled":false}</script>');
+    }
   });
 
   test('the data routes need no cookie', async () => {

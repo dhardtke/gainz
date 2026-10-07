@@ -2,7 +2,6 @@ import type { RawHtml } from '../../ui/html.ts';
 import { define, GzElement } from '../../ui/base.ts';
 import { html } from '../../ui/html.ts';
 import { ApiError, errorMessage } from '../../http/errors.ts';
-import { toastError } from '../../ui/toast.ts';
 import { navigate } from '../../app/router.ts';
 import { authFacade } from './auth.facade.ts';
 import { nextPath } from './internal/next-path.ts';
@@ -11,16 +10,8 @@ import { nextPath } from './internal/next-path.ts';
 export class GzLoginComponent extends GzElement {
   override connectedCallback(): void {
     super.connectedCallback();
-    void this.#skipWithoutLogin();
-  }
-
-  async #skipWithoutLogin(): Promise<void> {
-    try {
-      if (!(await authFacade.enabled())) {
-        navigate(nextPath(location.search, location.origin));
-      }
-    } catch (error) {
-      toastError(error);
+    if (!authFacade.enabled()) {
+      navigate(nextPath(location.search, location.origin));
     }
   }
 

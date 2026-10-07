@@ -1,14 +1,19 @@
 import { expect, test } from 'bun:test';
-import { useFetch } from '../../testing.ts';
+import { embedAuthStatus, useDom, useFetch } from '../../testing.ts';
 import { authFacade } from './auth.facade.ts';
 
+useDom();
 const fetch = useFetch();
 
-test('authFacade.enabled()', async () => {
-  fetch.respondWith(200, '{"enabled":true}');
+test('authFacade.enabled() reads the status the server embedded, without a request', () => {
+  embedAuthStatus(false);
 
-  expect(await authFacade.enabled()).toBe(true);
-  expect(fetch.requests).toMatchObject([{ method: 'GET', url: '/api/auth/status' }]);
+  expect(authFacade.enabled()).toBe(false);
+  expect(fetch.requests).toEqual([]);
+});
+
+test('authFacade.enabled() assumes a login without an embedded status', () => {
+  expect(authFacade.enabled()).toBe(true);
 });
 
 test('authFacade.login()', async () => {

@@ -25,7 +25,7 @@ class GzHeaderComponent extends GzElement {
 
   override afterRender(): void {
     this.#syncLinks();
-    void this.#showLogout();
+    this.$('nav')?.classList.toggle('auth', authFacade.enabled());
     // Oat focuses the first item on open; this listener is registered after Oat's, so it wins.
     this.$<HTMLElement>('menu[popover]')?.addEventListener('toggle', (event) => {
       if (event.newState === 'open') {
@@ -47,14 +47,6 @@ class GzHeaderComponent extends GzElement {
       return;
     }
     navigate('/login');
-  }
-
-  async #showLogout(): Promise<void> {
-    try {
-      this.$('nav')?.classList.toggle('auth', await authFacade.enabled());
-    } catch {
-      // Stays hidden; the views' own requests toast the failure.
-    }
   }
 
   #syncLinks(): void {

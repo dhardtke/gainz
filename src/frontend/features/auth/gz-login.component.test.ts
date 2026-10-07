@@ -1,15 +1,11 @@
-import { beforeAll, beforeEach, expect, test } from 'bun:test';
-import { find, mount, settle, submit, testId, type, useDom, useFetch } from '../../testing.ts';
+import { beforeAll, expect, test } from 'bun:test';
+import { embedAuthStatus, find, mount, settle, submit, testId, type, useDom, useFetch } from '../../testing.ts';
 
 useDom();
 const fake = useFetch();
 
 beforeAll(async () => {
   await import('./gz-login.component.ts');
-});
-
-beforeEach(() => {
-  fake.respondTo('GET /api/auth/status', 200, '{"enabled":true}');
 });
 
 async function logIn(password: string): Promise<HTMLElement> {
@@ -64,12 +60,11 @@ test("a lockout shows the server's message", async () => {
   expect(alertText(view)).toBe('Too many failed logins; try again in 60 s');
 });
 
-test('without a login on the server, goes straight to next', async () => {
+test('without a login on the server, goes straight to next', () => {
   history.replaceState(null, '', '/login?next=%2Fworkouts%2F12');
-  fake.respondTo('GET /api/auth/status', 200, '{"enabled":false}');
+  embedAuthStatus(false);
 
   mount('gz-login');
-  await settle();
 
   expect(location.pathname).toBe('/workouts/12');
   expect(fake.sent('POST /api/auth/login')).toEqual([]);

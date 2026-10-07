@@ -1,13 +1,17 @@
 import { extname } from 'node:path';
+import type { AuthFacade } from '../../auth/auth.facade.ts';
 import type { DevFacade } from '../../dev/dev.facade.ts';
 import { contentTag } from './content-tag.ts';
+import { embedAuthStatus } from './page.ts';
 import type { WebFile, WebFiles } from './web-files.ts';
 
 export class StaticController {
+  readonly #auth: AuthFacade;
   readonly #dev: DevFacade;
   readonly #files: WebFiles;
 
-  constructor(dev: DevFacade, files: WebFiles) {
+  constructor(auth: AuthFacade, dev: DevFacade, files: WebFiles) {
+    this.#auth = auth;
     this.#dev = dev;
     this.#files = files;
   }
@@ -54,9 +58,11 @@ export class StaticController {
     return new Response('Not found', { status: 404 });
   }
 
-  /** Injects before hashing, so the ETag covers the hot-reload client. */
+  /** Injects before hashing, so the ETag covers the auth status and the hot-reload client. */
   async #serve(req: Request, file: WebFile & { kind: 'file' }): Promise<Response> {
-    const body = file.type.startsWith('text/html') ? await this.#dev.injectClient(file.body) : file.body;
+    const body = file.type.startsWith('text/html')
+      ? await this.#dev.injectClient(await embedAuthStatus(file.body, { enabled: this.#auth.enabled() }))
+      : file.body;
     return this.#respond(req, body, { 'Content-Type': file.type });
   }
 

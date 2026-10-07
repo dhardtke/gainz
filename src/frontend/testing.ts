@@ -173,6 +173,15 @@ export function useDom(): void {
   });
 }
 
+// In the body, which useDom() clears after each test; the server puts it in the head.
+export function embedAuthStatus(enabled: boolean): void {
+  const script = document.createElement('script');
+  script.type = 'application/json';
+  script.id = 'auth-status';
+  script.textContent = JSON.stringify({ enabled });
+  document.body.append(script);
+}
+
 export function shadow(host: Element): ShadowRoot {
   if (!host.shadowRoot) {
     throw new Error(`${host.localName} has no shadow root`);

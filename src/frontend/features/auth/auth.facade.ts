@@ -7,8 +7,8 @@ export class AuthFacade {
     this.#api = api;
   }
 
-  async enabled(): Promise<boolean> {
-    return (await this.#api.status()).enabled;
+  enabled(): boolean {
+    return this.#api.status().enabled;
   }
 
   login(password: string): Promise<void> {

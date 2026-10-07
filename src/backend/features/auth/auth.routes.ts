@@ -6,10 +6,6 @@ import { AuthController } from './internal/auth.controller.ts';
 export function authRoutes(auth: AuthFacade): RouteTable {
   const controller = new AuthController(auth);
   return {
-    '/api/auth/status': {
-      GET: () => controller.status(),
-    },
-
     '/api/auth/login': {
       POST: (req) => controller.login(req),
     },

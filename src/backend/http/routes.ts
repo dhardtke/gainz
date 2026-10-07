@@ -24,6 +24,6 @@ export function allRoutes(db: DB, authOptions: AuthOptions): RouteTable {
       ...setRoutes(db),
     }),
     ...devRoutes(),
-    ...staticRoutes(),
+    ...staticRoutes(auth),
   });
 }
