@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Track weight-lifting progress: workouts, sets, reps, weight and notes.",
+  "license": "MIT",
   "type": "module",
   "module": "src/backend/main.ts",
   "scripts": {
