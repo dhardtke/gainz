@@ -19,6 +19,11 @@ function mountRow(value: LiftSetDto, { index = 1, locked = false }: { index?: nu
   return row;
 }
 
+function answerWith(updated: LiftSetDto): LiftSetDto {
+  fake.respondTo(`PATCH /api/sets/${updated.id}`, 200, JSON.stringify(updated));
+  return updated;
+}
+
 function toggle(row: HTMLElement): HTMLButtonElement {
   return find<HTMLButtonElement>(shadow(row), testId('toggle-done'));
 }
@@ -29,13 +34,14 @@ test('offers a set not done as an outlined, unpressed toggle', () => {
   expect(toggle(row).classList.contains('outline')).toBe(true);
 });
 
-test('marks a set done and emits sets-changed', async () => {
-  const changed = collect('sets-changed');
+test('marks a set done and emits the updated set', async () => {
+  const changed = collect('set-updated');
+  const updated = answerWith(set({ id: 7, done: true }));
   const row = mountRow(set({ id: 7 }));
   toggle(row).click();
   await settle();
   expect(fake.sent('PATCH /api/sets/7')).toEqual([{ done: true }]);
-  expect(changed).toHaveLength(1);
+  expect(changed).toEqual([updated]);
 });
 
 test('marks a done set as not done', async () => {
@@ -105,13 +111,14 @@ test('shows a set not done as inputs for reps, weight and notes, but not the exe
   expect(shadow(row).querySelector('select')).toBeNull();
 });
 
-test('saves a committed change, sending only the field that differs', async () => {
-  const changed = collect('sets-changed');
+test('saves a committed change, sending only the field that differs, and emits the updated set', async () => {
+  const changed = collect('set-updated');
+  const updated = answerWith(set({ id: 7, reps: 6, weight: 60, notes: 'Easy' }));
   const row = mountRow(set({ id: 7, reps: 5, weight: 60, notes: 'Easy' }));
   change(input(row, 'reps'), '6');
   await settle();
   expect(fake.sent('PATCH /api/sets/7')).toEqual([{ reps: 6 }]);
-  expect(changed).toHaveLength(1);
+  expect(changed).toEqual([updated]);
 });
 
 test('has no save button', () => {
@@ -120,6 +127,7 @@ test('has no save button', () => {
 });
 
 test('saves on Enter, once, even when the change is committed too', async () => {
+  answerWith(set({ id: 7, weight: 62.5 }));
   const row = mountRow(set({ id: 7, weight: 60 }));
   const weight = input(row, 'weight');
   weight.value = '62.5';
@@ -130,7 +138,7 @@ test('saves on Enter, once, even when the change is committed too', async () => 
 });
 
 test('saves nothing when nothing differs', async () => {
-  const changed = collect('sets-changed');
+  const changed = collect('set-updated');
   const row = mountRow(set({ id: 7, notes: null }));
   change(input(row, 'notes'), '  ');
   await settle();
@@ -146,6 +154,7 @@ test('saves nothing while a field is invalid', async () => {
 });
 
 test('saves a pending change before marking the set done', async () => {
+  answerWith(set({ id: 7, reps: 8 }));
   const row = mountRow(set({ id: 7, reps: 5 }));
   change(input(row, 'reps'), '8');
   toggle(row).click();

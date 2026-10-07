@@ -44,7 +44,7 @@ shadow root, `data-action` click/submit delegation, `template()`/`render()`) and
 through its `load()` hook and renders `loadingText`, then `readyTemplate()` or `errorTemplate()`
 (the message alone), which names what it shows through its `titleFor(data)` hook (`null` by
 default) and the `pageTitle` getter (that answer for the loaded data, `null` while loading or after
-an error), and emits `PAGE_TITLE_EVENT` (`page-title`) after every `reload()`, failed or not,
+an error), and emits `PAGE_TITLE_EVENT` (`page-title`) after every `reload()`, failed or not, and every `show(data)`, which renders data a mutation's response already carries without loading,
 and whose `numericAttribute()` reads the id attribute a route sets, throwing when it is missing;
 `html.ts` with the escaping `html` tagged template and `raw()`; `styles.ts`, `theme.ts` and `format.ts`; the document stylesheet
 `app.css` and the utilities in `shared.css`; `toast.ts`, whose `toast()` and `toastError()` show Oat's toasts
@@ -97,14 +97,13 @@ sets; and last a collapsed `<details>`, "Details & notes",
 holding the workout's autosaving details form and a danger "Delete workout" button, so editing the
 date or title and deleting stay out of the way and Delete is not a mis-tap beside the title. That
 section carries no `name`, so it does not join the exercises' exclusive group, and the view
-remembers whether it is open in `#detailsOpen`, through a `toggle` listener, because a save in it
-and every set change reload the view.
+remembers whether it is open in `#detailsOpen`, through a `toggle` listener, because a save in it and every set change re-render the view.
 
 It groups the workout's sets by exercise in Oat's accordion: one
 `<details name="exercises">` per exercise, in the workout's order, rendered in the view's own shadow
 root rather than by a per-exercise component, because `name` exclusivity only groups `<details>`
 within one tree. At most one exercise is open, and all may be collapsed. The view remembers which
-in `#openExerciseId`, for the same reason it keeps `#edits`: every reload re-renders. `undefined`
+in `#openExerciseId`, for the same reason it keeps `#edits`: every change re-renders. `undefined`
 means the first load has not decided yet, and it then opens the exercise of the first set not done,
 otherwise the last exercise. After that a `toggle` listener on each `<details>` (the event does not
 bubble) records the one opened and clears the id when that one closes; a set logged through
@@ -126,9 +125,9 @@ border the view's stylesheet resets, since Oat only joins grouped inputs. Reorde
 exercise you have open, so a closed group's arrows are hidden with the rest of its body. ▲ is
 disabled on the first exercise and ▼ on the last. They are the view's own
 `data-action`s, `move-exercise-up` and `move-exercise-down`, so no event is needed: a click POSTs
-the move through `workoutFacade.moveExercise()`, reloads, and focuses the same arrow on the moved
+the move through `workoutFacade.moveExercise()`, shows the workout it answers without reloading, and focuses the same arrow on the moved
 exercise, or the other one once it has reached that edge, so repeated presses keep moving it. The
-open exercise stays open, and a failed move toasts without reloading.
+open exercise stays open, and a failed move toasts and changes nothing.
 
 The view hands `gz-add-set-form` the sets back in logged order
 (`position`, then `id`): the form starts from the last set it is given, which in group order would
@@ -140,21 +139,19 @@ inside the accordion item and divided by a `--border` line the view draws betwee
 row's shadow root cannot see its siblings. Every row keeps a 3px leading bar, transparent until the
 set is done and `--success` after, with a `--success` number, so done sets stand out and every
 row's content stays aligned. It leads with a done toggle, a button the size of +1 that is `.outline` while
-the set is not done and Oat's default fill once it is, with `aria-pressed` to match. A click PATCHes
-`{ done }` through `setFacade` and emits `sets-changed`, like every other change to a row, so the
-view reloads rather than patching the row. A set not done has no Edit button: the row is a form
+the set is not done and Oat's default fill once it is, with `aria-pressed` to match. A click PATCHes `{ done }` through `setFacade` and emits `set-updated` (`SET_UPDATED_EVENT`) with the set the API answers, as a saved field does, and the view swaps that set into its data and re-renders without a request. +1 and × emit `sets-changed` instead, and the view reloads the workout; the exercises for `gz-add-set-form` it loads only once, since nothing on the page changes one. A set not done has no Edit button: the row is a form
 whose weight and reps are inputs in Oat's `fieldset.group`, with the unit and "reps" as labels
 beside them, and whose notes are a third input — reps, weight and notes only, since a set's
 exercise is fixed once it is saved. There is no save button: a committed `change` (blur) or
 Enter, which the row catches on `keydown` because a form of several fields without a submit button
 ignores it, PATCHes just the fields that differ from the set, and nothing when none do or a field is
 invalid. The row runs its requests one after another, so a change saved by the blur of a click on
-the done toggle lands before the set is locked. Every save reloads the view, which would drop focus
+the done toggle lands before the set is locked. Every save re-renders the view, which would drop focus
 from the field the blur moved to, so `gz-workout-detail` asks the focused row for
-`focusedField()` before reloading and hands it to the replacing row's `restoreField()`, with
+`focusedField()` before re-rendering and hands it to the replacing row's `restoreField()`, with
 whatever was typed there by then. The workout's details form in "Details & notes" saves the same way,
 without a button or a toast: a committed change, or Enter in the date or title (in the notes it is
-a new line), PATCHes the details that differ from the workout, and the reload puts focus back in
+a new line), PATCHes the details that differ from the workout, and the re-render puts focus back in
 the field by its id while `#edits` keeps its text. A done row mirrors the backend's lock: it keeps its fields and
 × in place but disabled, keeps +1, and mutes its load. A done workout locks every row, as the
 backend locks its sets: the view sets each row's `locked` before its `set`, and a locked row disables
@@ -164,11 +161,11 @@ its toggle, fields, +1 and × whatever the set's own state.
 badge for the sets — outline even at "y/y", so the green "✓ Done" means one thing at the workout
 level — and, on a done workout, a separate success "✓ Done" badge from the workout's own flag;
 `gz-workout-card` shows that badge on done workouts' cards only. "Mark workout done" PATCHes
-`{ done: true }` through `workoutFacade`, toasts "Workout done" and reloads. When some exercise
+`{ done: true }` through `workoutFacade`, toasts "Workout done" and shows the workout it answers, keeping the loaded exercises, since that response carries none. When some exercise
 still has sets not done, it first asks through a native `confirm()`, like the app's other
 confirmations, naming each incomplete exercise with its "(x/y sets)" in the workout's order; Cancel
 sends nothing, and with every set done it asks nothing. "Reopen workout" PATCHes `{ done: false }`
-and reloads without asking or toasting. Either one toasts a failure and does not reload.
+and shows the answer the same way, without asking or toasting. Either one toasts a failure and changes nothing.
 
 A feature's routes live in `<f>.routes.ts` beside its facade, the way the backend keeps one
 `*.routes.ts` per feature and spreads them in `src/backend/http/routes.ts`. Each route is a regex
@@ -191,7 +188,7 @@ the `<slot>` and, every time it reveals a view, hands it `{ parents, current }` 
 current crumb is the shown view's `pageTitle` — the workout's title or else its date, the exercise's
 name — and the route's `title` (`Workout`, `Exercise`) until the view has one: while it loads past
 `SLOW_VIEW_MS`, or after its error or 404. `gz-app` reads `pageTitle` again on every `page-title`
-from the view it shows, so a rename's reload reaches the trail and the tab without a navigation;
+from the view it shows, so a rename reaches the trail and the tab without a navigation;
 the event of a view still loading hidden is ignored, because the swap reads its title anyway. The
 same name sets `document.title` through `tabTitle()` in `tab-title.ts`, `<name> · gainz`, and
 `Not found · gainz` for the not-found line; the dashboard, without a title, keeps `APP_TITLE`,

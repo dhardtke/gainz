@@ -6,6 +6,9 @@ import type { EditSetDto, LiftSetDto } from '../../../../shared/dto/set.ts';
 import { toast, toastError } from '../../../ui/toast.ts';
 import { setFacade } from '../workouts.facade.ts';
 
+// Carries the updated set, which the view applies without a reload; other changes emit `sets-changed`.
+export const SET_UPDATED_EVENT = 'set-updated';
+
 export interface FocusedField {
   name: string;
   value: string;
@@ -68,8 +71,7 @@ export class GzSetRowComponent extends GzElement {
 
     if (action === 'toggle-done') {
       try {
-        await setFacade.update(set.id, { done: !set.done });
-        this.emit('sets-changed');
+        this.emit(SET_UPDATED_EVENT, await setFacade.update(set.id, { done: !set.done }));
       } catch (error) {
         toastError(error);
       }
@@ -125,9 +127,8 @@ export class GzSetRowComponent extends GzElement {
       return;
     }
     try {
-      await setFacade.update(set.id, changes);
-      this.#set = { ...set, ...changes };
-      this.emit('sets-changed');
+      this.#set = await setFacade.update(set.id, changes);
+      this.emit(SET_UPDATED_EVENT, this.#set);
     } catch (error) {
       toastError(error);
     }

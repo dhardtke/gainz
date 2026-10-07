@@ -4,10 +4,11 @@ import { html } from '../../ui/html.ts';
 import { formatDate, formatVolume, plural, relativeDay } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
 import type { ExerciseDto } from '../../../shared/dto/exercise.ts';
-import type { EditWorkoutDto, MoveDirection, WorkoutExerciseDto, WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
+import type { LiftSetDto } from '../../../shared/dto/set.ts';
+import type { EditWorkoutDto, MoveDirection, WorkoutDto, WorkoutExerciseDto, WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
 import type { ExerciseId } from '../../../shared/flavors.ts';
 import type { GzAddSetFormComponent } from './internal/gz-add-set-form.component.ts';
-import { GzSetRowComponent } from './internal/gz-set-row.component.ts';
+import { GzSetRowComponent, SET_UPDATED_EVENT } from './internal/gz-set-row.component.ts';
 import { toast, toastError } from '../../ui/toast.ts';
 import { GzView } from '../../ui/view.ts';
 import { exerciseFacade } from '../exercises/exercises.facade.ts';
@@ -16,6 +17,11 @@ import './internal/gz-add-set-form.component.ts';
 
 function isSetLogged(detail: unknown): detail is { exerciseId: number } {
   return typeof detail === 'object' && detail !== null && 'exerciseId' in detail && typeof detail.exerciseId === 'number';
+}
+
+// Only gz-set-row emits it, with the set the API returned.
+function isLiftSet(detail: unknown): detail is LiftSetDto {
+  return typeof detail === 'object' && detail !== null && 'id' in detail && typeof detail.id === 'number';
 }
 
 function workoutName(workout: WorkoutWithExercisesDto): string {
@@ -41,10 +47,24 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
 
   #detailsOpen = false;
 
+  // Loaded once: nothing on this page creates or edits an exercise.
+  #exercises: Promise<ExerciseDto[]> | null = null;
+
   override connectedCallback(): void {
     super.connectedCallback();
     this.root.addEventListener('sets-changed', () => {
-      void this.#reloadKeepingFocus();
+      void this.#keepingFocus(() => this.reload());
+    });
+    this.root.addEventListener(SET_UPDATED_EVENT, (event) => {
+      if (event instanceof CustomEvent && isLiftSet(event.detail)) {
+        const updated = event.detail;
+        void this.#keepingFocus(() => {
+          this.#showWorkout((workout) => ({
+            ...workout,
+            exercises: workout.exercises.map((group) => ({ ...group, sets: group.sets.map((set) => (set.id === updated.id ? updated : set)) })),
+          }));
+        });
+      }
     });
     this.root.addEventListener('set-logged', (event) => {
       if (event instanceof CustomEvent && isSetLogged(event.detail)) {
@@ -54,12 +74,12 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     });
   }
 
-  async #reloadKeepingFocus(): Promise<void> {
+  async #keepingFocus(rerender: () => Promise<void> | void): Promise<void> {
     const active = this.root.activeElement;
     const row = active instanceof GzSetRowComponent ? active : null;
     const rowField = row?.focusedField() ?? null;
     const detailsField = active instanceof HTMLElement && active.closest('form.details') ? active.id : '';
-    await this.reload();
+    await rerender();
     if (row && rowField) {
       this.$<GzSetRowComponent>(`gz-set-row[data-id='${row.dataset.id}']`)?.restoreField(rowField);
     } else if (detailsField) {
@@ -67,8 +87,22 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     }
   }
 
+  #showWorkout(change: (workout: WorkoutWithExercisesDto) => WorkoutWithExercisesDto): void {
+    if (this.data) {
+      this.show({ ...this.data, workout: change(this.data.workout) });
+    }
+  }
+
   override async load(): Promise<WorkoutDetailData> {
-    const [workout, { items: exercises }] = await Promise.all([workoutFacade.get(this.numericAttribute('workout-id')), exerciseFacade.list()]);
+    this.#exercises ??= exerciseFacade.list().then(
+      (page) => page.items,
+      (error: unknown) => {
+        // Not cached, so the next load asks again.
+        this.#exercises = null;
+        throw error;
+      },
+    );
+    const [workout, exercises] = await Promise.all([workoutFacade.get(this.numericAttribute('workout-id')), this.#exercises]);
     return { workout, exercises };
   }
 
@@ -76,13 +110,14 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     if (action === 'move-exercise-up' || action === 'move-exercise-down') {
       const exerciseId = Number(element.dataset.exerciseId);
       const direction = action === 'move-exercise-up' ? 'up' : 'down';
+      let moved: WorkoutWithExercisesDto;
       try {
-        await workoutFacade.moveExercise(this.numericAttribute('workout-id'), exerciseId, direction);
+        moved = await workoutFacade.moveExercise(this.numericAttribute('workout-id'), exerciseId, direction);
       } catch (error) {
         toastError(error);
         return;
       }
-      await this.reload();
+      this.#showWorkout(() => moved);
       this.#focusMove(exerciseId, direction);
       return;
     }
@@ -92,25 +127,14 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
       if (message !== null && !confirm(message)) {
         return;
       }
-      try {
-        await workoutFacade.update(this.numericAttribute('workout-id'), { done: true });
-      } catch (error) {
-        toastError(error);
-        return;
+      if (await this.#update({ done: true })) {
+        toast('Workout done', 'success');
       }
-      toast('Workout done', 'success');
-      await this.reload();
       return;
     }
 
     if (action === 'reopen-workout') {
-      try {
-        await workoutFacade.update(this.numericAttribute('workout-id'), { done: false });
-      } catch (error) {
-        toastError(error);
-        return;
-      }
-      await this.reload();
+      await this.#update({ done: false });
       return;
     }
 
@@ -124,6 +148,21 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     } catch (error) {
       toastError(error);
     }
+  }
+
+  // The response carries no `exercises`, so the loaded ones are kept.
+  async #update(changes: EditWorkoutDto): Promise<boolean> {
+    let updated: WorkoutDto;
+    try {
+      updated = await workoutFacade.update(this.numericAttribute('workout-id'), changes);
+    } catch (error) {
+      toastError(error);
+      return false;
+    }
+    await this.#keepingFocus(() => {
+      this.#showWorkout((workout) => ({ ...workout, ...updated }));
+    });
+    return true;
   }
 
   #incompleteMessage(exercises: WorkoutExerciseDto[]): string | null {
@@ -159,14 +198,8 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     if (notes !== (workout.notes ?? '')) {
       changes.notes = notes;
     }
-    if (Object.keys(changes).length === 0) {
-      return;
-    }
-    try {
-      await workoutFacade.update(workout.id, changes);
-      await this.#reloadKeepingFocus();
-    } catch (error) {
-      toastError(error);
+    if (Object.keys(changes).length > 0) {
+      await this.#update(changes);
     }
   }
 

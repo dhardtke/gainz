@@ -2,7 +2,7 @@ import { beforeAll, expect, test } from 'bun:test';
 import { find, mount, settle, shadow, submit, testId, text, type, useDom, useFetch, useGlobals, useToasts } from '../../testing.ts';
 import type { ExercisePageDto } from '../../../shared/dto/exercise.ts';
 import type { LiftSetDto } from '../../../shared/dto/set.ts';
-import type { WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
+import type { WorkoutDto, WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
 import { exercise } from '../exercises/exercises.fixtures.ts';
 import { group, set } from './workouts.fixtures.ts';
 import { formatDate } from '../../ui/format.ts';
@@ -53,6 +53,12 @@ const WORKOUT: WorkoutWithExercisesDto = {
   done: false,
   exercises: [BENCH, SQUAT],
 };
+
+// What PATCH /api/workouts/:id answers: the workout without its exercises.
+function answerUpdate(changes: Partial<WorkoutDto>): void {
+  const { exercises: _, ...workout } = WORKOUT;
+  fake.respondTo('PATCH /api/workouts/3', 200, JSON.stringify({ ...workout, ...changes }));
+}
 
 function withSets(change: (item: LiftSetDto, index: number) => LiftSetDto): WorkoutWithExercisesDto {
   let index = 0;
@@ -217,7 +223,7 @@ test('saves a committed detail, sending only what differs, without a toast', asy
 
 test('saves the details on Enter, once, even when the change is committed too', async () => {
   const view = await mountView();
-  fake.respondTo('GET /api/workouts/3', 200, JSON.stringify({ ...WORKOUT, title: 'Heavy push day' }));
+  answerUpdate({ title: 'Heavy push day' });
   const title = field(detailsForm(view), 'title');
   type(title, 'Heavy push day');
   title.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
@@ -417,12 +423,12 @@ test('disables ▲ on the first exercise and ▼ on the last', async () => {
   ]);
 });
 
-test('moves an exercise up, reloads in the new order, keeps the open one open and focus on the moved arrow', async () => {
+test('moves an exercise up, shows the order it answers without a reload, keeps the open one open and focus on the moved arrow', async () => {
   const view = await mountView();
   setOpen(groupOf(view, 2), true);
   const loads = workoutLoads();
   fake.respondTo(
-    'GET /api/workouts/3',
+    'POST /api/workouts/3/exercises/2/move',
     200,
     JSON.stringify({
       ...WORKOUT,
@@ -435,7 +441,7 @@ test('moves an exercise up, reloads in the new order, keeps the open one open an
   arrow(view, 2, 'up').click();
   await settle();
   expect(fake.sent('POST /api/workouts/3/exercises/2/move')).toEqual([{ direction: 'up' }]);
-  expect(workoutLoads()).toBe(loads + 1);
+  expect(workoutLoads()).toBe(loads);
   expect(groups(view).map((item) => item.dataset.exerciseId)).toEqual(['2', '1']);
   expect(openGroups(view)).toEqual(['2']);
   expect(arrow(view, 2, 'up').disabled).toBe(true);
@@ -451,6 +457,23 @@ test('toasts a failed move and does not reload', async () => {
   await settle();
   expect(toasts).toEqual(['Exercise in this workout not found']);
   expect(workoutLoads()).toBe(loads);
+});
+
+test('applies an updated set without a reload', async () => {
+  const view = await mountView();
+  const loads = workoutLoads();
+  const updated = set({ id: 11, exerciseId: 1, exerciseName: 'Bench Press', weight: 80, done: true });
+  setRow(view, 11).dispatchEvent(new CustomEvent('set-updated', { detail: updated, bubbles: true, composed: true }));
+  await settle();
+  expect(workoutLoads()).toBe(loads);
+  expect(headerBadges(view, 1)).toEqual(['1/2 done']);
+  expect(find(shadow(setRow(view, 11)), testId('row')).classList.contains('done')).toBe(true);
+});
+
+test('loads the exercises once, not on every reload', async () => {
+  const view = await mountView();
+  await changeSets(view);
+  expect(fake.requests.filter((request) => request.method === 'GET' && request.url.startsWith('/api/exercises'))).toHaveLength(1);
 });
 
 test("hands focus, and what was typed, back to a set's field after a reload", async () => {
@@ -484,16 +507,19 @@ test('puts "Mark workout done" after the add-set form and before "Details & note
   expect(finish.compareDocumentPosition(detailsSection(view)) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
 
-test('marks a workout whose sets are all done done without asking, toasts and reloads', async () => {
+test('marks a workout whose sets are all done done without asking, toasts and shows it done without a reload', async () => {
   const asked = confirmAnswering(true);
   const view = await mountView(withSets((item) => ({ ...item, done: true })));
   const loads = workoutLoads();
+  answerUpdate({ done: true });
   button(view, 'finish-workout').click();
   await settle();
   expect(asked).toEqual([]);
   expect(fake.sent('PATCH /api/workouts/3')).toEqual([{ done: true }]);
   expect(toasts).toEqual(['Workout done']);
-  expect(workoutLoads()).toBe(loads + 1);
+  expect(workoutLoads()).toBe(loads);
+  expect(text(view, testId('workout-done'))).toBe('✓ Done');
+  expect(button(view, 'reopen-workout').textContent).toBe('Reopen workout');
 });
 
 test('asks before marking a workout with incomplete exercises done, naming them', async () => {
@@ -538,15 +564,17 @@ test('locks a done workout: no add-set form, every row disabled, and "Reopen wor
   }
 });
 
-test('reopens a done workout without asking, and reloads', async () => {
+test('reopens a done workout without asking or a reload', async () => {
   const asked = confirmAnswering(true);
   const view = await mountView({ ...WORKOUT, done: true });
   const loads = workoutLoads();
+  answerUpdate({ done: false });
   button(view, 'reopen-workout').click();
   await settle();
   expect(asked).toEqual([]);
   expect(fake.sent('PATCH /api/workouts/3')).toEqual([{ done: false }]);
-  expect(workoutLoads()).toBe(loads + 1);
+  expect(workoutLoads()).toBe(loads);
+  expect(button(view, 'finish-workout').textContent).toBe('Mark workout done');
 });
 
 test('toasts a failed finish and does not reload', async () => {

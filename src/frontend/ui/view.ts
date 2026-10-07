@@ -42,14 +42,24 @@ export abstract class GzView<Data> extends GzElement {
 
   // Never rejects: gz-app awaits `ready` before swapping views in.
   async reload(): Promise<void> {
+    let data: Data;
     try {
-      this.#state = { status: 'ready', data: await this.load() };
+      data = await this.load();
     } catch (error) {
       this.#state = { status: 'error', message: errorMessage(error) };
       if (!(error instanceof ApiError) || error.status !== 404) {
         toastError(error);
       }
+      this.render();
+      this.emit(PAGE_TITLE_EVENT);
+      return;
     }
+    this.show(data);
+  }
+
+  // For data a mutation's response already carries, so it needs no reload.
+  show(data: Data): void {
+    this.#state = { status: 'ready', data };
     this.render();
     this.emit(PAGE_TITLE_EVENT);
   }
