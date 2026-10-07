@@ -7,7 +7,6 @@ import type { ProbeReport } from './build-bundle.probe.ts';
 
 const PROBE = resolve(import.meta.dir, 'build-bundle.probe.ts');
 
-/** The stylesheets a page fetches whatever it shows: Oat and the shared utilities. */
 const BASE_SHEETS = ['/vendor/oat.css', '/ui/shared.css'];
 
 function sheets(requested: string[]): string[] {
@@ -24,7 +23,6 @@ describe('the built frontend bundle', () => {
     const { pages } = await createStaticFacade().embed();
     await Bun.write(bundle, pages['/main.ts']?.body ?? '');
 
-    // A child process, for a happy-dom window of its own (see the probe's header).
     const proc = Bun.spawn([process.execPath, PROBE, bundle], { stdout: 'pipe', stderr: 'pipe' });
     const [stdout, stderr, code] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text(), proc.exited]);
     if (code !== 0) {

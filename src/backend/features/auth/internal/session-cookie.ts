@@ -1,9 +1,4 @@
-/**
- * The session cookie: `<expiresAt>.<signature>`, with `expiresAt` in epoch milliseconds and the
- * signature a base64url HMAC-SHA256 over `gainz_session.<expiresAt>`. Nothing is stored on the
- * server, so the key — the password hash — is the whole session state: changing the password
- * invalidates every cookie ever issued.
- */
+// Stateless: the key is the password hash, so changing the password invalidates every cookie.
 export const COOKIE_NAME = 'gainz_session';
 export const SESSION_MS = 90 * 24 * 60 * 60 * 1000;
 export const RENEW_AFTER_MS = 24 * 60 * 60 * 1000;
@@ -26,18 +21,15 @@ function serialize(value: string, maxAgeS: number): string {
   }).serialize();
 }
 
-/** A fresh cookie valid for `SESSION_MS` from `now`, as a `Set-Cookie` header value. */
 export function issue(key: string, now: number): string {
   const expiresAt = now + SESSION_MS;
   return serialize(`${expiresAt}.${sign(key, expiresAt)}`, SESSION_MS / 1000);
 }
 
-/** The `Set-Cookie` header value that makes a browser drop the cookie. */
 export function expired(): string {
   return serialize('', 0);
 }
 
-/** `'renew'` is a valid cookie issued more than `RENEW_AFTER_MS` ago. */
 export function check(key: string, value: string | null, now: number): CookieCheck {
   const match = VALUE.exec(value ?? '');
   if (match === null) {

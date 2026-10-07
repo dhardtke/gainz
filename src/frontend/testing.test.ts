@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { choose, collect, find, mount, shadow, submit, testId, text, type, useDom, useFetch, useToasts } from './testing.ts';
 
-// Bun's own, kept before useDom() replaces them.
 const bun = { fetch, Response, URL, setTimeout, EventTarget };
 
 describe('useDom', () => {
@@ -41,14 +40,12 @@ describe('useDom', () => {
 describe('DOM helpers', () => {
   useDom();
 
-  /** A host with an open shadow root holding one paragraph. */
   function host(): HTMLElement {
     const element = document.createElement('div');
     element.attachShadow({ mode: 'open' }).innerHTML = '<p data-testid="greeting">Hello</p>';
     return element;
   }
 
-  /** Every `type` event that reaches the body, with whether it bubbled there and could be canceled. */
   function heard(type: string): { bubbles: boolean; cancelable: boolean }[] {
     const events: { bubbles: boolean; cancelable: boolean }[] = [];
     document.body.addEventListener(type, (event) => {
@@ -87,7 +84,6 @@ describe('DOM helpers', () => {
 
   test('mount() sets the attributes before connectedCallback sees them, and appends to the body', () => {
     if (!customElements.get('gz-test-mount')) {
-      /** Records the label it had when connected. */
       class GzTestMount extends HTMLElement {
         labelOnConnect: string | null = null;
 

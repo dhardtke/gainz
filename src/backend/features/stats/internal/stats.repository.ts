@@ -2,7 +2,6 @@ import type { DB } from '../../../db/db.ts';
 import type { Iso8601Date } from '../../../../shared/flavors.ts';
 import type { Summary } from '../ports/stats.ts';
 
-/** The whole-log totals half of a summary. */
 interface SummaryTotals {
   workout_count: number;
   set_count: number;
@@ -12,7 +11,6 @@ interface SummaryTotals {
   last_performed_on: Iso8601Date | null;
 }
 
-/** The rolling-window half of a summary. */
 interface SummaryRecentActivity {
   workouts_last_30_days: number;
   volume_last_30_days: number;
@@ -25,10 +23,7 @@ export class StatsRepository {
     this.#db = db;
   }
 
-  /**
-   * The set-based numbers count done sets only, since a set not done is a plan; the workout-based
-   * ones count every workout, so a freshly repeated session already counts on its date.
-   */
+  /** Set numbers count done sets only; workout numbers count every workout. */
   summary(): Summary {
     const totals = this.#db
       .query<SummaryTotals, []>(
@@ -51,8 +46,7 @@ export class StatsRepository {
       )
       .get();
 
-    // Both queries aggregate, so SQLite always answers with a row. Spreading a
-    // null would quietly hand the endpoint an empty object, so refuse instead.
+    // Aggregates always yield a row; spreading a null would silently answer {}.
     if (totals === null || recent === null) {
       throw new Error('Summary query returned no row');
     }

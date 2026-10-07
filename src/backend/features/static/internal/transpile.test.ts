@@ -13,7 +13,6 @@ describe('typescript modules', () => {
 
     const body = await res.text();
     expect(body).toContain('export const UNIT');
-    // The source annotates every export; none of that may reach the browser.
     expect(body).not.toContain(': string');
     expect(body).not.toContain('| null | undefined');
   });
@@ -35,8 +34,7 @@ describe('typescript modules', () => {
 
   test('strips type-only imports, so src/shared/ is never fetched at runtime', async () => {
     const body = await (await api('/features/workouts/internal/gz-set-row.component.ts')).text();
-    // `src/shared/` is outside the web root: a surviving specifier would be a 404 on
-    // every page load.
+    // `src/shared/` is outside the web root: a surviving specifier would 404.
     expect(body).not.toContain('shared/dto');
   });
 

@@ -1,10 +1,4 @@
-/**
- * Flavored primitives: an id or a date carries the name of what it is.
- *
- * The marker is optional, so a plain `number` or `string` still flows into a flavor and
- * nothing here needs a cast — `pathId()`, `Number(dataset.id)` and a parsed JSON body all
- * assign straight in. What the marker refuses is one flavor standing in for another.
- */
+// The optional marker lets a plain number or string assign in without a cast, but not another flavor.
 interface Flavoring<FlavorT> {
   _type?: FlavorT;
 }

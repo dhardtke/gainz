@@ -1,23 +1,4 @@
-/**
- * Bundles the frontend into one ES module for the single-file build.
- *
- * Served from source, the browser learns of a module only once it has fetched and parsed the one
- * importing it, a waterfall that costs next to nothing over localhost and a round trip per level of
- * imports over a real network. One bundle has no waterfall, so the build ships the whole frontend
- * as one file at `/main.ts`. Bun wraps a dynamically imported view, which still runs only on its
- * first `import()`.
- *
- * Two things the bundle would otherwise lose, the plugin below puts back:
- *
- * - A component finds its stylesheet beside its own module, through `import.meta.url`, which in a
- *   bundle would name the bundle. Each module's `import.meta.url` is rewritten to its own URL path,
- *   so `"/ui/tile/gz-tile.component.ts"` still leads to `/ui/tile/gz-tile.component.css`.
- * - In a bundle each `await define(…)` holds back the next module until its sheet is in hand, so
- *   fetched sheets would arrive one round trip after another. `ui/inline-styles.ts` is replaced by
- *   a map of every component stylesheet to its text, which `ui/styles.ts` reads instead of fetching.
- *
- * Whitespace is minified and nothing else, with no source map, so names survive in every trace.
- */
+// Rewrites `import.meta.url` per module and inlines component CSS, both of which a bundle loses.
 import { relative, resolve } from 'node:path';
 import type { BunPlugin } from 'bun';
 import { log } from '../../../shared/log.ts';
@@ -25,13 +6,11 @@ import { FRONTEND_DIR } from './paths.ts';
 
 const INLINE_STYLES = resolve(FRONTEND_DIR, 'ui', 'inline-styles.ts');
 
-/** The URL path the frontend file at `path` is served at. */
 function urlOf(path: string): string {
   // Windows separators.
   return `/${relative(FRONTEND_DIR, path).replaceAll('\\', '/')}`;
 }
 
-/** Every component stylesheet's URL path → its text. */
 async function componentStyles(): Promise<Record<string, string>> {
   const styles: Record<string, string> = {};
   for await (const entry of new Bun.Glob('**/*.component.css').scan({ cwd: FRONTEND_DIR })) {
@@ -54,7 +33,6 @@ const frontend: BunPlugin = {
   },
 };
 
-/** The first error of a failed `Bun.build`, as `src/frontend/<url>:<line>:<column>: <message>`. */
 function describeFailure(cause: unknown): string {
   const first: unknown = cause instanceof AggregateError ? cause.errors[0] : cause;
   if (first instanceof BuildMessage || first instanceof ResolveMessage) {
@@ -65,7 +43,6 @@ function describeFailure(cause: unknown): string {
   return String(first);
 }
 
-/** The frontend reachable from `entry` as one ES module. Throws, naming the file, if it fails. */
 export async function bundleFrontend(entry = resolve(FRONTEND_DIR, 'main.ts')): Promise<string> {
   try {
     const result = await Bun.build({

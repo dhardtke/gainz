@@ -3,17 +3,13 @@ import { define, GzElement } from '../../../ui/base.ts';
 import { html, raw } from '../../../ui/html.ts';
 import { formatNumber } from '../../../ui/format.ts';
 
-/** Plot area in SVG user units. Only geometry lives in here — never text. */
 const W = 600;
 const H = 220;
 const GRIDLINES = 4;
 
-/** One plotted session. */
 export interface ChartPoint {
-  /** The x-axis tick, already formatted. */
   label: string;
   value: number;
-  /** Extra detail for the point's tooltip. */
   hint?: string;
 }
 
@@ -24,21 +20,7 @@ interface ChartScale {
   high: number;
 }
 
-/**
- * A minimal line chart drawn as inline SVG.
- *
- * Points are spaced evenly by index rather than by date: for lifting, the
- * question is "how did this session compare to the last one", not how many
- * days sat between them.
- *
- * The axis labels are HTML positioned over the plot, not SVG <text>. Inside a
- * viewBox a font size is measured in user units, so the browser scales the
- * lettering with the chart — tiny on a phone, oversized on a desktop, and
- * never the same size as the surrounding page. Keeping them in HTML lets them
- * inherit the body font like everything else.
- *
- * Usage: `chart.series = [{ label: "5 Jan", value: 82.5, hint: "3 sets" }]`
- */
+// Spaced by index, not date; labels are HTML so viewBox scaling doesn't resize their text.
 export class GzChartComponent extends GzElement {
   #series: ChartPoint[] = [];
   #unit = '';
@@ -61,11 +43,6 @@ export class GzChartComponent extends GzElement {
     }
   }
 
-  /**
-   * Positions as fractions of the plot box: 0 is left/top, 1 is right/bottom.
-   * Fractions work for both the SVG (multiply by W/H) and the HTML labels
-   * (multiply by 100%), so the two always line up.
-   */
   #scale(): ChartScale {
     const values = this.#series.map((point) => point.value);
     const min = Math.min(...values);
@@ -88,7 +65,6 @@ export class GzChartComponent extends GzElement {
     return Array.from({ length: GRIDLINES + 1 }, (_, step) => scale.low + ((scale.high - scale.low) * step) / GRIDLINES);
   }
 
-  /** At most six labels along the x axis, so they never collide. */
   #xLabelIndexes(): number[] {
     const total = this.#series.length;
     const stride = Math.max(1, Math.ceil(total / 6));
@@ -115,12 +91,7 @@ export class GzChartComponent extends GzElement {
     return html`
       <div class="chart">
         <div class="y-axis">
-          <!--
-            Every tick is absolutely positioned and so contributes no width.
-            This copy of the longest one stays in flow, hidden, to size the
-            gutter exactly — no guessed column width to keep in step with the
-            font.
-          -->
+          <!-- A hidden in-flow copy of the longest tick sizes the gutter; ticks are absolute. -->
           <span class="sizer">${gridLabels.reduce((a, b) => (b.length > a.length ? b : a), '')}</span>
           ${gridValues.map(
             (value, index) => html` <span class="tick" style="top: ${(scale.yFraction(value) * 100).toFixed(2)}%"> ${gridLabels[index]} </span> `,

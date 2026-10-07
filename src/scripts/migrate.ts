@@ -1,7 +1,3 @@
-/**
- * Applies any pending schema migrations without starting the server. The server does the same on
- * boot, so this is only for doing it deliberately — before a backup, or to see what a new file did.
- */
 import { basename } from 'node:path';
 import { DEFAULT_DB_PATH, openDatabase } from '../backend/db/db.ts';
 import { schemaVersion } from '../backend/db/migrations.ts';

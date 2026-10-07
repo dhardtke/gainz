@@ -1,12 +1,9 @@
 import { afterEach, beforeEach, describe, expect, setSystemTime, test } from 'bun:test';
 import { formatDate, formatDelta, formatNumber, formatShortDate, formatVolume, formatWeight, plural, relativeDay, todayIso } from './format.ts';
 
-// format.ts formats in the visitor's locale, which under bun test is the operating system's — Bun
-// ignores LANG on Windows, so it cannot be pinned. Expectations take the decimal separator from
-// that same locale, and avoid thousands separators, which some locales omit below 10,000.
+// Bun ignores LANG on Windows, so the locale is the OS's; avoid thousands separators.
 const decimal = new Intl.NumberFormat().formatToParts(1.5).find((part) => part.type === 'decimal')?.value ?? '.';
 
-/** Writes an expectation like `12.3 t` with the runner's decimal separator. */
 const local = (text: string): string => text.replace('.', decimal);
 
 describe('formatNumber', () => {

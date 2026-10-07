@@ -1,8 +1,3 @@
-/**
- * Where the static feature's bytes come from: the disk under `bun start` and the tests, or the maps
- * a single-file build carries. `StaticController` reads through `WebFiles` and keeps every rule
- * about what to answer, so both sources behave alike.
- */
 import { basename, extname, posix } from 'node:path';
 import { EMBEDDED, type EmbeddedWeb } from '../../../shared/embedded.ts';
 import { contentTag } from './content-tag.ts';
@@ -16,18 +11,17 @@ export type WebFile =
   | { kind: 'missing' }
   /** Undecodable, NUL, or escapes the web root: 404, never the fallback. */
   | { kind: 'invalid' }
-  /** Answered as 500. */
   | { kind: 'error'; message: string };
 
 export interface WebFiles {
-  /** `pathname` already names a file: the caller has rewritten a directory to its index.html. */
+  /** Directories must already be rewritten to their index.html. */
   page: (pathname: string) => Promise<WebFile>;
   vendor: (pathname: string) => Promise<WebFile>;
 }
 
 const MODULE_TYPE = 'text/javascript;charset=utf-8';
 
-/** Reads and transpiles on every request and caches nothing, so an edited file changes its ETag. */
+/** Caches nothing, so an edited file changes its ETag. */
 class DiskWebFiles implements WebFiles {
   async page(pathname: string): Promise<WebFile> {
     const path = resolveStaticPath(pathname);
@@ -40,7 +34,6 @@ class DiskWebFiles implements WebFiles {
       return { kind: 'missing' };
     }
 
-    // The frontend is TypeScript on disk and JavaScript on the wire.
     if (extname(path) === '.ts') {
       const code = await transpileModule(path);
       if (code === null) {
@@ -51,7 +44,6 @@ class DiskWebFiles implements WebFiles {
     if (extname(path) === '.html') {
       return { kind: 'file', body: await renderPage(await file.text(), this.#pageSource()), type: file.type };
     }
-    // `file.type` is Bun's MIME database lookup, so no hand-written map is kept here.
     return { kind: 'file', body: await file.bytes(), type: file.type };
   }
 
@@ -69,10 +61,7 @@ class DiskWebFiles implements WebFiles {
     return { kind: 'file', body: await file.bytes(), type: file.type };
   }
 
-  /**
-   * The web root as this server answers it, for one page: every file read through `page()` and
-   * `vendor()`, so a version is the tag its response carries, and each at most once per page.
-   */
+  /** Reads through `page()` and `vendor()`, so a version is the tag its response carries. */
   #pageSource(): PageSource {
     const files = new Map<string, Promise<WebFile>>();
     const read = (url: string): Promise<WebFile> => {
@@ -106,13 +95,9 @@ interface ServedFile {
   type: string;
 }
 
-/** Lookups in the maps a built file carries, with the same guards `resolveStaticPath` applies. */
 class EmbeddedWebFiles implements WebFiles {
   readonly #web: EmbeddedWeb;
-  /**
-   * `web.pages` with every base64 file decoded once, here rather than per request, so its ETag
-   * hashes the same bytes as `DiskWebFiles` serves.
-   */
+  /** Base64 decoded once, so ETags hash the same bytes `DiskWebFiles` serves. */
   readonly #pages: Record<string, ServedFile>;
 
   constructor(web: EmbeddedWeb) {

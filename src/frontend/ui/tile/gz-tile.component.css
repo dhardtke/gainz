@@ -11,7 +11,7 @@ article.card {
   color: var(--muted-foreground);
 }
 
-/* The number is the tile's point: the one font size gainz sets (docs/styling-guidelines.md). */
+/* The one font size gainz sets (docs/styling-guidelines.md). */
 .value {
   font-size: var(--text-3);
   font-weight: 650;

@@ -1,9 +1,3 @@
-/**
- * Prints the `Bun.password` hash (argon2id) of a password, for `GAINZ_PASSWORD_HASH`. In a terminal
- * it asks twice without echoing; otherwise it reads the first line of stdin, so it can be piped.
- */
-
-/** Reads one line from a terminal in raw mode: Enter ends it, Backspace deletes, Ctrl+C exits 130. */
 function promptHidden(label: string): Promise<string> {
   process.stderr.write(label);
   const stdin = process.stdin;

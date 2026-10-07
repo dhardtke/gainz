@@ -4,21 +4,11 @@ import { relative } from 'node:path';
 import { log } from '../../../shared/log.ts';
 import { type Change, changeFor } from './changes.ts';
 
-/**
- * The connected browsers and the one watcher they share. Module state rather than a facade's
- * fields, because `devRoutes()` and `staticRoutes()` each build their own facade and both must see
- * the same connections.
- *
- * The watcher follows the connections, not the process: it starts with the first browser and
- * closes with the last, so nothing has to stop it on shutdown and no test leaves one running.
- */
+// Module state: devRoutes() and staticRoutes() build separate facades sharing these clients.
 const clients = new Set<ServerWebSocket>();
 let watcher: FSWatcher | null = null;
 
-/**
- * One save reports several events — measured on Windows, `rename` + `change` for a new file and
- * two `change`s for an existing one — so each path settles for this long before it is sent.
- */
+// One save fires several fs.watch events (measured on Windows), so each path settles first.
 const DEBOUNCE_MS = 25;
 const timers = new Map<string, Timer>();
 

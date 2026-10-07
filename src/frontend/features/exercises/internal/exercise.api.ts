@@ -10,7 +10,6 @@ import type { ExerciseId } from '../../../../shared/flavors.ts';
 import { get, patch, post, remove } from '../../../http/http.ts';
 
 export class ExerciseApi {
-  /** Every exercise without a `limit`, one page with it. */
   list({ limit, offset }: { limit?: number; offset?: number } = {}): Promise<ExercisePageDto> {
     return get(limit === undefined ? '/exercises' : `/exercises?limit=${limit}&offset=${offset ?? 0}`);
   }

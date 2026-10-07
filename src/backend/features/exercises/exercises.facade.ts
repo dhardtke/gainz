@@ -17,7 +17,6 @@ export class ExerciseFacade {
     this.#exercises = exercises;
   }
 
-  /** @param limit null for every exercise. */
   list(limit: number | null, offset: number): ExerciseWithStats[] {
     return this.#exercises.list(limit, offset);
   }
@@ -26,7 +25,6 @@ export class ExerciseFacade {
     return this.#exercises.count();
   }
 
-  /** The exercise's 0-based place in `list()`'s order. */
   index(id: ExerciseId): number {
     return this.#exercises.index(id);
   }

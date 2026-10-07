@@ -45,8 +45,6 @@ function main(): void {
     process.exit(1);
   }
 
-  // Startup is synchronous and covered above; these catch what runs after it — request callbacks
-  // outside the route wrappers, timers, sockets.
   process.on('uncaughtException', (err) => {
     log.error('server', 'uncaught exception', err);
     process.exit(1);

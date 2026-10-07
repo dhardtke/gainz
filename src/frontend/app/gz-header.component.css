@@ -43,7 +43,6 @@ nav {
   margin-inline-start: auto;
 }
 
-/* The divider between the page links and the theme toggle. */
 gz-theme-toggle {
   border-inline-start: 1px solid var(--border);
   padding-inline-start: var(--space-2);
@@ -54,8 +53,7 @@ gz-theme-toggle {
     display: none;
   }
 
-  /* Flex rather than block, so no descender space pushes the button off-center. The menu moves
-     to the far end, behind the theme toggle, and takes the divider with it. */
+  /* Flex, not block, so no descender space pushes the button off-center. */
   .menu {
     display: flex;
     order: 1;
@@ -76,8 +74,7 @@ gz-theme-toggle {
   height: 1.125rem;
 }
 
-/* Marked like the page links: Oat's focus background, which is all the menu otherwise shows of the
-   current page, is barely set off from the menu's own. */
+/* Oat's focus background alone barely sets the current page off from the menu's. */
 menu[popover] a[role="menuitem"] {
   color: var(--muted-foreground);
 
@@ -95,7 +92,6 @@ menu[popover] a[role="menuitem"] {
 
   color: var(--primary);
 
-  /* Sized to the line, so the header keeps its height. */
   & img {
     height: 1.75em;
     width: auto;
@@ -106,7 +102,6 @@ menu[popover] a[role="menuitem"] {
     letter-spacing: -0.02em;
   }
 
-  /* The name underlines like the page links, and the icon grows a little. */
   &:hover {
     & strong {
       text-decoration: underline;
@@ -124,12 +119,10 @@ menu[popover] a[role="menuitem"] {
   }
 }
 
-/* Log out is hidden in both lists until gz-header learns that the server asks for a login. */
 nav:not(.auth) .logout {
   display: none;
 }
 
-/* The login page: no page links and no Log out, only the brand and the theme toggle, at any width. */
 nav.login {
   & .links,
   & .menu {

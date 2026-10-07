@@ -3,17 +3,11 @@ import { define, GzElement } from '../ui/base.ts';
 import { html } from '../ui/html.ts';
 import type { Crumb } from './router.ts';
 
-/** The pages above the current one, outermost first, and the current page's name. */
 export interface Trail {
   parents: readonly Crumb[];
   current: string;
 }
 
-/**
- * The shell's breadcrumb trail above a view, hidden while it has none. `gz-app` feeds it from the
- * matched route and the shown view's name. The parent links are plain anchors, which `gz-app` routes
- * like any other link.
- */
 export class GzBreadcrumbsComponent extends GzElement {
   #trail: Trail | null = null;
 

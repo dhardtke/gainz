@@ -58,7 +58,7 @@ function themeColor(): string | undefined {
 
 let loads = 0;
 
-/** theme.ts reads the stored choice once, at load, so each test needs a fresh instance of it. */
+// theme.ts reads the stored choice once, at load, so each test needs a fresh instance.
 async function load(): Promise<typeof ThemeModule> {
   loads++;
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the query string only defeats the module cache

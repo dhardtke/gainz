@@ -5,10 +5,6 @@ import { type Migration, migrate } from './migrations.ts';
 
 export type DB = Database;
 
-/**
- * Opens (and if needed creates) the SQLite database, then brings its schema up to date by applying
- * any pending migrations. `:memory:` is supported for an in-memory database.
- */
 export function openDatabase(path: string, onMigration?: (migration: Migration) => void): DB {
   const inMemory = path === ':memory:';
   if (!inMemory) {

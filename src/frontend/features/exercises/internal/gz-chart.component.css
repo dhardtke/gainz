@@ -1,12 +1,3 @@
-/*
- * Line chart. The SVG holds geometry only — line, area and gridlines — while
- * the axis labels are HTML positioned over it, so they inherit the page font
- * instead of being scaled by the viewBox.
- *
- * Positions come from the component as percentages, which address the SVG box
- * and the HTML overlay identically, so labels and points always agree.
- */
-
 .chart {
   container-type: inline-size;
   display: grid;
@@ -42,8 +33,7 @@
   position: relative;
   aspect-ratio: 60 / 22;
   min-height: 9rem;
-  /* A grid item with an aspect ratio aligns as start and takes its width from its height, which
-     min-height would turn into ~393px; stretched, the height follows the width instead. */
+  /* Stretched so the height follows the width; min-height would otherwise drive the width. */
   justify-self: stretch;
   min-width: 0;
 }
@@ -55,9 +45,7 @@ svg {
   overflow: visible;
 }
 
-/* preserveAspectRatio="none" stretches the viewBox to the box exactly, which
-   is what keeps the percentage overlay honest — but it would stretch stroke
-   widths with it, hence non-scaling-stroke. */
+/* The viewBox is stretched to the box, which would scale strokes too. */
 .grid,
 .line {
   vector-effect: non-scaling-stroke;
@@ -105,8 +93,7 @@ svg {
     transform: translateX(-50%);
     white-space: nowrap;
 
-    /* Keep the outermost labels inside the plot instead of overhanging it.
-       The :not() guards leave a lone label centered. */
+    /* The :not() guards leave a lone label centered. */
     &:first-child:not(:last-child) {
       transform: translateX(0);
     }
@@ -115,8 +102,7 @@ svg {
       transform: translateX(-100%);
     }
 
-    /* A narrow chart has room for about half the labels. Counted from the end, so the latest date
-       always stays and never collides with a neighbor the stride appended it beside. */
+    /* Counted from the end so the latest date always stays. */
     @container (max-width: 28rem) {
       &:nth-last-child(even) {
         display: none;

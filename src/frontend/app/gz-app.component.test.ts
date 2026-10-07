@@ -6,15 +6,12 @@ import type { GzView } from '../ui/view.ts';
 import { navigate } from './router.ts';
 import { APP_TITLE } from './tab-title.ts';
 
-// Mostly paths no route matches, which load no feature view. The matched ones are /login, whose view
-// fetches only the auth status, and a workout, whose two requests the tests opening it answer.
 useDom();
 const fake = useFetch();
 
 beforeAll(async () => {
   await import('./gz-app.component.ts');
   if (!customElements.get('gz-test-link')) {
-    /** A link inside a shadow root, as every link in the app is; its attributes go to the anchor. */
     class GzTestLink extends HTMLElement {
       readonly #anchor = document.createElement('a');
 
@@ -58,7 +55,6 @@ const EXERCISES: ExercisePageDto = { items: [], total: 0, limit: null, offset: 0
 
 async function mountApp(): Promise<HTMLElement> {
   const app = mount('gz-app');
-  // Long enough for gz-app to swap in a view that is not a GzView: it awaits nothing else.
   await settle(0);
   return app;
 }
@@ -76,7 +72,6 @@ function link(app: HTMLElement, attributes: Record<string, string>): HTMLAnchorE
   return find<HTMLAnchorElement>(shadow(host), testId('link'));
 }
 
-/** @returns whether the click's default was prevented, i.e. whether gz-app routed it. */
 function click(anchor: HTMLAnchorElement, init: MouseEventInit = {}): boolean {
   const event = new MouseEvent('click', { bubbles: true, composed: true, cancelable: true, ...init });
   anchor.dispatchEvent(event);
@@ -148,12 +143,10 @@ test('sends a 401 to the login page, remembering where it came from', async () =
   history.replaceState(null, '', '/workouts?page=2');
   window.dispatchEvent(new Event('gz:unauthorized'));
   expect(location.pathname + location.search).toBe('/login?next=%2Fworkouts%3Fpage%3D2');
-  // The one matched route this file opens: its module and the auth status must land
-  // before the file's DOM is torn down.
+  // The login module and auth status must land before the DOM is torn down.
   for (let i = 0; i < 50 && !app.querySelector(':scope > gz-login'); i++) {
     await settle();
   }
-  // Shown at once, form and all: a password manager judges the field when it is added.
   const login = app.querySelector(':scope > gz-login');
   expect(login?.hasAttribute('hidden')).toBe(false);
   expect(login?.querySelector(testId('password'))).not.toBeNull();
@@ -161,8 +154,6 @@ test('sends a 401 to the login page, remembering where it came from', async () =
 
 test('ignores a 401 on the login page itself', async () => {
   const app = await mountApp();
-  // On the login path, but with no popstate: the shell still shows its not-found line, and must not
-  // load the login view, since nothing should navigate.
   history.replaceState(null, '', '/login?next=%2Fx');
   window.dispatchEvent(new Event('gz:unauthorized'));
   await settle(0);
@@ -170,7 +161,6 @@ test('ignores a 401 on the login page itself', async () => {
   expect(location.pathname + location.search).toBe('/login?next=%2Fx');
 });
 
-/** Waits until the shell shows a `tag` view: its module and its requests take a few turns to land. */
 async function shown(app: HTMLElement, tag: string): Promise<HTMLElement | null> {
   for (let i = 0; i < 50 && !app.querySelector(`:scope > ${tag}:not([hidden])`); i++) {
     await settle();
@@ -182,7 +172,6 @@ function breadcrumbs(app: HTMLElement): HTMLElement {
   return find<HTMLElement>(shadow(app), testId('breadcrumbs'));
 }
 
-/** The trail as text, `null` while the breadcrumb is hidden. */
 function trail(app: HTMLElement): string[] | null {
   const element = breadcrumbs(app);
   if (element.hasAttribute('hidden')) {

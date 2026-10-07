@@ -1,4 +1,3 @@
-/** Test-only. Exercise data for any feature's component tests; never embedded in the build. */
 import type { ExerciseDto, SessionPointDto } from '../../../shared/dto/exercise.ts';
 
 export function exercise(overrides: Partial<ExerciseDto> = {}): ExerciseDto {

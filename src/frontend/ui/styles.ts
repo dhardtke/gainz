@@ -1,43 +1,16 @@
-/**
- * Loads the app's stylesheets and hands them to components as constructable
- * `CSSStyleSheet` objects.
- *
- * Shadow roots do not inherit the document's stylesheets, so each component
- * adopts Oat plus the shared utilities plus its own file. Adopting is by
- * reference: the CSS is fetched and parsed a single time no matter how many
- * elements use it.
- *
- * Oat and the shared utilities are fetched up front, behind the top-level
- * await below, because every component adopts both. A component's own sheet is
- * fetched when its module loads, from the `.css` file beside that module's own
- * URL: `define()` in base.ts awaits `loadStyles`
- * before registering the element, so by the time an instance can exist,
- * `stylesFor` can answer synchronously. That is what lets a route be loaded on
- * demand without ever painting it unstyled.
- *
- * In a built bundle a component's sheet is carried as text in `INLINE_STYLES` and never fetched;
- * Oat and the shared utilities always are, because the document links them too.
- */
 import { INLINE_STYLES } from './inline-styles.ts';
 
-/** Adopted by every component, in this order, before its own sheet. */
 const BASE_HREFS = ['/vendor/oat.css', '/ui/shared.css'];
 
 const sheets = new Map<string, CSSStyleSheet>();
 
-/** Tag name → the stylesheet beside the module that defined it. */
 const hrefs = new Map<string, string>();
 
 const pending = new Map<string, Promise<void>>();
 
 let importMap: Record<string, string> | undefined;
 
-/**
- * The URL to fetch the stylesheet at path `href` from: the versioned one the page's
- * import map names, which the server lets the browser cache for good, or `href`
- * itself on a page without one. Read from the map rather than through
- * `import.meta.resolve()`, which bun test resolves against the file system.
- */
+// Not import.meta.resolve(): bun test resolves it against the file system.
 function versioned(href: string): string {
   if (importMap === undefined) {
     importMap = {};
@@ -52,17 +25,10 @@ function versioned(href: string): string {
   return importMap[href] ?? href;
 }
 
-/**
- * Fills the sheet for `href`, creating it on first use. A repeat call refills the
- * same object, because components adopt it by reference: that is what lets
- * `reloadSheet` restyle every live instance without re-rendering one. Such a
- * refill revalidates, because the versioned URL may be cached for good while
- * the file under it changed on disk.
- */
+// A refill revalidates: the versioned URL may be cached for good while the file changed on disk.
 async function load(href: string, refill = false): Promise<void> {
   const sheet = sheets.get(href) ?? new CSSStyleSheet();
   sheets.set(href, sheet);
-  // Only a built bundle has text here, and it never hot reloads, so a refill always fetches.
   const inline = INLINE_STYLES[href];
   if (inline !== undefined) {
     await sheet.replace(inline);
@@ -78,8 +44,7 @@ async function load(href: string, refill = false): Promise<void> {
     // replace() rather than replaceSync(): it tolerates @import instead of throwing.
     await sheet.replace(await response.text());
   } catch (cause) {
-    // An unstyled component is easier to diagnose than a blank page (or, on a
-    // hot reload, a stale one), so carry on empty and say loudly what went missing.
+    // An unstyled component is easier to diagnose than a blank page.
     console.error(`gainz: could not load stylesheet ${href}`, cause);
     await sheet.replace('');
   }
@@ -87,20 +52,10 @@ async function load(href: string, refill = false): Promise<void> {
 
 await Promise.all(BASE_HREFS.map((href) => load(href)));
 
-/**
- * Fetches one component's stylesheet, at most once. Repeat and concurrent calls
- * share the first fetch, so a component that two routes have in common — a stat
- * tile, say — is still loaded a single time.
- *
- * @param moduleUrl the defining module's `import.meta.url`; its `.css` sibling is the sheet.
- */
 export function loadStyles(tagName: string, moduleUrl: string): Promise<void> {
-  // A pathname, not the absolute import.meta.url: BASE_HREFS are pathnames and
-  // dev/hot.ts is told which path changed, so every key must be the same shape.
-  // Keyed by URL instead, a component's sheet would never be found to swap.
+  // A pathname, like BASE_HREFS and the paths dev/hot.ts receives, so hot swaps find the sheet.
   const href = new URL(moduleUrl, location.href).pathname.replace(/\.ts$/, '.css');
   hrefs.set(tagName, href);
-  // `pending` alone de-duplicates: `sheets` holds the sheet before its fetch settles.
   let promise = pending.get(href);
   if (!promise) {
     promise = load(href);
@@ -109,11 +64,7 @@ export function loadStyles(tagName: string, moduleUrl: string): Promise<void> {
   return promise;
 }
 
-/**
- * The stylesheets a component should adopt: Oat, the shared utilities, and its
- * own file. Synchronous by design, because it is called from a constructor, and
- * safe because `define()` awaits `loadStyles` before registering the element.
- */
+// Synchronous for constructors; safe because define() awaits loadStyles before registering.
 export function stylesFor(tagName: string): CSSStyleSheet[] {
   const href = hrefs.get(tagName);
   const own = href === undefined ? undefined : sheets.get(href);
@@ -124,12 +75,6 @@ export function stylesFor(tagName: string): CSSStyleSheet[] {
   return own ? [...base, own] : base;
 }
 
-/**
- * Refetches a stylesheet this module tracks into the sheet components already
- * adopt. It exists for dev/hot.ts and is inert otherwise.
- *
- * @returns whether `href` was tracked, so the caller can fall back for one that is not.
- */
 export async function reloadSheet(href: string): Promise<boolean> {
   if (!sheets.has(href)) {
     return false;

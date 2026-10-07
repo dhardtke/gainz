@@ -31,13 +31,6 @@ export class SetRepository {
 
   readonly #workoutExercises: WorkoutExerciseRepository;
 
-  /**
-   * `workouts` is injected rather than imported as a value because both repositories live in this
-   * feature and either import would be as good as the other; taking it as an argument keeps
-   * `createWorkoutFacades` the one place that decides which workout repository a set repository
-   * reads. `workoutExercises` is injected for the same reason: a set write keeps the workout's
-   * exercise order in step with it.
-   */
   constructor(db: DB, workouts: WorkoutRepository, workoutExercises: WorkoutExerciseRepository) {
     this.#db = db;
     this.#workouts = workouts;
@@ -68,11 +61,7 @@ export class SetRepository {
     return set;
   }
 
-  /**
-   * The workout id comes from the path, so an unknown one is a 404. The exercise id comes from the
-   * body, and the foreign key is left to catch an unknown one — hence the 400 rather than a 404.
-   * The first set of an exercise appends the exercise to the workout, in the same transaction.
-   */
+  /** An unknown exercise trips the foreign key, hence a 400 rather than a 404. */
   create(workoutId: WorkoutId, input: CreateSet): LiftSet {
     return this.#db.transaction(() => {
       this.#workouts.require(workoutId);
@@ -103,11 +92,7 @@ export class SetRepository {
     })();
   }
 
-  /**
-   * A done set is frozen: the only change it takes is `done` itself, so unlocking it and editing it
-   * are two requests. The stored state decides, which a stale tab cannot get around. A set not done
-   * may be edited and marked done in one go.
-   */
+  /** A done set only takes `done`; the stored state decides, so a stale tab cannot bypass it. */
   update(id: LiftSetId, patch: EditSet): LiftSet {
     const current = this.require(id);
     if (current.done === 1 && Object.keys(patch).some((field) => field !== 'done')) {
@@ -121,7 +106,6 @@ export class SetRepository {
     return this.require(id);
   }
 
-  /** Deleting an exercise's last set in the workout takes the exercise out of the workout too. */
   delete(id: LiftSetId): void {
     this.#db.transaction(() => {
       const set = this.require(id);

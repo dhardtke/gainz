@@ -10,11 +10,9 @@ export function startServer(db: DB, port: number, auth: AuthOptions = { password
   return Bun.serve({
     port,
     routes: allRoutes(db, auth),
-    // A socket's handlers are a serve option, not part of a route, so this is the one place the
-    // server names a feature. It is passed unconditionally — only the `/dev/ws` route is gated —
-    // because making the option conditional flips Bun.serve's options type for no runtime gain.
+    // Unconditional: making it optional flips Bun.serve's options type; only `/dev/ws` is gated.
     websocket: createDevFacade().webSocket(),
-    // A safety net: the access log catches every throw from a route first, and logs it with its request.
+    // A safety net: the access log catches every throw from a route first.
     error: (err) => {
       log.error('http', 'unhandled error outside a route', err);
       return errorResponse(err);

@@ -16,7 +16,6 @@ export class ExerciseFacade {
     this.#api = api;
   }
 
-  /** Every exercise without a `limit`, one page with it. */
   list(page?: { limit?: number; offset?: number }): Promise<ExercisePageDto> {
     return this.#api.list(page);
   }
@@ -25,7 +24,6 @@ export class ExerciseFacade {
     return this.#api.get(id);
   }
 
-  /** The exercise's 0-based place in the list's name order. */
   position(id: ExerciseId): Promise<ExercisePositionDto> {
     return this.#api.position(id);
   }

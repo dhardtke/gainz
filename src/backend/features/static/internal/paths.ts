@@ -1,17 +1,11 @@
 import { normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Relative to this module's own location: src/backend/features/static/internal/paths.ts, so
-// five levels up is the repository root. `paths.test.ts` fails loudly if the file moves again.
+// Five levels up from this module; `paths.test.ts` fails loudly if the file moves.
 const REPO_ROOT = resolve(fileURLToPath(new URL('../../../../..', import.meta.url)));
 export const FRONTEND_DIR = resolve(REPO_ROOT, 'src', 'frontend');
 
-/**
- * Third-party files served straight out of node_modules.
- *
- * An explicit allowlist of single files rather than a served directory, so
- * installing a package never exposes anything the app did not ask to publish.
- */
+// An allowlist of single files, so installing a package never exposes anything else.
 const VENDOR_FILES: Record<string, string> = {
   '/vendor/oat.css': '@knadh/oat/oat.min.css',
   '/vendor/oat.js': '@knadh/oat/oat.min.js',
@@ -21,12 +15,10 @@ export function vendorUrls(): string[] {
   return Object.keys(VENDOR_FILES);
 }
 
-/** Whether the web root's file at `url` reaches a browser: hot reload and tests never ship. */
 export function isShipped(url: string): boolean {
   return !url.startsWith('/dev/') && url !== '/testing.ts' && !url.endsWith('.test.ts') && !url.endsWith('.fixtures.ts');
 }
 
-/** Whether a page names the web root's file at `url` by a versioned URL: its modules and stylesheets. */
 export function isVersioned(url: string): boolean {
   return isShipped(url) && (url.endsWith('.ts') || url.endsWith('.css'));
 }
@@ -43,9 +35,6 @@ export function resolveVendorPath(pathname: string): string | null {
   }
 }
 
-/**
- * Maps a URL path to a file inside `src/frontend/`, or null if it would escape it.
- */
 export function resolveStaticPath(pathname: string): string | null {
   let decoded: string;
   try {

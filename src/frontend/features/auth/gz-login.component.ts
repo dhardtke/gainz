@@ -7,17 +7,7 @@ import { navigate } from '../../app/router.ts';
 import { authFacade } from './auth.facade.ts';
 import { nextPath } from './internal/next-path.ts';
 
-/**
- * The login page at `/login`. After a login it goes to `?next=`, where the app sent the user from,
- * or to the dashboard. While the server asks for no login at all, it goes there straight away.
- *
- * Two things here are for password managers. The form is the element's light DOM, shown through a
- * <slot>, because they search the document and not shadow roots; gz-app keeps the view itself in
- * the light DOM for the same reason. And this is a plain element rather than a GzView, because
- * gz-app connects a GzView hidden until it has loaded, and KeePassXC-Browser judges an input's size
- * once, when it is added: a form added hidden would be judged invisible and never looked at again.
- * The hidden username field is for them too: they save an entry only for a form that has one.
- */
+// Light-DOM form, not a GzView: password managers skip shadow roots and forms added hidden.
 export class GzLoginComponent extends GzElement {
   override connectedCallback(): void {
     super.connectedCallback();
@@ -66,11 +56,7 @@ export class GzLoginComponent extends GzElement {
     `;
   }
 
-  /**
-   * Fills the light DOM with the form. It gets its own submit listener rather than a `data-action`:
-   * GzElement delegates from the shadow root, which a slotted form's events reach in browsers but
-   * not in happy-dom.
-   */
+  // Own listener: happy-dom does not deliver slotted form events to the shadow root.
   override afterRender(): void {
     this.innerHTML = String(html`
       <form class="vstack gap-2" data-testid="form">

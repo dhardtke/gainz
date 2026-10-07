@@ -25,13 +25,11 @@ export interface ExercisePageDto {
   offset: number;
 }
 
-/** Where an exercise sits in the list's name order. */
 export interface ExercisePositionDto {
   /** 0-based. */
   index: number;
 }
 
-/** One session on an exercise's progress line. */
 export interface SessionPointDto {
   workoutId: WorkoutId;
   performedOn: Iso8601Date;
@@ -43,7 +41,6 @@ export interface SessionPointDto {
   estOneRepMax: number;
 }
 
-/** Everything the exercise detail view plots. */
 export interface ExerciseProgressDto {
   exercise: ExerciseDto;
   /** Oldest first. */

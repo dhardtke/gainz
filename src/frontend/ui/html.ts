@@ -1,4 +1,3 @@
-/** Marks a string as already-safe HTML so `html` will not escape it again. */
 export class RawHtml {
   readonly value: string;
 
@@ -11,7 +10,6 @@ export class RawHtml {
   }
 }
 
-/** Wraps pre-rendered markup (usually the output of another `html` call). */
 export const raw = (value: unknown): RawHtml => new RawHtml(String(value));
 
 const ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -33,10 +31,6 @@ function interpolate(value: unknown): string {
   return escapeHtml(value);
 }
 
-/**
- * Tagged template that escapes every interpolated value. Anything a user typed
- * — an exercise name, a set note — is therefore safe to drop straight in.
- */
 export function html(strings: TemplateStringsArray, ...values: unknown[]): RawHtml {
   let out = strings[0] ?? '';
   for (let i = 0; i < values.length; i++) {

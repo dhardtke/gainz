@@ -19,7 +19,6 @@ function login(password: string): Promise<Response> {
   return post('/api/auth/login', { password });
 }
 
-/** The `name=value` pair of a `Set-Cookie` header, ready to send back as a `Cookie` header. */
 function cookieOf(res: Response): string {
   const header = res.headers.get('set-cookie') ?? '';
   expect(header).toStartWith('gainz_session=');
@@ -169,7 +168,6 @@ describe('login', () => {
 });
 
 describe('the auth log', () => {
-  /** The auth feature's lines, without the access log's that sit between them. */
   function authLogs(): LogLine[] {
     return logs().filter((line) => line.text.startsWith('auth '));
   }

@@ -16,7 +16,6 @@ beforeAll(async () => {
 
 const EXERCISES = [exercise({ id: 1, name: 'Bench Press' }), exercise({ id: 2, name: 'Back Squat' })];
 
-/** Bench twice, then squat: the last set is the squat. */
 const SETS = [
   set({ id: 11, exerciseId: 1, weight: 80, reps: 5 }),
   set({ id: 12, exerciseId: 1, weight: 82.5, reps: 4 }),

@@ -2,11 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { join } from 'node:path';
 import { useTempDir, waitForUrl } from './testing.ts';
 
-/**
- * Runs the entry point in a child process. Each test kills it in its own `finally`: in a hook it
- * would outlive `useTempDir()`'s cleanup, which runs first and on Windows cannot remove a directory
- * whose SQLite files the child still holds open.
- */
+// Kill in each test's `finally`, not a hook: useTempDir()'s cleanup runs first and fails on Windows.
 describe('main', () => {
   const dir = useTempDir();
 
@@ -55,11 +51,10 @@ describe('main', () => {
   });
 
   test('logs a startup failure with its error and exits with 1', async () => {
-    // The temporary directory itself, which SQLite cannot open as a file.
     const proc = spawn({ GAINZ_DB: dir() });
     try {
       expect(await proc.exited).toBe(1);
-      expect(await new Response(proc.stderr).text()).toMatch(/ERROR server failed to start\n\S/);
+      expect(await new Response(proc.stderr).text()).toMatch(/ERROR server failed to start\n[\s\S]*SQLiteError/);
     } finally {
       proc.kill();
       await proc.exited;
@@ -73,7 +68,7 @@ describe('main', () => {
       await waitForUrl(proc.stdout, () => new Response(proc.stderr).text());
       proc.kill('SIGTERM');
       expect(await proc.exited).toBe(0);
-      // waitForUrl() has read from stdout, and a Response refuses a stream that was read from.
+      // A Response refuses a stream that waitForUrl() already read from.
       let rest = '';
       const decoder = new TextDecoder();
       for await (const chunk of proc.stdout) {

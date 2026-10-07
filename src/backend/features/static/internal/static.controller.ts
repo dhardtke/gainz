@@ -44,8 +44,7 @@ export class StaticController {
         break;
     }
 
-    // Unknown path without a file extension: let the single-page app route it. A trailing
-    // slash asked for a directory index that is not there, so it is a miss, not a route.
+    // A trailing slash asked for a missing directory index: a miss, not a client route.
     if (extname(pathname) === '' && !isDirectory) {
       const index = await this.#files.page('/index.html');
       if (index.kind === 'file') {
@@ -55,17 +54,12 @@ export class StaticController {
     return new Response('Not found', { status: 404 });
   }
 
-  /** A page gets the hot-reload client injected in development — before hashing, so the ETag covers it. */
+  /** Injects before hashing, so the ETag covers the hot-reload client. */
   async #serve(req: Request, file: WebFile & { kind: 'file' }): Promise<Response> {
     const body = file.type.startsWith('text/html') ? await this.#dev.injectClient(file.body) : file.body;
     return this.#respond(req, body, { 'Content-Type': file.type });
   }
 
-  /**
-   * A versioned URL whose `v` is the content's current tag names these bytes for good, so it is
-   * cached for good. Anything else is revalidated against the tag: a plain URL, the index page, or
-   * a version a page still names after the file changed.
-   */
   #respond(req: Request, body: string | Uint8Array<ArrayBuffer>, headers: Record<string, string>): Response {
     const tag = contentTag(body);
     const etag = `"${tag}"`;
@@ -78,7 +72,7 @@ export class StaticController {
   }
 }
 
-/** A year, the conventional "forever"; `immutable` also spares the revalidation a reload would send. */
+/** `immutable` also spares the revalidation a reload would send. */
 const IMMUTABLE = 'public, max-age=31536000, immutable';
 
 /** RFC 9110 weak comparison. */

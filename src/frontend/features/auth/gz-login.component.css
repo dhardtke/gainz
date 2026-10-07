@@ -1,6 +1,3 @@
-/* The login page: held to a comfortable width in the middle of the page. The form itself is in the
-   light DOM, styled by the document's Oat and shared.css. */
-
 section {
   max-inline-size: 24rem;
   margin-inline: auto;

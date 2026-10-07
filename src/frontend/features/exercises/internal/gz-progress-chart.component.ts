@@ -6,7 +6,6 @@ import type { SessionPointDto } from '../../../../shared/dto/exercise.ts';
 import type { GzChartComponent } from './gz-chart.component.ts';
 import './gz-chart.component.ts';
 
-/** The `SessionPointDto` fields that can be plotted. */
 type MetricKey = 'estOneRepMax' | 'topWeight' | 'totalVolume';
 
 interface Metric {
@@ -16,10 +15,7 @@ interface Metric {
   hint: string;
 }
 
-/**
- * Written as a non-empty tuple so `METRICS[0]` is always a metric — it is the
- * default, and the fallback when an unknown one is asked for.
- */
+// A non-empty tuple, so `METRICS[0]` is always defined.
 const METRICS: [Metric, ...Metric[]] = [
   {
     key: 'estOneRepMax',
@@ -31,21 +27,16 @@ const METRICS: [Metric, ...Metric[]] = [
   { key: 'totalVolume', label: 'Volume', unit: UNIT, hint: 'Reps × weight summed over the session.' },
 ];
 
-/**
- * An exercise's sessions charted one metric at a time, with the switch between them.
- * A switch re-renders only this card and emits `metric-change` carrying the metric's key.
- */
 export class GzProgressChartComponent extends GzElement {
   #metric: Metric = METRICS[0];
 
   #sessions: SessionPointDto[] = [];
 
-  /** The charted metric's key; an unknown one falls back to the first metric. */
   set metric(value: string) {
     this.#metric = METRICS.find((candidate) => candidate.key === value) ?? METRICS[0];
   }
 
-  /** Oldest first, as the API sends them. Set it last: it is the one that re-renders. */
+  // Set it last: assigning it re-renders.
   set sessions(value: SessionPointDto[]) {
     this.#sessions = value;
     if (this.isConnected) {

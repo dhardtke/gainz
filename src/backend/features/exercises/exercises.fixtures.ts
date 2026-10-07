@@ -1,4 +1,3 @@
-/** Test-only. Exercise data for any feature's route tests; no production module imports it. */
 import { expect } from 'bun:test';
 import type { ExerciseDto } from '../../../shared/dto/exercise.ts';
 import { body, type TestServer } from '../../testing.ts';

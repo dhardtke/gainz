@@ -19,7 +19,6 @@ describe('single-file build', () => {
     dir = mkdtempSync(join(tmpdir(), 'gainz-build-'));
     ({ embedded } = await build(join(dir, 'out')));
 
-    // Only the one file, far from the repository: nothing else may be needed to run it.
     const deploy = join(dir, 'deploy');
     mkdirSync(deploy);
     copyFileSync(join(dir, 'out', 'gainz.js'), join(deploy, 'gainz.js'));
@@ -40,7 +39,6 @@ describe('single-file build', () => {
       proc.kill();
       await proc.exited;
     }
-    // Windows keeps a live process's working directory and SQLite handles locked a moment longer.
     rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
   });
 
@@ -81,7 +79,6 @@ describe('single-file build', () => {
     expect(bundle).toBe(embedded.pages['/main.ts']?.body ?? '');
     expect(bundle).toContain('customElements.define');
     expect(bundle).toContain('"/ui/tile/gz-tile.component.ts"');
-    // No frontend string literal contains one, so a match could only be a leftover type annotation.
     expect(bundle).not.toContain(': string');
     expect(bundle).not.toContain('sourceMappingURL');
     expect(bundle).not.toContain('import.meta');
@@ -130,7 +127,6 @@ describe('single-file build', () => {
   });
 
   test('carries neither the dev client nor anything test-only', async () => {
-    // Present in the sources, so its 404 proves the exclusion rather than a misspelled path.
     expect(await Bun.file(join(FRONTEND, 'features', 'exercises', 'exercises.fixtures.ts')).exists()).toBe(true);
     for (const url of ['/dev/hot.ts', '/testing.ts', '/ui/html.test.ts', '/ui/tile/gz-tile.component.test.ts', '/features/exercises/exercises.fixtures.ts']) {
       expect({ url, status: (await get(url)).status }).toEqual({ url, status: 404 });

@@ -29,8 +29,7 @@ describe('styles under an import map', () => {
       },
     });
     document.head.append(map);
-    // A fresh instance: the shared one has read the map of whichever page imported it first. The
-    // specifier is a variable because tsc resolves a literal one and knows no file with a query.
+    // A variable specifier: tsc resolves a literal one and knows no file with a query.
     const fresh = './styles.ts?import-map';
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the same module, under a query
     styles = (await import(fresh)) as typeof Styles;

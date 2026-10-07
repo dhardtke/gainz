@@ -1,8 +1,3 @@
-/**
- * Fills the database with a few weeks of plausible training history so the
- * progress views have something to draw. Safe to run repeatedly: it does
- * nothing if the database already holds workouts.
- */
 import { DEFAULT_DB_PATH, openDatabase } from '../backend/db/db.ts';
 import { createExerciseFacade } from '../backend/features/exercises/exercises.facade.ts';
 import { createStatsFacade } from '../backend/features/stats/stats.facade.ts';
@@ -18,7 +13,6 @@ const EXERCISES = [
   { name: 'Pull-up', muscleGroup: 'Back', notes: 'Bodyweight plus belt.' },
 ];
 
-/** Day templates: exercise name, starting weight, weekly increment, reps. */
 const TEMPLATES = [
   {
     title: 'Push day',
@@ -61,9 +55,6 @@ function main(): void {
     return;
   }
 
-  // One transaction for the whole run: a seeder that fails half way should leave nothing behind,
-  // not a partial block of training history. `workouts.create()` opens a transaction of its own, which
-  // nests as a savepoint.
   db.transaction(() => {
     const idByName = new Map<string, ExerciseId>();
     for (const exercise of EXERCISES) {
@@ -100,7 +91,6 @@ function main(): void {
               weight,
               notes: SET_NOTES[(created + setIndex) % SET_NOTES.length] ?? null,
             });
-            // Today's session is still under way, so its sets are left to be checked off.
             if (daysAgo > 0) {
               sets.update(logged.id, { done: true });
             }

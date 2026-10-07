@@ -7,11 +7,6 @@ import { toastError } from '../ui/toast.ts';
 import { authFacade } from '../features/auth/auth.facade.ts';
 import './gz-theme-toggle.component.ts';
 
-/**
- * Sticky page header: brand, page links and Log out (a dropdown on narrow screens) and the theme
- * toggle. Log out shows only while the server asks for a login. On the login page the header shows
- * only the brand and the theme toggle.
- */
 class GzHeaderComponent extends GzElement {
   #unsubscribe: (() => void) | null = null;
 
@@ -31,10 +26,7 @@ class GzHeaderComponent extends GzElement {
   override afterRender(): void {
     this.#syncLinks();
     void this.#showLogout();
-    // Oat focuses, and so highlights, the first item when the menu opens. Its listener is
-    // registered first (oat.js defines ot-dropdown before any module runs, so the dropdown
-    // initializes as the template is inserted), so this one runs after it and moves focus on to
-    // the current page.
+    // Oat focuses the first item on open; this listener is registered after Oat's, so it wins.
     this.$<HTMLElement>('menu[popover]')?.addEventListener('toggle', (event) => {
       if (event.newState === 'open') {
         this.$<HTMLAnchorElement>('menu a[aria-current="page"]')?.focus();
@@ -42,10 +34,7 @@ class GzHeaderComponent extends GzElement {
     });
   }
 
-  /**
-   * Log out is a link to `/login` so it looks like its neighbors, but the click is canceled here,
-   * before `gz-app` would route it, so the session ends before the login page opens.
-   */
+  // Canceled here, before gz-app routes the link, so the session ends before the login page opens.
   override async handleAction(action: string, _element: HTMLElement, event: Event): Promise<void> {
     if (action !== 'logout') {
       return;
@@ -60,22 +49,14 @@ class GzHeaderComponent extends GzElement {
     navigate('/login');
   }
 
-  /**
-   * Shows Log out, hidden until then, once the server says it asks for a login. Should the
-   * request fail, Log out stays hidden: the views' own requests will toast the failure.
-   */
   async #showLogout(): Promise<void> {
     try {
       this.$('nav')?.classList.toggle('auth', await authFacade.enabled());
     } catch {
-      // Left hidden, as the comment above says.
+      // Stays hidden; the views' own requests toast the failure.
     }
   }
 
-  /**
-   * Marks the current page in both link lists, hides both on the login page, and closes the menu
-   * after a navigation from it.
-   */
   #syncLinks(): void {
     this.$('nav')?.classList.toggle('login', /^\/login\/?$/.test(currentPath()));
     const links = this.$$<HTMLAnchorElement>('nav a[data-path]');

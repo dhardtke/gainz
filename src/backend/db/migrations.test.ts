@@ -17,7 +17,6 @@ afterEach(() => {
   db.close();
 });
 
-/** Writes a fixture migration into the temp directory. */
 function write(filename: string, sql: string): void {
   writeFileSync(join(tempDir(), filename), sql);
 }
@@ -32,7 +31,6 @@ function foreignKeysOn(database: Database): boolean {
 
 describe('migration runner', () => {
   test('applies every migration to a fresh database, in version order', () => {
-    // Written out of order on purpose: the ALTER only parses if 001 ran first.
     write('002-add-color.sql', 'ALTER TABLE widgets ADD COLUMN color TEXT;');
     write('001-create-widgets.sql', 'CREATE TABLE widgets (id INTEGER PRIMARY KEY, name TEXT NOT NULL);');
 
@@ -67,8 +65,7 @@ describe('migration runner', () => {
 
   test('rolls back and rethrows when a migration fails part-way', () => {
     write('001-create-widgets.sql', 'CREATE TABLE widgets (id INTEGER PRIMARY KEY);');
-    // The table is created, then the second insert violates the primary key at run time — so this
-    // fails only after the DDL has taken effect, which is what makes it a rollback test.
+    // Fails only after the DDL has taken effect, which is what makes it a rollback test.
     write('002-broken.sql', 'CREATE TABLE gadgets (id INTEGER PRIMARY KEY);\nINSERT INTO gadgets (id) VALUES (1);\nINSERT INTO gadgets (id) VALUES (1);');
 
     expect(() => run()).toThrow(/002-broken\.sql/);
@@ -128,7 +125,7 @@ describe('migration runner', () => {
     );
     run();
 
-    // Foreign keys are off during the run, so this insert succeeds and only foreign_key_check catches it.
+    // Foreign keys are off during the run, so only foreign_key_check catches this.
     write('002-orphan.sql', 'INSERT INTO parts (id, widget_id) VALUES (1, 404);');
 
     expect(() => run()).toThrow(/orphaned rows in "parts"/);
@@ -164,7 +161,6 @@ describe('the real migrations', () => {
   });
 
   test('adopt a database that already has the schema but no ledger', () => {
-    // How an existing data/gainz.sqlite, created before migrations existed, is taken over.
     const legacy = new Database(':memory:', { create: true });
     legacy.run(readFileSync(join(MIGRATIONS_DIR, '001-initial-schema.sql'), 'utf8'));
     legacy.query('INSERT INTO exercises (name) VALUES (?)').run('Back Squat');
@@ -174,7 +170,6 @@ describe('the real migrations', () => {
 
     expect(result.applied.map((migration) => migration.version)).toEqual([1, 2, 3]);
     expect(schemaVersion(legacy)).toBe(3);
-    // The row it already held is untouched.
     expect(legacy.query<{ name: string }, []>('SELECT name FROM exercises').all()).toEqual([{ name: 'Back Squat' }]);
 
     legacy.close();

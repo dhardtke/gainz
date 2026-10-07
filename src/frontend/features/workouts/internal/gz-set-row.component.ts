@@ -6,28 +6,17 @@ import type { EditSetDto, LiftSetDto } from '../../../../shared/dto/set.ts';
 import { toast, toastError } from '../../../ui/toast.ts';
 import { setFacade } from '../workouts.facade.ts';
 
-/** The field a row had focus in, and what it held, so a re-rendered row can carry on. */
 export interface FocusedField {
   name: string;
   value: string;
 }
 
-/**
- * One logged set. Its reps, weight and notes are always inputs, and a committed change (blur or
- * Enter) saves what differs from the set. It toggles done, and tells its parent to reload with a
- * `sets-changed` event rather than trying to patch the list. A done set is frozen until it is
- * toggled back: its inputs and × stay in place, disabled, so the row keeps its shape.
- * A set's exercise is fixed once it is saved, so the inputs cover reps, weight and notes only.
- */
 export class GzSetRowComponent extends GzElement {
   #set: LiftSetDto | null = null;
 
   #index = 0;
 
-  /**
-   * The row's requests, one after another: a change saved on blur must land before the click
-   * that caused the blur marks the set done, or the locked set would refuse it.
-   */
+  // Serialized: a blur save must land before the click that caused it marks the set done.
   #pending: Promise<void> = Promise.resolve();
 
   set set(value: LiftSetDto | undefined) {
@@ -42,13 +31,11 @@ export class GzSetRowComponent extends GzElement {
     this.#index = Number.isFinite(value) ? value : 0;
   }
 
-  /** The input holding focus, if any, for the parent to hand back after a reload. */
   focusedField(): FocusedField | null {
     const input = this.root.activeElement;
     return input instanceof HTMLInputElement && input.name ? { name: input.name, value: input.value } : null;
   }
 
-  /** Puts focus back in a field, with what it held; nothing when the set no longer has it. */
   restoreField({ name, value }: FocusedField): void {
     const input = this.$<HTMLInputElement>(`input[name='${name}']`);
     if (input) {
@@ -111,7 +98,6 @@ export class GzSetRowComponent extends GzElement {
     }
   }
 
-  /** Saves the fields that differ from the set; Enter and the change it commits both land here. */
   async #save(form: HTMLFormElement): Promise<void> {
     const set = this.#set;
     if (!set || !form.reportValidity()) {
@@ -145,7 +131,7 @@ export class GzSetRowComponent extends GzElement {
     form?.addEventListener('change', () => {
       void this.#enqueue(() => this.#save(form));
     });
-    // A form of several fields and no submit button ignores Enter, so the row saves on it itself.
+    // A multi-field form without a submit button ignores Enter.
     form?.addEventListener('keydown', (event) => {
       if (event.key === 'Enter' && event.target instanceof HTMLInputElement) {
         event.preventDefault();

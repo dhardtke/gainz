@@ -15,7 +15,6 @@ export function requiredString<T extends object>(dto: T, field: keyof T & string
   return trimmed;
 }
 
-/** An optional string; empty strings and null both normalize to null. */
 export function optionalString<T extends object>(dto: T, field: keyof T & string, maxLength = 2000): string | null {
   const value: unknown = dto[field];
   if (value === undefined || value === null) {
@@ -59,11 +58,9 @@ export function requiredNumber<T extends object>(dto: T, field: keyof T & string
   if (num < min || num > max) {
     throw badRequest(`"${field}" must be between ${min} and ${max}`);
   }
-  // Store at most two decimals; avoids 2.5000000000000004 style noise.
   return Math.round(num * 100) / 100;
 }
 
-/** Only a JSON boolean: unlike the number validators, no string is coerced. */
 export function requiredBoolean<T extends object>(dto: T, field: keyof T & string): boolean {
   const value: unknown = dto[field];
   if (typeof value !== 'boolean') {
@@ -76,7 +73,6 @@ function isOneOf<V extends string>(values: readonly V[], value: unknown): value 
   return typeof value === 'string' && (values as readonly string[]).includes(value);
 }
 
-/** Only one of the listed strings, compared exactly: no trimming, no case folding. */
 export function requiredOneOf<T extends object, V extends string>(dto: T, field: keyof T & string, values: readonly V[]): V {
   const value: unknown = dto[field];
   if (!isOneOf(values, value)) {

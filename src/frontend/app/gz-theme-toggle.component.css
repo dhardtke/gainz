@@ -1,10 +1,9 @@
-/* A flex host rather than a line box, so no descender space pushes the button off-center. */
+/* Flex, not a line box, so no descender space pushes the button off-center. */
 :host {
   display: flex;
 }
 
-/* The touch size at every width, not only below shared.css's breakpoint, so the header it sets the
-   height of is as tall on desktop as on a phone. */
+/* At every width, so the header it sets the height of matches on desktop and phone. */
 button {
   min-height: 2.75rem;
   min-width: 2.75rem;

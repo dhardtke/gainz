@@ -8,12 +8,10 @@ import { accessLog } from './access-log.ts';
 describe('the access log', () => {
   const { api, post, patch, logs } = useServer();
 
-  /** The lines the access log wrote, without the other topics a request may log. */
   function http(): LogLine[] {
     return logs().filter((line) => line.text.startsWith('http '));
   }
 
-  /** The one `http` line, failing the test unless there is exactly one. */
   function only(): LogLine {
     const lines = http();
     expect(lines).toHaveLength(1);

@@ -1,5 +1,3 @@
-/* Application shell: header and centered content column. */
-
 :host {
   display: flex;
   flex-direction: column;

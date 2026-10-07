@@ -1,18 +1,13 @@
 import { describe, expect, test } from 'bun:test';
 
-// The palette is Oat's theme with app.css's overrides on top. Both are read as text, so a token
-// tweak that drops a pair below WCAG AA fails here rather than on a phone in a gym.
-
 type Theme = 'light' | 'dark';
 type Palette = Map<string, Record<Theme, string>>;
 
 const HEX = String.raw`#(?:[0-9a-f]{3}|[0-9a-f]{6})`;
 const DECLARATION = new RegExp(String.raw`(--[\w-]+):\s*(${HEX}|light-dark\(\s*(${HEX})\s*,\s*(${HEX})\s*\))\s*;`, 'gi');
 
-/** Expands `#fff` to `#ffffff`, so every color reads the same way. */
 const sixDigits = (hex: string): string => (hex.length === 4 ? hex.replaceAll(/[0-9a-f]/g, '$&$&') : hex);
 
-/** Collects every color token a stylesheet declares, later declarations winning. */
 function readColors(css: string, into: Palette): void {
   for (const [, name, value, light, dark] of css.matchAll(DECLARATION)) {
     if (name === undefined || value === undefined) {
@@ -29,7 +24,6 @@ const palette: Palette = new Map();
 readColors(await Bun.file(`${import.meta.dir}/../../../node_modules/@knadh/oat/css/01-theme.css`).text(), palette);
 readColors(await Bun.file(`${import.meta.dir}/app.css`).text(), palette);
 
-/** WCAG 2 relative luminance of a six-digit hex color. */
 function luminance(hex: string): number {
   const [r = 0, g = 0, b = 0] = [1, 3, 5].map((start) => {
     const channel = Number.parseInt(hex.slice(start, start + 2), 16) / 255;

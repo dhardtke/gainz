@@ -8,7 +8,6 @@ import { createSet, createWorkout, markDone } from './workouts.fixtures.ts';
 
 const { api, post, patch } = useServer();
 
-/** Every set of the workout, group by group. */
 function sets(workout: WorkoutWithExercisesDto): LiftSetDto[] {
   return workout.exercises.flatMap((group) => group.sets);
 }

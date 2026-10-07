@@ -19,12 +19,7 @@ function healthRoute(controller: MetaController): RouteTable {
   };
 }
 
-/**
- * The /api catch-all. Bun matches by specificity, so every named /api pattern wins over it.
- *
- * `/api/*` does not match the bare prefix, so `/api` needs its own key — without it the URL
- * falls through to the static route and answers with the single-page app.
- */
+// `/api/*` misses bare `/api`, which would otherwise fall through to the single-page app.
 function notFoundRoute(controller: MetaController): RouteTable {
   const endpointNotFound = (): Response => controller.endpointNotFound();
   return {

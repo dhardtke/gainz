@@ -10,15 +10,12 @@ import { toast, toastError } from '../../ui/toast.ts';
 import { GzView } from '../../ui/view.ts';
 import { exerciseFacade } from './exercises.facade.ts';
 
-/** One page of the catalog; `total` counts every exercise. */
 interface ExerciseListData {
   items: ExerciseWithStatsDto[];
   total: number;
-  /** 1-based, from `?page=`. */
   page: number;
 }
 
-/** The exercise catalog — the vocabulary the rest of the log is written in — by name, a page at a time. */
 export class GzExerciseListComponent extends GzView<ExerciseListData> {
   override loadingText = 'Loading exercises…';
 
@@ -42,8 +39,6 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
       return;
     }
     const values = this.formData(form);
-    // The name input is `required`, so an empty one only reaches here if the
-    // browser's own validation was bypassed; the API rejects it either way.
     const name = values.name ?? '';
 
     let exercise: ExerciseDto;
@@ -59,8 +54,6 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
     }
     toast(`Added ${name}`, 'success');
 
-    // Show the page the new exercise landed on. The rebuilt view replaces the form, so
-    // there is nothing to reset; the current page's URL refreshes the view all the same.
     try {
       const { index } = await exerciseFacade.position(exercise.id);
       navigate(pagePath('/exercises', Math.floor(index / PAGE_SIZE) + 1));
@@ -89,7 +82,6 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
     `;
   }
 
-  /** The page's cards and the pager; past the last page, the pager alone says so. */
   #page(items: ExerciseWithStatsDto[], total: number, page: number): RawHtml {
     const pages = pageCount(total, PAGE_SIZE);
     const pager = html` <gz-pagination page="${page}" pages="${pages}" noun="exercises"></gz-pagination> `;

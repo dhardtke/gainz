@@ -1,5 +1,3 @@
-/* Breadcrumb trail above a view: muted links, the current page in plain text, one line. */
-
 :host {
   margin-block-end: var(--space-4);
 }
@@ -18,8 +16,7 @@ ol {
     min-width: 0;
     margin: 0;
 
-    /* Drawn, and read as nothing: the list already says these are steps. The plain line is for
-       engines without alt text for generated content, which drop the second declaration. */
+    /* Empty alt text; the first declaration is the fallback for engines without it. */
     & + li::before {
       content: "›";
       content: "›" / "";

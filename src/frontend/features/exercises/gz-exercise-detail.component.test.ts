@@ -22,7 +22,6 @@ function progress(sessions: SessionPointDto[]): ExerciseProgressDto {
   };
 }
 
-/** Oldest first, as the API sends them: up from the first to the second, down to the third. */
 const SESSIONS = [
   session({ workoutId: 1, performedOn: '2026-09-01', estOneRepMax: 90 }),
   session({ workoutId: 2, performedOn: '2026-09-08', estOneRepMax: 95 }),
@@ -36,12 +35,10 @@ async function mountView(answer: ExerciseProgressDto = progress(SESSIONS)): Prom
   return view;
 }
 
-/** Where the chart card with its metric switch renders. */
 function chartRoot(view: HTMLElement): ParentNode {
   return shadow(find(shadow(view), testId('progress-chart')));
 }
 
-/** Where the session history renders. */
 function tableRoot(view: HTMLElement): ParentNode {
   return shadow(find(shadow(view), testId('session-table')));
 }
@@ -156,7 +153,6 @@ test('names the exercise for the breadcrumb and the tab', async () => {
 test('names the exercise anew after a rename, and says so', async () => {
   const view = await mountView();
   const heard = collect('page-title');
-  // The reload after the save reads back the new name, as the server would.
   fake.respondTo(PROGRESS, 200, JSON.stringify({ ...progress(SESSIONS), exercise: exercise({ id: 7, name: 'Paused Bench', muscleGroup: 'Chest' }) }));
   type(field(view, 'name'), 'Paused Bench');
   submitDetails(view);

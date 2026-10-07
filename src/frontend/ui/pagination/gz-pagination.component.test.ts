@@ -7,12 +7,10 @@ beforeAll(async () => {
   await import('./gz-pagination.component.ts');
 });
 
-/** Mounts a pager, its attributes set before it is appended so its first render shows them. */
 function mountPager(page: number, pages: number, noun?: string): HTMLElement {
   return mount('gz-pagination', { page: String(page), pages: String(pages), ...(noun === undefined ? {} : { noun }) });
 }
 
-/** The pager's buttons in order: every element it marks with a test id. */
 function buttons(pager: HTMLElement): HTMLButtonElement[] {
   return Array.from(find(shadow(pager), testId('pager')).querySelectorAll<HTMLButtonElement>('[data-testid]'));
 }

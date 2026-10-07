@@ -13,7 +13,6 @@ export interface LiftSetDto {
   createdAt: Iso8601DateTime;
 }
 
-/** The heaviest set ever logged for an exercise, carrying the day it happened. */
 export interface BestSetDto extends LiftSetDto {
   performedOn: Iso8601Date;
 }

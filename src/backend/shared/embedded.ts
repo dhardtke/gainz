@@ -1,24 +1,14 @@
-/**
- * What a single-file build carries inside it.
- *
- * This committed stub exports `null`, which means "read from disk": the frontend from
- * `src/frontend/`, Oat from `node_modules` and the migrations from `src/backend/db/migrations/`.
- * `bun run build` swaps this module through `Bun.build`'s `files` option for one that exports the
- * embedded files, so a built `gainz.js` needs nothing beside it.
- */
+// `null` means "read from disk"; `bun run build` swaps this module for one carrying the files.
 import type { MigrationSource } from '../db/migrations.ts';
 
 export interface EmbeddedFile {
   body: string;
   type: string;
-  /** `body` is then the base64 encoding of binary bytes (an icon) rather than the text itself. */
   base64?: true;
 }
 
 export interface EmbeddedWeb {
-  /** Every servable file under the web root, keyed by its URL path (`/main.ts`). */
   pages: Record<string, EmbeddedFile>;
-  /** Vendor files, keyed by their literal URL (`/vendor/oat.css`). */
   vendor: Record<string, EmbeddedFile>;
 }
 

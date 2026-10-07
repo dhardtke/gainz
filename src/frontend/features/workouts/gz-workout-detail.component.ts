@@ -14,53 +14,31 @@ import { exerciseFacade } from '../exercises/exercises.facade.ts';
 import { workoutFacade } from './workouts.facade.ts';
 import './internal/gz-add-set-form.component.ts';
 
-/** `CustomEvent.detail` is `any`, so the `set-logged` detail the form emits is checked rather than trusted. */
 function isSetLogged(detail: unknown): detail is { exerciseId: number } {
   return typeof detail === 'object' && detail !== null && 'exerciseId' in detail && typeof detail.exerciseId === 'number';
 }
 
-/** The workout's name in its heading and the breadcrumb: its title, else its date. */
 function workoutName(workout: WorkoutWithExercisesDto): string {
   return workout.title ?? formatDate(workout.performedOn);
 }
 
 interface WorkoutDetailData {
   workout: WorkoutWithExercisesDto;
-  /** Every exercise, for the add-set form's select. */
   exercises: ExerciseDto[];
 }
 
-/**
- * The logging screen for one session: the sets first, grouped by exercise in Oat's accordion with one exercise open
- * at a time, then the add-set form, then the details, which save themselves, collapsed with Delete at the bottom.
- */
 export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
   override loadingText = 'Loading workout…';
 
-  /**
-   * What has been typed into the details form but not saved.
-   *
-   * The form is always rendered and every logged set re-renders the view, so
-   * the template — not the DOM — has to own these values. `null` means "show
-   * what the server returned". A save leaves them be: they match what it sent,
-   * and whatever was typed into the next field while it ran is still to save.
-   */
+  // Unsaved details; every logged set re-renders the form, so the DOM can't hold them.
   #edits: Record<string, string> | null = null;
 
-  /** The details form's saves, one after another, so Enter and the change it commits save once. */
+  // Serialized so Enter and the change it commits save once.
   #saving: Promise<void> = Promise.resolve();
 
-  /**
-   * The exercise whose group is open, `null` for all collapsed, and `undefined` until the first
-   * load has decided. Every reload re-renders the accordion, so, like `#edits`, the view rather than
-   * the DOM has to remember it.
-   */
+  // `null` for all collapsed, `undefined` until the first load has decided.
   #openExerciseId: ExerciseId | null | undefined = undefined;
 
-  /**
-   * Whether "Details & notes" is open. Every save in it and every set change reloads the view, so,
-   * like `#openExerciseId`, the view rather than the DOM has to remember it.
-   */
   #detailsOpen = false;
 
   override connectedCallback(): void {
@@ -68,7 +46,6 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     this.root.addEventListener('sets-changed', () => {
       void this.#reloadKeepingFocus();
     });
-    // Only a set logged through the form puts focus back in it, not a row's "+1" or delete.
     this.root.addEventListener('set-logged', (event) => {
       if (event instanceof CustomEvent && isSetLogged(event.detail)) {
         this.#openExerciseId = event.detail.exerciseId;
@@ -77,11 +54,6 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     });
   }
 
-  /**
-   * Reloads after a save. A field saves when it loses focus, usually to another field, which the
-   * reload re-renders, so focus goes back to it: a row's field through the row that replaces its
-   * own, with what was typed there by then, and a details field by its id, `#edits` keeping its text.
-   */
   async #reloadKeepingFocus(): Promise<void> {
     const active = this.root.activeElement;
     const row = active instanceof GzSetRowComponent ? active : null;
@@ -127,10 +99,6 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     }
   }
 
-  /**
-   * A move re-renders every group, so focus goes back to the moved exercise's arrow for the next
-   * press, or to the other one once the exercise has reached that edge.
-   */
   #focusMove(exerciseId: ExerciseId, direction: MoveDirection): void {
     const arrow = (to: MoveDirection): HTMLButtonElement | null =>
       this.$<HTMLButtonElement>(`[data-action='move-exercise-${to}'][data-exercise-id='${exerciseId}']`);
@@ -138,7 +106,6 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     (moved?.disabled === false ? moved : arrow(direction === 'up' ? 'down' : 'up'))?.focus();
   }
 
-  /** Saves the details that differ from the workout; nothing when none do or one is invalid. */
   async #saveDetails(form: HTMLFormElement): Promise<void> {
     const workout = this.data?.workout;
     if (!workout || !form.reportValidity()) {
@@ -180,8 +147,7 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
 
     for (const group of this.$$<HTMLDetailsElement>("details[name='exercises']")) {
       const id = Number(group.dataset.exerciseId);
-      // `toggle` does not bubble, so each group gets its own listener. Opening one closes the
-      // other, whose toggle comes second and so does not clear the id just recorded.
+      // `toggle` does not bubble; the closing group's toggle fires second, so the id survives.
       group.addEventListener('toggle', () => {
         if (group.open) {
           this.#openExerciseId = id;
@@ -206,8 +172,7 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     details?.addEventListener('change', () => {
       save(details);
     });
-    // A form of several fields and no submit button ignores Enter, so the form saves on it itself;
-    // in the notes, Enter is a new line.
+    // A multi-field form without a submit button ignores Enter.
     details?.addEventListener('keydown', (event) => {
       if (event.key === 'Enter' && event.target instanceof HTMLInputElement) {
         event.preventDefault();
@@ -219,16 +184,11 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     if (addSet) {
       addSet.workoutId = workout.id;
       addSet.exercises = exercises;
-      // Back in logged order: the form starts from the last set it is given, which in group order
-      // would be the last exercise's rather than the last one logged.
+      // Logged order: the form starts from the last set it is given.
       addSet.sets = sets.toSorted((a, b) => a.position - b.position || a.id - b.id);
     }
   }
 
-  /**
-   * Which group to open. The first load opens the exercise of the first set not done, otherwise
-   * the last exercise; after that the remembered one stays open, unless it has lost its last set.
-   */
   #openFor(exercises: WorkoutExerciseDto[]): ExerciseId | null {
     if (this.#openExerciseId === undefined) {
       const next = exercises.find((group) => group.sets.some((set) => !set.done)) ?? exercises.at(-1);
@@ -252,10 +212,7 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     `;
   }
 
-  /**
-   * The rarely edited details and the destructive Delete, collapsed below the sets. It has no
-   * `name`, so it does not join the exercises' exclusive group.
-   */
+  // No `name`, so it stays out of the exercises' exclusive accordion group.
   #detailsTemplate(workout: WorkoutWithExercisesDto): RawHtml {
     const edits = this.#edits ?? {
       performedOn: workout.performedOn,
@@ -289,7 +246,6 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     `;
   }
 
-  /** Progress through some sets: "x/y done", "✓ Done" once all are, or nothing without any. */
   #progressBadge(doneCount: number, setCount: number): RawHtml {
     if (setCount === 0) {
       return html``;
@@ -300,7 +256,6 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     return html`<span class="badge outline" data-testid="progress">${doneCount}/${setCount} done</span>`;
   }
 
-  /** "3 sets · 1,200 kg". */
   #groupSummary(group: WorkoutExerciseDto): string {
     const count = group.sets.length;
     const volume = group.sets.reduce((total, set) => total + set.reps * set.weight, 0);

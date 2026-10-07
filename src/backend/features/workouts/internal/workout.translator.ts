@@ -40,12 +40,7 @@ export function translateToMoveWorkoutExerciseDto(body: Record<string, unknown>)
   };
 }
 
-/**
- * A create body with no date means today, which is why this is the one DTO-to-input translation
- * that reads the clock. `copyFromWorkoutId` is deliberately not read here: the repository takes it
- * as a separate `options` argument rather than as part of the input, so `WorkoutFacade.create`
- * passes it on itself.
- */
+// `copyFromWorkoutId` is not read here; the facade passes it to the repository itself.
 export function translateDtoToCreateWorkout(dto: CreateWorkoutDto): CreateWorkout {
   return {
     performed_on: dto.performedOn ?? today(),
@@ -108,7 +103,6 @@ function translateToWorkoutExerciseDto(row: WorkoutExercise, sets: LiftSet[]): W
   };
 }
 
-/** Groups the workout's sets, in their own order, under its exercises, in theirs. */
 export function translateToWorkoutWithExercisesDto(row: Workout, exercises: WorkoutExercise[], sets: LiftSet[]): WorkoutWithExercisesDto {
   return {
     ...translateToWorkoutDto(row),

@@ -23,7 +23,7 @@ export class WorkoutApi {
     return post('/workouts', dto);
   }
 
-  /** Updates the header only — the response carries no `exercises`. */
+  // The response carries no `exercises`.
   update(id: WorkoutId, dto: EditWorkoutDto): Promise<WorkoutDto> {
     return patch(`/workouts/${id}`, dto);
   }

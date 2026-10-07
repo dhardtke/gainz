@@ -1,19 +1,10 @@
-/**
- * Runs the built frontend bundle, at the path given as its argument, in a fresh happy-dom window and
- * prints what it did as JSON on stdout. `build-bundle.test.ts` starts it as a child process, because
- * every test file in a process shares `useDom()`'s one window: a component another file has already
- * defined would make `define()` return early, and the checks would depend on file order.
- *
- * Its `fetch` records every URL and answers a stylesheet with an empty 200, so a component sheet with
- * rules can only have come from the bundle, and the API with an empty 200 JSON object.
- */
+// A child process: test files share useDom()'s one window, where earlier define() calls would leak in.
 import { pathToFileURL } from 'node:url';
 import { GlobalWindow } from 'happy-dom';
 
 export interface ProbeState {
   defined: string[];
   requested: string[];
-  /** The rules in the last sheet a `gz-app`'s shadow root adopts: its own. */
   appRules: number;
 }
 
@@ -22,10 +13,8 @@ export interface ProbeReport {
   afterMount: ProbeState;
 }
 
-/** The tags the probe asks `customElements` about. */
 const TAGS = ['gz-app', 'gz-header', 'gz-theme-toggle', 'gz-breadcrumbs', 'gz-dashboard'];
 
-/** Not copied onto globalThis: they are the global object itself, or language values. */
 const NOT_INSTALLED = new Set<PropertyKey>(['constructor', 'global', 'globalThis', 'undefined', 'NaN']);
 
 const bundle = process.argv[2];
@@ -37,7 +26,6 @@ const window = new GlobalWindow({
   url: 'http://localhost/',
   settings: { navigation: { disableMainFrameNavigation: true, disableFallbackToSetURL: true } },
 });
-// The same walk as useDom() in src/frontend/testing.ts.
 for (const key of Reflect.ownKeys(window)) {
   const descriptor = Object.getOwnPropertyDescriptor(window, key);
   const current = Object.getOwnPropertyDescriptor(globalThis, key);
@@ -82,7 +70,7 @@ await Promise.race([customElements.whenDefined('gz-dashboard'), Bun.sleep(5_000)
 const afterMount = state();
 
 const report: ProbeReport = { beforeMount, afterMount };
-// Not console.log: the walk above installed happy-dom's console, which writes to its virtual console.
+// Not console.log: happy-dom's console, installed above, writes to its virtual console.
 process.stdout.write(`${JSON.stringify(report)}\n`);
-// happy-dom keeps timers alive; the report is all the test needs.
+// happy-dom keeps timers alive.
 process.exit(0);

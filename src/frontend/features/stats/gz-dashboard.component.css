@@ -1,5 +1,3 @@
-/* Landing view: stat tiles above a list of recent sessions. */
-
 .tiles {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));

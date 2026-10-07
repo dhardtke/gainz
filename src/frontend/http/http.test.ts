@@ -104,7 +104,6 @@ describe('failures', () => {
 });
 
 describe('a 401', () => {
-  /** Counts `UNAUTHORIZED_EVENT`s on the global object while `run` runs. */
   async function unauthorizedEvents(run: () => Promise<unknown>): Promise<number> {
     let heard = 0;
     const listener = (): void => {

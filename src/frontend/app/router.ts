@@ -1,8 +1,3 @@
-/**
- * Path-based router over the History API.
- */
-
-/** A link to a page: a header link or a breadcrumb. */
 export interface Crumb {
   path: string;
   label: string;
@@ -10,23 +5,16 @@ export interface Crumb {
 
 export interface RouteDef {
   pattern: RegExp;
-  /** Names for the pattern's capture groups, in order. */
   keys: string[];
   view: (params: Record<string, string>) => Promise<Element>;
-  /**
-   * The page's name: the tab title, and the last breadcrumb until its view names what it shows.
-   * Without one the tab keeps the app's own title.
-   */
   title?: string;
-  /** The pages above this one, outermost first; a route without any shows no breadcrumb. */
   parents?: Crumb[];
-  /** A header link; `path` is explicit because a regex cannot be turned back into an href. */
+  // `path` is explicit because a regex cannot be turned back into an href.
   nav?: Crumb;
 }
 
 export interface RouteMatch {
   route: RouteDef;
-  /** Captured from the path, e.g. `{ id: "12" }`. */
   params: Record<string, string>;
 }
 
@@ -45,21 +33,18 @@ export function matchRoute(routes: readonly RouteDef[], path: string): RouteMatc
   return null;
 }
 
-/** The path the page is at. */
 export function currentPath(): string {
   return location.pathname;
 }
 
-/** Routes to `path`, which may carry a query such as `/workouts?page=2`. */
 export function navigate(path: string): void {
   if (location.pathname + location.search !== path) {
     history.pushState(null, '', path);
   }
-  // pushState fires no event, and the same route must refresh too: tell the listeners.
+  // pushState fires no event, and the same route must refresh too.
   window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
-/** @returns call it to stop listening. */
 export function onRouteChange(listener: () => void): () => void {
   window.addEventListener('popstate', listener);
   return () => {
@@ -67,13 +52,11 @@ export function onRouteChange(listener: () => void): () => void {
   };
 }
 
-/** True when `path` is the active route or one of its children. */
 export function isActive(path: string): boolean {
   const current = currentPath();
   return path === '/' ? current === '/' : current.startsWith(path);
 }
 
-/** The parts of a click that decide whether it is a plain in-page navigation; a MouseEvent fits. */
 export interface LinkClick {
   button: number;
   ctrlKey: boolean;
@@ -84,16 +67,11 @@ export interface LinkClick {
 }
 
 export interface LinkTarget {
-  /** Absolute, as `HTMLAnchorElement.href` reports it. */
   href: string;
   target: string;
   download: boolean;
 }
 
-/**
- * The path to route a link click to, or null when the browser should handle it: a new-tab
- * or save gesture, another origin, the API, a file, or a URL with a query or fragment.
- */
 export function linkPath(click: LinkClick, link: LinkTarget, origin: string): string | null {
   const isHandledElsewhere = click.defaultPrevented;
   const isPrimaryButton = click.button === 0;

@@ -16,7 +16,6 @@ export class AuthController {
     return json(body);
   }
 
-  /** 204 with the session cookie (none while auth is off), or 429 while logins are locked. */
   async login(req: Request): Promise<Response> {
     const result = await this.#auth.login(translateToLoginRequestDto(await readJsonObject(req)));
     if (result.kind === 'locked') {

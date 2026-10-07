@@ -7,10 +7,6 @@ import type { WorkoutWithStatsDto } from '../../../shared/dto/workout.ts';
 import { toast, toastError } from '../../ui/toast.ts';
 import { workoutFacade } from './workouts.facade.ts';
 
-/**
- * One workout in a list: a card that opens the session, its totals, and Repeat, which copies its
- * sets into a new session dated today. A done workout's card is green and carries "✓ Done".
- */
 export class GzWorkoutCardComponent extends GzElement {
   #workout: WorkoutWithStatsDto | null = null;
 

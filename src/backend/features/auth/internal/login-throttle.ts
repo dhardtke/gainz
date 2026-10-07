@@ -6,12 +6,7 @@ const MAX_LOCK_S = 3600;
 
 export type ThrottleDecision = { kind: 'locked'; retryAfter: number } | { kind: 'go' };
 
-/**
- * Backs off logins after consecutive failures, for every client at once: behind the reverse proxy
- * each one is 127.0.0.1, so there is no address to tell them apart by. From the fifth failure on,
- * each failure locks the login for `60 · 2^(failures − 5)` seconds, up to an hour. A success or a
- * restart resets the count. Valid cookies are not affected; only `POST /api/auth/login` asks.
- */
+// Global, not per client: behind the reverse proxy every client is 127.0.0.1.
 export class LoginThrottle {
   readonly #now: () => number;
   #failures = 0;
@@ -22,10 +17,7 @@ export class LoginThrottle {
     this.#now = now;
   }
 
-  /**
-   * Reserves an attempt, counting it as a failure up front so concurrent guesses cannot all pass
-   * this check while the first one is still being verified. `succeeded()` takes it back.
-   */
+  /** Counts the attempt as a failure up front so concurrent guesses cannot all pass; `succeeded()` undoes it. */
   begin(): ThrottleDecision {
     const now = this.#now();
     if (now < this.#lockedUntil) {
@@ -39,7 +31,7 @@ export class LoginThrottle {
     return { kind: 'go' };
   }
 
-  /** Logs the lockout a confirmed failure started; logged here, not in `begin()`, so a correct password never reports one. */
+  /** Logs here, not in `begin()`, so a correct password never reports a lockout. */
   failed(): void {
     if (this.#failures >= FREE_ATTEMPTS) {
       log.warn('auth', `login locked for ${this.#lockS} s after ${this.#failures} failed attempts`);

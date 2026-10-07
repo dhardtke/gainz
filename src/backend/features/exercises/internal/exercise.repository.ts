@@ -24,12 +24,7 @@ export class ExerciseRepository {
     this.#db = db;
   }
 
-  /**
-   * Counts done sets only — a set not done is a plan, not history — but joins them in the `ON`
-   * clause, so an exercise without any still lists.
-   *
-   * @param limit null for every exercise.
-   */
+  /** Joins done sets in the `ON` clause, so an exercise without any still lists. */
   list(limit: number | null, offset: number): ExerciseWithStats[] {
     return (
       this.#db
@@ -55,11 +50,7 @@ export class ExerciseRepository {
     return this.#db.query<{ n: number }, []>('SELECT COUNT(*) AS n FROM exercises').get()?.n ?? 0;
   }
 
-  /**
-   * The exercise's 0-based place in `list()`'s order. Names are unique under NOCASE
-   * (`idx_exercises_name`), so no other exercise ties with it and counting the ones
-   * that sort before it is its exact position.
-   */
+  /** Names are unique under NOCASE, so counting those sorting before it is its exact position. */
   index(id: ExerciseId): number {
     const { name } = this.require(id);
     return this.#db.query<{ n: number }, [string]>('SELECT COUNT(*) AS n FROM exercises WHERE name < ? COLLATE NOCASE').get(name)?.n ?? 0;
@@ -123,7 +114,6 @@ export class ExerciseRepository {
     this.#db.query('DELETE FROM exercises WHERE id = ?').run(id);
   }
 
-  /** Per-session aggregates of one exercise's done sets, oldest first — the progress curve. */
   progress(id: ExerciseId): SessionPoint[] {
     return this.#db
       .query<SessionPoint, [ExerciseId]>(
@@ -143,7 +133,6 @@ export class ExerciseRepository {
       .all(id);
   }
 
-  /** The single best done set of an exercise, by estimated 1RM. */
   bestSet(id: ExerciseId): (LiftSet & { performed_on: Iso8601Date }) | null {
     return this.#db
       .query<LiftSet & { performed_on: Iso8601Date }, [ExerciseId]>(

@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { matchRoute } from './router.ts';
 import { ROUTES } from './routes.ts';
 
-// Never calls a route's view: that imports a module extending HTMLElement, which bun test lacks.
+// Never calls a route's view: it imports a module extending HTMLElement, which bun test lacks.
 describe('routes', () => {
   test('/ and the empty path both resolve to the dashboard, without params', () => {
     const root = matchRoute(ROUTES, '/');

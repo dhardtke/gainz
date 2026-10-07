@@ -5,16 +5,11 @@ import { type RouteHandler, type RouteTable, wrapHandlers } from './routing.ts';
 const WRITES = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const MAX_BODY = 1024;
 
-/**
- * Wraps every handler so each /api request, and any response ≥ 500, is logged with its duration and,
- * for a write, its body. The outermost wrapper, so it also catches every throw from a route: it answers
- * through `errorResponse` and logs the error with the request that caused it, which Bun's `error` hook,
- * handed only the error, cannot.
- */
+// Catches throws here rather than in Bun's `error` hook, which is not handed the request.
 export function accessLog(table: RouteTable): RouteTable {
   return wrapHandlers(table, 'access log', (handler) => async (req, server) => {
     const start = performance.now();
-    // Taken before the handler reads the body, and read only once the line is known to be logged.
+    // Cloned before the handler consumes the body.
     const copy = WRITES.has(req.method) ? req.clone() : null;
     let res: Awaited<ReturnType<RouteHandler>>;
     let error: unknown;
@@ -24,7 +19,7 @@ export function accessLog(table: RouteTable): RouteTable {
       error = err;
       res = errorResponse(err);
     }
-    // undefined = a WebSocket upgrade (/dev/ws); nothing to log
+    // undefined means a WebSocket upgrade.
     if (res instanceof Response) {
       const ms = performance.now() - start;
       const url = new URL(req.url);
@@ -43,11 +38,7 @@ export function accessLog(table: RouteTable): RouteTable {
   });
 }
 
-/**
- * A request body as the access log shows it: compact JSON with every `password` value redacted, at
- * any depth, cut at `MAX_BODY` characters. A body that is not JSON is never shown, only its size, so
- * a malformed login cannot leak a password.
- */
+// A non-JSON body shows only its size, so a malformed login cannot leak a password.
 export function describeBody(text: string): string {
   let parsed: unknown;
   try {

@@ -8,10 +8,7 @@ beforeAll(async () => {
   await import('./gz-header.component.ts');
 });
 
-/**
- * Opens the narrow-screen menu as far as the header sees it: Oat is not loaded here, and happy-dom
- * has no ToggleEvent, so a plain event carries its `newState`.
- */
+// happy-dom has no ToggleEvent, so a plain event carries `newState`.
 function open(root: ShadowRoot): void {
   find(root, testId('menu')).dispatchEvent(Object.assign(new Event('toggle'), { newState: 'open' }));
 }

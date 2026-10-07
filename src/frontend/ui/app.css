@@ -1,6 +1,4 @@
-/* gainz's palette: Oat's tokens with blue as the brand and every text pair at WCAG AA, every
-   control border at 3:1 (ui/contrast.test.ts checks both). Light mode is a grouped surface:
-   a gray page with white cards. Unlayered, so it wins over Oat's theme layer. */
+/* Unlayered, so it wins over Oat's theme layer. ui/contrast.test.ts checks the contrast. */
 :root {
   --background: light-dark(#f4f4f5, #09090b);
   --card: light-dark(#fff, #202024);
@@ -13,8 +11,7 @@
   --input: light-dark(#8b8b94, #71717a);
 }
 
-/* Oat colors every token with light-dark() under color-scheme: light dark; the chosen theme
-   narrows it. color-scheme inherits, so this reaches every shadow root with no mirroring. */
+/* color-scheme inherits, so this reaches every shadow root. */
 :root[data-theme="light"] {
   color-scheme: light;
 }
@@ -31,8 +28,6 @@ gz-app {
   display: block;
   min-height: 100vh;
 
-  /* The app renders inside a shadow root; this only matters before it
-     upgrades. */
   &:not(:defined) {
     min-height: 100vh;
   }

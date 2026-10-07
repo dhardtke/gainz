@@ -1,11 +1,10 @@
 import { beforeAll, beforeEach, expect, test } from 'bun:test';
 import { find, mount, shadow, testId, useDom } from '../testing.ts';
-// Type-only, so erased: the module itself is imported once the DOM is in place.
 import type * as ThemeModule from '../ui/theme.ts';
 
 useDom();
 
-/** The plain module, so the same instance the component uses, unlike theme.test.ts's `?N` copies. */
+// The plain module, the instance the component uses, unlike theme.test.ts's `?N` copies.
 let theme: typeof ThemeModule;
 
 beforeAll(async () => {
@@ -14,7 +13,6 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  // The module's current theme outlives each test.
   theme.setTheme('light');
 });
 

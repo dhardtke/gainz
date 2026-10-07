@@ -23,7 +23,7 @@ export class WorkoutFacade {
     return this.#api.create(dto);
   }
 
-  /** Updates the header only — the response carries no `exercises`. */
+  // The response carries no `exercises`.
   update(id: WorkoutId, dto: EditWorkoutDto): Promise<WorkoutDto> {
     return this.#api.update(id, dto);
   }
@@ -32,7 +32,6 @@ export class WorkoutFacade {
     return this.#api.delete(id);
   }
 
-  /** Swaps the exercise with its neighbor; answers with the workout in its new order. */
   moveExercise(id: WorkoutId, exerciseId: ExerciseId, direction: MoveDirection): Promise<WorkoutWithExercisesDto> {
     return this.#api.moveExercise(id, exerciseId, { direction });
   }

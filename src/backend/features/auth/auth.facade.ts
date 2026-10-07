@@ -9,24 +9,17 @@ const MAX_PASSWORD_LENGTH = 1000;
 const PASSWORD_HASH = /^\$(argon2(id|i|d)|2[aby])\$/;
 
 export interface AuthOptions {
-  /** The `Bun.password` hash of the one password; null turns authentication off. */
+  /** null turns authentication off. */
   passwordHash: string | null;
-  /** Epoch milliseconds; injectable so tests can move the clock. */
   now?: () => number;
 }
 
 export type LoginResult = { kind: 'ok'; cookie: string | null } | { kind: 'locked'; retryAfter: number };
 
-/** Whether `value` looks like a hash `Bun.password.verify` can check: argon2 or bcrypt. */
 export function isPasswordHash(value: string): boolean {
   return PASSWORD_HASH.test(value);
 }
 
-/**
- * The auth feature's front door: the password login, its throttle, and the guard that asks every
- * data route for a valid session cookie. With no password hash configured it is off — `guard`
- * hands tables back untouched and `login` lets anyone in without a cookie.
- */
 export class AuthFacade {
   readonly #hash: string | null;
   readonly #now: () => number;
@@ -42,11 +35,6 @@ export class AuthFacade {
     return this.#hash !== null;
   }
 
-  /**
-   * Validates first, whether or not auth is on. The throttle is asked before the password is
-   * verified, so a locked login costs no hashing, and it reserves the attempt synchronously, before
-   * the `await`.
-   */
   async login(dto: LoginRequestDto): Promise<LoginResult> {
     const password: unknown = dto.password;
     if (typeof password !== 'string' || password === '' || password.length > MAX_PASSWORD_LENGTH) {
@@ -55,6 +43,7 @@ export class AuthFacade {
     if (this.#hash === null) {
       return { kind: 'ok', cookie: null };
     }
+    // Reserve the attempt before the await, so concurrent guesses are counted and locks cost no hashing.
     const decision = this.#throttle.begin();
     if (decision.kind === 'locked') {
       return decision;
@@ -74,12 +63,6 @@ export class AuthFacade {
     return expired();
   }
 
-  /**
-   * Wraps every handler in `table` — a bare function or each verb of a method map — so it answers
-   * 401 without a valid session cookie, and re-sets the cookie when it is due for renewal. A static
-   * value (a `Response`, a file, a directory) has no handler to wrap and would slip past, so meeting
-   * one is a startup error rather than an open route.
-   */
   guard(table: RouteTable): RouteTable {
     const hash = this.#hash;
     if (hash === null) {

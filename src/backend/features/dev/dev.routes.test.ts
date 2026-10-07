@@ -11,10 +11,7 @@ const CLIENT = '/dev/hot.ts';
 
 const logs = useLogs();
 
-/**
- * Waits up to a second for `dev hot reload idle`, which `detach()` logs on a later tick after the
- * last socket closes, so the line cannot escape after the capturing sink is restored.
- */
+/** `detach()` logs idle a tick after the last close; wait so it cannot escape the sink. */
 async function idle(): Promise<void> {
   for (let waited = 0; waited < 1000; waited += 10) {
     if (logs().some((line) => line.text === 'dev hot reload idle')) {
@@ -25,11 +22,7 @@ async function idle(): Promise<void> {
   throw new Error('the hot-reload watcher never went idle');
 }
 
-/**
- * A server built with `GAINZ_DEV` set as asked. Not `useServer()`: the variable has to be set
- * before the route table is built, and it must never leak into the other test files this process
- * runs next — `static.routes.test.ts` asserts production behavior.
- */
+/** Not `useServer()`: GAINZ_DEV must be set before routes are built and must not leak. */
 async function withDev(enabled: boolean, fn: (origin: string) => Promise<void>): Promise<void> {
   const previous = process.env.GAINZ_DEV;
   if (enabled) {
@@ -70,8 +63,7 @@ describe('hot reload switched off', () => {
 
   test('a socket at /dev/ws never connects', async () => {
     await withDev(false, async (origin) => {
-      // No route means the single-page fallback answers /dev/ws with index.html — a 200, not a 404 —
-      // so what is asserted is the connection, not a status code.
+      // Without the route the SPA fallback answers 200, so assert the connection, not the status.
       const socket = new WebSocket(socketUrl(origin));
       expect(await opens(socket)).toBe(false);
       socket.close();

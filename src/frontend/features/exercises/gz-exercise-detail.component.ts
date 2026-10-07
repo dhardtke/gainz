@@ -13,14 +13,9 @@ import './internal/gz-progress-chart.component.ts';
 import './internal/gz-session-table.component.ts';
 import '../../ui/tile/gz-tile.component.ts';
 
-/** Progress view for a single exercise: tiles, chart and history first, editing collapsed at the bottom. */
 export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
   override loadingText = 'Loading progress…';
 
-  /**
-   * The metric last chosen in the chart, handed back to it after a save re-renders
-   * this view and so recreates the chart. Remembered without re-rendering anything.
-   */
   #metric: string | null = null;
 
   override connectedCallback(): void {
@@ -46,8 +41,6 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
       toast('Exercise deleted', 'success');
       navigate('/exercises');
     } catch (error) {
-      // A set still referencing the exercise comes back as a 409 naming the
-      // obstacle, so the useful outcome is to stay here and show it.
       toastError(error);
     }
   }
@@ -59,8 +52,6 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
     const values = this.formData(form);
     try {
       await exerciseFacade.update(this.numericAttribute('exercise-id'), {
-        // `name` is `required`, so an empty one only arrives if the browser's
-        // validation was bypassed; the API rejects it either way.
         name: values.name ?? '',
         muscleGroup: values.muscleGroup,
         notes: values.notes,
@@ -99,11 +90,6 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
     `;
   }
 
-  /**
-   * Editing and the destructive Delete, collapsed below the history. It keeps no open state: only
-   * a successful save reloads the view, which closes it while the toast confirms the save, and a
-   * failed save or a metric switch re-renders nothing.
-   */
   #editTemplate(exercise: ExerciseDto): RawHtml {
     return html`
       <details class="edit" data-testid="edit">

@@ -15,10 +15,6 @@ import type { WorkoutExercise } from './ports/workout-exercise.ts';
 const MAX_WORKOUT_NAME_LENGTH = 120;
 const MAX_WORKOUT_NOTES_LENGTH = 2000;
 
-/**
- * The workouts half of the feature's front door. Controllers hold this rather than the repository,
- * so the SQL, the CreateWorkout shape and the nullable get() stay inside the feature.
- */
 export class WorkoutFacade {
   readonly #workouts: WorkoutRepository;
 
@@ -41,12 +37,11 @@ export class WorkoutFacade {
     return this.#workouts.require(id);
   }
 
-  /** The workout's exercises, in its order. */
   exercises(id: WorkoutId): WorkoutExercise[] {
     return this.#exercises.list(id);
   }
 
-  /** Validates first, so a bad direction on an unknown workout is a 400, as elsewhere. */
+  /** Validates first, so a bad direction on an unknown workout is a 400. */
   moveExercise(id: WorkoutId, exerciseId: ExerciseId, dto: MoveWorkoutExerciseDto): void {
     const direction = requiredOneOf(dto, 'direction', ['up', 'down'] as const);
     this.#workouts.require(id);
@@ -90,11 +85,7 @@ export class WorkoutFacade {
   }
 }
 
-/**
- * The sets half. A second facade rather than more methods on the first, because both entities
- * answer to `list` / `require` / `create` / `update` / `delete` and merging them would mean
- * renaming every one of them.
- */
+// Separate from WorkoutFacade: both use the same method names (`list`, `create`, ...).
 export class SetFacade {
   readonly #sets: SetRepository;
 
@@ -149,11 +140,6 @@ export class SetFacade {
   }
 }
 
-/**
- * Every repository is built here because all of them belong to this feature: SetRepository reads
- * workouts through the WorkoutRepository it is given and keeps the WorkoutExerciseRepository it is
- * given in step, and this factory is the one place that decides which ones those are.
- */
 export function createWorkoutFacades(db: DB): { workouts: WorkoutFacade; sets: SetFacade } {
   const workouts = new WorkoutRepository(db);
   const workoutExercises = new WorkoutExerciseRepository(db);

@@ -8,12 +8,6 @@ import type { ExerciseId, WorkoutId } from '../../../../shared/flavors.ts';
 import { toastError } from '../../../ui/toast.ts';
 import { setFacade } from '../workouts.facade.ts';
 
-/**
- * The "Add a set" form of a workout. It starts from the workout's last set — its exercise,
- * weight and reps — logs the set, and tells its parent with a `set-logged` event, which reloads
- * and so hands it the sets again. The event's detail is `{ exerciseId }`, the exercise the set was
- * logged against, so the parent can open it. Exercises are created on the exercises page only.
- */
 export class GzAddSetFormComponent extends GzElement {
   #workoutId: WorkoutId | null = null;
 
@@ -25,12 +19,11 @@ export class GzAddSetFormComponent extends GzElement {
     this.#workoutId = value;
   }
 
-  /** Every exercise, for the select. */
   set exercises(value: ExerciseDto[]) {
     this.#exercises = value;
   }
 
-  /** The workout's sets, oldest first. Set it last: it is the one that re-renders. */
+  // Set it last: assigning it re-renders.
   set sets(value: LiftSetDto[]) {
     this.#sets = value;
     if (this.isConnected) {
@@ -69,7 +62,6 @@ export class GzAddSetFormComponent extends GzElement {
     });
   }
 
-  /** Copies the last set of an exercise into the form. */
   #prefillFrom(exerciseId: ExerciseId): void {
     const previous = this.#sets?.filter((set) => set.exerciseId === exerciseId).at(-1);
     if (!previous) {

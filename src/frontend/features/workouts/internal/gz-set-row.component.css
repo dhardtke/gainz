@@ -1,11 +1,9 @@
-/* One logged set: a dense row, editable in place until the set is done, then disabled and marked green. */
-
 .row-view {
   display: grid;
   grid-template-columns: auto 2.2rem auto minmax(0, 1.6fr) auto;
   align-items: center;
   gap: 0.6rem;
-  /* The stripe plus the start padding match the summary's inset, so the row lines up with the exercise name. */
+  /* Matches the summary's inset, so the row lines up with the exercise name. */
   padding: 0.5rem var(--space-4) 0.5rem calc(var(--space-4) - 3px);
   border-inline-start: 3px solid transparent;
   margin: 0;
@@ -64,7 +62,6 @@ input.note {
 @media (max-width: 720px) {
   .row-view {
     grid-template-columns: auto 2rem 1fr;
-    /* The toggle, index and actions share the first line; the load and the note take a full line each. */
     grid-template-areas:
       "t i a"
       "l l l"

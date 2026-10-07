@@ -1,34 +1,17 @@
-/**
- * The server's one way to write a log line: `log.<level>(topic, message, …)` writes
- * `<topic> <message>`, then a payload such as a request body on the same line, then an error as
- * `Bun.inspect` renders it — the stack, a `cause` and an `AggregateError`'s inner errors, none of
- * which `err.stack` shows.
- *
- * Under systemd the line is stored by journald, which reads a leading `<N>` as the line's syslog
- * priority (`SyslogLevelPrefix=` defaults to yes) and stores each line of its own, so every line of a
- * multi-line entry, a stack included, carries the prefix. journald mode is chosen when
- * `JOURNAL_STREAM` names stdout's `dev:ino`, as systemd.exec(5) prescribes, and not merely when the
- * variable is set: a terminal launched from a systemd user unit inherits it, and `bun start` there
- * must still print the terminal format.
- */
 import { fstatSync } from 'node:fs';
 
 export type LogLevel = 'info' | 'warn' | 'error';
 
-/** One call to `log`, before it is formatted. */
 export interface LogEntry {
   level: LogLevel;
   topic: string;
   message: string;
-  /** Data the message is about, such as a request body, shown after it on the same line. */
   payload?: string;
-  /** Rendered below the line; absent when there is none. */
   error?: unknown;
 }
 
 export type LogSink = (entry: LogEntry) => void;
 
-/** How the terminal and journald formats are told apart, and whether the terminal one is colored. */
 export interface FormatOptions {
   journald: boolean;
   colors: boolean;
@@ -48,22 +31,17 @@ function paint(color: string, text: string): string {
   return `${color}${text}${RESET}`;
 }
 
+// Bun.inspect, unlike err.stack, shows a `cause` and an AggregateError's inner errors.
 function renderError(error: unknown, colors: boolean): string {
   return typeof error === 'string' ? error : Bun.inspect(error, { colors });
 }
 
-/** The entry as uncolored text: `<topic> <message>[ <payload>]`, and the error on the lines below. */
 export function entryText(entry: LogEntry): string {
   const line = `${entry.topic} ${entry.message}${entry.payload === undefined ? '' : ` ${entry.payload}`}`;
   return entry.error === undefined ? line : `${line}\n${renderError(entry.error, false)}`;
 }
 
-/**
- * The entry as it is written: in journald mode each line gets its priority prefix; in a terminal the
- * first line starts with the local time and, for warn and error, the level, and continuation lines
- * go out unchanged. With colors, the terminal format also names info, so every level has a color,
- * and paints the time, the level, the topic and the payload, and lets `Bun.inspect` color the error.
- */
+// journald reads a leading `<N>` as the priority of each line separately, a stack's lines included.
 export function formatEntry(entry: LogEntry, options: FormatOptions): string {
   if (options.journald) {
     return entryText(entry)
@@ -85,14 +63,14 @@ export function formatEntry(entry: LogEntry, options: FormatOptions): string {
   return text;
 }
 
-/** Whether `value`, a `JOURNAL_STREAM`, is `<dev>:<ino>` and names the file open at `fd`. */
+// Matches stdout's dev:ino, not mere presence: a terminal from a systemd user unit inherits it.
 export function isJournalStream(value: string | undefined, fd: number): boolean {
   const match = /^(\d+):(\d+)$/.exec(value ?? '');
   if (match === null) {
     return false;
   }
   try {
-    // bigint, because an inode number can exceed what a double holds exactly (it does on Windows).
+    // bigint: an inode number can exceed what a double holds exactly (it does on Windows).
     const stat = fstatSync(fd, { bigint: true });
     return match[1] === String(stat.dev) && match[2] === String(stat.ino);
   } catch {
@@ -102,12 +80,7 @@ export function isJournalStream(value: string | undefined, fd: number): boolean 
 
 let format: Omit<FormatOptions, 'now'> | undefined;
 
-/**
- * In journald mode every level goes to stdout, because the prefix carries the level and one stream
- * keeps related lines in order; in a terminal info goes to stdout and warn and error to stderr.
- * Colors are for `bun run start:dev` (`GAINZ_DEV=1`) only, and only where Bun would color its own
- * output, so `NO_COLOR` and a redirected stream turn them off.
- */
+// journald gets one stream so related lines stay in order; the prefix carries the level.
 const defaultSink: LogSink = (entry) => {
   if (format === undefined) {
     const journald = isJournalStream(process.env.JOURNAL_STREAM, 1);
@@ -119,7 +92,6 @@ const defaultSink: LogSink = (entry) => {
 
 let sink: LogSink = defaultSink;
 
-/** Replaces where entries go, for tests; the returned function restores the previous sink. */
 export function setLogSink(next: LogSink): () => void {
   const previous = sink;
   sink = next;

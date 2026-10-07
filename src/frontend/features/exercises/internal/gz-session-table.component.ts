@@ -4,11 +4,9 @@ import { html } from '../../../ui/html.ts';
 import { formatDate, formatDelta, formatNumber, formatVolume, UNIT } from '../../../ui/format.ts';
 import type { SessionPointDto } from '../../../../shared/dto/exercise.ts';
 
-/** An exercise's session history, newest first, with each session's change in estimated 1RM. */
 export class GzSessionTableComponent extends GzElement {
   #sessions: SessionPointDto[] = [];
 
-  /** Oldest first, as the API sends them. */
   set sessions(value: SessionPointDto[]) {
     this.#sessions = value;
     if (this.isConnected) {

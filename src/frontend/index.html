@@ -11,10 +11,7 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#fff" />
     <script>
-      // Applies a stored theme before the first paint, so choosing light on a
-      // dark system does not flash dark on every load. src/frontend/ui/theme.ts owns the
-      // preference from then on; the storage key is duplicated here on purpose,
-      // because this must run before any module has loaded.
+      // Runs before any module to avoid a theme flash; mirrors the key and colors in ui/theme.ts.
       {
         let storedTheme = null;
         try {
@@ -22,30 +19,14 @@
           if (storedTheme === 'light' || storedTheme === 'dark') {
             document.documentElement.setAttribute('data-theme', storedTheme);
           }
-        } catch (error) {
-          /* Storage unavailable — fall through to following the system. */
-        }
-        // Colors the status bar and title bar like the header. theme.ts and --card in
-        // ui/app.css hold the same two colors — keep them in sync.
+        } catch (error) {}
         try {
           const dark = storedTheme === 'dark' || (storedTheme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
           document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#202024' : '#fff');
-        } catch (error) {
-          /* No matchMedia — keep the light default. */
-        }
+        } catch (error) {}
       }
     </script>
-    <!--
-      Oat and shared.css style the document itself, where the views and the login form
-      live; the same files are also adopted into every component's shadow root by
-      src/frontend/ui/styles.ts, where Oat's tokens (declared on :root) and its body
-      typography arrive by inheritance. oat.js is deferred, so it runs before the
-      modules below that use ot-dropdown and window.ot. styles.ts reads the first two
-      with fetch(), which a stylesheet link cannot answer, so they are preloaded for that
-      too: every component module waits on those two fetches. The server serves every URL
-      here but the icon's and the manifest's with a version that lets the browser cache it
-      for good.
-    -->
+    <!-- Preloaded as fetch too: ui/styles.ts fetches them for shadow roots. -->
     <link rel="stylesheet" href="/vendor/oat.css" />
     <link rel="stylesheet" href="/ui/shared.css" />
     <link rel="stylesheet" href="/ui/app.css" />

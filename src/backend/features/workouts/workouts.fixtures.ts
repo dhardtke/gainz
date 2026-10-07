@@ -1,4 +1,3 @@
-/** Test-only. Workout data for any feature's route tests; no production module imports it. */
 import { expect } from 'bun:test';
 import type { CreateSetDto, LiftSetDto } from '../../../shared/dto/set.ts';
 import type { WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
@@ -17,7 +16,6 @@ export async function createSet(post: TestServer['post'], workoutId: WorkoutId, 
   return body<LiftSetDto>(res);
 }
 
-/** For a test whose set must count in the history aggregates, which skip sets not done. */
 export async function markDone(patch: TestServer['patch'], setId: LiftSetId): Promise<LiftSetDto> {
   const res = await patch(`/api/sets/${setId}`, { done: true });
   expect(res.status).toBe(200);

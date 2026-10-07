@@ -53,7 +53,6 @@ const WORKOUT: WorkoutWithExercisesDto = {
   exercises: [BENCH, SQUAT],
 };
 
-/** WORKOUT with every set passed through `change`, which gets the set's place in the workout. */
 function withSets(change: (item: LiftSetDto, index: number) => LiftSetDto): WorkoutWithExercisesDto {
   let index = 0;
   return { ...WORKOUT, exercises: WORKOUT.exercises.map((item) => ({ ...item, sets: item.sets.map((each) => change(each, index++)) })) };
@@ -67,7 +66,6 @@ async function mountView(workout: WorkoutWithExercisesDto = WORKOUT): Promise<Gz
   return view;
 }
 
-/** Where the "Add a set" form renders. */
 function addSetRoot(view: HTMLElement): ShadowRoot {
   return shadow(find(shadow(view), testId('add-set-form')));
 }
@@ -88,7 +86,6 @@ function exerciseSelect(view: HTMLElement): HTMLSelectElement {
   return find<HTMLSelectElement>(addSetForm(view), testId('exercise'));
 }
 
-/** Asked of the input's own root, so it holds wherever the form's shadow root is. */
 function focused(input: HTMLElement): boolean {
   const rootNode = input.getRootNode();
   return rootNode instanceof ShadowRoot && rootNode.activeElement === input;
@@ -110,7 +107,6 @@ test('totals the sets, exercises, reps and volume in one muted line', async () =
   expect(text(view, testId('totals'))?.trim()).toStartWith('3 sets · 2 exercises · 15 reps · ');
 });
 
-/** The session's progress badges, after its totals. */
 function progress(view: HTMLElement): (string | null)[] {
   return Array.from(find(shadow(view), testId('summary')).querySelectorAll(testId('progress'))).map((badge) => badge.textContent);
 }
@@ -162,7 +158,6 @@ test('keeps unsaved text in the details form across logging a set', async () => 
   expect(field(detailsForm(view), 'title').value).toBe('Heavy push day');
 });
 
-/** Types into a details field and commits it, as leaving the field does. */
 function commit(input: HTMLInputElement, value: string): void {
   type(input, value);
   input.dispatchEvent(new Event('change', { bubbles: true }));
@@ -208,7 +203,6 @@ test('saves a committed detail, sending only what differs, without a toast', asy
 
 test('saves the details on Enter, once, even when the change is committed too', async () => {
   const view = await mountView();
-  // The reload after the save then reads back what it sent, as the server would answer.
   fake.respondTo('GET /api/workouts/3', 200, JSON.stringify({ ...WORKOUT, title: 'Heavy push day' }));
   const title = field(detailsForm(view), 'title');
   type(title, 'Heavy push day');
@@ -285,14 +279,12 @@ function setRow(view: HTMLElement, setId: number): HTMLElement {
   return found;
 }
 
-/** The exercise ids of the open groups. */
 function openGroups(view: HTMLElement): (string | undefined)[] {
   return groups(view)
     .filter((item) => item.open)
     .map((item) => item.dataset.exerciseId);
 }
 
-/** Opens or closes a group the way a click on its header does. */
 function setOpen(item: HTMLDetailsElement, open: boolean): void {
   item.open = open;
   item.dispatchEvent(new Event('toggle'));
@@ -413,7 +405,6 @@ test('disables ▲ on the first exercise and ▼ on the last', async () => {
 
 test('moves an exercise up, reloads in the new order, keeps the open one open and focus on the moved arrow', async () => {
   const view = await mountView();
-  // The arrows sit inside the open group, so the exercise to move is opened first.
   setOpen(groupOf(view, 2), true);
   const loads = workoutLoads();
   fake.respondTo(
@@ -433,14 +424,12 @@ test('moves an exercise up, reloads in the new order, keeps the open one open an
   expect(workoutLoads()).toBe(loads + 1);
   expect(groups(view).map((item) => item.dataset.exerciseId)).toEqual(['2', '1']);
   expect(openGroups(view)).toEqual(['2']);
-  // Now first, so ▲ is disabled and focus lands on ▼.
   expect(arrow(view, 2, 'up').disabled).toBe(true);
   expect(shadow(view).activeElement).toBe(arrow(view, 2, 'down'));
 });
 
 test('toasts a failed move and does not reload', async () => {
   const view = await mountView();
-  // The arrows sit inside the open group, so the exercise to move is opened first.
   setOpen(groupOf(view, 2), true);
   const loads = workoutLoads();
   fake.respondTo('POST /api/workouts/3/exercises/2/move', 404, JSON.stringify({ error: 'Exercise in this workout not found' }));

@@ -8,11 +8,6 @@ export function noContent(): Response {
   return new Response(null, { status: 204 });
 }
 
-/**
- * A JSON value that is a plain object. Written as a type guard rather than a
- * check followed by a cast, so the narrowing the check performs is the same
- * narrowing the caller gets.
- */
 function isJsonObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -42,7 +37,6 @@ export function queryInt(params: URLSearchParams, key: string, fallback: number,
   return optionalQueryInt(params, key, bounds) ?? fallback;
 }
 
-/** Like `queryInt`, but null for a missing or empty value, where the caller has no default. */
 export function optionalQueryInt(params: URLSearchParams, key: string, { min = 0, max = 1000 }: { min?: number; max?: number } = {}): number | null {
   const raw = params.get(key);
   if (raw === null || raw === '') {

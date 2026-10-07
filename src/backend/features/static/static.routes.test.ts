@@ -13,7 +13,6 @@ describe('static files', () => {
     expect(res.headers.get('content-type')).toContain('text/html');
     const page = await res.text();
     expect(page).toContain('gainz');
-    // Hot reload is development-only and must stay off unless GAINZ_DEV=1 asks for it.
     expect(page).not.toContain('/dev/hot.ts');
   });
 
@@ -71,8 +70,7 @@ describe('static files', () => {
   });
 
   test('answers a verb other than GET or HEAD with 405', async () => {
-    // `/vendor/oat.css` is the load-bearing case: it has its own { GET, HEAD } route, so the
-    // 405 can only come from an unmatched verb falling through to `/*`.
+    // `/vendor/oat.css` has its own { GET, HEAD } route, so its 405 can only come from `/*`.
     for (const path of ['/', '/ui/app.css', '/vendor/oat.css']) {
       const res = await api(path, { method: 'POST' });
       expect(res.status).toBe(405);
@@ -97,8 +95,7 @@ describe('static files', () => {
   });
 
   test('refuses to transpile anything outside src/frontend/', async () => {
-    // Encoded, so the URL parser cannot normalize the traversal away before
-    // resolveStaticPath sees it.
+    // Encoded, so the URL parser cannot normalize the traversal away.
     expect((await api('/%2e%2e/backend/http/server.ts')).status).toBe(404);
     expect((await api('/%2e%2e/backend/features/static/internal/transpile.ts')).status).toBe(404);
   });
@@ -182,7 +179,6 @@ describe('installable app', () => {
   });
 });
 
-/** A page's URL without its version. */
 const plain = (url: string): string => url.split('?', 1)[0] ?? url;
 const hrefs = (page: string, pattern: RegExp): string[] => [...page.matchAll(pattern)].map((match) => match[1] ?? '');
 const importMap = (page: string): Record<string, string> => {
@@ -192,7 +188,6 @@ const importMap = (page: string): Record<string, string> => {
 };
 
 describe('preloads', () => {
-  // Without their versions, which `versions` below covers.
   const sheets = (page: string): string[] => hrefs(page, /<link rel="preload" href="([^"]+)" as="fetch" crossorigin \/>/g).map(plain);
 
   test('announce no module graph', async () => {

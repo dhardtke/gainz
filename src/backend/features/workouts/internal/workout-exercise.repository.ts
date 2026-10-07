@@ -6,11 +6,7 @@ import type { WorkoutExercise } from '../ports/workout-exercise.ts';
 /** The repository's own, so it does not import the wire type. */
 export type MoveDirection = 'up' | 'down';
 
-/**
- * The order of a workout's exercises. A row exists exactly while the workout has a set of that
- * exercise: `append` and `removeIfUnused` keep it so, and both are called inside `SetRepository`'s
- * transactions, beside the set write they follow.
- */
+// A row exists exactly while the workout has a set of that exercise; SetRepository keeps it so.
 export class WorkoutExerciseRepository {
   readonly #db: DB;
 
@@ -30,10 +26,7 @@ export class WorkoutExerciseRepository {
       .all(workoutId);
   }
 
-  /**
-   * Puts the exercise last, unless the workout has it already. The `WHERE` is required: without
-   * it, SQLite cannot parse `ON CONFLICT` after `INSERT … SELECT … FROM`.
-   */
+  /** The `WHERE` is required: without it SQLite cannot parse `ON CONFLICT` after `INSERT … SELECT`. */
   append(workoutId: WorkoutId, exerciseId: ExerciseId): void {
     this.#db
       .query<unknown, [WorkoutId, ExerciseId]>(
@@ -44,11 +37,7 @@ export class WorkoutExerciseRepository {
       .run(workoutId, exerciseId);
   }
 
-  /**
-   * Swaps the exercise with its neighbor. Every move renumbers the workout's exercises 1..n, so ties
-   * and gaps vanish on first touch, and a move at an edge only renumbers. The done lock does not
-   * apply: the order a session is listed in is not performed history.
-   */
+  /** Renumbers 1..n on every move; the done lock does not apply, as order is not history. */
   move(workoutId: WorkoutId, exerciseId: ExerciseId, direction: MoveDirection): void {
     this.#db.transaction(() => {
       const ids = this.#db
@@ -75,7 +64,6 @@ export class WorkoutExerciseRepository {
     })();
   }
 
-  /** Drops the exercise from the workout once the workout has no set of it left. */
   removeIfUnused(workoutId: WorkoutId, exerciseId: ExerciseId): void {
     this.#db
       .query<unknown, [WorkoutId, ExerciseId]>(

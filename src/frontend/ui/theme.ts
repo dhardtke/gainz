@@ -1,30 +1,18 @@
-/**
- * Color theme preference: light or dark.
- *
- * The choice is a `data-theme` attribute on `<html>`, which app.css turns into
- * `color-scheme`. Oat colors every token with `light-dark()`, and `color-scheme`
- * inherits into every shadow root, so setting it once on the document is enough.
- */
-
 export type Theme = 'light' | 'dark';
 
-/** Also read by the inline no-flash script in index.html — keep them in sync. */
+// Also in index.html's no-flash script.
 const STORAGE_KEY = 'gainz:theme';
 const EVENT = 'gz-theme-change';
 
 export const THEMES: readonly Theme[] = ['light', 'dark'];
 
-/**
- * The `theme-color` the status bar and title bar take on: `--card` from ui/app.css, so the bar
- * blends into the header. Also inlined in index.html's no-flash script — keep all three in sync.
- */
+// `--card` from ui/app.css; also in index.html's no-flash script.
 export const THEME_COLORS: Readonly<Record<Theme, string>> = { light: '#fff', dark: '#202024' };
 
 function isTheme(value: string | null): value is Theme {
   return value === 'light' || value === 'dark';
 }
 
-/** The system's setting, consulted once to seed a visitor who has never chosen. */
 function systemTheme(): Theme {
   try {
     return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -39,9 +27,7 @@ function readStoredTheme(): Theme {
     if (isTheme(stored)) {
       return stored;
     }
-  } catch {
-    // ignore errors
-  }
+  } catch {}
   return systemTheme();
 }
 
@@ -74,7 +60,6 @@ export function toggleTheme(): void {
   setTheme(current === 'dark' ? 'light' : 'dark');
 }
 
-/** @returns call it to stop listening. */
 export function onThemeChange(listener: () => void): () => void {
   window.addEventListener(EVENT, listener);
   return () => {
@@ -82,7 +67,5 @@ export function onThemeChange(listener: () => void): () => void {
   };
 }
 
-// The inline script has already covered the first paint for a stored choice;
-// this pins the attribute down for the unstored case too, where that script
-// deliberately leaves it off so Oat's `color-scheme: light dark` paints the first frame.
+// index.html's script leaves the attribute off when unstored, so Oat paints the first frame.
 applyTheme();

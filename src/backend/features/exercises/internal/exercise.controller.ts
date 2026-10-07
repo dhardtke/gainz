@@ -18,7 +18,6 @@ export class ExerciseController {
     this.#exercises = exercises;
   }
 
-  /** Pages with `limit`/`offset`; without `limit` it answers every exercise, as the exercise select needs. */
   list(req: Request): Response {
     const params = new URL(req.url).searchParams;
     const limit = optionalQueryInt(params, 'limit', { min: 1, max: 200 });

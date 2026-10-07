@@ -96,11 +96,7 @@ function translateToSessionPointDto(row: SessionPoint): SessionPointDto {
   };
 }
 
-/**
- * The workouts feature owns `LiftSetDto`'s translation, but it is private to that feature, so
- * the best set is named here field by field — never spread from the row, which would ship
- * `workout_id`, `exercise_id` and `created_at` under their snake_case names.
- */
+// Named field by field: spreading the row would ship its snake_case columns.
 function translateToBestSetDto(row: LiftSet & { performed_on: Iso8601Date }): BestSetDto {
   return {
     id: row.id,

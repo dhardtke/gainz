@@ -1,11 +1,6 @@
 const LOGIN_PATH = '/login';
 
-/**
- * Where to go after logging in: the `next` query parameter of `search`, if it is a path on this
- * origin other than the login page, and `/` otherwise. `next` is resolved as a URL rather than
- * checked for a leading slash, which also turns away `//evil.example`, `/\evil.example` and a
- * tab-smuggled `/<TAB>/evil.example`, all of which a browser reads as another host.
- */
+// Resolved as a URL so `//evil`, `/\evil` and tab-smuggled `/<TAB>/evil` are rejected.
 export function nextPath(search: string, origin: string): string {
   const next = new URLSearchParams(search).get('next');
   if (next === null) {

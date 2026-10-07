@@ -55,11 +55,7 @@ export class WorkoutRepository {
     return workout;
   }
 
-  /**
-   * Creates a workout, optionally copying every set of an earlier session into it, and the order of
-   * its exercises — "repeat this session". The insert and the copy commit together, so an unknown
-   * `copyFrom` fails without leaving an empty workout behind.
-   */
+  /** Insert and copy share a transaction, so a bad `copyFrom` leaves no empty workout. */
   create(input: CreateWorkout, options: { copyFrom?: WorkoutId } = {}): Workout {
     return this.#db.transaction(() => {
       const { copyFrom } = options;

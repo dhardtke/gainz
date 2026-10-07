@@ -1,8 +1,4 @@
-/**
- * Logging in and out, and whether there is a login at all. All stay public: the status is what
- * the frontend asks before offering a login page, the login is how a cookie is earned, and the
- * logout only expires one. Everything the guard protects is wrapped in `allRoutes()`, not here.
- */
+// Deliberately public: not wrapped by the auth guard.
 import type { RouteTable } from '../../http/routing.ts';
 import type { AuthFacade } from './auth.facade.ts';
 import { AuthController } from './internal/auth.controller.ts';

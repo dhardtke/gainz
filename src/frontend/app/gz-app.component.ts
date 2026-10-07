@@ -12,26 +12,12 @@ import type { GzBreadcrumbsComponent } from './gz-breadcrumbs.component.ts';
 import './gz-breadcrumbs.component.ts';
 import './gz-header.component.ts';
 
-/** How long the outgoing view waits for the incoming one's data before giving way to its loading state. */
 const SLOW_VIEW_MS = 300;
 
-/**
- * Application shell: a persistent header, the breadcrumb trail and the view slot.
- *
- * The shell renders once; route changes only swap the view, so the header survives navigation.
- * After every swap, and whenever the shown view reloads, it names the page in the breadcrumb and
- * the tab title. Toasts live in the document, not here.
- *
- * The view is the shell's own child, in the document's light DOM, and shows through a <slot> in
- * <main>. Password managers search the document, not shadow roots, so the login form, which gz-login
- * keeps in its own light DOM for that reason, must not end up inside the shell's shadow root either.
- *
- * Any API call answered 401 sends the user to the login page, remembering where they were.
- */
+// Views live in light DOM (slotted): password managers do not search shadow roots.
 class GzAppComponent extends GzElement {
   #unsubscribe: (() => void) | null = null;
   #renderToken = 0;
-  /** The view on screen and the route it was built for, `null` for the not-found line. */
   #shown: { route: RouteDef | null; view: Element } | null = null;
 
   readonly #onUnauthorized = (): void => {
@@ -43,8 +29,7 @@ class GzAppComponent extends GzElement {
   constructor() {
     super();
     this.addEventListener('click', (event) => {
-      // Links sit in the views' and the header's shadow roots, which retarget event.target to their
-      // host by the time the click reaches here; composedPath() still holds the anchor itself.
+      // Shadow roots retarget event.target to the host; composedPath() still holds the anchor.
       const anchor = event.composedPath().find((target): target is HTMLAnchorElement => target instanceof HTMLAnchorElement);
       if (!anchor) {
         return;
@@ -56,7 +41,6 @@ class GzAppComponent extends GzElement {
       event.preventDefault();
       navigate(path);
     });
-    // A view still loading hidden is ignored: the swap reads its title when it reveals it.
     this.addEventListener(PAGE_TITLE_EVENT, (event) => {
       if (event.target === this.#shown?.view) {
         this.#showPage();
@@ -82,7 +66,6 @@ class GzAppComponent extends GzElement {
     this.#renderView();
   }
 
-  /** Builds the element for a route. */
   async #viewElement(path: string): Promise<{ match: RouteMatch | null; view: Element }> {
     const match = matchRoute(ROUTES, path);
     if (match) {
@@ -96,17 +79,8 @@ class GzAppComponent extends GzElement {
     return { match, view };
   }
 
-  /**
-   * Points the view slot at the active route.
-   *
-   * The outgoing view stays put until the incoming one has its script, its
-   * stylesheet and its data, rather than the page going blank or collapsing to
-   * a "Loading…" line for a frame or two.
-   */
   #renderView(): void {
-    // Bumped on every entry, not just on a genuine route change: navigate()
-    // dispatches popstate for the current path on purpose, so this runs
-    // re-entrantly.
+    // navigate() dispatches popstate for the current path too, so this runs re-entrantly.
     const token = ++this.#renderToken;
 
     void this.#swapView(currentPath(), token);
@@ -118,21 +92,15 @@ class GzAppComponent extends GzElement {
     try {
       ({ match, view } = await this.#viewElement(path));
     } catch (cause) {
-      // Offline, or a deploy moved the file: keep what is on screen and say so,
-      // rather than leaving a nav button that looks dead.
       toastError(cause);
       return;
     }
 
-    // A newer route change started while this one was loading; that one wins.
     if (token !== this.#renderToken || !this.isConnected) {
       return;
     }
 
-    // A GzView fetches its data once connected, so it is connected hidden, beside
-    // the outgoing one, and shown when ready. A slow API still gets its loading
-    // state after a moment rather than a navigation that seems to do nothing.
-    // Anything else, such as the not-found line, is swapped in straight away.
+    // A GzView loads once connected, so it is connected hidden and revealed when ready.
     if (view instanceof GzView) {
       view.hidden = true;
       this.append(view);
@@ -147,7 +115,6 @@ class GzAppComponent extends GzElement {
     }
 
     // Not replaceChildren: moving a connected view would reconnect it, and it would load again.
-    // A copy: `children` is live, and removing from it while iterating skips elements.
     for (const child of Array.from(this.children)) {
       if (child !== view) {
         child.remove();
@@ -162,7 +129,6 @@ class GzAppComponent extends GzElement {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
 
-  /** Names the shown page in the breadcrumb and the tab: the view's own name, else the route's. */
   #showPage(): void {
     if (!this.#shown) {
       return;

@@ -7,7 +7,6 @@ import type { GzView } from './view.ts';
 useDom();
 const toasts = useToasts();
 
-/** What the test view's next `load()` returns; a test settles it. */
 let pending: PromiseWithResolvers<string>;
 
 type TestView = GzView<string>;
@@ -16,7 +15,6 @@ beforeAll(async () => {
   const { GzView } = await import('./view.ts');
   const { html } = await import('./html.ts');
   if (!customElements.get('gz-test-view')) {
-    /** Shows whatever string its load resolves with. */
     class GzTestView extends GzView<string> {
       override loadingText = 'Loading test…';
 
@@ -36,7 +34,6 @@ beforeAll(async () => {
   }
 });
 
-/** Mounts the test view with a fresh load pending, its attributes set before it is appended. */
 function mountView(attributes: Record<string, string> = {}): TestView {
   pending = Promise.withResolvers<string>();
   return mount<TestView>('gz-test-view', attributes);

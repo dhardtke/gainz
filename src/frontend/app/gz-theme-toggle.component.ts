@@ -3,13 +3,11 @@ import { define, GzElement } from '../ui/base.ts';
 import { html } from '../ui/html.ts';
 import { currentTheme, onThemeChange, toggleTheme } from '../ui/theme.ts';
 
-/** Icon button for the color theme: a sun in light mode, a moon in dark mode. */
 class GzThemeToggleComponent extends GzElement {
   #stopThemeSync: (() => void) | null = null;
 
   override connectedCallback(): void {
     super.connectedCallback();
-    // Keeps the icon and label in sync, so they agree with a change made anywhere.
     this.#stopThemeSync = onThemeChange(() => {
       this.#syncIcon();
     });
@@ -25,11 +23,7 @@ class GzThemeToggleComponent extends GzElement {
     this.#syncIcon();
   }
 
-  /**
-   * Updates the icon and label in place rather than re-rendering: the button has
-   * to survive its own click, or a keyboard toggle would destroy the element the
-   * user is standing on and drop focus.
-   */
+  // In place rather than re-rendering, so the button keeps focus across its own click.
   #syncIcon(): void {
     const dark = currentTheme() === 'dark';
     this.$('svg.sun')?.toggleAttribute('hidden', dark);

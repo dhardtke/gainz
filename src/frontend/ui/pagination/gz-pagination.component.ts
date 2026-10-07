@@ -3,16 +3,7 @@ import { define, GzElement } from '../base.ts';
 import { html } from '../html.ts';
 import { pageItems } from './pagination.ts';
 
-/**
- * The pager of a paged list: Oat's pagination (https://oat.ink/components/#pagination) for
- * `page` of `pages`, or, for a page past the last one, "No `noun` on this page." with a Go to
- * page 1 button.
- *
- * It is made of buttons rather than links: a `?page=` link would be a full page load, and only a
- * button can be disabled. It does not navigate either, because ui/ may not import the router: a
- * click emits `page-change` with the page number as its detail, and the list maps the number to
- * its own URL.
- */
+// Emits `page-change` rather than navigating: ui/ may not import the router.
 class GzPaginationComponent extends GzElement {
   static observedAttributes = ['page', 'pages', 'noun'];
 

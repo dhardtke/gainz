@@ -18,7 +18,6 @@ interface DashboardData {
   workouts: WorkoutWithStatsDto[];
 }
 
-/** Landing view: the numbers that answer "am I actually progressing?". */
 export class GzDashboardComponent extends GzView<DashboardData> {
   override loadingText = 'Loading your log…';
 

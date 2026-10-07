@@ -1,11 +1,7 @@
-/* The logging screen for one session. */
-
-/* The session's totals as one muted line, with the progress badge after it. */
 .summary {
   flex-wrap: wrap;
 }
 
-/* One Oat accordion item per exercise; the header holds the name, muted stats and a progress badge. */
 summary {
   & .exercise-name {
     flex: 1 1 auto;
@@ -23,7 +19,6 @@ summary {
 .sets {
   display: flex;
   flex-direction: column;
-  /* Edge to edge: the rows are the accordion item's lines, not boxes inside it. */
   margin: 0;
 
   & > gz-set-row + gz-set-row {
@@ -31,13 +26,11 @@ summary {
   }
 }
 
-/* The open exercise's own actions: reorder it, or open its history. */
 .group-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  /* Edge to edge like the rows, divided from them by the same line. */
   margin: 0;
   padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--border);
@@ -52,7 +45,6 @@ summary {
   }
 }
 
-/* The name keeps the first line beside the chevron; the stats and the badge take the second. */
 @media (max-width: 720px) {
   summary {
     flex-wrap: wrap;

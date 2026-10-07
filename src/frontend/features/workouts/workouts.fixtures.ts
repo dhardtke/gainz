@@ -1,4 +1,3 @@
-/** Test-only. Workout data for any feature's component tests; never embedded in the build. */
 import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import type { WorkoutExerciseDto, WorkoutWithStatsDto } from '../../../shared/dto/workout.ts';
 
@@ -19,7 +18,6 @@ export function set(overrides: Partial<LiftSetDto> = {}): LiftSetDto {
   };
 }
 
-/** One exercise of a workout with its sets. */
 export function group(overrides: Partial<WorkoutExerciseDto> = {}): WorkoutExerciseDto {
   return {
     exerciseId: 1,
@@ -30,7 +28,6 @@ export function group(overrides: Partial<WorkoutExerciseDto> = {}): WorkoutExerc
   };
 }
 
-/** A workout as the log lists it, with its totals. */
 export function listedWorkout(overrides: Partial<WorkoutWithStatsDto> = {}): WorkoutWithStatsDto {
   return {
     id: 1,

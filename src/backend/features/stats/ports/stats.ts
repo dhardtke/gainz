@@ -1,10 +1,5 @@
 import type { Iso8601Date } from '../../../../shared/flavors.ts';
 
-/**
- * The published shape of a whole-log summary. The repository assembles it from two queries — a
- * whole-log totals half and a rolling-window half — but that split is its own business, so the
- * row is declared flat here and the repository has to satisfy it.
- */
 export interface Summary {
   workout_count: number;
   set_count: number;

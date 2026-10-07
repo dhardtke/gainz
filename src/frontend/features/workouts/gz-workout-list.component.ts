@@ -12,15 +12,12 @@ import { workoutFacade } from './workouts.facade.ts';
 import type { GzWorkoutCardComponent } from './gz-workout-card.component.ts';
 import './gz-workout-card.component.ts';
 
-/** One page of the log; `total` counts every workout. */
 interface WorkoutListData {
   items: WorkoutWithStatsDto[];
   total: number;
-  /** 1-based, from `?page=`. */
   page: number;
 }
 
-/** The training log: every session, newest first, a page at a time. */
 export class GzWorkoutListComponent extends GzView<WorkoutListData> {
   override loadingText = 'Loading workouts…';
 
@@ -51,7 +48,6 @@ export class GzWorkoutListComponent extends GzView<WorkoutListData> {
     }
   }
 
-  /** The page's cards and the pager; past the last page, the pager alone says so. */
   #page(items: WorkoutWithStatsDto[], total: number, page: number): RawHtml {
     const pages = pageCount(total, PAGE_SIZE);
     const pager = html` <gz-pagination page="${page}" pages="${pages}" noun="workouts"></gz-pagination> `;

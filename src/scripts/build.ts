@@ -1,9 +1,3 @@
-/**
- * Builds the server and the frontend into one minified `gainz.js` (plus a linked source map), so a
- * deployment is one file run with `bun`. The frontend, Oat and the migrations go in through a
- * replacement for `src/backend/shared/embedded.ts`, the frontend as one bundle at `/main.ts`.
- * Beside it, `bun-version` names the Bun that built it, which the server installs to run it.
- */
 import { relative, resolve } from 'node:path';
 import { MIGRATIONS_DIR, readMigrations } from '../backend/db/migrations.ts';
 import type { Embedded, EmbeddedWeb } from '../backend/shared/embedded.ts';
@@ -17,7 +11,6 @@ export interface BuildResult {
   embedded: Embedded;
 }
 
-/** The checked-out commit, marked `-dirty` when the working tree has uncommitted changes. */
 function commit(): string {
   const git = (...args: string[]): string | null => {
     const result = Bun.spawnSync(['git', ...args], { cwd: SRC, stderr: 'ignore' });
@@ -30,10 +23,6 @@ function commit(): string {
   return git('status', '--porcelain') === '' ? head : `${head}-dirty`;
 }
 
-/**
- * Stamps the index page with the commit, the build time (UTC) and, when built by GitHub Actions,
- * the workflow run ID, right below the doctype.
- */
 function stamp(web: EmbeddedWeb, builtAt: Date): void {
   const index = web.pages['/index.html'];
   if (index === undefined) {
@@ -53,7 +42,6 @@ export async function build(outdir: string): Promise<BuildResult> {
   const web = await createStaticFacade().embed();
   stamp(web, new Date());
   const embedded: Embedded = { ...web, migrations: readMigrations(MIGRATIONS_DIR) };
-  // Bun.build throws on failure by default (`throw: true`), so there is no success check.
   await Bun.build({
     entrypoints: [resolve(SRC, 'backend/main.ts')],
     target: 'bun',

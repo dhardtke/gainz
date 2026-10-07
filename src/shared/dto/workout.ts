@@ -19,7 +19,6 @@ export interface WorkoutWithStatsDto extends WorkoutDto {
   done: boolean;
 }
 
-/** One exercise of a workout, in the workout's order, with its sets. */
 export interface WorkoutExerciseDto {
   exerciseId: ExerciseId;
   exerciseName: string;
@@ -38,11 +37,9 @@ export interface WorkoutWithExercisesDto extends WorkoutDto {
 export type MoveDirection = 'up' | 'down';
 
 export interface MoveWorkoutExerciseDto {
-  /** Toward the start (`up`) or the end (`down`) of the workout. */
   direction: MoveDirection;
 }
 
-/** One page of the training log. */
 export interface WorkoutPageDto {
   items: WorkoutWithStatsDto[];
   /** Every workout, not just this page. */
