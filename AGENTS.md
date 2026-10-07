@@ -23,8 +23,6 @@ bun run fmt              # format (fmt:check for CI)
 The database lives at `data/gainz.sqlite` (override with `GAINZ_DB`), is created on first run,
 and is git-ignored. `:memory:` is supported and is what the tests use.
 
-Write American English in code, comments, docs and commit messages.
-
 Always put plans inside the project directory.
 
 Never edit existing plans or research docs in `docs/agents/` — only add new ones. Each describes
@@ -46,7 +44,7 @@ Details live in `docs/`:
 - `docs/backend.md` — features, ports/internal, routes, repositories, migrations, the data model, tests
 - `docs/frontend.md` — features and facades, components, import boundaries, loading, theming, tests, and
   why a module's URL is its path
-- `docs/coding-guidelines.md` — pinning, quote style, commits on `main`
+- `docs/coding-guidelines.md` — pinning, quote style, comments, American English, commits on `main`
 - `docs/deployment.md` — the CI workflow, the self-hosted runner and its privileges, server setup
 - `docs/styling-guidelines.md` — Oat, no CSS in JavaScript, no font sizes
 
