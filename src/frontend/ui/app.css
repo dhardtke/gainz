@@ -9,6 +9,9 @@
   --muted-foreground: light-dark(#52525b, #a1a1aa);
   --border: light-dark(#8b8b94, #71717a);
   --input: light-dark(#8b8b94, #71717a);
+
+  /* Keeps the layout from shifting when a page grows tall enough to scroll. */
+  scrollbar-gutter: stable;
 }
 
 /* color-scheme inherits, so this reaches every shadow root. */
