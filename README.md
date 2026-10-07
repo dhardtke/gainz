@@ -1,4 +1,4 @@
-# gainz
+# <img src="src/frontend/icons/icon.svg" alt="" width="32" height="32" align="top"> gainz
 
 A small, self-hosted log for weight-lifting progress: workouts, the sets you did,
 and the reps, weight and notes for each one. A [Bun](https://bun.sh) and SQLite
