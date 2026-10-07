@@ -87,6 +87,33 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
       return;
     }
 
+    if (action === 'finish-workout') {
+      const message = this.data ? this.#incompleteMessage(this.data.workout.exercises) : null;
+      if (message !== null && !confirm(message)) {
+        return;
+      }
+      try {
+        await workoutFacade.update(this.numericAttribute('workout-id'), { done: true });
+      } catch (error) {
+        toastError(error);
+        return;
+      }
+      toast('Workout done', 'success');
+      await this.reload();
+      return;
+    }
+
+    if (action === 'reopen-workout') {
+      try {
+        await workoutFacade.update(this.numericAttribute('workout-id'), { done: false });
+      } catch (error) {
+        toastError(error);
+        return;
+      }
+      await this.reload();
+      return;
+    }
+
     if (action !== 'delete-workout' || !confirm('Delete this workout and all of its sets? This cannot be undone.')) {
       return;
     }
@@ -97,6 +124,16 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     } catch (error) {
       toastError(error);
     }
+  }
+
+  #incompleteMessage(exercises: WorkoutExerciseDto[]): string | null {
+    const incomplete = exercises.filter((group) => group.sets.some((set) => !set.done));
+    if (incomplete.length === 0) {
+      return null;
+    }
+    const counts = incomplete.map((group) => `${group.exerciseName} (${group.sets.filter((set) => set.done).length}/${group.sets.length} sets)`);
+    const subject = `${plural(incomplete.length, 'exercise')} ${incomplete.length === 1 ? 'is' : 'are'}`;
+    return [`${subject} not complete:`, `${counts.join(', ')}.`, 'Mark the workout done anyway?'].join('\n');
   }
 
   #focusMove(exerciseId: ExerciseId, direction: MoveDirection): void {
@@ -142,6 +179,7 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
 
     for (const row of this.$$<GzSetRowComponent>('gz-set-row')) {
       row.index = Number(row.dataset.index);
+      row.locked = workout.done;
       row.set = sets.find((candidate) => candidate.id === Number(row.dataset.id));
     }
 
@@ -246,6 +284,23 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     `;
   }
 
+  #setProgressBadge(doneCount: number, setCount: number): RawHtml {
+    if (setCount === 0) {
+      return html``;
+    }
+    return html`<span class="badge outline" data-testid="progress">${doneCount}/${setCount} done</span>`;
+  }
+
+  #finishTemplate(workout: WorkoutWithExercisesDto, setCount: number): RawHtml {
+    if (setCount === 0) {
+      return html``;
+    }
+    if (workout.done) {
+      return html`<div><button class="outline" data-action="reopen-workout" data-testid="reopen-workout">Reopen workout</button></div>`;
+    }
+    return html`<div><button data-action="finish-workout" data-testid="finish-workout">Mark workout done</button></div>`;
+  }
+
   #progressBadge(doneCount: number, setCount: number): RawHtml {
     if (setCount === 0) {
       return html``;
@@ -320,7 +375,8 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
           <span class="text-light" data-testid="totals">
             ${plural(sets.length, 'set')} · ${plural(exercises, 'exercise')} · ${plural(reps, 'rep')} · ${formatVolume(volume)}
           </span>
-          ${this.#progressBadge(doneCount, sets.length)}
+          ${this.#setProgressBadge(doneCount, sets.length)}
+          ${workout.done ? html`<span class="badge" data-variant="success" data-testid="workout-done">✓ Done</span>` : ''}
         </div>
 
         <section class="vstack gap-2">
@@ -334,8 +390,7 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
           }
         </section>
 
-        <gz-add-set-form data-testid="add-set-form"></gz-add-set-form>
-
+        ${workout.done ? '' : html`<gz-add-set-form data-testid="add-set-form"></gz-add-set-form>`} ${this.#finishTemplate(workout, sets.length)}
         ${this.#detailsTemplate(workout)}
       </div>
     `;

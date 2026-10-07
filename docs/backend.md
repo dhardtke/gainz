@@ -179,8 +179,8 @@ exists exactly while the workout has a set of that exercise: `SetRepository.crea
 with the exercise's last set, "Repeat" copies the source's rows, and deleting a workout cascades.
 `003-workout-exercises.sql` created the table and backfilled it from the sets already there, in the
 order each exercise first appears (`position, id`). `GET /api/workouts/:id`, like the answer to
-`POST /api/workouts`, is therefore a `WorkoutWithExercisesDto`: the workout, its `done`, and
-`exercises` in that order, each `{ exerciseId, exerciseName, position, sets }` with its sets in
+`POST /api/workouts`, is therefore a `WorkoutWithExercisesDto`: the workout, with the `done` every
+workout DTO carries, and `exercises` in that order, each `{ exerciseId, exerciseName, position, sets }` with its sets in
 logged order. `GET /api/workouts/:id/sets` still answers the flat list.
 
 `POST /api/workouts/:id/exercises/:exerciseId/move` with `{ "direction": "up" | "down" }` swaps an
@@ -207,12 +207,21 @@ and marked done in one. Validation still runs first, so a malformed body is a 40
 state, and deleting a workout still cascades to its done sets. A `position` in a PATCH body is
 ignored like any unknown key.
 
-A workout is done when it has at least one set and every one of them is done. That is derived and
-never stored, so it cannot drift from the sets: unchecking any set makes the workout not done
-again. The list computes it from `done_set_count`, a column of its one aggregate, and ships both as
-`done` and `doneSetCount`; `GET /api/workouts/:id` computes `done` from the sets it returns.
+A done workout locks its sets as well, and that lock is checked first, also from the stored state:
+while the workout is done, logging a set into it, any PATCH of one of its sets (`done` included) and
+deleting one are all 409s. Its details are not locked — date, title and notes still change, since
+notes are often written afterwards — and moving its exercises, deleting it and "Repeat" stay open.
 
-Because a set not done is a plan, the history aggregates count done sets only: the exercise list's
+A workout's `done` is stored too, in `workouts.done`, and is independent of its sets: checking every
+set does not finish a workout, and unchecking one does not reopen it. `PATCH /api/workouts/:id` with
+`{ "done": true | false }`, alone or with the other fields, marks it done or reopens it; only a JSON
+boolean is accepted, and `done: true` on a workout without sets is a 409. `004-workout-done.sql`
+added the column and marked done every workout that then had at least one set with all of them
+done, so nothing that showed as done changed. The list still ships `doneSetCount`, from its one
+aggregate, beside `done`.
+
+Because a set not done is a plan, the history aggregates count done sets only — and a done
+workout's unchecked sets stay plans, skipped rather than performed, so they are not counted either: the exercise list's
 `setCount`, `workoutCount`, `lastPerformedOn` and `bestWeight` (its join carries `s.done = 1` in the
 `ON` clause, so an exercise without done sets still lists, with zero counts), the progress points,
 the best set, and the stats summary's `setCount`, `totalReps`, `totalVolume` and

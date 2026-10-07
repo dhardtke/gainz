@@ -1,6 +1,6 @@
 import { expect } from 'bun:test';
 import type { CreateSetDto, LiftSetDto } from '../../../shared/dto/set.ts';
-import type { WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
+import type { WorkoutDto, WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
 import type { LiftSetId, WorkoutId } from '../../../shared/flavors.ts';
 import { body, type TestServer } from '../../testing.ts';
 
@@ -20,4 +20,10 @@ export async function markDone(patch: TestServer['patch'], setId: LiftSetId): Pr
   const res = await patch(`/api/sets/${setId}`, { done: true });
   expect(res.status).toBe(200);
   return body<LiftSetDto>(res);
+}
+
+export async function markWorkoutDone(patch: TestServer['patch'], workoutId: WorkoutId): Promise<WorkoutDto> {
+  const res = await patch(`/api/workouts/${workoutId}`, { done: true });
+  expect(res.status).toBe(200);
+  return body<WorkoutDto>(res);
 }

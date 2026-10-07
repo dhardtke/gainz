@@ -4,7 +4,7 @@ import type { WorkoutDto, WorkoutPageDto, WorkoutWithExercisesDto, WorkoutWithSt
 import type { WorkoutId } from '../../../shared/flavors.ts';
 import { at, body, useServer } from '../../testing.ts';
 import { createExercise } from '../exercises/exercises.fixtures.ts';
-import { createSet, createWorkout, markDone } from './workouts.fixtures.ts';
+import { createSet, createWorkout, markDone, markWorkoutDone } from './workouts.fixtures.ts';
 
 const { api, post, patch } = useServer();
 
@@ -158,26 +158,125 @@ describe("a workout's done state", () => {
     return { detail: detail.done, listed: listed && { done: listed.done, doneSetCount: listed.doneSetCount } };
   }
 
-  test('is not done without sets', async () => {
+  async function workoutWithSets(count: number): Promise<{ workout: WorkoutWithExercisesDto; sets: LiftSetDto[] }> {
+    const exercise = await createExercise(post);
     const workout = await createWorkout(post);
+    const logged: LiftSetDto[] = [];
+    for (let i = 0; i < count; i++) {
+      logged.push(await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 }));
+    }
+    return { workout, sets: logged };
+  }
 
+  test('is not done when created, without sets or with them', async () => {
+    const empty = await createWorkout(post);
+    expect(empty.done).toBe(false);
+    expect(await doneState(empty.id)).toEqual({ detail: false, listed: { done: false, doneSetCount: 0 } });
+
+    const { workout } = await workoutWithSets(1);
     expect(await doneState(workout.id)).toEqual({ detail: false, listed: { done: false, doneSetCount: 0 } });
   });
 
-  test('is done once every set is, and not done again when one is unchecked', async () => {
-    const exercise = await createExercise(post);
-    const workout = await createWorkout(post);
-    const first = await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
-    const second = await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
+  test('stays not done when every set is checked, and becomes done only when marked', async () => {
+    const { workout, sets: logged } = await workoutWithSets(2);
+    for (const set of logged) {
+      await markDone(patch, set.id);
+    }
+    expect(await doneState(workout.id)).toEqual({ detail: false, listed: { done: false, doneSetCount: 2 } });
 
-    await markDone(patch, first.id);
-    expect(await doneState(workout.id)).toEqual({ detail: false, listed: { done: false, doneSetCount: 1 } });
-
-    await markDone(patch, second.id);
+    expect((await markWorkoutDone(patch, workout.id)).done).toBe(true);
     expect(await doneState(workout.id)).toEqual({ detail: true, listed: { done: true, doneSetCount: 2 } });
+  });
 
-    expect((await patch(`/api/sets/${first.id}`, { done: false })).status).toBe(200);
-    expect(await doneState(workout.id)).toEqual({ detail: false, listed: { done: false, doneSetCount: 1 } });
+  test('can be marked done with sets left unchecked, which stay not done', async () => {
+    const { workout, sets: logged } = await workoutWithSets(2);
+    await markDone(patch, at(logged, 0).id);
+
+    await markWorkoutDone(patch, workout.id);
+
+    expect(await doneState(workout.id)).toEqual({ detail: true, listed: { done: true, doneSetCount: 1 } });
+    const detail = await body<WorkoutWithExercisesDto>(await api(`/api/workouts/${workout.id}`));
+    expect(sets(detail).map((set) => set.done)).toEqual([true, false]);
+  });
+
+  test('reopens', async () => {
+    const { workout } = await workoutWithSets(1);
+    await markWorkoutDone(patch, workout.id);
+
+    const res = await patch(`/api/workouts/${workout.id}`, { done: false });
+    expect(res.status).toBe(200);
+    expect((await body<WorkoutDto>(res)).done).toBe(false);
+    expect(await doneState(workout.id)).toEqual({ detail: false, listed: { done: false, doneSetCount: 0 } });
+  });
+
+  test('refuses to be marked done without sets', async () => {
+    const workout = await createWorkout(post);
+
+    expect((await patch(`/api/workouts/${workout.id}`, { done: true })).status).toBe(409);
+    expect((await doneState(workout.id)).detail).toBe(false);
+  });
+
+  test('rejects a done state that is not a boolean', async () => {
+    const { workout } = await workoutWithSets(1);
+
+    for (const done of ['yes', 1, null]) {
+      expect((await patch(`/api/workouts/${workout.id}`, { done })).status).toBe(400);
+    }
+  });
+
+  test("lets a done workout's date, title and notes change, alone and together with done", async () => {
+    const { workout } = await workoutWithSets(1);
+    await markWorkoutDone(patch, workout.id);
+
+    const alone = await patch(`/api/workouts/${workout.id}`, { performedOn: '2026-02-01', title: 'Pull day', notes: 'Felt good' });
+    expect(alone.status).toBe(200);
+    expect(await body<WorkoutDto>(alone)).toMatchObject({ performedOn: '2026-02-01', title: 'Pull day', notes: 'Felt good', done: true });
+
+    const together = await patch(`/api/workouts/${workout.id}`, { notes: 'Reopened', done: false });
+    expect(together.status).toBe(200);
+    expect(await body<WorkoutDto>(together)).toMatchObject({ notes: 'Reopened', done: false });
+  });
+
+  test('refuses to log a set while done, and logs one once reopened', async () => {
+    const exercise = await createExercise(post, 'Back Squat');
+    const { workout } = await workoutWithSets(1);
+    await markWorkoutDone(patch, workout.id);
+    const set = { exerciseId: exercise.id, reps: 5, weight: 100 };
+
+    expect((await post(`/api/workouts/${workout.id}/sets`, set)).status).toBe(409);
+
+    await patch(`/api/workouts/${workout.id}`, { done: false });
+    expect((await post(`/api/workouts/${workout.id}/sets`, set)).status).toBe(201);
+  });
+
+  test('"Repeat" of a done workout creates one that is not done', async () => {
+    const { workout } = await workoutWithSets(1);
+    await markWorkoutDone(patch, workout.id);
+
+    const copy = await body<WorkoutWithExercisesDto>(await post('/api/workouts', { performedOn: '2026-01-12', copyFromWorkoutId: workout.id }));
+    expect(copy.done).toBe(false);
+    expect(sets(copy)).toHaveLength(1);
+  });
+
+  test('moves an exercise of a done workout', async () => {
+    const bench = await createExercise(post);
+    const row = await createExercise(post, 'Barbell Row');
+    const workout = await createWorkout(post);
+    await createSet(post, workout.id, { exerciseId: bench.id, reps: 5, weight: 80 });
+    await createSet(post, workout.id, { exerciseId: row.id, reps: 8, weight: 60 });
+    await markWorkoutDone(patch, workout.id);
+
+    const res = await post(`/api/workouts/${workout.id}/exercises/${row.id}/move`, { direction: 'up' });
+    expect(res.status).toBe(200);
+    expect((await body<WorkoutWithExercisesDto>(res)).exercises.map((group) => group.exerciseId)).toEqual([row.id, bench.id]);
+  });
+
+  test('deletes a done workout, with its sets', async () => {
+    const { workout, sets: logged } = await workoutWithSets(1);
+    await markWorkoutDone(patch, workout.id);
+
+    expect((await api(`/api/workouts/${workout.id}`, { method: 'DELETE' })).status).toBe(204);
+    expect((await api(`/api/sets/${at(logged, 0).id}`)).status).toBe(404);
   });
 });
 

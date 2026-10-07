@@ -44,6 +44,20 @@ describe('WorkoutFacade validation', () => {
     const { workouts } = setup();
     expect(thrown(() => workouts.update(999999, { performedOn: 'x' })).status).toBe(400);
   });
+
+  test('update rejects a done state that is not a boolean', () => {
+    const { workouts } = setup();
+    const workout = workouts.create({});
+    // @ts-expect-error -- a client may send any value; the facade must reject it
+    expect(thrown(() => workouts.update(workout.id, { done: 'yes' })).status).toBe(400);
+  });
+
+  test('update refuses to mark a workout without sets done', () => {
+    const { workouts } = setup();
+    const workout = workouts.create({});
+    expect(thrown(() => workouts.update(workout.id, { done: true })).status).toBe(409);
+    expect(workouts.require(workout.id).done).toBe(0);
+  });
 });
 
 describe('SetFacade validation', () => {

@@ -31,6 +31,7 @@ export function translateToEditWorkoutDto(body: Record<string, unknown>): EditWo
     performedOn: body.performedOn as Iso8601Date | undefined,
     title: body.title as string | null | undefined,
     notes: body.notes as string | null | undefined,
+    done: body.done as boolean | undefined,
   };
 }
 
@@ -60,6 +61,9 @@ export function translateDtoToEditWorkout(dto: EditWorkoutDto): EditWorkout {
   if (dto.notes !== undefined) {
     patch.notes = dto.notes;
   }
+  if (dto.done !== undefined) {
+    patch.done = dto.done ? 1 : 0;
+  }
   return patch;
 }
 
@@ -70,12 +74,8 @@ export function translateToWorkoutDto(row: Workout): WorkoutDto {
     title: row.title,
     notes: row.notes,
     createdAt: row.created_at,
+    done: row.done === 1,
   };
-}
-
-/** Derived, never stored: unchecking any set makes its workout not done again. */
-function isDone(setCount: number, doneSetCount: number): boolean {
-  return setCount > 0 && doneSetCount === setCount;
 }
 
 function translateToWorkoutWithStatsDto(row: WorkoutWithStats): WorkoutWithStatsDto {
@@ -85,12 +85,12 @@ function translateToWorkoutWithStatsDto(row: WorkoutWithStats): WorkoutWithStats
     title: row.title,
     notes: row.notes,
     createdAt: row.created_at,
+    done: row.done === 1,
     setCount: row.set_count,
     exerciseCount: row.exercise_count,
     totalReps: row.total_reps,
     totalVolume: row.total_volume,
     doneSetCount: row.done_set_count,
-    done: isDone(row.set_count, row.done_set_count),
   };
 }
 
@@ -107,7 +107,6 @@ export function translateToWorkoutWithExercisesDto(row: Workout, exercises: Work
   return {
     ...translateToWorkoutDto(row),
     exercises: exercises.map((exercise) => translateToWorkoutExerciseDto(exercise, sets)),
-    done: isDone(sets.length, sets.filter((set) => set.done === 1).length),
   };
 }
 

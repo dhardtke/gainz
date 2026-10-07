@@ -84,12 +84,15 @@ same `gz-workout-card`s the log does. The card is the one place a listed workout
 three lines: a head with the open-card link and, on a done workout, a success "✓ Done" badge at its
 end; the date in muted text; and a foot with the totals, also muted text rather than a badge, and
 Repeat at its end — which copies the sets into a new session dated today through `workoutFacade`
-and opens it. A done workout's card also takes a `--success` border. Each view renders `<gz-workout-card data-id>` and hands every card
+and opens it. A done workout's card also takes a `--success` border; both the badge and the border
+follow the workout's stored `done`, not its sets, so a workout finished with sets skipped shows as done. Each view renders `<gz-workout-card data-id>` and hands every card
 its workout in `afterRender()`, as `gz-workout-detail` does its set rows.
 
 `gz-workout-detail` puts the logging first. From the top: the title and the date with its relative
 day; one summary line of muted totals — sets, exercises, reps and volume — followed by the progress
-badge; the exercise groups; `gz-add-set-form`; and last a collapsed `<details>`, "Details & notes",
+badges; the exercise groups; `gz-add-set-form`, which a done workout does not render; the finish
+button, "Mark workout done" or, on a done workout, an outline "Reopen workout", once the workout has
+sets; and last a collapsed `<details>`, "Details & notes",
 holding the workout's autosaving details form and a danger "Delete workout" button, so editing the
 date or title and deleting stay out of the way and Delete is not a mis-tap beside the title. That
 section carries no `name`, so it does not join the exercises' exclusive group, and the view
@@ -152,10 +155,19 @@ whatever was typed there by then. The workout's details form in "Details & notes
 without a button or a toast: a committed change, or Enter in the date or title (in the notes it is
 a new line), PATCHes the details that differ from the workout, and the reload puts focus back in
 the field by its id while `#edits` keeps its text. A done row mirrors the backend's lock: it keeps its fields and
-× in place but disabled, keeps +1, and mutes its load. `gz-workout-detail` ends
-its summary line, once the session has sets, with the same progress badge as each header, derived from
-the sets rather than the workout's flag: "x/y done", and a success "✓ Done" once every set is done,
-which is how the backend derives `done`; `gz-workout-card` shows that "✓ Done" badge on done workouts' cards only.
+× in place but disabled, keeps +1, and mutes its load. A done workout locks every row, as the
+backend locks its sets: the view sets each row's `locked` before its `set`, and a locked row disables
+its toggle, fields, +1 and × whatever the set's own state.
+
+`gz-workout-detail` ends its summary line, once the session has sets, with an outline "x/y done"
+badge for the sets — outline even at "y/y", so the green "✓ Done" means one thing at the workout
+level — and, on a done workout, a separate success "✓ Done" badge from the workout's own flag;
+`gz-workout-card` shows that badge on done workouts' cards only. "Mark workout done" PATCHes
+`{ done: true }` through `workoutFacade`, toasts "Workout done" and reloads. When some exercise
+still has sets not done, it first asks through a native `confirm()`, like the app's other
+confirmations, naming each incomplete exercise with its "(x/y sets)" in the workout's order; Cancel
+sends nothing, and with every set done it asks nothing. "Reopen workout" PATCHes `{ done: false }`
+and reloads without asking or toasting. Either one toasts a failure and does not reload.
 
 A feature's routes live in `<f>.routes.ts` beside its facade, the way the backend keeps one
 `*.routes.ts` per feature and spreads them in `src/backend/http/routes.ts`. Each route is a regex
@@ -547,7 +559,7 @@ records each request and answers `200 {}` unless told otherwise: `respondWith()`
 for every request, and `respondTo('GET /api/exercises', …)` one for a single method and URL, which
 a view that loads from two URLs needs. `useToasts()`, called after `useDom()`, replaces Oat's
 `window.ot` and returns the messages `toast()` and `toastError()` showed. `useGlobals()` installs whatever
-browser global a test needs and puts back what was there after every test — which matters because
+browser global a test needs — `confirm`, for one, which replaces the one `useDom()` installed — and puts back what was there after every test — which matters because
 bun test runs every file in one process, and the backend's route tests make real requests. A module
 that reads the browser when it loads, as `theme.ts` reads the stored choice, is imported with a
 query string (`./theme.ts?3`) so each test gets a fresh instance evaluated against its own stubs.

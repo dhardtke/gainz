@@ -168,8 +168,8 @@ describe('the real migrations', () => {
 
     const result = migrate(legacy);
 
-    expect(result.applied.map((migration) => migration.version)).toEqual([1, 2, 3]);
-    expect(schemaVersion(legacy)).toBe(3);
+    expect(result.applied.map((migration) => migration.version)).toEqual([1, 2, 3, 4]);
+    expect(schemaVersion(legacy)).toBe(4);
     expect(legacy.query<{ name: string }, []>('SELECT name FROM exercises').all()).toEqual([{ name: 'Back Squat' }]);
 
     legacy.close();
@@ -209,6 +209,26 @@ describe('the real migrations', () => {
       { workout_id: 1, exercise_id: 2, position: 1 },
       { workout_id: 1, exercise_id: 1, position: 2 },
     ]);
+
+    legacy.close();
+  });
+
+  test('mark done every workout whose sets were all done before 004, and no other', () => {
+    for (const file of ['001-initial-schema.sql', '002-set-done.sql', '003-workout-exercises.sql']) {
+      write(file, readFileSync(join(MIGRATIONS_DIR, file), 'utf8'));
+    }
+    const legacy = new Database(':memory:', { create: true });
+    expect(migrate(legacy, { dir: tempDir() }).version).toBe(3);
+    legacy.run("INSERT INTO exercises (name) VALUES ('Back Squat')");
+    legacy.run("INSERT INTO workouts (performed_on) VALUES ('2026-01-05'), ('2026-01-07'), ('2026-01-09')");
+    legacy.run(
+      'INSERT INTO sets (workout_id, exercise_id, reps, weight, done) VALUES (1, 1, 5, 100, 1), (1, 1, 5, 100, 1), (2, 1, 5, 100, 1), (2, 1, 5, 100, 0)',
+    );
+
+    expect(migrate(legacy).applied.map((migration) => migration.version)).toEqual([4]);
+
+    expect(legacy.query<{ done: number }, []>('SELECT done FROM workouts ORDER BY id').all()).toEqual([{ done: 1 }, { done: 0 }, { done: 0 }]);
+    expect(() => legacy.run('UPDATE workouts SET done = 2 WHERE id = 1')).toThrow();
 
     legacy.close();
   });

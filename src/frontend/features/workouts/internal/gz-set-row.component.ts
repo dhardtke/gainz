@@ -16,6 +16,8 @@ export class GzSetRowComponent extends GzElement {
 
   #index = 0;
 
+  #locked = false;
+
   // Serialized: a blur save must land before the click that caused it marks the set done.
   #pending: Promise<void> = Promise.resolve();
 
@@ -29,6 +31,11 @@ export class GzSetRowComponent extends GzElement {
   set index(value: number) {
     // The parent reads this off a data attribute, so a NaN is a real possibility.
     this.#index = Number.isFinite(value) ? value : 0;
+  }
+
+  // Only stored, like `index`: the parent sets it before `set`, which renders.
+  set locked(value: boolean) {
+    this.#locked = value;
   }
 
   focusedField(): FocusedField | null {
@@ -149,6 +156,7 @@ export class GzSetRowComponent extends GzElement {
         data-testid="toggle-done"
         aria-pressed="${set.done ? 'true' : 'false'}"
         aria-label="${set.done ? 'Mark set as not done' : 'Mark set as done'}"
+        ${this.#locked ? 'disabled' : ''}
       >
         ✓
       </button>
@@ -160,7 +168,7 @@ export class GzSetRowComponent extends GzElement {
     if (!set) {
       return html``;
     }
-    const disabled = set.done ? 'disabled' : '';
+    const disabled = set.done || this.#locked ? 'disabled' : '';
 
     return html`
       <form class="row-view ${set.done ? 'done' : ''}" data-testid="row">
@@ -201,7 +209,16 @@ export class GzSetRowComponent extends GzElement {
         />
         <div class="actions">
           <span class="volume mono">${formatVolume(set.weight * set.reps)}</span>
-          <button type="button" class="outline" data-action="duplicate" data-testid="duplicate" title="Log another set just like this one">+1</button>
+          <button
+            type="button"
+            class="outline"
+            data-action="duplicate"
+            data-testid="duplicate"
+            title="Log another set just like this one"
+            ${this.#locked ? 'disabled' : ''}
+          >
+            +1
+          </button>
           <button type="button" data-variant="danger" data-action="delete" data-testid="delete" aria-label="Delete set" ${disabled}>×</button>
         </div>
       </form>

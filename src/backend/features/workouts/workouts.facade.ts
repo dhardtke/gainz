@@ -81,6 +81,9 @@ export class WorkoutFacade {
     if (dto.notes !== undefined) {
       valid.notes = optionalString(dto, 'notes', MAX_WORKOUT_NOTES_LENGTH);
     }
+    if (dto.done !== undefined) {
+      valid.done = requiredBoolean(dto, 'done');
+    }
     return valid;
   }
 }

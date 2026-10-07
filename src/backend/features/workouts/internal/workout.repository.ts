@@ -1,5 +1,5 @@
 import type { DB } from '../../../db/db.ts';
-import { notFound } from '../../../http/errors.ts';
+import { conflict, notFound } from '../../../http/errors.ts';
 import { buildUpdate } from '../../../db/sql.ts';
 import type { Iso8601Date, WorkoutId } from '../../../../shared/flavors.ts';
 import type { Workout, WorkoutWithStats } from '../ports/workout.ts';
@@ -10,9 +10,9 @@ export interface CreateWorkout {
   notes: string | null;
 }
 
-export type EditWorkout = Partial<CreateWorkout>;
+export type EditWorkout = Partial<CreateWorkout> & { done?: 0 | 1 };
 
-const FIELDS = ['performed_on', 'title', 'notes'] as const;
+const FIELDS = ['performed_on', 'title', 'notes', 'done'] as const;
 
 export class WorkoutRepository {
   readonly #db: DB;
@@ -24,7 +24,7 @@ export class WorkoutRepository {
   list(limit: number, offset: number): WorkoutWithStats[] {
     return this.#db
       .query<WorkoutWithStats, [number, number]>(
-        `SELECT w.id, w.performed_on, w.title, w.notes, w.created_at,
+        `SELECT w.id, w.performed_on, w.title, w.notes, w.created_at, w.done,
                 COUNT(s.id)                         AS set_count,
                 COUNT(DISTINCT s.exercise_id)       AS exercise_count,
                 COALESCE(SUM(s.reps), 0)            AS total_reps,
@@ -44,7 +44,7 @@ export class WorkoutRepository {
   }
 
   get(id: WorkoutId): Workout | null {
-    return this.#db.query<Workout, [WorkoutId]>('SELECT id, performed_on, title, notes, created_at FROM workouts WHERE id = ?').get(id);
+    return this.#db.query<Workout, [WorkoutId]>('SELECT id, performed_on, title, notes, created_at, done FROM workouts WHERE id = ?').get(id);
   }
 
   require(id: WorkoutId): Workout {
@@ -66,7 +66,7 @@ export class WorkoutRepository {
       const row = this.#db
         .query<Workout, [Iso8601Date, string | null, string | null]>(
           `INSERT INTO workouts (performed_on, title, notes) VALUES (?, ?, ?)
-           RETURNING id, performed_on, title, notes, created_at`,
+           RETURNING id, performed_on, title, notes, created_at, done`,
         )
         .get(input.performed_on, input.title, input.notes);
       if (!row) {
@@ -95,13 +95,22 @@ export class WorkoutRepository {
   }
 
   update(id: WorkoutId, patch: EditWorkout): Workout {
-    this.require(id);
+    return this.#db.transaction(() => {
+      this.require(id);
+      if (patch.done === 1 && !this.#hasSets(id)) {
+        throw conflict('Workout has no sets; log one before marking it done');
+      }
 
-    const update = buildUpdate('workouts', FIELDS, patch);
-    if (update) {
-      this.#db.query(update.sql).run(...update.values, id);
-    }
-    return this.require(id);
+      const update = buildUpdate('workouts', FIELDS, patch);
+      if (update) {
+        this.#db.query(update.sql).run(...update.values, id);
+      }
+      return this.require(id);
+    })();
+  }
+
+  #hasSets(id: WorkoutId): boolean {
+    return this.#db.query<{ found: number }, [WorkoutId]>('SELECT EXISTS(SELECT 1 FROM sets WHERE workout_id = ?) AS found').get(id)?.found === 1;
   }
 
   delete(id: WorkoutId): void {

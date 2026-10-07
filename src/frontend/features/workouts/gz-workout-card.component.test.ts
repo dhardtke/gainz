@@ -29,6 +29,12 @@ test('marks a done workout green with a "✓ Done" badge', () => {
   expect(card.querySelector(testId('done-badge'))?.textContent).toBe('✓ Done');
 });
 
+test('marks a workout done with sets skipped done all the same', () => {
+  const card = shadow(mountCard(listedWorkout({ setCount: 3, doneSetCount: 1, done: true })));
+  expect(find(card, testId('card')).classList.contains('done')).toBe(true);
+  expect(card.querySelector(testId('done-badge'))?.textContent).toBe('✓ Done');
+});
+
 test('leaves a workout not done plain', () => {
   const card = shadow(mountCard(listedWorkout({ doneSetCount: 1 })));
   expect(find(card, testId('card')).classList.contains('done')).toBe(false);

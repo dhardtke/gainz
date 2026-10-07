@@ -96,6 +96,9 @@ function main(): void {
             }
           });
         }
+        if (daysAgo > 0) {
+          workouts.update(workout.id, { done: true });
+        }
         created++;
       });
     }

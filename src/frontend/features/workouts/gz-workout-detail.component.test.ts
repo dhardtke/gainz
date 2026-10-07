@@ -1,5 +1,5 @@
 import { beforeAll, expect, test } from 'bun:test';
-import { find, mount, settle, shadow, submit, testId, text, type, useDom, useFetch, useToasts } from '../../testing.ts';
+import { find, mount, settle, shadow, submit, testId, text, type, useDom, useFetch, useGlobals, useToasts } from '../../testing.ts';
 import type { ExercisePageDto } from '../../../shared/dto/exercise.ts';
 import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import type { WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
@@ -11,6 +11,7 @@ import type { GzView } from '../../ui/view.ts';
 useDom();
 const fake = useFetch();
 const toasts = useToasts();
+const stub = useGlobals();
 
 beforeAll(async () => {
   await import('./gz-workout-detail.component.ts');
@@ -117,16 +118,29 @@ test('counts the sets done so far', async () => {
   expect(find<HTMLElement>(find(shadow(view), testId('summary')), testId('progress')).dataset.variant).toBeUndefined();
 });
 
-test('shows a done workout as done', async () => {
+function workoutBadge(view: HTMLElement): HTMLElement | null {
+  return find(shadow(view), testId('summary')).querySelector<HTMLElement>(testId('workout-done'));
+}
+
+test('shows a done workout as done, beside its set progress', async () => {
   const view = await mountView({ ...withSets((item) => ({ ...item, done: true })), done: true });
-  const badge = find<HTMLElement>(find(shadow(view), testId('summary')), testId('progress'));
-  expect([badge.textContent, badge.dataset.variant]).toEqual(['✓ Done', 'success']);
-  expect(progress(view)).not.toContain('3/3 done');
+  expect(progress(view)).toEqual(['3/3 done']);
+  expect(find<HTMLElement>(find(shadow(view), testId('summary')), testId('progress')).classList.contains('outline')).toBe(true);
+  expect([workoutBadge(view)?.textContent, workoutBadge(view)?.dataset.variant]).toEqual(['✓ Done', 'success']);
 });
 
-test('shows no done badge for a workout without sets', async () => {
+test('shows a workout whose sets are all done, but which is not, as not done', async () => {
+  const view = await mountView(withSets((item) => ({ ...item, done: true })));
+  expect(progress(view)).toEqual(['3/3 done']);
+  expect(workoutBadge(view)).toBeNull();
+});
+
+test('shows no done badge or finish button for a workout without sets', async () => {
   const view = await mountView({ ...WORKOUT, exercises: [] });
   expect(progress(view)).toEqual([]);
+  for (const id of ['workout-done', 'finish-workout', 'reopen-workout']) {
+    expect(shadow(view).querySelector(testId(id))).toBeNull();
+  }
 });
 
 test('preselects the exercise of the last set', async () => {
@@ -447,4 +461,101 @@ test("hands focus, and what was typed, back to a set's field after a reload", as
   await changeSets(view);
   expect(shadow(setRow(view, 12)).activeElement).toBe(weight());
   expect(weight().value).toBe('85');
+});
+
+function confirmAnswering(answer: boolean): string[] {
+  const asked: string[] = [];
+  stub('confirm', (message: string): boolean => {
+    asked.push(message);
+    return answer;
+  });
+  return asked;
+}
+
+function button(view: HTMLElement, id: string): HTMLButtonElement {
+  return find<HTMLButtonElement>(shadow(view), testId(id));
+}
+
+test('puts "Mark workout done" after the add-set form and before "Details & notes"', async () => {
+  const view = await mountView();
+  const finish = button(view, 'finish-workout');
+  expect(finish.textContent).toBe('Mark workout done');
+  expect(find(shadow(view), testId('add-set-form')).compareDocumentPosition(finish) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(finish.compareDocumentPosition(detailsSection(view)) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+test('marks a workout whose sets are all done done without asking, toasts and reloads', async () => {
+  const asked = confirmAnswering(true);
+  const view = await mountView(withSets((item) => ({ ...item, done: true })));
+  const loads = workoutLoads();
+  button(view, 'finish-workout').click();
+  await settle();
+  expect(asked).toEqual([]);
+  expect(fake.sent('PATCH /api/workouts/3')).toEqual([{ done: true }]);
+  expect(toasts).toEqual(['Workout done']);
+  expect(workoutLoads()).toBe(loads + 1);
+});
+
+test('asks before marking a workout with incomplete exercises done, naming them', async () => {
+  const asked = confirmAnswering(true);
+  const view = await mountView();
+  button(view, 'finish-workout').click();
+  await settle();
+  expect(asked).toEqual(['2 exercises are not complete:\nBench Press (0/2 sets), Back Squat (0/1 sets).\nMark the workout done anyway?']);
+  expect(fake.sent('PATCH /api/workouts/3')).toEqual([{ done: true }]);
+});
+
+test('sends nothing when the confirmation is cancelled', async () => {
+  confirmAnswering(false);
+  const view = await mountView();
+  const loads = workoutLoads();
+  button(view, 'finish-workout').click();
+  await settle();
+  expect(fake.sent('PATCH /api/workouts/3')).toEqual([]);
+  expect(workoutLoads()).toBe(loads);
+});
+
+test('names only the incomplete exercises, and one in the singular', async () => {
+  const asked = confirmAnswering(false);
+  const view = await mountView(withSets((item, index) => ({ ...item, done: index !== 1 })));
+  button(view, 'finish-workout').click();
+  await settle();
+  expect(asked).toEqual(['1 exercise is not complete:\nBench Press (1/2 sets).\nMark the workout done anyway?']);
+});
+
+function rowControls(view: HTMLElement, setId: number): HTMLButtonElement[] {
+  const root = shadow(setRow(view, setId));
+  return ['toggle-done', 'weight', 'reps', 'notes', 'duplicate', 'delete'].map((id) => find<HTMLButtonElement>(root, testId(id)));
+}
+
+test('locks a done workout: no add-set form, every row disabled, and "Reopen workout"', async () => {
+  const view = await mountView({ ...withSets((item, index) => ({ ...item, done: index === 0 })), done: true });
+  expect(shadow(view).querySelector(testId('add-set-form'))).toBeNull();
+  expect(shadow(view).querySelector(testId('finish-workout'))).toBeNull();
+  expect(button(view, 'reopen-workout').textContent).toBe('Reopen workout');
+  for (const id of [11, 12, 13]) {
+    expect(rowControls(view, id).map((control) => control.disabled)).toEqual([true, true, true, true, true, true]);
+  }
+});
+
+test('reopens a done workout without asking, and reloads', async () => {
+  const asked = confirmAnswering(true);
+  const view = await mountView({ ...WORKOUT, done: true });
+  const loads = workoutLoads();
+  button(view, 'reopen-workout').click();
+  await settle();
+  expect(asked).toEqual([]);
+  expect(fake.sent('PATCH /api/workouts/3')).toEqual([{ done: false }]);
+  expect(workoutLoads()).toBe(loads + 1);
+});
+
+test('toasts a failed finish and does not reload', async () => {
+  confirmAnswering(true);
+  const view = await mountView();
+  const loads = workoutLoads();
+  fake.respondTo('PATCH /api/workouts/3', 409, JSON.stringify({ error: 'Workout has no sets; log one before marking it done' }));
+  button(view, 'finish-workout').click();
+  await settle();
+  expect(toasts).toEqual(['Workout has no sets; log one before marking it done']);
+  expect(workoutLoads()).toBe(loads);
 });

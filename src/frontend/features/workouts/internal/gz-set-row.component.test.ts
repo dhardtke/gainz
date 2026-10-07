@@ -11,9 +11,10 @@ beforeAll(async () => {
   await import('./gz-set-row.component.ts');
 });
 
-function mountRow(value: LiftSetDto, { index = 1 }: { index?: number } = {}): GzSetRowComponent {
+function mountRow(value: LiftSetDto, { index = 1, locked = false }: { index?: number; locked?: boolean } = {}): GzSetRowComponent {
   const row = mount<GzSetRowComponent>('gz-set-row');
   row.index = index;
+  row.locked = locked;
   row.set = value;
   return row;
 }
@@ -62,6 +63,14 @@ test('freezes a done set: its fields and × stay visible but disabled', () => {
   expect(find<HTMLButtonElement>(shadow(row), testId('delete')).disabled).toBe(true);
   expect(toggle(row).disabled).toBe(false);
   expect(find<HTMLButtonElement>(shadow(row), testId('duplicate')).disabled).toBe(false);
+});
+
+test('locks every control of a row, for a set not done and for a done one', () => {
+  for (const done of [false, true]) {
+    const root = shadow(mountRow(set({ id: 7, done }), { locked: true }));
+    const controls = ['toggle-done', 'weight', 'reps', 'notes', 'duplicate', 'delete'].map((id) => find<HTMLButtonElement>(root, testId(id)));
+    expect(controls.map((control) => control.disabled)).toEqual([true, true, true, true, true, true]);
+  }
 });
 
 test('marks the row of a done set, and only that one, as done', () => {

@@ -7,6 +7,7 @@ export interface WorkoutDto {
   title: string | null;
   notes: string | null;
   createdAt: Iso8601DateTime;
+  done: boolean;
 }
 
 export interface WorkoutWithStatsDto extends WorkoutDto {
@@ -15,8 +16,6 @@ export interface WorkoutWithStatsDto extends WorkoutDto {
   totalReps: number;
   totalVolume: number;
   doneSetCount: number;
-  /** At least one set, and every one of them done. */
-  done: boolean;
 }
 
 export interface WorkoutExerciseDto {
@@ -30,8 +29,6 @@ export interface WorkoutExerciseDto {
 
 export interface WorkoutWithExercisesDto extends WorkoutDto {
   exercises: WorkoutExerciseDto[];
-  /** At least one set, and every one of them done. */
-  done: boolean;
 }
 
 export type MoveDirection = 'up' | 'down';
@@ -61,4 +58,5 @@ export interface EditWorkoutDto {
   performedOn?: Iso8601Date;
   title?: string | null;
   notes?: string | null;
+  done?: boolean;
 }

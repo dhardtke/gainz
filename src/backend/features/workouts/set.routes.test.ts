@@ -3,7 +3,7 @@ import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import type { WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
 import { body, useServer } from '../../testing.ts';
 import { createExercise } from '../exercises/exercises.fixtures.ts';
-import { createSet, createWorkout, markDone } from './workouts.fixtures.ts';
+import { createSet, createWorkout, markDone, markWorkoutDone } from './workouts.fixtures.ts';
 
 const { api, post, patch } = useServer();
 
@@ -157,5 +157,49 @@ describe('sets', () => {
 
   test('validates the body before looking up the set', async () => {
     expect((await patch('/api/sets/999999', { reps: 0 })).status).toBe(400);
+  });
+});
+
+describe('a done workout', () => {
+  async function doneWorkout(): Promise<{ workoutId: number; open: LiftSetDto; done: LiftSetDto }> {
+    const exercise = await createExercise(post);
+    const workout = await createWorkout(post);
+    const open = await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
+    const done = await markDone(patch, (await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 })).id);
+    await markWorkoutDone(patch, workout.id);
+    return { workoutId: workout.id, open, done };
+  }
+
+  async function setsOf(workoutId: number): Promise<LiftSetDto[]> {
+    return (await body<WorkoutWithExercisesDto>(await api(`/api/workouts/${workoutId}`))).exercises.flatMap((group) => group.sets);
+  }
+
+  test('refuses to change or delete its sets, and leaves them unchanged', async () => {
+    const { workoutId, open, done } = await doneWorkout();
+
+    for (const set of [open, done]) {
+      for (const change of [{ done: true }, { done: false }, { reps: 6 }]) {
+        expect((await patch(`/api/sets/${set.id}`, change)).status).toBe(409);
+      }
+      expect((await api(`/api/sets/${set.id}`, { method: 'DELETE' })).status).toBe(409);
+    }
+    expect(await setsOf(workoutId)).toEqual([open, done]);
+  });
+
+  test('changes and deletes its sets again once reopened', async () => {
+    const { workoutId, open, done } = await doneWorkout();
+    expect((await patch(`/api/workouts/${workoutId}`, { done: false })).status).toBe(200);
+
+    expect((await patch(`/api/sets/${done.id}`, { done: false })).status).toBe(200);
+    expect((await patch(`/api/sets/${open.id}`, { done: true })).status).toBe(200);
+    expect((await patch(`/api/sets/${done.id}`, { reps: 6 })).status).toBe(200);
+    expect((await api(`/api/sets/${done.id}`, { method: 'DELETE' })).status).toBe(204);
+  });
+
+  test('still answers a malformed body with 400', async () => {
+    const { open } = await doneWorkout();
+
+    expect((await patch(`/api/sets/${open.id}`, { reps: 0 })).status).toBe(400);
+    expect((await patch(`/api/sets/${open.id}`, { done: 'yes' })).status).toBe(400);
   });
 });

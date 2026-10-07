@@ -6,6 +6,7 @@ export interface Workout {
   title: string | null;
   notes: string | null;
   created_at: Iso8601DateTime;
+  done: 0 | 1;
 }
 
 export interface WorkoutWithStats extends Workout {
