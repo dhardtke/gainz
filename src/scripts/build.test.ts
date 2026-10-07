@@ -72,7 +72,7 @@ describe('single-file build', () => {
     socket.close();
   });
 
-  test('serves the frontend as one whitespace-minified bundle at /main.ts, and no other module', async () => {
+  test('serves the frontend as one minified bundle at /main.ts, and no other module', async () => {
     const main = await get('/main.ts');
     expect(main.headers.get('content-type')).toStartWith('text/javascript');
     const bundle = await main.text();
@@ -80,7 +80,7 @@ describe('single-file build', () => {
     expect(bundle).toContain('customElements.define');
     expect(bundle).toContain('"/ui/tile/gz-tile.component.ts"');
     expect(bundle).not.toContain(': string');
-    expect(bundle).not.toContain('sourceMappingURL');
+    expect(bundle).not.toContain('GzDashboardComponent');
     expect(bundle).not.toContain('import.meta');
 
     for (const url of ['/app/gz-app.component.ts', '/ui/format.ts', '/ui/inline-styles.ts', '/features/exercises/internal/gz-chart.component.ts']) {
@@ -160,6 +160,16 @@ describe('single-file build', () => {
     expect(readFileSync(join(dir, 'out', 'gainz.js'), 'utf8')).toContain('//# sourceMappingURL=gainz.js.map');
     const map = await body<{ sources: string[] }>(new Response(Bun.file(join(dir, 'out', 'gainz.js.map'))));
     expect(map.sources.some((source) => source.replaceAll('\\', '/').endsWith('src/backend/main.ts'))).toBe(true);
+  });
+
+  test("serves the bundle's source map, carrying the sources the build no longer serves", async () => {
+    expect(await (await get('/main.ts')).text()).toEndWith('//# sourceMappingURL=main.ts.map\n');
+    const res = await get('/main.ts.map');
+    expect(res.headers.get('content-type')).toStartWith('application/json');
+    const map = await body<{ sources: string[]; sourcesContent: string[] }>(res);
+    const index = map.sources.findIndex((source) => source.endsWith('src/frontend/features/stats/gz-dashboard.component.ts'));
+    expect(index).not.toBe(-1);
+    expect(map.sourcesContent[index]).toContain('class GzDashboardComponent');
   });
 
   test('names the Bun that built it, for the server to run it with', () => {

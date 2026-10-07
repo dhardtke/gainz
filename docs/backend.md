@@ -498,9 +498,10 @@ both `db/` and the static feature read it.
 
 What is embedded comes from `StaticFacade.embed()`: every file under `src/frontend/` except
 `dev/**`, `testing.ts`, `*.test.ts` and `*.fixtures.ts`, keyed by its URL, except the modules.
-Those `internal/bundle.ts` bundles into one ES module served at `/main.ts`, with whitespace
-minified and no source map, so names survive in every trace; no other module is embedded, so the
-built server answers every other `.ts` with a 404. Its `Bun.build` plugin rewrites each module's
+Those `internal/bundle.ts` bundles into one fully minified ES module served at `/main.ts`, beside
+its linked source map at `/main.ts.map`, which carries the sources, so DevTools shows the
+TypeScript and maps a trace back to it; a toast still shows the minified names an error message
+contains. No other module is embedded, so the built server answers every other `.ts` with a 404. Its `Bun.build` plugin rewrites each module's
 `import.meta.url` to that module's own URL path, which keeps the `.ts` → `.css` lookup in
 `ui/styles.ts` working, and fills `ui/inline-styles.ts` with the text of every `*.component.css`,
 the way the build fills `embedded.ts`, so a component's sheet arrives with the bundle rather than a

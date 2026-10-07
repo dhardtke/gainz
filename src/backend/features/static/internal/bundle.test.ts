@@ -9,7 +9,7 @@ describe('the frontend bundle', () => {
   let bundle = '';
 
   beforeAll(async () => {
-    bundle = await bundleFrontend();
+    ({ code: bundle } = await bundleFrontend());
   });
 
   test("rewrites every import.meta.url to its module's own path", () => {

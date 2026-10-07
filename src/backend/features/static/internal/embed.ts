@@ -32,7 +32,9 @@ export async function embedWebRoot(): Promise<EmbeddedWeb> {
     const file = Bun.file(resolve(FRONTEND_DIR, entry));
     pages[url] = isText(file.type) ? { body: await file.text(), type: file.type } : { body: (await file.bytes()).toBase64(), type: file.type, base64: true };
   }
-  pages['/main.ts'] = { body: await bundleFrontend(), type: MODULE_TYPE };
+  const bundle = await bundleFrontend();
+  pages['/main.ts'] = { body: bundle.code, type: MODULE_TYPE };
+  pages['/main.ts.map'] = { body: bundle.map, type: 'application/json;charset=utf-8' };
 
   const vendor: Record<string, EmbeddedFile> = {};
   for (const url of vendorUrls()) {

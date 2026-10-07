@@ -43,22 +43,30 @@ function describeFailure(cause: unknown): string {
   return String(first);
 }
 
-export async function bundleFrontend(entry = resolve(FRONTEND_DIR, 'main.ts')): Promise<string> {
+export interface FrontendBundle {
+  code: string;
+  map: string;
+}
+
+export async function bundleFrontend(entry = resolve(FRONTEND_DIR, 'main.ts')): Promise<FrontendBundle> {
   try {
     const result = await Bun.build({
       entrypoints: [entry],
       target: 'browser',
       format: 'esm',
-      minify: { whitespace: true },
-      sourcemap: 'none',
+      minify: true,
+      sourcemap: 'linked',
+      // The bundle is served at /main.ts, so its map comment must name /main.ts.map.
+      naming: '[name].ts',
       plugins: [frontend],
     });
-    const [output] = result.outputs;
-    if (output === undefined) {
+    const code = result.outputs.find((output) => output.kind === 'entry-point');
+    const map = result.outputs.find((output) => output.kind === 'sourcemap');
+    if (code === undefined || map === undefined) {
       // noinspection ExceptionCaughtLocallyJS
-      throw new Error('Bun.build wrote no output');
+      throw new Error('Bun.build wrote no bundle or no source map');
     }
-    return await output.text();
+    return { code: await code.text(), map: await map.text() };
   } catch (cause) {
     const failure = describeFailure(cause);
     log.error('static', `could not bundle ${failure}`);
