@@ -308,7 +308,8 @@ the icon's and the manifest's, which have no tag. An import map from every plain
 right before the first module script, ahead of anything that loads a module, which the browser
 requires. The page can only name what it links itself, and the map versions everything else: a
 module's relative imports resolve to plain URLs, which the map rewrites, and `ui/styles.ts` looks a
-component's stylesheet up in it. A `<` in the map's JSON is escaped as `<`, so no URL could
+component's stylesheet up in it. A built page has no map: its bundle imports nothing by URL and
+carries every sheet. A `<` in the map's JSON is escaped as `<`, so no URL could
 end the element early.
 
 A page reads the web root through a `PageSource`: the tag of every versioned file.
@@ -512,9 +513,14 @@ its linked source map at `/main.ts.map`, which carries the sources, so DevTools 
 TypeScript and maps a trace back to it; a toast still shows the minified names an error message
 contains. No other module is embedded, so the built server answers every other `.ts` with a 404. Its `Bun.build` plugin rewrites each module's
 `import.meta.url` to that module's own URL path, which keeps the `.ts` → `.css` lookup in
-`ui/styles.ts` working, and fills `ui/inline-styles.ts` with the text of every `*.component.css`,
-the way the build fills `embedded.ts`, so a component's sheet arrives with the bundle rather than a
-round trip after the module before it. Bun wraps a dynamically imported module, so a view still runs
+`ui/styles.ts` working, and fills `ui/inline-styles.ts` with the text of every stylesheet under
+`src/frontend/` and Oat's,
+the way the build fills `embedded.ts`, so a sheet arrives with the bundle rather than a
+round trip after the module before it. The plugin also puts an import of Oat's script first in
+`main.ts`, so it runs before any component as its deferred script did. `embed()` then rewrites the
+index page: its first stylesheet link becomes `/main.css`, the stylesheets it linked joined in
+their order, and the other links, the `fetch` preloads, the `oat.js` script and the comments in its
+`<head>` go. Bun wraps a dynamically imported module, so a view still runs
 only on its first `import()`. A module the bundle reaches that does not parse fails the build,
 naming the file; one it does not reach is not shipped, and not checked. `build-bundle.test.ts` runs
 the bundle under happy-dom, in a child process. A file that is not text (the icons)

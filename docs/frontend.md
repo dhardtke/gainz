@@ -2,7 +2,8 @@
 
 `index.html` is the only page: it links Oat, `ui/shared.css` and `ui/app.css`, the web app manifest and the barbell
 icon, applies a stored theme in a small inline script before the first paint, loads Oat's `oat.js` deferred, and `main.ts` as a module. `main.ts` only imports the
-`app/gz-app.component.ts` shell. Routes are real paths such as `/workouts/3`, and the server answers
+`app/gz-app.component.ts` shell. A built page links one stylesheet and one script instead (see
+"Loading"). Routes are real paths such as `/workouts/3`, and the server answers
 each with `index.html` because it carries no extension.
 
 ```
@@ -367,8 +368,12 @@ frontend in under two milliseconds — and hands the result back as `text/javasc
 source, nothing is written to disk and nothing is bundled: specifiers are left untouched, so a module imports
 `'../../ui/format.ts'` and the browser fetches the file of that name, and editing a module and reloading
 is the whole edit loop. A deployed build (`bun run build`) serves the whole frontend as one bundle
-at `/main.ts` instead, carrying every component stylesheet as text, so a component never fetches
-its own sheet there (see "Single-file build" in `docs/backend.md`). A lazily imported view still
+at `/main.ts` instead, carrying Oat's script and every stylesheet as text, so nothing fetches a
+sheet there, and links Oat, `ui/shared.css` and `ui/app.css` joined in that order as one
+`/main.css`. Its page drops the `oat.js` script and the preloads, so a first visit asks for the
+page, one stylesheet and one script (see "Single-file build" in `docs/backend.md`). Oat's CSS and
+`shared.css` then travel twice, once in each, which costs bytes but no round trip, since both
+download in parallel and are kept for good. A lazily imported view still
 runs only when first opened. `src/frontend/` is the web
 root, so a module's URL is its path below it: `src/frontend/app/gz-app.component.ts` is served at
 `/app/gz-app.component.ts`.
@@ -399,7 +404,8 @@ preloads `/vendor/oat.css` and `/ui/shared.css` for `fetch()` beside linking the
 because a stylesheet link's response cannot answer a `fetch()`, and the top-level `await` in
 `styles.ts` holds back every component module until both have loaded. `crossorigin` is load-bearing
 there: it gives the preload the CORS mode `fetch()` uses in `styles.ts`, and without it the fetch
-would not reuse the preload and would go to the network a second time.
+would not reuse the preload and would go to the network a second time. Even so, each of the two is
+downloaded twice on a first visit, once per mode, which is why the build inlines them.
 
 On a repeat visit nothing but the index page needs asking about. The server names every module,
 stylesheet and Oat file by a versioned URL, `/ui/format.ts?v=<content hash>`, and lets the browser
@@ -416,6 +422,7 @@ latency and the cache on, opening the dashboard a
 second time sent 4 requests for static files rather than 49, and it was defined after about
 265 ms rather than 1175 ms; the first visit is unchanged. The import map makes the index page about
 6 KB larger, and the index page is still revalidated on every visit, since it names the versions.
+A built page leaves the map out, since nothing in it looks a URL up there.
 
 Styled is not the same as ready, though: a view fetches its data once connected, and until then
 it renders a "Loading…" line. Swapped in straight away, every page switch would collapse the page
@@ -498,7 +505,7 @@ shows on the splash screen.
 Oat is served from `node_modules` at `/vendor/oat.css` and `/vendor/oat.js` through an explicit
 allowlist in `src/backend/features/static` — installing a package never publishes anything the app
 did not ask to serve. A single-file build carries both files inside it and serves them at the same
-URLs.
+URLs, though its page reaches them only through `/main.css` and the bundle.
 
 ## Installing
 

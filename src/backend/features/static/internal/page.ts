@@ -14,10 +14,11 @@ function scriptJson(value: unknown): string {
   return JSON.stringify(value).replaceAll('<', '\\u003c');
 }
 
-export async function renderPage(html: string, source: PageSource): Promise<string> {
+/** A bundled page imports nothing by URL and fetches no sheet, so it needs no import map. */
+export async function renderPage(html: string, source: PageSource, { importMap = true } = {}): Promise<string> {
   const tags = await source.tags();
   const imports = Object.fromEntries(Object.keys(tags).map((url) => [url, versioned(tags, url)]));
-  let mapped = false;
+  let mapped = !importMap;
   return new HTMLRewriter()
     .on('script[src^="/"]', {
       element: (el) => {

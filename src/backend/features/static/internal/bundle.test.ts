@@ -19,8 +19,8 @@ describe('the frontend bundle', () => {
     expect(bundle).toContain('"/features/exercises/internal/gz-chart.component.ts"');
   });
 
-  test('carries every component stylesheet', async () => {
-    const urls: string[] = [];
+  test('carries every component stylesheet and the base sheets', async () => {
+    const urls = ['/vendor/oat.css', '/ui/shared.css'];
     for await (const entry of new Bun.Glob('**/*.component.css').scan({ cwd: FRONTEND_DIR })) {
       urls.push(`/${entry.replaceAll('\\', '/')}`);
     }
@@ -28,6 +28,12 @@ describe('the frontend bundle', () => {
     for (const url of urls) {
       expect({ url, carried: bundle.includes(`"${url}"`) }).toEqual({ url, carried: true });
     }
+  });
+
+  test("carries Oat's script ahead of the shell", () => {
+    const oat = bundle.indexOf('"ot-dropdown"');
+    expect(oat).toBeGreaterThan(-1);
+    expect(oat).toBeLessThan(bundle.indexOf('"gz-app"'));
   });
 });
 

@@ -18,6 +18,38 @@ function isText(type: string): boolean {
   );
 }
 
+const MAIN_CSS = '/main.css';
+
+/** The bundle carries Oat's script and the sheets the preloads fetched, so one stylesheet is left to link. */
+async function linkOneSheet(html: string): Promise<{ html: string; sheets: string[] }> {
+  const sheets: string[] = [];
+  const rewritten = await new HTMLRewriter()
+    .on('link[rel="stylesheet"]', {
+      element: (el) => {
+        const href = el.getAttribute('href') ?? '';
+        if (sheets.length === 0) {
+          el.setAttribute('href', MAIN_CSS);
+        } else {
+          el.remove();
+        }
+        sheets.push(href);
+      },
+    })
+    .on('link[rel="preload"][as="fetch"], script[src="/vendor/oat.js"]', {
+      element: (el) => {
+        el.remove();
+      },
+    })
+    .on('head', {
+      comments: (comment) => {
+        comment.remove();
+      },
+    })
+    .transform(new Response(html))
+    .text();
+  return { html: rewritten, sheets };
+}
+
 export async function embedWebRoot(): Promise<EmbeddedWeb> {
   const pages: Record<string, EmbeddedFile> = {};
   for await (const entry of new Bun.Glob('**/*').scan({ cwd: FRONTEND_DIR })) {
@@ -46,13 +78,20 @@ export async function embedWebRoot(): Promise<EmbeddedWeb> {
     vendor[url] = { body: await file.text(), type: file.type };
   }
 
+  const index = pages['/index.html'];
+  if (index !== undefined) {
+    const { html, sheets } = await linkOneSheet(index.body);
+    index.body = html;
+    pages[MAIN_CSS] = { body: sheets.map((url) => (pages[url] ?? vendor[url])?.body ?? '').join('\n'), type: 'text/css;charset=utf-8' };
+  }
+
   // Last, tagged from the strings EmbeddedWebFiles serves, so a version matches its ETag.
   const tags = Object.fromEntries(
     [...Object.entries(pages).filter(([url]) => isVersioned(url)), ...Object.entries(vendor)].map(([url, file]) => [url, contentTag(file.body)]),
   );
   for (const page of Object.values(pages)) {
     if (page.type.startsWith('text/html')) {
-      page.body = await renderPage(page.body, { tags: () => Promise.resolve(tags) });
+      page.body = await renderPage(page.body, { tags: () => Promise.resolve(tags) }, { importMap: false });
     }
   }
 

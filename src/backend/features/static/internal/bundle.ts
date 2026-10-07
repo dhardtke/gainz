@@ -1,21 +1,35 @@
-// Rewrites `import.meta.url` per module and inlines component CSS, both of which a bundle loses.
+// Rewrites `import.meta.url` per module, inlines every stylesheet and imports Oat's script.
 import { relative, resolve } from 'node:path';
 import type { BunPlugin } from 'bun';
 import { log } from '../../../shared/log.ts';
-import { FRONTEND_DIR } from './paths.ts';
+import { FRONTEND_DIR, isShipped, resolveVendorPath, vendorUrls } from './paths.ts';
 
 const INLINE_STYLES = resolve(FRONTEND_DIR, 'ui', 'inline-styles.ts');
+const MAIN = resolve(FRONTEND_DIR, 'main.ts');
 
 function urlOf(path: string): string {
   // Windows separators.
   return `/${relative(FRONTEND_DIR, path).replaceAll('\\', '/')}`;
 }
 
-async function componentStyles(): Promise<Record<string, string>> {
+function vendorPath(url: string): string {
+  const path = resolveVendorPath(url);
+  if (path === null) {
+    throw new Error('Vendor file missing — run `bun install`');
+  }
+  return path;
+}
+
+async function inlineStyles(): Promise<Record<string, string>> {
   const styles: Record<string, string> = {};
-  for await (const entry of new Bun.Glob('**/*.component.css').scan({ cwd: FRONTEND_DIR })) {
+  for await (const entry of new Bun.Glob('**/*.css').scan({ cwd: FRONTEND_DIR })) {
     const path = resolve(FRONTEND_DIR, entry);
-    styles[urlOf(path)] = await Bun.file(path).text();
+    if (isShipped(urlOf(path))) {
+      styles[urlOf(path)] = await Bun.file(path).text();
+    }
+  }
+  for (const url of vendorUrls().filter((url) => url.endsWith('.css'))) {
+    styles[url] = await Bun.file(vendorPath(url)).text();
   }
   return styles;
 }
@@ -25,10 +39,13 @@ const frontend: BunPlugin = {
   setup(build) {
     build.onLoad({ filter: /\.ts$/ }, async ({ path }) => {
       if (resolve(path) === INLINE_STYLES) {
-        return { contents: `export const INLINE_STYLES = ${JSON.stringify(await componentStyles())};`, loader: 'ts' };
+        return { contents: `export const INLINE_STYLES = ${JSON.stringify(await inlineStyles())};`, loader: 'ts' };
       }
       // Textual, so it would also rewrite one inside a string; bundle.test.ts checks none is left.
-      return { contents: (await Bun.file(path).text()).replaceAll('import.meta.url', JSON.stringify(urlOf(path))), loader: 'ts' };
+      const contents = (await Bun.file(path).text()).replaceAll('import.meta.url', JSON.stringify(urlOf(path)));
+      // First, so Oat runs before any component, as its deferred script did.
+      const oat = resolve(path) === MAIN ? `import ${JSON.stringify(vendorPath('/vendor/oat.js'))};\n` : '';
+      return { contents: `${oat}${contents}`, loader: 'ts' };
     });
   },
 };
@@ -48,7 +65,7 @@ export interface FrontendBundle {
   map: string;
 }
 
-export async function bundleFrontend(entry = resolve(FRONTEND_DIR, 'main.ts')): Promise<FrontendBundle> {
+export async function bundleFrontend(entry = MAIN): Promise<FrontendBundle> {
   try {
     const result = await Bun.build({
       entrypoints: [entry],

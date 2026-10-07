@@ -88,18 +88,28 @@ describe('single-file build', () => {
     }
   });
 
-  test('preloads only the stylesheets index.html names, by versions it serves for good', async () => {
+  test('links one stylesheet and one script, by versions it serves for good', async () => {
     const page = await (await get('/')).text();
-    const preloaded = [...page.matchAll(/<link rel="(?:modulepreload|preload)" href="([^"]+)"/g)].map((match) => match[1] ?? '');
+    const sheets = [...page.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map((match) => match[1] ?? '');
+    const scripts = [...page.matchAll(/<script[^>]* src="([^"]+)"/g)].map((match) => match[1] ?? '');
+    expect(sheets).toHaveLength(1);
+    expect(sheets[0]).toStartWith('/main.css?v=');
+    expect(scripts).toHaveLength(1);
+    expect(scripts[0]).toStartWith('/main.ts?v=');
+    expect(page).not.toContain('rel="preload"');
     expect(page).not.toContain('rel="modulepreload"');
-    expect(page).not.toContain('data-lazy-preloads');
-    expect(preloaded.some((url) => url.startsWith('/vendor/oat.css?v='))).toBe(true);
-    expect(preloaded.some((url) => url.startsWith('/ui/shared.css?v='))).toBe(true);
-    expect(page).toMatch(/<script type="importmap">\{"imports":\{"\//);
-    for (const url of preloaded) {
+    expect(page).not.toContain('importmap');
+    for (const url of [...sheets, ...scripts]) {
       const res = await get(url);
       expect({ url, status: res.status, cache: res.headers.get('cache-control') }).toEqual({ url, status: 200, cache: 'public, max-age=31536000, immutable' });
     }
+  });
+
+  test('joins Oat, the shared and the app stylesheet in that order', async () => {
+    const res = await get('/main.css');
+    expect(res.headers.get('content-type')).toStartWith('text/css');
+    const parts = await Promise.all(['/vendor/oat.css', '/ui/shared.css', '/ui/app.css'].map(async (url) => (await get(url)).text()));
+    expect(await res.text()).toBe(parts.join('\n'));
   });
 
   test('serves every component stylesheet, the app stylesheet and Oat', async () => {

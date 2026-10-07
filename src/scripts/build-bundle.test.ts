@@ -7,8 +7,6 @@ import type { ProbeReport } from './build-bundle.probe.ts';
 
 const PROBE = resolve(import.meta.dir, 'build-bundle.probe.ts');
 
-const BASE_SHEETS = ['/vendor/oat.css', '/ui/shared.css'];
-
 function sheets(requested: string[]): string[] {
   return requested.filter((url) => url.endsWith('.css')).toSorted();
 }
@@ -36,18 +34,17 @@ describe('the built frontend bundle', () => {
     rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
   });
 
-  test('defines the shell, each component with its own stylesheet from the bundle', () => {
+  test('defines the shell, each component with its stylesheets from the bundle', () => {
     for (const tag of ['gz-app', 'gz-header', 'gz-theme-toggle', 'gz-breadcrumbs']) {
       expect(report.beforeMount.defined).toContain(tag);
     }
-    expect(sheets(report.beforeMount.requested)).toEqual(BASE_SHEETS.toSorted());
-    // Every fetched sheet is answered empty, so these rules can only have come from the bundle.
+    expect(sheets(report.beforeMount.requested)).toEqual([]);
     expect(report.beforeMount.appRules).toBeGreaterThan(0);
   });
 
-  test('runs a lazily imported view only when its route opens, still fetching no component sheet', () => {
+  test('runs a lazily imported view only when its route opens, still fetching no sheet', () => {
     expect(report.beforeMount.defined).not.toContain('gz-dashboard');
     expect(report.afterMount.defined).toContain('gz-dashboard');
-    expect(sheets(report.afterMount.requested)).toEqual(BASE_SHEETS.toSorted());
+    expect(sheets(report.afterMount.requested)).toEqual([]);
   });
 });
