@@ -2,6 +2,10 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:best-practices", "helpers:pinGitHubActionDigestsToSemver", ":semanticCommits"],
   "rangeStrategy": "pin",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "automerge": true
+  },
   "packageRules": [
     {
       "groupName": "bun",
@@ -9,7 +13,12 @@
     },
     {
       "groupName": "oxlint",
-      "matchPackageNames": ["oxlint", "oxlint-tsgolint"]
+      "matchPackageNames": ["oxlint", "oxlint-tsgolint"],
+      "automerge": true
+    },
+    {
+      "matchPackageNames": ["oxfmt"],
+      "automerge": true
     }
   ]
 }
