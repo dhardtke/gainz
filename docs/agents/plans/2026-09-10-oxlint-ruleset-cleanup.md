@@ -277,7 +277,7 @@ Dependencies: None (independent of 1–3; sequenced here to keep diffs legible).
 
 **Manual Verification**:
 
-- [ ] `bun start`, then walk dashboard → workouts → a workout → exercises → an exercise. Each view
+- [x] `bun start`, then walk dashboard → workouts → a workout → exercises → an exercise. Each view
       still loads its data on first paint, and `Ctrl+C` still shuts the server down cleanly.
 
 ### Phase 5: Assertions in the components
@@ -314,7 +314,7 @@ Dependencies: Phase 1 (`emptyToNull`), Phase 2 (return types on the partials bei
 
 **Manual Verification**:
 
-- [ ] Create a workout, edit its header, add a set, edit the set, delete it; create and edit an
+- [x] Create a workout, edit its header, add a set, edit the set, delete it; create and edit an
       exercise. Every form still round-trips, and empty optional fields still clear rather than
       storing `""`.
 
@@ -342,7 +342,7 @@ handled in Phase 1 — confirm it is gone).
 
 **Manual Verification**:
 
-- [ ] An exercise page with several logged sessions still draws its chart with the right axis
+- [x] An exercise page with several logged sessions still draws its chart with the right axis
       labels, and `#/nonsense` still shows the "Nothing lives at …" view.
 
 ### Phase 7: The API client boundary
@@ -390,7 +390,7 @@ Dependencies: None.
 
 **Manual Verification**:
 
-- [ ] Stop the server with the app open and click a nav link: the toast still says "Could not reach
+- [x] Stop the server with the app open and click a nav link: the toast still says "Could not reach
       the gainz server". Then POST a duplicate exercise name and confirm the 409's own message
       ("already exists") still reaches the toast rather than "Request failed (409)".
 

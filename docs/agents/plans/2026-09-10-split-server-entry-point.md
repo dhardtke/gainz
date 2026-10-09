@@ -277,14 +277,14 @@ without changing a single observable behavior. The existing suite is the verific
 
 **Manual Verification**:
 
-- [ ] `bun start` against the existing database prints the two expected lines (`gainz is
+- [x] `bun start` against the existing database prints the two expected lines (`gainz is
       lifting on …` and `  database: …`), serves the app at `http://localhost:3000`, and the
       dashboard renders with Pico styling — confirming `/vendor/pico.css` and the transpiled
       modules still resolve.
 - [x] `bun start` with `GAINZ_DB` pointing at a throwaway path prints the third line,
       `applied 001-initial-schema`, ahead of the other two. Use the environment variable
       rather than deleting `data/gainz.sqlite`.
-- [ ] Ctrl-C shuts the process down cleanly with no error output.
+- [x] Ctrl-C shuts the process down cleanly with no error output.
 - [x] `bun run start:dev` starts, and editing a backend file triggers a reload.
 
 ### Phase 2: Cover the error hook and document the verified behavior

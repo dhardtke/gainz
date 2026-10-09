@@ -290,11 +290,11 @@ The workouts API already pages. This phase builds the shared pieces (router chan
 
 **Manual Verification** (`bun run seed` into an empty `data/gainz.sqlite`, then `bun start`):
 
-- [ ] `/workouts` shows 10 cards and the numbered pager with 1 filled and Previous disabled. Next and "2" both go to `/workouts?page=2`; Previous or "1" from there goes back to `/workouts`.
-- [ ] The pager looks like Oat's pagination example in light and dark mode, and fits on a narrow (phone-width) window at 12+ pages.
-- [ ] Open a workout on page 2, press Back → still page 2. Reload → still page 2. Browser Back/Forward step through pages.
-- [ ] `/workouts?page=abc` shows page 1. `/workouts?page=999` and `/workouts?page=99999999` show "No workouts on this page." with a working "Go to page 1", and no toast.
-- [ ] The dashboard's recent workouts are unchanged.
+- [x] `/workouts` shows 10 cards and the numbered pager with 1 filled and Previous disabled. Next and "2" both go to `/workouts?page=2`; Previous or "1" from there goes back to `/workouts`.
+- [x] The pager looks like Oat's pagination example in light and dark mode, and fits on a narrow (phone-width) window at 12+ pages.
+- [x] Open a workout on page 2, press Back → still page 2. Reload → still page 2. Browser Back/Forward step through pages.
+- [x] `/workouts?page=abc` shows page 1. `/workouts?page=999` and `/workouts?page=99999999` show "No workouts on this page." with a working "Go to page 1", and no toast.
+- [x] The dashboard's recent workouts are unchanged.
 
 ### Phase 2: Paging exercises end to end
 
@@ -353,8 +353,8 @@ Dependencies: Phase 1 (`ui/pagination.ts`, `navigate()` change)
 
 **Manual Verification**:
 
-- [ ] `/exercises` shows 10 exercises by name and the numbered pager; paging, Back from a detail page, reload and `?page=999` behave as on `/workouts`.
-- [ ] The exercise select on a workout's detail page still lists every exercise.
+- [x] `/exercises` shows 10 exercises by name and the numbered pager; paging, Back from a detail page, reload and `?page=999` behave as on `/workouts`.
+- [x] The exercise select on a workout's detail page still lists every exercise.
 
 ### Phase 3: Jumping to a newly added exercise
 
@@ -398,8 +398,8 @@ Dependencies: Phase 2
 
 **Manual Verification**:
 
-- [ ] On `/exercises`, add an exercise that sorts onto a later page (e.g. "Zercher Squat"): the view moves to that page, which shows the new exercise, and the toast says "Added Zercher Squat".
-- [ ] Adding one that sorts onto the current page reloads it with the new card.
+- [x] On `/exercises`, add an exercise that sorts onto a later page (e.g. "Zercher Squat"): the view moves to that page, which shows the new exercise, and the toast says "Added Zercher Squat".
+- [x] Adding one that sorts onto the current page reloads it with the new card.
 
 ## Implementation Notes
 

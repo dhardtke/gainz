@@ -420,12 +420,12 @@ only the frontend, and everything works.
 
 **Manual Verification**:
 
-- [ ] `bun start`, then open `http://localhost:3000/` and click through Dashboard → Workouts →
+- [x] `bun start`, then open `http://localhost:3000/` and click through Dashboard → Workouts →
       open a workout → Exercises → open an exercise. This is the check that the URL change did not
       leave a component unstyled or a lazily imported route unreachable. The suite fetches modules
       and stylesheets individually; it never exercises `styles.ts` adopting a sheet into a shadow
       root, and an adopted-stylesheet failure is silent apart from a console line.
-- [ ] With the app open, the browser console is clean — in particular no
+- [x] With the app open, the browser console is clean — in particular no
       `gainz: could not load stylesheet` line, which is what a missed `componentHref` would print
       while the page still rendered.
 

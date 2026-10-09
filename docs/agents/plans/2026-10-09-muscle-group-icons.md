@@ -4,7 +4,7 @@ git_commit: 8c1b286959aa250c6f79ada6ad2946893837bbab
 branch: main
 topic: 'Muscle group icons'
 tags: [plan, exercises, workouts, muscle-group, frontend, backend, icons]
-status: ready
+status: implemented
 ---
 
 # PLAN: Muscle group icons

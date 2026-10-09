@@ -529,7 +529,7 @@ Log the outcome of every password check.
 
 **Manual Verification**:
 
-- [ ] After deploying, `sudo journalctl _SYSTEMD_USER_UNIT=gainz.service -f` on the server shows:
+- [x] After deploying, `sudo journalctl _SYSTEMD_USER_UNIT=gainz.service -f` on the server shows:
   - an `http` line for each API call the app makes
   - a deliberate wrong password as `auth wrong password`, highlighted as a warning
   - `-p warning` showing only warnings and errors

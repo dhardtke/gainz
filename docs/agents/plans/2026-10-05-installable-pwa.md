@@ -297,15 +297,15 @@ single-file build and hot reload carry the new files. Once it lands, Chrome can 
 
 **Manual Verification**:
 
-- [ ] On desktop Chrome at the deployed HTTPS site (or `http://localhost:3000`), DevTools →
+- [x] On desktop Chrome at the deployed HTTPS site (or `http://localhost:3000`), DevTools →
       Application → Manifest shows no errors or warnings, the icons render, and the maskable icon
       looks right in the "Show only the minimum safe area" preview.
-- [ ] Desktop Chrome's menu offers "Install gainz". The installed window opens at `/` with no
+- [x] Desktop Chrome's menu offers "Install gainz". The installed window opens at `/` with no
       address bar and the barbell icon.
-- [ ] On an Android phone, Chrome ⋮ → "Add to home screen" / "Install app" installs an app (it
+- [x] On an Android phone, Chrome ⋮ → "Add to home screen" / "Install app" installs an app (it
       appears in the app drawer, not only as a shortcut with a Chrome badge). The launcher icon is
       the barbell filling the adaptive mask, and it opens standalone and stays logged in.
-- [ ] The browser tab shows the barbell favicon instead of the emoji.
+- [x] The browser tab shows the barbell favicon instead of the emoji.
 
 ### Phase 2: Status bar follows the theme
 
@@ -372,11 +372,11 @@ the app is showing.
 
 **Manual Verification**:
 
-- [ ] In the installed Android app, the status bar is white in light mode and `#202024` in dark
+- [x] In the installed Android app, the status bar is white in light mode and `#202024` in dark
       mode, with no visible seam against the header.
-- [ ] Tapping the theme toggle changes the status bar color immediately. Relaunching the app keeps
+- [x] Tapping the theme toggle changes the status bar color immediately. Relaunching the app keeps
       the chosen color from the first frame.
-- [ ] In the installed desktop window, the title bar follows the same colors.
+- [x] In the installed desktop window, the title bar follows the same colors.
 
 ## Implementation Notes
 

@@ -521,15 +521,15 @@ up, or names declared but never shown.
 
 **Manual Verification**:
 
-- [ ] With `bun run start:dev`, open a workout from the dashboard: the trail reads `Workouts › <title>`,
+- [x] With `bun run start:dev`, open a workout from the dashboard: the trail reads `Workouts › <title>`,
       and clicking `Workouts` opens the list without a full page reload
-- [ ] Open an exercise through a workout's "Exercise history →": the trail reads `Exercises › <name>`
-- [ ] Rename a workout in "Details & notes": the trail and the tab title follow without navigating
-- [ ] At 320 px wide, a workout with a long title keeps the trail on one line, with `Workouts` intact
+- [x] Open an exercise through a workout's "Exercise history →": the trail reads `Exercises › <name>`
+- [x] Rename a workout in "Details & notes": the trail and the tab title follow without navigating
+- [x] At 320 px wide, a workout with a long title keeps the trail on one line, with `Workouts` intact
       and the title ending in an ellipsis. Check both themes
-- [ ] The dashboard, both lists and `/login` show no trail. The tabs read `gainz — lifting log`,
+- [x] The dashboard, both lists and `/login` show no trail. The tabs read `gainz — lifting log`,
       `Workouts · gainz`, `Exercises · gainz` and `Log in · gainz`
-- [ ] `/workouts/999999` shows `Workouts › Workout` above "Workout not found", with no "Back to all workouts"
+- [x] `/workouts/999999` shows `Workouts › Workout` above "Workout not found", with no "Back to all workouts"
 
 ## Implementation Notes
 

@@ -165,7 +165,7 @@ untouched in this phase (its `toBestSet` simply loses its last caller).
 
 **Tasks**:
 
-- [ ] `src/backend/features/exercises/internal/exercise.translator.ts`: add the outbound functions,
+- [x] `src/backend/features/exercises/internal/exercise.translator.ts`: add the outbound functions,
       bodies copied from `ports/exercise.ts:30-76`, importing the row types from
       `../ports/exercise.ts`, `LiftSet` from `../../workouts/ports/set.ts`, `Iso8601Date` from
       `../../../../shared/flavors.ts`, and `ExerciseDto`, `ExerciseWithStatsDto`, `SessionPointDto`,
@@ -207,14 +207,14 @@ untouched in this phase (its `toBestSet` simply loses its last caller).
         };
       }
       ```
-- [ ] `src/backend/features/exercises/ports/exercise.ts`: delete `toExercise`, `toExerciseWithStats`,
+- [x] `src/backend/features/exercises/ports/exercise.ts`: delete `toExercise`, `toExerciseWithStats`,
       `toSessionPoint`, `toExerciseProgress`, the `shared/dto` import and the `toBestSet`/`LiftSet`
       import; keep `Exercise`, `ExerciseWithStats`, `SessionPoint` and the flavor imports they need.
-- [ ] `src/backend/features/exercises/internal/exercise.controller.ts`: remove the
+- [x] `src/backend/features/exercises/internal/exercise.controller.ts`: remove the
       `../ports/exercise.ts` import; import `translateToExerciseDto`, `translateToExerciseWithStatsDto`
       and `translateToExerciseProgressDto` from `./exercise.translator.ts` and replace the five call
       sites (`:12,17,21,27,37`).
-- [ ] `src/backend/features/exercises/exercise.routes.test.ts`, test "aggregates one line per session
+- [x] `src/backend/features/exercises/exercise.routes.test.ts`, test "aggregates one line per session
       and reports the best set": replace `expect(progress.bestSet?.weight).toBe(65)` with an exact
       shape check, so the restated field list is pinned. The best set is 65×5 from the
       2026-01-12 workout (`exercise.repository.ts:127` orders by estimated 1RM), it is the first set
@@ -237,12 +237,12 @@ untouched in this phase (its `toBestSet` simply loses its last caller).
 
 **Automated Verification**:
 
-- [ ] `bun test src/backend/features/exercises` passes, including the tightened progress test
-- [ ] `git grep -n "ports/" -- src/backend/features/exercises/internal/exercise.controller.ts` prints nothing (exit code 1 is the expected result)
-- [ ] `bun test` passes
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
+- [x] `bun test src/backend/features/exercises` passes, including the tightened progress test
+- [x] `git grep -n "ports/" -- src/backend/features/exercises/internal/exercise.controller.ts` prints nothing (exit code 1 is the expected result)
+- [x] `bun test` passes
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
 
 ### Phase 2: Workouts and sets translate their own rows
 
@@ -250,13 +250,13 @@ Dependencies: Phase 1 (removes the last cross-feature caller of `toBestSet`)
 
 **Tasks**:
 
-- [ ] `src/backend/features/workouts/internal/set.translator.ts`: add
+- [x] `src/backend/features/workouts/internal/set.translator.ts`: add
       `export function translateToLiftSetDto(row: LiftSet): LiftSetDto`, body from `ports/set.ts:16-28`,
       importing `LiftSet` from `../ports/set.ts` and `LiftSetDto` from `shared/dto`.
-- [ ] `src/backend/features/workouts/ports/set.ts`: delete `toLiftSet`, `toBestSet` (with its doc
+- [x] `src/backend/features/workouts/ports/set.ts`: delete `toLiftSet`, `toBestSet` (with its doc
       comment) and the `shared/dto` import; drop `Iso8601Date` from the flavor import (nothing
       else in the file uses it, and neither `tsconfig.json` nor lint would flag it).
-- [ ] `src/backend/features/workouts/internal/workout.translator.ts`: add
+- [x] `src/backend/features/workouts/internal/workout.translator.ts`: add
       `translateToWorkoutDto(row: Workout): WorkoutDto`, unexported
       `translateToWorkoutWithStatsDto(row: WorkoutWithStats): WorkoutWithStatsDto`,
       `translateToWorkoutWithSetsDto(row: Workout, sets: LiftSet[]): WorkoutWithSetsDto` (spreading
@@ -266,23 +266,23 @@ Dependencies: Phase 1 (removes the last cross-feature caller of `toBestSet`)
       `../ports/workout.ts`; `LiftSet` from `../ports/set.ts`; `translateToLiftSetDto` from
       `./set.translator.ts`; `WorkoutDto`, `WorkoutWithStatsDto`, `WorkoutWithSetsDto`,
       `WorkoutPageDto` from `shared/dto` (added to the existing `shared/dto` import).
-- [ ] `src/backend/features/workouts/ports/workout.ts`: delete the four mappers, the `shared/dto`
+- [x] `src/backend/features/workouts/ports/workout.ts`: delete the four mappers, the `shared/dto`
       import and the whole `./set.ts` import.
-- [ ] `src/backend/features/workouts/internal/workout.controller.ts`: remove both `ports/` imports;
+- [x] `src/backend/features/workouts/internal/workout.controller.ts`: remove both `ports/` imports;
       import the workout translators from `./workout.translator.ts` and `translateToLiftSetDto`
       alongside `translateToCreateSetDto` from `./set.translator.ts`; replace call sites `:20,25,30,36,47,53`.
-- [ ] `src/backend/features/workouts/internal/set.controller.ts`: remove the `../ports/set.ts` import;
+- [x] `src/backend/features/workouts/internal/set.controller.ts`: remove the `../ports/set.ts` import;
       import `translateToLiftSetDto` with `translateToEditSetDto`; replace call sites `:12,18`.
 
 **Automated Verification**:
 
-- [ ] `bun test src/backend/features/workouts` passes
-- [ ] `bun test src/backend/features/exercises` passes
-- [ ] `git grep -n "shared/dto" -- src/backend/features/workouts/ports src/backend/features/exercises/ports` prints nothing (exit code 1 expected)
-- [ ] `bun test` passes
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
+- [x] `bun test src/backend/features/workouts` passes
+- [x] `bun test src/backend/features/exercises` passes
+- [x] `git grep -n "shared/dto" -- src/backend/features/workouts/ports src/backend/features/exercises/ports` prints nothing (exit code 1 expected)
+- [x] `bun test` passes
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
 
 ### Phase 3: Stats translator, lint enforcement and documentation
 
@@ -294,14 +294,14 @@ The lint overrides go in first, while stats is still unmigrated, so that the sta
 patterns actually match the relative specifiers the backend uses (`**/ports/**` has never matched
 anything so far — no route file imports `ports/`).
 
-- [ ] `.oxlintrc.json`: add a second pattern to the `src/backend/features/**/*.controller.ts` override:
+- [x] `.oxlintrc.json`: add a second pattern to the `src/backend/features/**/*.controller.ts` override:
       ```json
       {
         "group": ["**/ports/**"],
         "message": "Controllers translate rows through their feature's translator."
       }
       ```
-- [ ] `.oxlintrc.json`: add a new override after it:
+- [x] `.oxlintrc.json`: add a new override after it:
       ```json
       {
         "files": ["src/backend/features/**/ports/**/*.ts"],
@@ -322,17 +322,17 @@ anything so far — no route file imports `ports/`).
       ```
       The backend's imports are written `'../../../../shared/dto'` (the directory, no `index.ts`),
       which is why the group lists the bare directory specifier beside `**/shared/dto/**`.
-- [ ] Run `bun run lint` and confirm it fails with exactly two errors: the controller message on
+- [x] Run `bun run lint` and confirm it fails with exactly two errors: the controller message on
       `stats/internal/stats.controller.ts:3` and the `ports/` message on `stats/ports/stats.ts:1`.
       If either is missing, adjust the pattern until it fires before continuing.
-- [ ] `src/backend/features/stats/internal/stats.translator.ts` (new): `export function
+- [x] `src/backend/features/stats/internal/stats.translator.ts` (new): `export function
       translateToSummaryDto(row: Summary): SummaryDto`, body from `ports/stats.ts:20-31`, importing
       `Summary` from `../ports/stats.ts` and `SummaryDto` from `shared/dto`.
-- [ ] `src/backend/features/stats/ports/stats.ts`: delete `toSummary` and the `shared/dto` import;
+- [x] `src/backend/features/stats/ports/stats.ts`: delete `toSummary` and the `shared/dto` import;
       keep `Summary` and its header comment.
-- [ ] `src/backend/features/stats/internal/stats.controller.ts`: replace the `../ports/stats.ts`
+- [x] `src/backend/features/stats/internal/stats.controller.ts`: replace the `../ports/stats.ts`
       import with `translateToSummaryDto` from `./stats.translator.ts`.
-- [ ] `docs/backend.md`: rewrite the passages describing mappers in `ports/`:
+- [x] `docs/backend.md`: rewrite the passages describing mappers in `ports/`:
       - `:14-18` — `ports/` declares the row types other features may read (no `to*` mappers);
         `internal/`'s translator translates in both directions: body → request DTO, request DTO →
         repository input, and row → response DTO.
@@ -350,28 +350,28 @@ anything so far — no route file imports `ports/`).
         `ports/`), `ports/` (no `shared/dto`), and the translator exemption; `:92` "casting a body
         onto a DTO is half of a translator's job" becomes "is part of a translator's job".
       - `:98-100` — the controller translates what the facade returns through its translator.
-- [ ] `docs/frontend.md:101`: "the backend translates its rows into these DTOs in each feature's
+- [x] `docs/frontend.md:101`: "the backend translates its rows into these DTOs in each feature's
       translator" instead of "`ports/`".
-- [ ] `src/shared/dto/index.ts:15-16`: "The backend translates its repository rows into these shapes
+- [x] `src/shared/dto/index.ts:15-16`: "The backend translates its repository rows into these shapes
       in each feature's `internal/*.translator.ts`; …".
-- [ ] `src/backend/features/workouts/ports/sql.ts` header needs no change (it already speaks only of
+- [x] `src/backend/features/workouts/ports/sql.ts` header needs no change (it already speaks only of
       SQL fragments); leave it.
 
 **Automated Verification**:
 
-- [ ] `bun test src/backend/features/stats` passes
+- [x] `bun test src/backend/features/stats` passes
 Run from the repository root in PowerShell; every `git grep` below must print nothing (exit code 1
 is the expected result).
 
-- [ ] `git grep -n "shared/dto" -- "src/backend/features/*/ports/*"`
-- [ ] `git grep -n "ports/" -- "src/backend/features/*.controller.ts"`
-- [ ] `git grep -nE "function to[A-Z]" -- src/backend`
-- [ ] `bun run lint` passes
-- [ ] `bun test` passes
-- [ ] `bun run typecheck` passes
-- [ ] `bun run fmt:check` passes
-- [ ] `git grep -nE "to\*|to(LiftSet|BestSet|Exercise|Workout|Summary)" -- docs/backend.md docs/frontend.md src/shared`
-- [ ] `git grep -n "ports/" -- docs/frontend.md src/shared/dto/index.ts`
+- [x] `git grep -n "shared/dto" -- "src/backend/features/*/ports/*"`
+- [x] `git grep -n "ports/" -- "src/backend/features/*.controller.ts"`
+- [x] `git grep -nE "function to[A-Z]" -- src/backend`
+- [x] `bun run lint` passes
+- [x] `bun test` passes
+- [x] `bun run typecheck` passes
+- [x] `bun run fmt:check` passes
+- [x] `git grep -nE "to\*|to(LiftSet|BestSet|Exercise|Workout|Summary)" -- docs/backend.md docs/frontend.md src/shared`
+- [x] `git grep -n "ports/" -- docs/frontend.md src/shared/dto/index.ts`
 
 ## Implementation Notes
 

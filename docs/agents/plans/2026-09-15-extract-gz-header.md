@@ -261,7 +261,7 @@ Move the header into its own component and trim `gz-app` to the shell.
 - [x] `bun test` passes
 - [x] `bun run typecheck` passes
 - [x] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
+- [x] `bun run fmt:check` passes
 
 **Manual Verification**:
 

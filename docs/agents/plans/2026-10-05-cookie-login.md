@@ -384,8 +384,8 @@ curl. With the variable unset nothing observable changes except the health body 
 
 **Manual Verification**:
 
-- [ ] `bun run hash-password` in a terminal does not echo, and a mismatch is refused
-- [ ] `GAINZ_PASSWORD_HASH='<hash>' bun start` logs `auth: on`; with a garbage value it exits with
+- [x] `bun run hash-password` in a terminal does not echo, and a mismatch is refused
+- [x] `GAINZ_PASSWORD_HASH='<hash>' bun start` logs `auth: on`; with a garbage value it exits with
       the message above
 
 ### Phase 2: Frontend login flow
@@ -462,15 +462,15 @@ out.
 
 **Manual Verification**:
 
-- [ ] With `GAINZ_PASSWORD_HASH` set and `bun start`, opening `http://localhost:3000/workouts`
+- [x] With `GAINZ_PASSWORD_HASH` set and `bun start`, opening `http://localhost:3000/workouts`
       lands on `/login?next=%2Fworkouts` with no error toast, and the header shows only the brand and
       the theme toggle
-- [ ] A wrong password shows "Wrong password." inline; the right one lands on `/workouts`, and a
+- [x] A wrong password shows "Wrong password." inline; the right one lands on `/workouts`, and a
       reload stays logged in
-- [ ] Log out, from both the wide header and the narrow menu, lands on `/login`, and the API
+- [x] Log out, from both the wide header and the narrow menu, lands on `/login`, and the API
       answers 401 again
-- [ ] The login page looks right in light and dark themes and at phone width
-- [ ] With the variable unset, the app behaves as before, and `/login` simply logs you in
+- [x] The login page looks right in light and dark themes and at phone width
+- [x] With the variable unset, the app behaves as before, and `/login` simply logs you in
 
 ### Phase 3: Production rollout
 
@@ -508,12 +508,12 @@ After this phase production requires the password, and a deploy cannot silently 
 
 **Manual Verification**:
 
-- [ ] On the server, with the env file in place, the unit reinstalled and the service restarted,
+- [x] On the server, with the env file in place, the unit reinstalled and the service restarted,
       `curl -s http://127.0.0.1:3000/api/health` shows `"auth":true`
-- [ ] With the env file temporarily renamed, `systemctl --user -M gainz@ restart gainz` fails to
+- [x] With the env file temporarily renamed, `systemctl --user -M gainz@ restart gainz` fails to
       start (then rename it back and restart)
-- [ ] A push to `main` deploys through the new `gainz-deploy` and reports `is live`
-- [ ] On the phone: log in once in the browser, add gainz to the home screen, and open it. It asks
+- [x] A push to `main` deploys through the new `gainz-deploy` and reports `is live`
+- [x] On the phone: log in once in the browser, add gainz to the home screen, and open it. It asks
       once more (iOS keeps a separate cookie store for home-screen apps), then survives closing the
       app, a phone restart, and a deploy without asking again
 

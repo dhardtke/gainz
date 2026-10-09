@@ -408,17 +408,17 @@ and memories that describe it.
 
 **Manual Verification**:
 
-- [ ] `bun run start:dev`: dashboard, workout list, workout detail, exercise list and exercise
+- [x] `bun run start:dev`: dashboard, workout list, workout detail, exercise list and exercise
       detail render with Oat styling — cards, badges, tables, forms, row buttons — in light and dark
-- [ ] The theme toggle switches every component at once, and a reload after choosing the opposite
+- [x] The theme toggle switches every component at once, and a reload after choosing the opposite
       of the system theme paints no flash of the other theme
-- [ ] At ≤560px the ☰ button opens the menu under the header; a link navigates and closes it; Esc
+- [x] At ≤560px the ☰ button opens the menu under the header; a link navigates and closes it; Esc
       and clicking outside close it; arrow keys move between items
-- [ ] Saving, deleting and a failed request (stop the server) show toasts at the bottom right,
+- [x] Saving, deleting and a failed request (stop the server) show toasts at the bottom right,
       coloured by kind, that fade out
-- [ ] On a phone-sized viewport the set rows' Edit / +1 / × buttons are comfortably tappable and the
+- [x] On a phone-sized viewport the set rows' Edit / +1 / × buttons are comfortably tappable and the
       tables scroll horizontally inside their cards
-- [ ] `bun run build`, then run `dist/gainz.js`: the app loads with Oat and the dropdown works
+- [x] `bun run build`, then run `dist/gainz.js`: the app loads with Oat and the dropdown works
 
 ## Implementation Notes
 

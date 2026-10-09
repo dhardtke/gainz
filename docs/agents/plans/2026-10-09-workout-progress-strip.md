@@ -4,7 +4,7 @@ git_commit: d1c0d58e63577f07004c0520309b5482471263d8
 branch: main
 topic: 'Sticky set progress strip on the workout page'
 tags: [plan, frontend, gz-workout-detail, gz-header, progress, styling]
-status: ready
+status: implemented
 ---
 
 # PLAN: Sticky set progress strip on the workout page

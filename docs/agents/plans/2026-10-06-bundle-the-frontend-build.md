@@ -4,7 +4,7 @@ git_commit: 64f3972d67d876713f54269bb999d91c0800aeb4
 branch: main
 topic: 'Bundle the frontend in the build'
 tags: [plan, frontend, static, build, preloads, loading, styles]
-status: ready
+status: implemented
 ---
 
 # PLAN: Bundle the frontend in the build
@@ -341,10 +341,10 @@ unchanged: its stub map is empty and it still writes the preloads, which Phase 2
 
 **Manual Verification**:
 
-- [ ] `bun run build`, then run `dist/gainz.js`: in a browser, the dashboard, a workout, an exercise
+- [x] `bun run build`, then run `dist/gainz.js`: in a browser, the dashboard, a workout, an exercise
       with its chart and the login page each load styled on their first paint. The network panel
       shows `/main.ts`, Oat, `shared.css` and `app.css`, and no component `.css`.
-- [ ] Under `bun run start:dev`, a component `.css` save still restyles the page in place.
+- [x] Under `bun run start:dev`, a component `.css` save still restyles the page in place.
 
 ### Phase 2: Remove the preloads
 
@@ -426,7 +426,7 @@ Production no longer needs any preload the server writes. Delete the graph walk,
 
 **Manual Verification**:
 
-- [ ] Under `bun run start:dev`, the dashboard, a workout, an exercise with its chart, and the login
+- [x] Under `bun run start:dev`, the dashboard, a workout, an exercise with its chart, and the login
       page each load styled on their first paint.
 
 ## Implementation Notes

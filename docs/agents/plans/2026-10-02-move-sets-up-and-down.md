@@ -416,13 +416,13 @@ Add the ▲▼ pair to every set row, wire it to the endpoint, and keep focus on
 
 **Manual Verification**:
 
-- [ ] On a workout page (`bun run start:dev`, after `bun run seed`), ▲▼ sit at the start of each
+- [x] On a workout page (`bun run start:dev`, after `bun run seed`), ▲▼ sit at the start of each
       row's actions as a joined pair, look right in light and dark themes, and the first ▲ and the
       last ▼ are disabled.
-- [ ] At a narrow width (≤720px), the pair sits on the actions line and nothing overflows.
-- [ ] Pressing Enter/Space on ▲ repeatedly with the keyboard walks a set to the top without
+- [x] At a narrow width (≤720px), the pair sits on the actions line and nothing overflows.
+- [x] Pressing Enter/Space on ▲ repeatedly with the keyboard walks a set to the top without
       re-tabbing, then focus lands on its ▼.
-- [ ] A done set and an open set can be swapped with each other; the "x/y done" badge is unchanged.
+- [x] A done set and an open set can be swapped with each other; the "x/y done" badge is unchanged.
 
 ## Implementation Notes
 

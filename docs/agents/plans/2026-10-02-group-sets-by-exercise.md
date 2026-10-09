@@ -496,13 +496,13 @@ accordion with the "Exercise" button and the open-state rules.
 
 **Manual Verification**:
 
-- [ ] On a seeded workout (`bun run seed`, `bun run start:dev`), the sets show as a joined Oat
+- [x] On a seeded workout (`bun run seed`, `bun run start:dev`), the sets show as a joined Oat
       accordion in light and dark themes, and opening one exercise closes the open one.
-- [ ] Clicking anywhere on a header toggles it. "Exercise" opens the exercise page; Ctrl-click
+- [x] Clicking anywhere on a header toggles it. "Exercise" opens the exercise page; Ctrl-click
       opens it in a new tab without toggling.
-- [ ] Logging, +1, ✓, Edit and × keep the open exercise open; logging a set of another exercise
+- [x] Logging, +1, ✓, Edit and × keep the open exercise open; logging a set of another exercise
       opens that one.
-- [ ] At ≤720px the header wraps without overflowing.
+- [x] At ≤720px the header wraps without overflowing.
 
 ### Phase 3: Move exercises
 
@@ -598,11 +598,11 @@ Add the exercise move endpoint and the ▲▼ pair in each header.
 
 **Manual Verification**:
 
-- [ ] ▲▼ sit in each header as a joined pair beside "Exercise", look right in both themes, and
+- [x] ▲▼ sit in each header as a joined pair beside "Exercise", look right in both themes, and
       clicking them (or a disabled one) never toggles the accordion.
-- [ ] Pressing Enter on ▼ repeatedly with the keyboard walks an exercise to the bottom without
+- [x] Pressing Enter on ▼ repeatedly with the keyboard walks an exercise to the bottom without
       re-tabbing, then focus lands on its ▲.
-- [ ] "Repeat" on a reordered workout produces a session with the same exercise order.
+- [x] "Repeat" on a reordered workout produces a session with the same exercise order.
 
 ## Implementation Notes
 

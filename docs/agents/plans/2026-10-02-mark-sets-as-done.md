@@ -246,7 +246,7 @@ yet.
 
 **Manual Verification**:
 
-- [ ] After `bun run migrate`, existing workouts show every set toggled done; clicking a toggle flips it and the state survives a reload.
+- [x] After `bun run migrate`, existing workouts show every set toggled done; clicking a toggle flips it and the state survives a reload.
 
 ### Phase 2: Lock done sets
 
@@ -276,7 +276,7 @@ Freeze a done set in the API and the row.
 
 **Manual Verification**:
 
-- [ ] A done row is muted and offers only the toggle and +1; unchecking it brings Edit and × back.
+- [x] A done row is muted and offers only the toggle and +1; unchecking it brings Edit and × back.
 
 ### Phase 3: Workout done state
 
@@ -310,7 +310,7 @@ Compute the workout's done state and show it on the detail page and the list car
 
 **Manual Verification**:
 
-- [ ] Checking the last open set flips the detail badge from "x/y done" to "✓ Done", and the workout's card in the list shows "✓ Done"; unchecking one set removes both.
+- [x] Checking the last open set flips the detail badge from "x/y done" to "✓ Done", and the workout's card in the list shows "✓ Done"; unchecking one set removes both.
 
 ### Phase 4: Stats count only done sets
 
@@ -340,7 +340,7 @@ Keep planned sets out of history-based numbers.
 
 **Manual Verification**:
 
-- [ ] After `bun run seed` on an empty database, today's workout shows open sets, and its weights do not appear in the exercise pages' best set or progress chart until they are checked.
+- [x] After `bun run seed` on an empty database, today's workout shows open sets, and its weights do not appear in the exercise pages' best set or progress chart until they are checked.
 
 ## Implementation Notes
 

@@ -290,7 +290,7 @@ manual reload. Phase 2 only makes the response to a change smarter.
 
 **Tasks**:
 
-- [ ] Add `src/backend/features/static/static.facade.ts` with a one-method facade over the web root,
+- [x] Add `src/backend/features/static/static.facade.ts` with a one-method facade over the web root,
       so the dev feature never reaches into `static/internal/`.
 
       ```ts
@@ -300,7 +300,7 @@ manual reload. Phase 2 only makes the response to a change smarter.
       export function createStaticFacade(): StaticFacade { return new StaticFacade(); }
       ```
 
-- [ ] Add `src/backend/features/dev/internal/changes.ts` with the only classifier in the feature.
+- [x] Add `src/backend/features/dev/internal/changes.ts` with the only classifier in the feature.
       `fs.watch` yields a path relative to the watched directory, with backslashes on Windows. The
       allowlist is not defensive programming: a measured run (see Implementation Notes) shows the
       watcher also reports bare *directory* names such as `ui`, which must not be mistaken for a
@@ -318,7 +318,7 @@ manual reload. Phase 2 only makes the response to a change smarter.
       }
       ```
 
-- [ ] Add `src/backend/features/dev/internal/hub.ts`: the module-level connection set, the lazy
+- [x] Add `src/backend/features/dev/internal/hub.ts`: the module-level connection set, the lazy
       watcher, a 25 ms per-path debounce and `broadcast`. The debounce is required, not a
       precaution: a measured run shows one save producing `rename` + `change` for a new file and two
       `change` events for an existing one (see Implementation Notes). `unref()` the watcher so it
@@ -339,19 +339,19 @@ manual reload. Phase 2 only makes the response to a change smarter.
       }
       ```
 
-- [ ] Add `src/backend/features/dev/internal/ws.ts` with `devWebSocket()` returning a
+- [x] Add `src/backend/features/dev/internal/ws.ts` with `devWebSocket()` returning a
       `Bun.WebSocketHandler<undefined>`. `message` is required by the type; the client never sends,
       so it is a no-op with a comment saying so.
 
-- [ ] Add `src/backend/features/dev/internal/dev.controller.ts` with `upgrade(req, server)`:
+- [x] Add `src/backend/features/dev/internal/dev.controller.ts` with `upgrade(req, server)`:
       `server.upgrade(req)` and return `undefined`, or a 426 when the request is not an upgrade.
 
-- [ ] Change `RouteTable` in `src/backend/http/routing.ts` to
+- [x] Change `RouteTable` in `src/backend/http/routing.ts` to
       `Bun.Serve.RoutesWithUpgrade<undefined, string>`. Do this **before** writing `dev.routes.ts`:
       a handler returning `undefined` does not satisfy `Bun.Serve.Routes`, so the tree would not
       typecheck in between.
 
-- [ ] Add `src/backend/features/dev/dev.facade.ts`: `DevFacade` with `enabled`
+- [x] Add `src/backend/features/dev/dev.facade.ts`: `DevFacade` with `enabled`
       (`process.env.GAINZ_DEV === '1'`, read per call so a test can flip it), `upgrade(...)`
       delegating to the controller, `webSocket()` re-exposing `devWebSocket()` so `http/server.ts`
       never reaches into `internal/`, and `injectClient(html)` which returns the bytes untouched
@@ -369,27 +369,27 @@ manual reload. Phase 2 only makes the response to a change smarter.
       }
       ```
 
-- [ ] Add `src/backend/features/dev/dev.routes.ts` with `devRoutes(): RouteTable` returning `{}`
+- [x] Add `src/backend/features/dev/dev.routes.ts` with `devRoutes(): RouteTable` returning `{}`
       unless enabled, otherwise `'/dev/ws'`. `/dev/ws` is more specific than `/*`, so it wins
       without any ordering care; `/dev/hot.ts` still falls through to `/*` and is served by the
       transpiler like any other module.
 
-- [ ] Pass `websocket: createDevFacade().webSocket()` in `startServer`
+- [x] Pass `websocket: createDevFacade().webSocket()` in `startServer`
       (`src/backend/http/server.ts`). Add a comment saying why a serve option, not a route, has to
       name a feature at all.
 
-- [ ] Spread `devRoutes()` into `allRoutes()` ahead of `staticRoutes()`, keeping the file's
+- [x] Spread `devRoutes()` into `allRoutes()` ahead of `staticRoutes()`, keeping the file's
       least-specific-last reading order.
 
-- [ ] Give `StaticController` a `DevFacade` constructor parameter and route the index-page responses
+- [x] Give `StaticController` a `DevFacade` constructor parameter and route the index-page responses
       through a new `#html()` helper that injects before hashing. There is no directory-index branch
       to hook: `/` is rewritten to `<root>/index.html` and served by the generic plain-file branch,
       so gate that branch on `extname(candidate) === '.html'`. The single-page-app fallback calls
       `#html()` directly. Together they cover `/`, `/index.html` and every client route.
 
-- [ ] Build the controller with `createDevFacade()` in `staticRoutes()`.
+- [x] Build the controller with `createDevFacade()` in `staticRoutes()`.
 
-- [ ] Add `src/frontend/dev/hot.ts`: connect, reload on any message, reconnect with a
+- [x] Add `src/frontend/dev/hot.ts`: connect, reload on any message, reconnect with a
       250/500/1000/2000 ms backoff that resets on open. Declare `Change` locally — the frontend
       declares its own types rather than importing the backend's, and this shape is dev-only, not
       wire contract — and validate each message with a runtime type guard rather than a cast, since
@@ -401,68 +401,68 @@ manual reload. Phase 2 only makes the response to a change smarter.
       function apply(_change: Change): void { location.reload(); }
       ```
 
-- [ ] Set `GAINZ_DEV=1` on `start:dev` in `package.json`. Bun's script runner handles the inline
+- [x] Set `GAINZ_DEV=1` on `start:dev` in `package.json`. Bun's script runner handles the inline
       assignment on Windows, so no `cross-env` is needed.
 
       ```json
       "start:dev": "GAINZ_DEV=1 bun --watch src/backend/main.ts"
       ```
 
-- [ ] Print `  hot reload: on` from `main.ts` when the facade is enabled, and nothing when it is not.
+- [x] Print `  hot reload: on` from `main.ts` when the facade is enabled, and nothing when it is not.
 
-- [ ] Add `src/backend/features/dev/internal/changes.test.ts` covering the mapping and the
+- [x] Add `src/backend/features/dev/internal/changes.test.ts` covering the mapping and the
       classification: a nested `.css` path, the Windows backslash separator, a `.ts` and an
       `index.html`, a bare directory name (`'ui'` → `null`), and an unknown extension (`null`).
 
-- [ ] Add `src/backend/features/dev/dev.routes.test.ts` with its own `withDev(enabled, fn)` helper
+- [x] Add `src/backend/features/dev/dev.routes.test.ts` with its own `withDev(enabled, fn)` helper
       that sets `process.env.GAINZ_DEV`, opens an in-memory database and a port-0 server, and
       restores both in a `finally`. Do not use `useServer()` here: the env var has to be set before
       the route table is built, and a leaked variable would break `static.routes.test.ts`, which
       runs in the same process.
 
-      - [ ] `devRoutes()` is empty and `GET /` carries no `/dev/hot.ts` when the variable is unset.
-      - [ ] `GET /` carries the tag exactly once when it is set, and `GET /workouts` carries it too.
-      - [ ] A WebSocket opened at `/dev/ws` fails to connect when the variable is unset. Assert the
+      - [x] `devRoutes()` is empty and `GET /` carries no `/dev/hot.ts` when the variable is unset.
+      - [x] `GET /` carries the tag exactly once when it is set, and `GET /workouts` carries it too.
+      - [x] A WebSocket opened at `/dev/ws` fails to connect when the variable is unset. Assert the
             connection, not the status code: with no route registered, `/dev/ws` is extension-less
             and therefore answered **200 with `index.html`** by the single-page-app fallback, which
             is correct behaviour and not a 404.
-      - [ ] A client connected to `/dev/ws` receives `{ swap: '/__hot.css' }` after a write to
+      - [x] A client connected to `/dev/ws` receives `{ swap: '/__hot.css' }` after a write to
             `__hot.css` in the web root, unlinked in a `finally`. Race the message against a ~2 s
             timeout so a missed watcher event fails as a test rather than hanging the suite.
 
-- [ ] Add one assertion to `static.routes.test.ts` that the served index page contains no
+- [x] Add one assertion to `static.routes.test.ts` that the served index page contains no
       `/dev/hot.ts`, so a future default-on mistake is caught where production behaviour is asserted.
 
-- [ ] Document the `dev` feature in `docs/backend.md`: what it owns, that it is off unless
+- [x] Document the `dev` feature in `docs/backend.md`: what it owns, that it is off unless
       `GAINZ_DEV=1`, that the watcher follows the connection rather than the process, and why
       `websocket` is on the server while the route is gated.
 
-- [ ] Correct the two statements in `docs/backend.md` the new `static.facade.ts` falsifies: that
+- [x] Correct the two statements in `docs/backend.md` the new `static.facade.ts` falsifies: that
       "`meta` and `static` have controllers but no facade", and that every facade belongs to a
       data-owning feature. `static` now has a facade with no table behind it.
 
-- [ ] Update `docs/frontend.md`'s directory tree and the sentence that says what belongs to no
+- [x] Update `docs/frontend.md`'s directory tree and the sentence that says what belongs to no
       feature sits in "three" directories — `dev/` makes it four. The five import boundaries are
       unchanged: `dev/` is deliberately not one of them.
 
 **Automated Verification**:
 
-- [ ] `bun test src/backend/features/dev/` passes, including the WebSocket round trip.
-- [ ] `bun test src/backend/features/static/static.routes.test.ts` passes unchanged, in particular
+- [x] `bun test src/backend/features/dev/` passes, including the WebSocket round trip.
+- [x] `bun test src/backend/features/static/static.routes.test.ts` passes unchanged, in particular
       the shared-ETag and 405 assertions.
-- [ ] `bun test` passes.
-- [ ] `bun run typecheck` passes — this is what proves the `RouteTable` change leaves all six
+- [x] `bun test` passes.
+- [x] `bun run typecheck` passes — this is what proves the `RouteTable` change leaves all six
       existing route tables valid.
-- [ ] `bun run lint` and `bun run fmt:check` pass.
+- [x] `bun run lint` and `bun run fmt:check` pass.
 
 **Manual Verification**:
 
-- [ ] `bun run start:dev`, open the app, and confirm `gainz: hot reload connected` in the browser
+- [x] `bun run start:dev`, open the app, and confirm `gainz: hot reload connected` in the browser
       console and `gainz: hot reload watching src/frontend/` in the terminal.
-- [ ] Save any frontend file and watch the page reload by itself.
-- [ ] Save a backend file; the terminal restarts, the page does not reload, and the browser console
+- [x] Save any frontend file and watch the page reload by itself.
+- [x] Save a backend file; the terminal restarts, the page does not reload, and the browser console
       shows a reconnect rather than an error loop.
-- [ ] `bun start` and confirm the page source has no `/dev/hot.ts`, the terminal prints no hot-reload
+- [x] `bun start` and confirm the page source has no `/dev/hot.ts`, the terminal prints no hot-reload
       line, and the browser console stays silent — nothing tries to open a socket.
 
 ### Phase 2: Hot CSS and the broken-file toast
@@ -474,7 +474,7 @@ place, and a file that does not parse reports itself instead of blanking the pag
 
 **Tasks**:
 
-- [ ] Normalise the `sheets` key in `loadStyles` to a pathname, so the twelve component sheets are
+- [x] Normalise the `sheets` key in `loadStyles` to a pathname, so the twelve component sheets are
       keyed the same way as the two `BASE_HREFS` and the same way the watcher reports a change.
       Without this the rest of the phase is dead code for every component — see decision 9.
 
@@ -484,7 +484,7 @@ place, and a file that does not parse reports itself instead of blanking the pag
       const href = new URL(moduleUrl, location.href).pathname.replace(/\.ts$/, '.css');
       ```
 
-- [ ] Rework `load()` in `src/frontend/ui/styles.ts` to reuse the sheet already in `sheets`. This is
+- [x] Rework `load()` in `src/frontend/ui/styles.ts` to reuse the sheet already in `sheets`. This is
       the whole mechanism: components hold the object, so it must be the object that changes.
 
       ```ts
@@ -508,7 +508,7 @@ place, and a file that does not parse reports itself instead of blanking the pag
       unstyled component is easier to diagnose than a stale one — and it keeps the existing
       "carry on loudly rather than throw" contract in the comment above it.
 
-- [ ] Fix the de-duplication `load()`'s new shape breaks: `loadStyles` currently returns early on
+- [x] Fix the de-duplication `load()`'s new shape breaks: `loadStyles` currently returns early on
       `sheets.has(href)`, which is now true before the fetch settles, so a second caller would be
       told the sheet was ready while it was still empty. Key it on `pending` alone, which already
       holds one promise per href for the lifetime of the page.
@@ -523,7 +523,7 @@ place, and a file that does not parse reports itself instead of blanking the pag
       }
       ```
 
-- [ ] Export `reloadSheet(href)` from `styles.ts`, returning whether the href was one it tracks so
+- [x] Export `reloadSheet(href)` from `styles.ts`, returning whether the href was one it tracks so
       the client can fall back for a stylesheet the page has never loaded. Keep it beneath a comment
       saying it exists for `dev/hot.ts` and is inert otherwise.
 
@@ -535,7 +535,7 @@ place, and a file that does not parse reports itself instead of blanking the pag
       }
       ```
 
-- [ ] Replace `apply()` in `src/frontend/dev/hot.ts` with the split:
+- [x] Replace `apply()` in `src/frontend/dev/hot.ts` with the split:
 
       ```ts
       async function apply(change: Change): Promise<void> {
@@ -547,7 +547,7 @@ place, and a file that does not parse reports itself instead of blanking the pag
       }
       ```
 
-- [ ] Add `swapCss(url)` covering both ways a stylesheet reaches the page: the adopted sheets
+- [x] Add `swapCss(url)` covering both ways a stylesheet reaches the page: the adopted sheets
       through `reloadSheet`, and any document `<link>` whose pathname matches. A `<link>` cannot be
       made to re-fetch by reassigning the same href, so insert a fresh one carrying a query the
       static route ignores, and remove the old one on its `load` so there is no unstyled frame. When
@@ -563,7 +563,7 @@ place, and a file that does not parse reports itself instead of blanking the pag
       }
       ```
 
-- [ ] Add a "Hot reload" section to `docs/frontend.md` between "Loading" and "Theming": that a `.css`
+- [x] Add a "Hot reload" section to `docs/frontend.md` between "Loading" and "Theming": that a `.css`
       edit swaps and a `.ts` edit reloads, that adopting by reference is what makes the swap free,
       that `customElements.define` is why a module cannot be re-evaluated, and that Bun's own HMR was
       not used because it requires the bundler and would hash the URLs `styles.ts` depends on. Also
@@ -572,22 +572,22 @@ place, and a file that does not parse reports itself instead of blanking the pag
 
 **Automated Verification**:
 
-- [ ] `bun test` passes — in particular `src/frontend/` tests that import `styles.ts` indirectly are
+- [x] `bun test` passes — in particular `src/frontend/` tests that import `styles.ts` indirectly are
       unaffected, and the `loadStyles` de-duplication change breaks nothing.
-- [ ] `bun run typecheck` passes.
-- [ ] `bun run lint` passes.
-- [ ] `bun run fmt:check` passes.
-- [ ] `grep -c 'import.meta.hot' src/` returns 0 — this plan deliberately uses none of it, and a
+- [x] `bun run typecheck` passes.
+- [x] `bun run lint` passes.
+- [x] `bun run fmt:check` passes.
+- [x] `grep -c 'import.meta.hot' src/` returns 0 — this plan deliberately uses none of it, and a
       stray call would mean someone reached for the bundler path.
 
 **Manual Verification**:
 
-- [ ] With a workout's set form half filled in, save `gz-set-row.component.css` and confirm the
+- [x] With a workout's set form half filled in, save `gz-set-row.component.css` and confirm the
       style changes with the typed-in values still there and the scroll position unmoved.
-- [ ] Save `ui/app.css` and confirm the document restyles with no flash of unstyled content.
-- [ ] Save `ui/shared.css` — adopted by every component but linked by none — and confirm every view
+- [x] Save `ui/app.css` and confirm the document restyles with no flash of unstyled content.
+- [x] Save `ui/shared.css` — adopted by every component but linked by none — and confirm every view
       restyles.
-- [ ] Introduce a syntax error in a component module, save, and confirm a toast appears and the page
+- [x] Introduce a syntax error in a component module, save, and confirm a toast appears and the page
       keeps its state; fix it, save, and confirm the page reloads.
 
 ## Implementation Notes

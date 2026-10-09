@@ -4,7 +4,7 @@ git_commit: d837926d7664f8e57016134da444d9ec6a5e8011
 branch: main
 topic: 'Filter exercises by muscle group'
 tags: [plan, exercises, muscle-group, migrations, pagination, frontend, backend]
-status: ready
+status: implemented
 ---
 
 # PLAN: Filter exercises by muscle group

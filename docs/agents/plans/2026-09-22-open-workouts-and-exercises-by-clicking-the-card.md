@@ -487,16 +487,16 @@ the current info"; Phase 2 then has nothing to take away that is not available e
 
 **Manual verification**:
 
-- [ ] Open a workout with a title and notes. The form shows both. Change the title, press Save: the
+- [x] Open a workout with a title and notes. The form shows both. Change the title, press Save: the
       heading updates and the toast appears.
-- [ ] Clear the notes and Save. They are gone after the reload, and stay gone on a refresh.
-- [ ] Type a new title, and **without saving** log a set. The set appears and the typed title is
+- [x] Clear the notes and Save. They are gone after the reload, and stay gone on a refresh.
+- [x] Type a new title, and **without saving** log a set. The set appears and the typed title is
 ### Phase 2: One Pico card, and both lists opening on a click
-- [ ] Open an exercise. Change the muscle group, switch the chart metric to Volume, and confirm the
+- [x] Open an exercise. Change the muscle group, switch the chart metric to Volume, and confirm the
       edit is still in the field. Save it and check `/exercises` shows the new muscle group.
-- [ ] Delete an exercise that has sets: the server's 409 message toasts and the page stays. Delete
+- [x] Delete an exercise that has sets: the server's 409 message toasts and the page stays. Delete
       an unused one: it lands on `/exercises` and the exercise is gone.
-- [ ] Delete a workout from its page: it lands on `/workouts`.
+- [x] Delete a workout from its page: it lands on `/workouts`.
 
 ### Phase 2: One card, and both lists opening on a click
 
@@ -642,19 +642,19 @@ list's buttons are removed.
 
 **Manual verification**:
 
-- [ ] `/workouts`: click the date line of a card, then the badge, then the whitespace between them.
+- [x] `/workouts`: click the date line of a card, then the badge, then the whitespace between them.
       Each opens the workout. Click Repeat: a new session is created and opened, with the toast
       counting its sets — and the source workout is not what is on screen.
-- [ ] Ctrl-click (or middle-click) a card: a new tab opens on that workout. Hovering shows the URL.
-- [ ] Tab through `/workouts` with the keyboard: each card's link takes focus with a visible ring,
+- [x] Ctrl-click (or middle-click) a card: a new tab opens on that workout. Hovering shows the URL.
+- [x] Tab through `/workouts` with the keyboard: each card's link takes focus with a visible ring,
       Enter opens it, and Repeat is the next stop.
-- [ ] `/exercises`: the same three clicks open the exercise. No Edit or Delete button is anywhere on
+- [x] `/exercises`: the same three clicks open the exercise. No Edit or Delete button is anywhere on
       either list.
-- [ ] Narrow the window below 640px: both cards wrap rather than overflow, and the badge stays
+- [x] Narrow the window below 640px: both cards wrap rather than overflow, and the badge stays
       readable.
-- [ ] Toggle the theme on both lists — the card border, hover and link colour follow it, because
+- [x] Toggle the theme on both lists — the card border, hover and link colour follow it, because
       every value is a `--pico-*` custom property.
-- [ ] `/`, `/workouts` and `/exercises` side by side: the three lists are visibly the same card.
+- [x] `/`, `/workouts` and `/exercises` side by side: the three lists are visibly the same card.
       The dashboard's rows still open on a click anywhere, and "See all" still reaches `/workouts`.
 
 **Automated verification**:
