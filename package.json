@@ -22,7 +22,7 @@
     "typecheck": "bunx tsc --noEmit"
   },
   "dependencies": {
-    "@knadh/oat": "0.8.0"
+    "@knadh/oat": "0.8.2"
   },
   "devDependencies": {
     "@types/bun": "1.4.2",
