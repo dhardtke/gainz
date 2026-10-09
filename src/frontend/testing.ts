@@ -202,6 +202,15 @@ export function find<T extends Element = Element>(root: ParentNode, selector: st
   return found;
 }
 
+// happy-dom opens and closes a dialog synchronously, so call this right after the click that opens one.
+export function openDialog(): ShadowRoot {
+  const root = shadow(find(document.body, 'gz-confirm-dialog'));
+  if (!find<HTMLDialogElement>(root, 'dialog').open) {
+    throw new Error('the confirmation dialog is not open');
+  }
+  return root;
+}
+
 export function text(host: Element, selector: string): string | undefined {
   return host.shadowRoot?.querySelector(selector)?.textContent;
 }

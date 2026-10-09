@@ -4,7 +4,7 @@ git_commit: 93123d66baf9e8420e344771f68e9e4610fd81c5
 branch: main
 topic: 'Confirmation dialog instead of confirm()'
 tags: [plan, frontend, ui, dialog, workouts, sets, exercises]
-status: ready
+status: implemented
 ---
 
 # PLAN: Confirmation dialog instead of confirm()
@@ -171,7 +171,7 @@ workout" to the dialog, and document the new `ui/` piece.
 
 **Tasks**:
 
-- [ ] Create `src/frontend/ui/confirm/confirm.ts`. `ConfirmOptions` is declared in the component
+- [x] Create `src/frontend/ui/confirm/confirm.ts`. `ConfirmOptions` is declared in the component
       module (below) and re-exported here with `export type { ConfirmOptions }`, so the component
       never imports `confirm.ts` and no cycle forms around its top-level `await define`:
   ```ts
@@ -185,7 +185,7 @@ workout" to the dialog, and document the new `ui/` piece.
   ```
   Import the component module statically so `define()` has run. Use a typed `instanceof` or
   `CustomEvent` guard instead of the assertion if lint asks for one, following the pattern in `testing.ts`'s `mount()`.
-- [ ] Create `src/frontend/ui/confirm/gz-confirm-dialog.component.ts`:
+- [x] Create `src/frontend/ui/confirm/gz-confirm-dialog.component.ts`:
   - `export interface ConfirmOptions { title: string; message?: string; items?: string[]; confirmLabel: string; danger?: boolean }`
   - `options: ConfirmOptions | undefined`, read by `template()`, which renders nothing without it
   - template:
@@ -214,7 +214,7 @@ workout" to the dialog, and document the new `ui/` piece.
   - Listeners attach to the `<dialog>`, which every `render()` recreates through `innerHTML`, so
     they never pile up.
   - End with `await define('gz-confirm-dialog', GzConfirmDialogComponent, import.meta.url);`
-- [ ] Create `src/frontend/ui/confirm/gz-confirm-dialog.component.css`. Oat zeroes the header's
+- [x] Create `src/frontend/ui/confirm/gz-confirm-dialog.component.css`. Oat zeroes the header's
       bottom padding and the footer's top padding, so with no list the buttons would touch the
       text:
   Oat also caps the dialog at `max-height: 85vh` with `overflow: hidden`, but it isn't a flex
@@ -234,57 +234,57 @@ workout" to the dialog, and document the new `ui/` piece.
   }
   ```
   Add nothing else unless the 320px check below shows a need.
-- [ ] `src/frontend/testing.ts`: add `openDialog()`, which finds the `gz-confirm-dialog` in
+- [x] `src/frontend/testing.ts`: add `openDialog()`, which finds the `gz-confirm-dialog` in
       `document.body` (failing through `find()`), checks that its `<dialog>` is `open`, and returns
       its shadow root. happy-dom's `showModal()` and `close()` act synchronously (a browser fires
       `close` a task later), so a test calls `openDialog()` right after the `.click()` that opens
       it and awaits `settle()` only for the requests that follow an answer.
-- [ ] `src/frontend/ui/confirm/gz-confirm-dialog.component.test.ts` (`useDom()`, `await import('./confirm.ts')` in `beforeAll`):
-  - [ ] renders the title, message and items. A dialog without a message has no `message`
+- [x] `src/frontend/ui/confirm/gz-confirm-dialog.component.test.ts` (`useDom()`, `await import('./confirm.ts')` in `beforeAll`):
+  - [x] renders the title, message and items. A dialog without a message has no `message`
         element, and one without items has no `items` element.
-  - [ ] the dialog is open after `confirmAction()`
-  - [ ] a danger dialog's confirm button has `data-variant="danger"` and Cancel carries
+  - [x] the dialog is open after `confirmAction()`
+  - [x] a danger dialog's confirm button has `data-variant="danger"` and Cancel carries
         `autofocus`. A non-danger dialog's confirm button has no variant and carries `autofocus` itself.
-  - [ ] clicking confirm resolves `true`, and clicking Cancel resolves `false`
-  - [ ] a click on the `<dialog>` itself (the backdrop) resolves `false`, and a click on its
+  - [x] clicking confirm resolves `true`, and clicking Cancel resolves `false`
+  - [x] a click on the `<dialog>` itself (the backdrop) resolves `false`, and a click on its
         header does not close it
-  - [ ] closing the dialog without a value, as Escape does, resolves `false`
-  - [ ] after any answer, no `gz-confirm-dialog` is left in `document.body`
-  - [ ] HTML in the title, message and items is escaped
-- [ ] `gz-workout-detail.component.ts`: replace the `delete-workout` guard with
+  - [x] closing the dialog without a value, as Escape does, resolves `false`
+  - [x] after any answer, no `gz-confirm-dialog` is left in `document.body`
+  - [x] HTML in the title, message and items is escaped
+- [x] `gz-workout-detail.component.ts`: replace the `delete-workout` guard with
   ```ts
   if (action !== 'delete-workout') return;
   if (!(await confirmAction({ title: 'Delete workout?', message: 'All of its sets are deleted too. This cannot be undone.', confirmLabel: 'Delete', danger: true }))) return;
   ```
-- [ ] `gz-workout-detail.component.test.ts`: add
-  - [ ] "Delete workout" opens a danger dialog titled "Delete workout?". Cancel sends no
+- [x] `gz-workout-detail.component.test.ts`: add
+  - [x] "Delete workout" opens a danger dialog titled "Delete workout?". Cancel sends no
         `DELETE /api/workouts/3`.
-  - [ ] Delete sends `DELETE /api/workouts/3` and toasts "Workout deleted"
-- [ ] `docs/frontend.md`:
-  - [ ] tree (line 16): add `confirm/` to the `ui/` entries
-  - [ ] the `ui/` paragraph: describe `confirm/`, whose `confirmAction()` opens `gz-confirm-dialog`
+  - [x] Delete sends `DELETE /api/workouts/3` and toasts "Workout deleted"
+- [x] `docs/frontend.md`:
+  - [x] tree (line 16): add `confirm/` to the `ui/` entries
+  - [x] the `ui/` paragraph: describe `confirm/`, whose `confirmAction()` opens `gz-confirm-dialog`
         (Oat's `<dialog>`, modal) and resolves `true` only for its action button. Cancel, Escape
         and a backdrop click resolve `false`, and the dialog removes itself after closing.
-  - [ ] the testing section: `openDialog()` returns the open dialog's shadow root, so a test
+  - [x] the testing section: `openDialog()` returns the open dialog's shadow root, so a test
         clicks its `confirm` or `cancel` like a user
-- [ ] `docs/styling-guidelines.md`, "Oat first" list: add "a confirmation is `confirmAction()` from
+- [x] `docs/styling-guidelines.md`, "Oat first" list: add "a confirmation is `confirmAction()` from
       `ui/confirm/confirm.ts`, Oat's `<dialog>`, never the native `confirm()`"
 
 **Automated Verification**:
 
-- [ ] `bun test --parallel src/frontend/ui/confirm` passes
-- [ ] `bun test --parallel src/frontend/features/workouts/gz-workout-detail.component.test.ts` passes
-- [ ] `bun test --parallel` passes. `static.routes.test.ts` finds the new `.css`, and `src/scripts/build.test.ts` still passes.
-- [ ] `bun run typecheck`, `bun run lint` and `bun run fmt:check` pass
+- [x] `bun test --parallel src/frontend/ui/confirm` passes
+- [x] `bun test --parallel src/frontend/features/workouts/gz-workout-detail.component.test.ts` passes
+- [x] `bun test --parallel` passes. `static.routes.test.ts` finds the new `.css`, and `src/scripts/build.test.ts` still passes.
+- [x] `bun run typecheck`, `bun run lint` and `bun run fmt:check` pass
 
 **Manual Verification**:
 
-- [ ] `bun run start:dev`, open a workout, "Details & notes" → "Delete workout". The dialog fades
+- [x] `bun run start:dev`, open a workout, "Details & notes" → "Delete workout". The dialog fades
       in over a dimmed page with Cancel focused, in both light and dark themes.
-- [ ] Escape, a backdrop click, and Cancel each close it without deleting. Delete deletes and
+- [x] Escape, a backdrop click, and Cancel each close it without deleting. Delete deletes and
       returns to `/workouts`.
-- [ ] At 320px width, the dialog fits with its buttons on screen and the page doesn't scroll sideways.
-- [ ] In a short window (around 400px tall), the dialog stays within the viewport with its footer visible.
+- [x] At 320px width, the dialog fits with its buttons on screen and the page doesn't scroll sideways.
+- [x] In a short window (around 400px tall), the dialog stays within the viewport with its footer visible.
 
 ### Phase 2: Remaining confirmations
 
@@ -295,67 +295,74 @@ tests, and remove every mention of the native `confirm()`.
 
 **Tasks**:
 
-- [ ] `gz-workout-detail.component.ts`: replace `#incompleteMessage` with `#incompleteItems(exercises): string[]`
+- [x] `gz-workout-detail.component.ts`: replace `#incompleteMessage` with `#incompleteItems(exercises): string[]`
       returning `` `${group.exerciseName} — ${done}/${group.sets.length} sets` `` for each
       incomplete group in workout order. `finish-workout` then asks only when the list is non-empty:
   ```ts
   const items = this.data ? this.#incompleteItems(this.data.workout.exercises) : [];
   if (items.length > 0 && !(await confirmAction({ title: `Finish with ${plural(items.length, 'exercise')} incomplete?`, items, confirmLabel: 'Mark workout done' }))) return;
   ```
-- [ ] `gz-workout-detail.component.test.ts`: delete `confirmAnswering()`, and the `useGlobals()`
+- [x] `gz-workout-detail.component.test.ts`: delete `confirmAnswering()`, and the `useGlobals()`
       import and `stub` if nothing else uses them. Rewrite the finish tests against `openDialog()`:
-  - [ ] all sets done: no `gz-confirm-dialog` appears, and the PATCH goes out (as today)
-  - [ ] incomplete exercises: the title is "Finish with 2 exercises incomplete?", the items are
+  - [x] all sets done: no `gz-confirm-dialog` appears, and the PATCH goes out (as today)
+  - [x] incomplete exercises: the title is "Finish with 2 exercises incomplete?", the items are
         `['Bench Press — 0/2 sets', 'Back Squat — 0/1 sets']`, there is no danger variant, and
         "Mark workout done" sends `{ done: true }`
-  - [ ] Cancel sends nothing and doesn't reload
-  - [ ] only the incomplete exercises are listed, and one is in the singular: "Finish with 1 exercise
+  - [x] Cancel sends nothing and doesn't reload
+  - [x] only the incomplete exercises are listed, and one is in the singular: "Finish with 1 exercise
         incomplete?" with `['Bench Press — 1/2 sets']`
-  - [ ] reopen asks nothing (no `gz-confirm-dialog`)
-  - [ ] a failed finish, confirmed through the dialog, still toasts and doesn't reload
-- [ ] `gz-set-row.component.ts`: replace the `confirm()` at line 97 with
+  - [x] reopen asks nothing (no `gz-confirm-dialog`)
+  - [x] a failed finish, confirmed through the dialog, still toasts and doesn't reload
+- [x] `gz-set-row.component.ts`: replace the `confirm()` at line 97 with
       `confirmAction({ title: 'Delete set?', message: `${formatNumber(set.weight)} ${UNIT} × ${set.reps}`, confirmLabel: 'Delete', danger: true })`.
-- [ ] `gz-set-row.component.test.ts` (add `useFetch()`/`useToasts()` if the file lacks them):
-  - [ ] × opens "Delete set?" with the message "60 kg × 5" (the `set()` fixture's defaults).
+- [x] `gz-set-row.component.test.ts` (add `useFetch()`/`useToasts()` if the file lacks them):
+  - [x] × opens "Delete set?" with the message "60 kg × 5" (the `set()` fixture's defaults).
         Cancel sends no `DELETE /api/sets/:id` and emits no `sets-changed`.
-  - [ ] Delete sends `DELETE /api/sets/:id`, toasts "Set deleted" and emits `sets-changed`
-- [ ] `gz-exercise-detail.component.ts`: split the guard so that a non-`delete-exercise` action or
+  - [x] Delete sends `DELETE /api/sets/:id`, toasts "Set deleted" and emits `sets-changed`
+- [x] `gz-exercise-detail.component.ts`: split the guard so that a non-`delete-exercise` action or
       a missing exercise returns first, then ask
       `confirmAction({ title: `Delete "${exercise.name}"?`, message: 'Only possible while no set uses it.', confirmLabel: 'Delete', danger: true })`.
-- [ ] `gz-exercise-detail.component.test.ts`:
-  - [ ] "Delete exercise" opens a danger dialog with the exercise's name in the title. Cancel
+- [x] `gz-exercise-detail.component.test.ts`:
+  - [x] "Delete exercise" opens a danger dialog with the exercise's name in the title. Cancel
         sends no `DELETE /api/exercises/:id`.
-  - [ ] Delete sends it and toasts "Exercise deleted"
-  - [ ] a refused delete (409 because a set uses it) toasts the API's message
-- [ ] `docs/frontend.md`:
-  - [ ] finish confirmation (around line 165): it asks through the confirmation dialog, which
+  - [x] Delete sends it and toasts "Exercise deleted"
+  - [x] a refused delete (409 because a set uses it) toasts the API's message
+- [x] `docs/frontend.md`:
+  - [x] finish confirmation (around line 165): it asks through the confirmation dialog, which
         lists each incomplete exercise as "<name> — x/y sets" in the workout's order. Cancel sends
         nothing, and with every set done it asks nothing.
-  - [ ] `useGlobals()` (around line 568): drop the `confirm` example and keep the general
+  - [x] `useGlobals()` (around line 568): drop the `confirm` example and keep the general
         description
-  - [ ] search the doc for any other `confirm()` mention and update it
+  - [x] search the doc for any other `confirm()` mention and update it
 
 **Automated Verification**:
 
-- [ ] `bun test --parallel src/frontend/features` passes
-- [ ] `bun test --parallel` passes
-- [ ] `git grep -nE "\bconfirm\(" -- src/frontend` finds nothing
-- [ ] `git grep -nE "native .confirm|confirm\(\)|.confirm., for one" -- docs/frontend.md docs/styling-guidelines.md`
+- [x] `bun test --parallel src/frontend/features` passes
+- [x] `bun test --parallel` passes
+- [x] `git grep -nE "\bconfirm\(" -- src/frontend` finds nothing
+- [x] `git grep -nE "native .confirm|confirm\(\)|.confirm., for one" -- docs/frontend.md docs/styling-guidelines.md`
       finds only the styling guideline's "never the native `confirm()`"
-- [ ] `bun run typecheck`, `bun run lint` and `bun run fmt:check` pass
+- [x] `bun run typecheck`, `bun run lint` and `bun run fmt:check` pass
 
 **Manual Verification**:
 
-- [ ] With many incomplete exercises in a short window, the list scrolls and the buttons stay visible.
-- [ ] On a workout with unchecked sets, "Mark workout done" shows the bulleted list with the
+- [x] With many incomplete exercises in a short window, the list scrolls and the buttons stay visible.
+- [x] On a workout with unchecked sets, "Mark workout done" shows the bulleted list with the
       primary button focused, and Enter marks the workout done.
-- [ ] A set's × shows "Delete set?" with its weight and reps. Cancel keeps it, and Delete removes it.
-- [ ] Deleting an exercise still in use shows the dialog, then the error toast after Delete. An
+- [x] A set's × shows "Delete set?" with its weight and reps. Cancel keeps it, and Delete removes it.
+- [x] Deleting an exercise still in use shows the dialog, then the error toast after Delete. An
       unused one is deleted, and the page returns to `/exercises`.
 
 ## Implementation Notes
 
 During implementation, document user feedback, problems, and decisions here.
+
+- `html` escapes quotes in interpolated strings, so the optional `aria-describedby="message"` and
+  `data-variant="danger"` attributes are interpolated as nested `html` fragments, not plain strings.
+- `gz-set-row` queues its actions on a promise chain, so its dialog opens a microtask after the
+  click; its tests `await settle()` before `openDialog()`.
+- happy-dom gives a `CustomEvent` without a detail `null`, so the set-row test counts the
+  `sets-changed` events instead of comparing their details.
 
 ## References
 

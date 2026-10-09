@@ -1,11 +1,12 @@
 import { beforeAll, expect, test } from 'bun:test';
-import { collect, find, mount, settle, shadow, testId, useDom, useFetch } from '../../../testing.ts';
+import { collect, find, mount, openDialog, settle, shadow, testId, useDom, useFetch, useToasts } from '../../../testing.ts';
 import type { LiftSetDto } from '../../../../shared/dto/set.ts';
 import { set } from '../workouts.fixtures.ts';
 import type { GzSetRowComponent } from './gz-set-row.component.ts';
 
 useDom();
 const fake = useFetch();
+const toasts = useToasts();
 
 beforeAll(async () => {
   await import('./gz-set-row.component.ts');
@@ -171,4 +172,37 @@ test('hands back the focused field and what it holds', () => {
   next.restoreField({ name: 'weight', value: '70' });
   expect(shadow(next).activeElement).toBe(input(next, 'weight'));
   expect(input(next, 'weight').value).toBe('70');
+});
+
+function deleteButton(row: HTMLElement): HTMLButtonElement {
+  return find<HTMLButtonElement>(shadow(row), testId('delete'));
+}
+
+test('asks in a danger dialog, naming the set, before deleting it, and sends nothing on Cancel', async () => {
+  const changed = collect('sets-changed');
+  const row = mountRow(set({ id: 7 }));
+  deleteButton(row).click();
+  // The row queues its actions, so the dialog opens a microtask after the click.
+  await settle();
+  const dialog = openDialog();
+  expect(find(dialog, testId('title')).textContent).toBe('Delete set?');
+  expect(find(dialog, testId('message')).textContent).toBe('60 kg × 5');
+  expect(find<HTMLButtonElement>(dialog, testId('confirm')).dataset.variant).toBe('danger');
+  find<HTMLButtonElement>(dialog, testId('cancel')).click();
+  await settle();
+  expect(fake.sent('DELETE /api/sets/7')).toEqual([]);
+  expect(changed).toEqual([]);
+});
+
+test('deletes the set once confirmed, toasts and emits sets-changed', async () => {
+  const changed = collect('sets-changed');
+  fake.respondTo('DELETE /api/sets/7', 204);
+  const row = mountRow(set({ id: 7 }));
+  deleteButton(row).click();
+  await settle();
+  find<HTMLButtonElement>(openDialog(), testId('confirm')).click();
+  await settle();
+  expect(fake.sent('DELETE /api/sets/7')).toEqual([undefined]);
+  expect(toasts).toEqual(['Set deleted']);
+  expect(changed).toHaveLength(1);
 });

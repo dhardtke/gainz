@@ -1,5 +1,5 @@
 import { beforeAll, expect, test } from 'bun:test';
-import { find, mount, settle, shadow, submit, testId, text, type, useDom, useFetch, useGlobals, useToasts } from '../../testing.ts';
+import { find, mount, openDialog, settle, shadow, submit, testId, text, type, useDom, useFetch, useToasts } from '../../testing.ts';
 import type { ExercisePageDto } from '../../../shared/dto/exercise.ts';
 import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import type { WorkoutDto, WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
@@ -11,7 +11,6 @@ import type { GzView } from '../../ui/view.ts';
 useDom();
 const fake = useFetch();
 const toasts = useToasts();
-const stub = useGlobals();
 
 beforeAll(async () => {
   await import('./gz-workout-detail.component.ts');
@@ -486,17 +485,20 @@ test("hands focus, and what was typed, back to a set's field after a reload", as
   expect(weight().value).toBe('85');
 });
 
-function confirmAnswering(answer: boolean): string[] {
-  const asked: string[] = [];
-  stub('confirm', (message: string): boolean => {
-    asked.push(message);
-    return answer;
-  });
-  return asked;
-}
-
 function button(view: HTMLElement, id: string): HTMLButtonElement {
   return find<HTMLButtonElement>(shadow(view), testId(id));
+}
+
+function asked(): HTMLElement | null {
+  return document.body.querySelector('gz-confirm-dialog');
+}
+
+function answer(dialog: ShadowRoot, id: 'confirm' | 'cancel'): void {
+  find<HTMLButtonElement>(dialog, testId(id)).click();
+}
+
+function listed(dialog: ShadowRoot): (string | null)[] {
+  return Array.from(find(dialog, testId('items')).querySelectorAll('li')).map((item) => item.textContent);
 }
 
 test('puts "Mark workout done" after the add-set form and before "Details & notes"', async () => {
@@ -508,13 +510,12 @@ test('puts "Mark workout done" after the add-set form and before "Details & note
 });
 
 test('marks a workout whose sets are all done done without asking, toasts and shows it done without a reload', async () => {
-  const asked = confirmAnswering(true);
   const view = await mountView(withSets((item) => ({ ...item, done: true })));
   const loads = workoutLoads();
   answerUpdate({ done: true });
   button(view, 'finish-workout').click();
+  expect(asked()).toBeNull();
   await settle();
-  expect(asked).toEqual([]);
   expect(fake.sent('PATCH /api/workouts/3')).toEqual([{ done: true }]);
   expect(toasts).toEqual(['Workout done']);
   expect(workoutLoads()).toBe(loads);
@@ -522,31 +523,36 @@ test('marks a workout whose sets are all done done without asking, toasts and sh
   expect(button(view, 'reopen-workout').textContent).toBe('Reopen workout');
 });
 
-test('asks before marking a workout with incomplete exercises done, naming them', async () => {
-  const asked = confirmAnswering(true);
+test('asks before marking a workout with incomplete exercises done, listing them', async () => {
   const view = await mountView();
+  answerUpdate({ done: true });
   button(view, 'finish-workout').click();
+  const dialog = openDialog();
+  expect(find(dialog, testId('title')).textContent).toBe('Finish with 2 exercises incomplete?');
+  expect(listed(dialog)).toEqual(['Bench Press — 0/2 sets', 'Back Squat — 0/1 sets']);
+  expect(find<HTMLButtonElement>(dialog, testId('confirm')).dataset.variant).toBeUndefined();
+  expect(find(dialog, testId('confirm')).textContent).toBe('Mark workout done');
+  answer(dialog, 'confirm');
   await settle();
-  expect(asked).toEqual(['2 exercises are not complete:\nBench Press (0/2 sets), Back Squat (0/1 sets).\nMark the workout done anyway?']);
   expect(fake.sent('PATCH /api/workouts/3')).toEqual([{ done: true }]);
 });
 
 test('sends nothing when the confirmation is cancelled', async () => {
-  confirmAnswering(false);
   const view = await mountView();
   const loads = workoutLoads();
   button(view, 'finish-workout').click();
+  answer(openDialog(), 'cancel');
   await settle();
   expect(fake.sent('PATCH /api/workouts/3')).toEqual([]);
   expect(workoutLoads()).toBe(loads);
 });
 
-test('names only the incomplete exercises, and one in the singular', async () => {
-  const asked = confirmAnswering(false);
+test('lists only the incomplete exercises, and one in the singular', async () => {
   const view = await mountView(withSets((item, index) => ({ ...item, done: index !== 1 })));
   button(view, 'finish-workout').click();
-  await settle();
-  expect(asked).toEqual(['1 exercise is not complete:\nBench Press (1/2 sets).\nMark the workout done anyway?']);
+  const dialog = openDialog();
+  expect(find(dialog, testId('title')).textContent).toBe('Finish with 1 exercise incomplete?');
+  expect(listed(dialog)).toEqual(['Bench Press — 1/2 sets']);
 });
 
 function rowControls(view: HTMLElement, setId: number): HTMLButtonElement[] {
@@ -565,25 +571,48 @@ test('locks a done workout: no add-set form, every row disabled, and "Reopen wor
 });
 
 test('reopens a done workout without asking or a reload', async () => {
-  const asked = confirmAnswering(true);
   const view = await mountView({ ...WORKOUT, done: true });
   const loads = workoutLoads();
   answerUpdate({ done: false });
   button(view, 'reopen-workout').click();
+  expect(asked()).toBeNull();
   await settle();
-  expect(asked).toEqual([]);
   expect(fake.sent('PATCH /api/workouts/3')).toEqual([{ done: false }]);
   expect(workoutLoads()).toBe(loads);
   expect(button(view, 'finish-workout').textContent).toBe('Mark workout done');
 });
 
-test('toasts a failed finish and does not reload', async () => {
-  confirmAnswering(true);
+test('toasts a failed finish, once confirmed, and does not reload', async () => {
   const view = await mountView();
   const loads = workoutLoads();
   fake.respondTo('PATCH /api/workouts/3', 409, JSON.stringify({ error: 'Workout has no sets; log one before marking it done' }));
   button(view, 'finish-workout').click();
+  answer(openDialog(), 'confirm');
   await settle();
   expect(toasts).toEqual(['Workout has no sets; log one before marking it done']);
   expect(workoutLoads()).toBe(loads);
+});
+
+test('asks in a danger dialog before deleting the workout, and sends nothing on Cancel', async () => {
+  const view = await mountView();
+  button(view, 'delete-workout').click();
+  const dialog = openDialog();
+  expect(find(dialog, testId('title')).textContent).toBe('Delete workout?');
+  expect(find(dialog, testId('message')).textContent).toBe('All of its sets are deleted too. This cannot be undone.');
+  expect(find<HTMLButtonElement>(dialog, testId('confirm')).dataset.variant).toBe('danger');
+  answer(dialog, 'cancel');
+  await settle();
+  expect(fake.sent('DELETE /api/workouts/3')).toEqual([]);
+  expect(toasts).toEqual([]);
+});
+
+test('deletes the workout once confirmed, toasts and returns to the workouts', async () => {
+  const view = await mountView();
+  fake.respondTo('DELETE /api/workouts/3', 204);
+  button(view, 'delete-workout').click();
+  answer(openDialog(), 'confirm');
+  await settle();
+  expect(fake.sent('DELETE /api/workouts/3')).toEqual([undefined]);
+  expect(toasts).toEqual(['Workout deleted']);
+  expect(location.pathname).toBe('/workouts');
 });

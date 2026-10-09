@@ -4,6 +4,7 @@ import { html } from '../../../ui/html.ts';
 import { formatNumber, formatVolume, UNIT } from '../../../ui/format.ts';
 import type { EditSetDto, LiftSetDto } from '../../../../shared/dto/set.ts';
 import { toast, toastError } from '../../../ui/toast.ts';
+import { confirmAction } from '../../../ui/confirm/confirm.ts';
 import { setFacade } from '../workouts.facade.ts';
 
 // Carries the updated set, which the view applies without a reload; other changes emit `sets-changed`.
@@ -94,7 +95,9 @@ export class GzSetRowComponent extends GzElement {
     }
 
     if (action === 'delete') {
-      if (!confirm(`Delete this set (${formatNumber(set.weight)} ${UNIT} × ${set.reps})?`)) {
+      if (
+        !(await confirmAction({ title: 'Delete set?', message: `${formatNumber(set.weight)} ${UNIT} × ${set.reps}`, confirmLabel: 'Delete', danger: true }))
+      ) {
         return;
       }
       try {

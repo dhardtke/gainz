@@ -7,8 +7,9 @@
   tokens retuned — and `ui/contrast.test.ts` holds every text pair to WCAG AA (4.5:1) and the
   control borders to 3:1 in both themes. Before writing a box of your own, check whether Oat already draws it: **a card is `.card`**,
   a dropdown is `<ot-dropdown>`, a loading state is `aria-busy="true"`, layout is
-  `.vstack` / `.hstack` / `.gap-*`, a scrolling table is `<div class="table">`, and a toast is
-  `toast()` from `ui/toast.ts`, which calls `ot.toast()`. Hand-rolling one of these produces a box that
+  `.vstack` / `.hstack` / `.gap-*`, a scrolling table is `<div class="table">`, a toast is
+  `toast()` from `ui/toast.ts`, which calls `ot.toast()`, and a confirmation is `confirmAction()`
+  from `ui/confirm/confirm.ts`, Oat's `<dialog>`, never the native `confirm()`. Hand-rolling one of these produces a box that
   competes with Oat and has to be re-themed by hand. Never name a bespoke class after an Oat
   component or utility — `.row`, `.badge`, `.toast`, `.error`, `.small` and `.table` are all Oat's.
 - **No CSS in JavaScript.** Every rule lives in an external `.css` file — `ui/app.css` for the

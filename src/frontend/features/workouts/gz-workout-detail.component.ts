@@ -10,6 +10,7 @@ import type { ExerciseId } from '../../../shared/flavors.ts';
 import type { GzAddSetFormComponent } from './internal/gz-add-set-form.component.ts';
 import { GzSetRowComponent, SET_UPDATED_EVENT } from './internal/gz-set-row.component.ts';
 import { toast, toastError } from '../../ui/toast.ts';
+import { confirmAction } from '../../ui/confirm/confirm.ts';
 import { GzView } from '../../ui/view.ts';
 import { exerciseFacade } from '../exercises/exercises.facade.ts';
 import { workoutFacade } from './workouts.facade.ts';
@@ -123,8 +124,11 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     }
 
     if (action === 'finish-workout') {
-      const message = this.data ? this.#incompleteMessage(this.data.workout.exercises) : null;
-      if (message !== null && !confirm(message)) {
+      const items = this.data ? this.#incompleteItems(this.data.workout.exercises) : [];
+      if (
+        items.length > 0 &&
+        !(await confirmAction({ title: `Finish with ${plural(items.length, 'exercise')} incomplete?`, items, confirmLabel: 'Mark workout done' }))
+      ) {
         return;
       }
       if (await this.#update({ done: true })) {
@@ -138,7 +142,17 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
       return;
     }
 
-    if (action !== 'delete-workout' || !confirm('Delete this workout and all of its sets? This cannot be undone.')) {
+    if (action !== 'delete-workout') {
+      return;
+    }
+    if (
+      !(await confirmAction({
+        title: 'Delete workout?',
+        message: 'All of its sets are deleted too. This cannot be undone.',
+        confirmLabel: 'Delete',
+        danger: true,
+      }))
+    ) {
       return;
     }
     try {
@@ -165,14 +179,10 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     return true;
   }
 
-  #incompleteMessage(exercises: WorkoutExerciseDto[]): string | null {
-    const incomplete = exercises.filter((group) => group.sets.some((set) => !set.done));
-    if (incomplete.length === 0) {
-      return null;
-    }
-    const counts = incomplete.map((group) => `${group.exerciseName} (${group.sets.filter((set) => set.done).length}/${group.sets.length} sets)`);
-    const subject = `${plural(incomplete.length, 'exercise')} ${incomplete.length === 1 ? 'is' : 'are'}`;
-    return [`${subject} not complete:`, `${counts.join(', ')}.`, 'Mark the workout done anyway?'].join('\n');
+  #incompleteItems(exercises: WorkoutExerciseDto[]): string[] {
+    return exercises
+      .filter((group) => group.sets.some((set) => !set.done))
+      .map((group) => `${group.exerciseName} — ${group.sets.filter((set) => set.done).length}/${group.sets.length} sets`);
   }
 
   #focusMove(exerciseId: ExerciseId, direction: MoveDirection): void {

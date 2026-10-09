@@ -8,6 +8,7 @@ import { exerciseFacade } from './exercises.facade.ts';
 import type { GzProgressChartComponent } from './internal/gz-progress-chart.component.ts';
 import type { GzSessionTableComponent } from './internal/gz-session-table.component.ts';
 import { toast, toastError } from '../../ui/toast.ts';
+import { confirmAction } from '../../ui/confirm/confirm.ts';
 import { GzView } from '../../ui/view.ts';
 import './internal/gz-progress-chart.component.ts';
 import './internal/gz-session-table.component.ts';
@@ -33,7 +34,10 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
 
   override async handleAction(action: string): Promise<void> {
     const exercise = this.data?.exercise;
-    if (action !== 'delete-exercise' || !exercise || !confirm(`Delete "${exercise.name}"? Only possible while no set uses it.`)) {
+    if (action !== 'delete-exercise' || !exercise) {
+      return;
+    }
+    if (!(await confirmAction({ title: `Delete "${exercise.name}"?`, message: 'Only possible while no set uses it.', confirmLabel: 'Delete', danger: true }))) {
       return;
     }
     try {

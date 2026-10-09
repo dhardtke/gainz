@@ -13,7 +13,7 @@ src/frontend/
 ├── dev/        hot.ts (development only)
 ├── app/        gz-app, gz-header, gz-theme-toggle, gz-breadcrumbs, router.ts, routes.ts, tab-title.ts
 ├── http/       http.ts (get/post/patch/remove), errors.ts (ApiError, errorMessage, UNAUTHORIZED_EVENT)
-├── ui/         base.ts, view.ts, html.ts, styles.ts, inline-styles.ts, theme.ts, format.ts, app.css, shared.css, toast.ts, tile/, pagination/
+├── ui/         base.ts, view.ts, html.ts, styles.ts, inline-styles.ts, theme.ts, format.ts, app.css, shared.css, toast.ts, tile/, pagination/, confirm/
 └── features/
     ├── exercises/  exercises.routes.ts, exercises.facade.ts, gz-exercise-list, gz-exercise-detail
     │   └── internal/  exercise.api.ts, gz-chart, gz-progress-chart, gz-session-table
@@ -48,8 +48,11 @@ an error), and emits `PAGE_TITLE_EVENT` (`page-title`) after every `reload()`, f
 and whose `numericAttribute()` reads the id attribute a route sets, throwing when it is missing;
 `html.ts` with the escaping `html` tagged template and `raw()`; `styles.ts`, `theme.ts` and `format.ts`; the document stylesheet
 `app.css` and the utilities in `shared.css`; `toast.ts`, whose `toast()` and `toastError()` show Oat's toasts
-through `ot.toast()`; `tile/gz-tile`, the stat tile several views use; and `pagination/`, the paged lists' page
-arithmetic in `pagination.ts` beside `gz-pagination`, their pager.
+through `ot.toast()`; `tile/gz-tile`, the stat tile several views use; `pagination/`, the paged lists' page
+arithmetic in `pagination.ts` beside `gz-pagination`, their pager; and `confirm/`, whose
+`confirmAction()` appends a `gz-confirm-dialog` to the body, a modal Oat `<dialog>`, and resolves
+`true` only for its action button. Cancel, Escape and a click on the backdrop resolve `false`, and
+the dialog removes itself once it closes.
 
 A component is a pair of files side by side, `gz-<name>.component.ts` and `gz-<name>.component.css`, in whichever
 directory owns it. A component module ends with `await define('<tag>', TheClass, import.meta.url)`,
@@ -162,8 +165,8 @@ badge for the sets — outline even at "y/y", so the green "✓ Done" means one 
 level — and, on a done workout, a separate success "✓ Done" badge from the workout's own flag;
 `gz-workout-card` shows that badge on done workouts' cards only. "Mark workout done" PATCHes
 `{ done: true }` through `workoutFacade`, toasts "Workout done" and shows the workout it answers, keeping the loaded exercises, since that response carries none. When some exercise
-still has sets not done, it first asks through a native `confirm()`, like the app's other
-confirmations, naming each incomplete exercise with its "(x/y sets)" in the workout's order; Cancel
+still has sets not done, it first asks through the confirmation dialog, like the app's other
+confirmations, listing each incomplete exercise as "<name> — x/y sets" in the workout's order; Cancel
 sends nothing, and with every set done it asks nothing. "Reopen workout" PATCHes `{ done: false }`
 and shows the answer the same way, without asking or toasting. Either one toasts a failure and changes nothing.
 
@@ -565,14 +568,17 @@ records each request and answers `200 {}` unless told otherwise: `respondWith()`
 for every request, and `respondTo('GET /api/exercises', …)` one for a single method and URL, which
 a view that loads from two URLs needs. `useToasts()`, called after `useDom()`, replaces Oat's
 `window.ot` and returns the messages `toast()` and `toastError()` showed. `useGlobals()` installs whatever
-browser global a test needs — `confirm`, for one, which replaces the one `useDom()` installed — and puts back what was there after every test — which matters because
+browser global a test needs and puts back what was there after every test — which matters because
 bun test runs every file in one process, and the backend's route tests make real requests. A module
 that reads the browser when it loads, as `theme.ts` reads the stored choice, is imported with a
 query string (`./theme.ts?3`) so each test gets a fresh instance evaluated against its own stubs.
 A component test that imports the plain `ui/theme.ts` instead shares its state with the component,
 so it resets the theme before each test.
 
-Beside the stubs, `testing.ts` holds the DOM helpers every component test shares. `mount(tag,
+Beside the stubs, `testing.ts` holds the DOM helpers every component test shares. `openDialog()`
+returns the open confirmation dialog's shadow root, so a test clicks its `confirm` or `cancel` like a
+user; happy-dom opens and closes a dialog synchronously, so it is called right after the click that
+opens one. `mount(tag,
 attributes)` creates an element and sets its attributes before appending it to the body, for the
 happy-dom reason above. `shadow()` and `find()` fail the test with a message naming the host or the
 selector instead of returning null, so a test reads `find(shadow(view), testId('heading'))` without a

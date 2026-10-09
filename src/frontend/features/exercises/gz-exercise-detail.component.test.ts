@@ -1,5 +1,5 @@
 import { beforeAll, expect, test } from 'bun:test';
-import { collect, find, mount, settle, shadow, submit, testId, type, useDom, useFetch, useToasts } from '../../testing.ts';
+import { collect, find, mount, openDialog, settle, shadow, submit, testId, type, useDom, useFetch, useToasts } from '../../testing.ts';
 import type { ExerciseProgressDto, SessionPointDto } from '../../../shared/dto/exercise.ts';
 import { exercise, session } from './exercises.fixtures.ts';
 import type { GzView } from '../../ui/view.ts';
@@ -159,4 +159,38 @@ test('names the exercise anew after a rename, and says so', async () => {
   await settle();
   expect(view.pageTitle).toBe('Paused Bench');
   expect(heard).toHaveLength(1);
+});
+
+function deleteExercise(view: HTMLElement): ShadowRoot {
+  find<HTMLButtonElement>(shadow(view), testId('delete-exercise')).click();
+  return openDialog();
+}
+
+test('asks in a danger dialog, naming the exercise, before deleting it, and sends nothing on Cancel', async () => {
+  const view = await mountView();
+  const dialog = deleteExercise(view);
+  expect(find(dialog, testId('title')).textContent).toBe('Delete "Bench Press"?');
+  expect(find(dialog, testId('message')).textContent).toBe('Only possible while no set uses it.');
+  expect(find<HTMLButtonElement>(dialog, testId('confirm')).dataset.variant).toBe('danger');
+  find<HTMLButtonElement>(dialog, testId('cancel')).click();
+  await settle();
+  expect(fake.sent('DELETE /api/exercises/7')).toEqual([]);
+});
+
+test('deletes the exercise once confirmed and toasts', async () => {
+  const view = await mountView();
+  fake.respondTo('DELETE /api/exercises/7', 204);
+  find<HTMLButtonElement>(deleteExercise(view), testId('confirm')).click();
+  await settle();
+  expect(fake.sent('DELETE /api/exercises/7')).toEqual([undefined]);
+  expect(toasts).toEqual(['Exercise deleted']);
+  expect(location.pathname).toBe('/exercises');
+});
+
+test('toasts why a delete was refused', async () => {
+  const view = await mountView();
+  fake.respondTo('DELETE /api/exercises/7', 409, JSON.stringify({ error: 'Exercise is used by logged sets' }));
+  find<HTMLButtonElement>(deleteExercise(view), testId('confirm')).click();
+  await settle();
+  expect(toasts).toEqual(['Exercise is used by logged sets']);
 });
