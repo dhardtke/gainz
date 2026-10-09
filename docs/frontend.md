@@ -15,7 +15,7 @@ src/frontend/
 ├── http/       http.ts (get/post/patch/remove), errors.ts (ApiError, errorMessage, UNAUTHORIZED_EVENT)
 ├── ui/         base.ts, view.ts, html.ts, styles.ts, inline-styles.ts, theme.ts, format.ts, app.css, shared.css, toast.ts, tile/, pagination/, confirm/
 └── features/
-    ├── exercises/  exercises.routes.ts, exercises.facade.ts, gz-exercise-list, gz-exercise-detail
+    ├── exercises/  exercises.routes.ts, exercises.facade.ts, gz-exercise-list, gz-exercise-detail, gz-muscle-group-icon
     │   └── internal/  exercise.api.ts, gz-chart, gz-progress-chart, gz-session-table
     ├── workouts/   workouts.routes.ts, workouts.facade.ts, gz-workout-list, gz-workout-detail, gz-workout-card
     │   └── internal/  workout.api.ts, set.api.ts, gz-set-row, gz-add-set-form
@@ -114,10 +114,10 @@ bubble) records the one opened and clears the id when that one closes; a set log
 (the created exercise's id for a new one); and an id no longer among the groups, its last set
 deleted, collapses them all. Every other change to a set leaves the open exercise open.
 
-Each header (`<summary>`) holds only the exercise name, its stats "N sets · volume" in muted text,
-and a progress badge — an outline "x/y done", or a success "✓ Done" once all of its sets are — so a
+Each header (`<summary>`) holds only the muscle group's labeled `gz-muscle-group-icon` (none for an
+exercise without a group), the exercise name, its stats "N sets · volume" in muted text, and a progress badge — an outline "x/y done", or a success "✓ Done" once all of its sets are — so a
 collapsed exercise is a glanceable name, stats and state, and nothing in it can be tapped by
-mistake. On a phone the name keeps the first line beside the chevron, and the stats and badge take
+mistake. On a phone the icon and name keep the first line beside the chevron, and the stats and badge take
 the second.
 
 The open group ends in a `.group-actions` footer below its rows, edge to edge like them and divided
@@ -343,6 +343,18 @@ keeps no open state, unlike the workout's "Details & notes": only a successful s
 view, which closes the section while the toast confirms the save, and a failed save or a metric
 switch re-renders nothing.
 
+A muscle group is drawn by `gz-muscle-group-icon`, which sits at the root of `features/exercises/`
+rather than in `internal/` because the workout page renders it too, the feature's front door. Its
+`group` attribute picks one of seven inline stroke SVGs in `currentColor`, kept in a
+`Record<MuscleGroup, RawHtml>` so a group without a drawing fails typecheck. Without `label` the
+icon is decorative (`aria-hidden`), as beside the group's name on an exercise card and in the
+exercise header; with `label` it is announced as `role="img"` with that `aria-label` and an SVG
+`<title>` as its tooltip. A missing or unknown `group` renders nothing and sets `hidden` on the
+host, so an exercise without a group leaves no gap. The muscle group `<select>`s carry it too: they
+are `select.rich`, which `shared.css` turns into a customizable select (`appearance: base-select`)
+where the browser has one, so each group's option shows its icon and a `<selectedcontent>` copies
+it into the closed select; any other browser drops the markup and shows today's text-only list.
+
 A list item opens its entity the same way, and on the whole card rather than on the words: the
 card is `shared.css`'s `article.open-card`, a column of lines — a `.head` with the title (and any
 badge at its end), a muted subtitle, and a `.foot` of muted stats with the actions pushed to its end
@@ -396,7 +408,7 @@ cast on the way in.
 Shapes local to one module — a view's loaded data, the chart's points — are declared in that
 module; what a view is doing with that data is `GzView`'s `ViewState<Data>`. The six route views are exported so their route file can construct them with `new`, which
 keeps each tag name written only in its `define()`. `GzBreadcrumbsComponent`, `GzChartComponent`, `GzProgressChartComponent`, `GzSessionTableComponent`, `GzSetRowComponent`
-and `GzAddSetFormComponent` are exported so their parent can type the element it drives; the other five components stay private to their module.
+and `GzAddSetFormComponent` are exported so their parent can type the element it drives; the other six components stay private to their module.
 
 ## Loading
 

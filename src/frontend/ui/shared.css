@@ -37,6 +37,50 @@ hgroup > * {
   }
 }
 
+/* A customizable <select>, so an option can hold an icon; elsewhere it stays a plain one. */
+@supports (appearance: base-select) {
+  select.rich,
+  select.rich::picker(select) {
+    appearance: base-select;
+  }
+
+  select.rich {
+    /* Sized to the chosen option, unlike a plain select; this keeps it from jumping. */
+    min-width: 12rem;
+
+    /* Oat draws the chevron as a background image. */
+    &::picker-icon {
+      display: none;
+    }
+
+    /* Drops Oat's button look, whose white text the selected content would inherit. */
+    & > button {
+      all: unset;
+      display: contents;
+    }
+
+    & :is(selectedcontent, option) {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    & option {
+      padding: var(--space-2) var(--space-3);
+    }
+  }
+
+  select.rich::picker(select) {
+    margin-block: var(--space-1);
+    padding-block: var(--space-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-medium);
+    background-color: var(--background);
+    color: var(--foreground);
+    box-shadow: var(--shadow-small);
+  }
+}
+
 /* ------------------------------------------------------------------- touch */
 
 @media (max-width: 720px) {

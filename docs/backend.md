@@ -188,7 +188,7 @@ with the exercise's last set, "Repeat" copies the source's rows, and deleting a 
 `003-workout-exercises.sql` created the table and backfilled it from the sets already there, in the
 order each exercise first appears (`position, id`). `GET /api/workouts/:id`, like the answer to
 `POST /api/workouts`, is therefore a `WorkoutWithExercisesDto`: the workout, with the `done` every
-workout DTO carries, and `exercises` in that order, each `{ exerciseId, exerciseName, position, sets }` with its sets in
+workout DTO carries, and `exercises` in that order, each `{ exerciseId, exerciseName, muscleGroup, position, sets }` with its sets in
 logged order. `GET /api/workouts/:id/sets` still answers the flat list.
 
 `POST /api/workouts/:id/exercises/:exerciseId/move` with `{ "direction": "up" | "down" }` swaps an

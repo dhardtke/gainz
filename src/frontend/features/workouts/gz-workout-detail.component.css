@@ -49,6 +49,10 @@
 }
 
 summary {
+  & gz-muscle-group-icon {
+    flex: none;
+  }
+
   & .exercise-name {
     flex: 1 1 auto;
     min-width: 0;
@@ -96,7 +100,7 @@ summary {
     flex-wrap: wrap;
 
     & .exercise-name {
-      flex-basis: calc(100% - 2em);
+      flex-basis: calc(100% - 2em - 1.25em - var(--space-2));
     }
 
     & :is(.group-stats, .badge) {

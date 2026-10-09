@@ -153,3 +153,29 @@ test('keeps the filter when paging', async () => {
   find(shadow(view), 'gz-pagination').dispatchEvent(new CustomEvent('page-change', { detail: 2, bubbles: true, composed: true }));
   expect(`${location.pathname}${location.search}`).toBe('/exercises?muscleGroup=Legs&page=2');
 });
+
+test('heads a card with its muscle group icon before the group, then the notes', async () => {
+  fake.respondTo(
+    'GET /api/exercises?limit=10&offset=0',
+    200,
+    page([listed({ id: 1, muscleGroup: 'Legs', notes: 'Low bar, belt' }), listed({ id: 2, muscleGroup: null })]),
+  );
+  const view = mount('gz-exercise-list');
+  await settle();
+  const [legs, plain] = Array.from(shadow(view).querySelectorAll(testId('card')));
+  const subtitle = find(legs ?? shadow(view), testId('card-subtitle'));
+  const icon = find(subtitle, 'gz-muscle-group-icon');
+  expect(find(shadow(icon), 'svg').getAttribute('data-group')).toBe('Legs');
+  expect(find(shadow(icon), 'svg').getAttribute('aria-hidden')).toBe('true');
+  expect(subtitle.textContent.replace(/\s+/g, ' ').trim()).toBe('Legs · Low bar, belt');
+  expect(plain?.querySelector('gz-muscle-group-icon')).toBeNull();
+});
+
+test('puts each muscle group icon in its options, and none in the others', async () => {
+  const view = await mountAdding();
+  for (const select of [filterSelect(view), find<HTMLSelectElement>(shadow(view), testId('muscleGroup'))]) {
+    const icons = Array.from(select.options).map((option) => option.querySelector('gz-muscle-group-icon')?.getAttribute('group') ?? null);
+    expect(icons.filter((group) => group !== null)).toEqual(GROUP_LABELS.slice(1));
+    expect(select.firstElementChild?.localName).toBe('button');
+  }
+});

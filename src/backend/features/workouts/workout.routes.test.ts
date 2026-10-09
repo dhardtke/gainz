@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import type { ExerciseDto } from '../../../shared/dto/exercise.ts';
 import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import type { WorkoutDto, WorkoutPageDto, WorkoutWithExercisesDto, WorkoutWithStatsDto } from '../../../shared/dto/workout.ts';
 import type { WorkoutId } from '../../../shared/flavors.ts';
@@ -124,6 +125,21 @@ describe("a workout's sets", () => {
       { exerciseId: row.id, exerciseName: 'Barbell Row', position: 2 },
     ]);
     expect(detail.exercises.map((group) => group.sets.map((set) => set.id))).toEqual([[first.id, second.id], [rowed.id]]);
+  });
+
+  test("carries each exercise's muscle group, as it currently is", async () => {
+    const bench = await body<ExerciseDto>(await post('/api/exercises', { name: 'Bench Press', muscleGroup: 'Chest' }));
+    const carry = await createExercise(post, "Farmer's Walk");
+    const workout = await createWorkout(post);
+    await createSet(post, workout.id, { exerciseId: bench.id, reps: 5, weight: 80 });
+    await createSet(post, workout.id, { exerciseId: carry.id, reps: 1, weight: 40 });
+
+    const groups = async (): Promise<(string | null)[]> =>
+      (await body<WorkoutWithExercisesDto>(await api(`/api/workouts/${workout.id}`))).exercises.map((group) => group.muscleGroup);
+    expect(await groups()).toEqual(['Chest', null]);
+
+    expect((await patch(`/api/exercises/${carry.id}`, { muscleGroup: 'Full body' })).status).toBe(200);
+    expect(await groups()).toEqual(['Chest', 'Full body']);
   });
 
   test('"Repeat" copies the order of the exercises', async () => {

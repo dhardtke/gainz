@@ -1,5 +1,6 @@
 import type { ExerciseId, Iso8601Date, Iso8601DateTime, WorkoutId } from '../flavors.ts';
 import type { LiftSetDto } from './set.ts';
+import type { MuscleGroup } from '../muscle-group.ts';
 
 export interface WorkoutDto {
   id: WorkoutId;
@@ -21,6 +22,7 @@ export interface WorkoutWithStatsDto extends WorkoutDto {
 export interface WorkoutExerciseDto {
   exerciseId: ExerciseId;
   exerciseName: string;
+  muscleGroup: MuscleGroup | null;
   /** 1-based place of the exercise in the workout. */
   position: number;
   /** Oldest first. */

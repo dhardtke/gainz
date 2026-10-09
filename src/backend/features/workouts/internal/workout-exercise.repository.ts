@@ -17,7 +17,7 @@ export class WorkoutExerciseRepository {
   list(workoutId: WorkoutId): WorkoutExercise[] {
     return this.#db
       .query<WorkoutExercise, [WorkoutId]>(
-        `SELECT we.workout_id, we.exercise_id, e.name AS exercise_name, we.position
+        `SELECT we.workout_id, we.exercise_id, e.name AS exercise_name, e.muscle_group, we.position
            FROM workout_exercises we
            JOIN exercises e ON e.id = we.exercise_id
           WHERE we.workout_id = ?

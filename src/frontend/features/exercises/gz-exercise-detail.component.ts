@@ -14,6 +14,7 @@ import { GzView } from '../../ui/view.ts';
 import './internal/gz-progress-chart.component.ts';
 import './internal/gz-session-table.component.ts';
 import '../../ui/tile/gz-tile.component.ts';
+import './gz-muscle-group-icon.component.ts';
 
 export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
   override loadingText = 'Loading progress…';
@@ -90,7 +91,13 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
     return html`
       <hgroup>
         <h1 data-testid="heading">${exercise.name}</h1>
-        <p class="text-light">${exercise.muscleGroup ?? 'No muscle group set'}</p>
+        <p class="text-light" data-testid="muscle-group">
+          ${
+            exercise.muscleGroup
+              ? html`<gz-muscle-group-icon group="${exercise.muscleGroup}"></gz-muscle-group-icon> ${exercise.muscleGroup}`
+              : 'No muscle group set'
+          }
+        </p>
       </hgroup>
     `;
   }
@@ -108,7 +115,7 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
               </div>
               <div class="field">
                 <label for="muscleGroup">Muscle group</label>
-                <select id="muscleGroup" name="muscleGroup" data-testid="muscleGroup">
+                <select id="muscleGroup" name="muscleGroup" class="rich" data-testid="muscleGroup">
                   ${muscleGroupOptions(exercise.muscleGroup)}
                 </select>
               </div>

@@ -5,6 +5,7 @@ import { formatWeight, plural, relativeDay } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
 import { PAGE_SIZE, pageCount, pageOffset, parsePage } from '../../ui/pagination/pagination.ts';
 import '../../ui/pagination/gz-pagination.component.ts';
+import './gz-muscle-group-icon.component.ts';
 import type { ExerciseDto, ExerciseWithStatsDto } from '../../../shared/dto/exercise.ts';
 import { toast, toastError } from '../../ui/toast.ts';
 import { GzView } from '../../ui/view.ts';
@@ -77,13 +78,14 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
   }
 
   #card(exercise: ExerciseWithStatsDto): RawHtml {
-    const subtitle = [exercise.muscleGroup, exercise.notes].filter((part) => part !== null).join(' · ');
+    const { muscleGroup, notes } = exercise;
+    const group = muscleGroup ? html`<gz-muscle-group-icon group="${muscleGroup}"></gz-muscle-group-icon> ${muscleGroup}` : '';
     return html`
-      <article class="card open-card">
+      <article class="card open-card" data-testid="card">
         <div class="head">
           <a class="open" href="/exercises/${exercise.id}">${exercise.name}</a>
         </div>
-        ${subtitle === '' ? '' : html`<div class="text-light">${subtitle}</div>`}
+        ${muscleGroup || notes ? html`<div class="text-light" data-testid="card-subtitle">${group}${muscleGroup && notes ? ' · ' : ''}${notes}</div>` : ''}
         <div class="foot">
           <span class="text-light">
             ${plural(exercise.setCount, 'set')} · ${exercise.bestWeight === null ? 'no best yet' : `${formatWeight(exercise.bestWeight)} best`} ·
@@ -126,7 +128,7 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
           </hgroup>
           <div class="field">
             <label for="filter">Muscle group</label>
-            <select id="filter" data-testid="filter">
+            <select id="filter" class="rich" data-testid="filter">
               ${muscleGroupFilterOptions(filter)}
             </select>
           </div>
@@ -142,7 +144,7 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
               </div>
               <div class="field">
                 <label for="muscleGroup">Muscle group</label>
-                <select id="muscleGroup" name="muscleGroup" data-testid="muscleGroup">
+                <select id="muscleGroup" name="muscleGroup" class="rich" data-testid="muscleGroup">
                   ${muscleGroupOptions(null)}
                 </select>
               </div>

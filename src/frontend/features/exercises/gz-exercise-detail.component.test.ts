@@ -215,3 +215,15 @@ test('toasts why a delete was refused', async () => {
   await settle();
   expect(toasts).toEqual(['Exercise is used by logged sets']);
 });
+
+test('shows the muscle group with its icon', async () => {
+  const view = await mountView();
+  expect(find(shadow(find(shadow(view), `${testId('muscle-group')} gz-muscle-group-icon`)), 'svg').getAttribute('data-group')).toBe('Chest');
+});
+
+test('says so without a muscle group, with no icon', async () => {
+  const view = await mountView({ ...progress(SESSIONS), exercise: exercise({ id: 7, muscleGroup: null }) });
+  const group = find(shadow(view), testId('muscle-group'));
+  expect(group.textContent.trim()).toBe('No muscle group set');
+  expect(group.querySelector('gz-muscle-group-icon')).toBeNull();
+});

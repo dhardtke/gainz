@@ -15,6 +15,7 @@ import { GzView } from '../../ui/view.ts';
 import { exerciseFacade } from '../exercises/exercises.facade.ts';
 import { workoutFacade } from './workouts.facade.ts';
 import './internal/gz-add-set-form.component.ts';
+import '../exercises/gz-muscle-group-icon.component.ts';
 
 function isSetLogged(detail: unknown): detail is { exerciseId: number } {
   return typeof detail === 'object' && detail !== null && 'exerciseId' in detail && typeof detail.exerciseId === 'number';
@@ -393,6 +394,7 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     return html`
       <details name="exercises" data-exercise-id="${id}" data-testid="exercise-group" ${id === open ? 'open' : ''}>
         <summary>
+          <gz-muscle-group-icon group="${group.muscleGroup ?? ''}" label="${group.muscleGroup ?? ''}"></gz-muscle-group-icon>
           <span class="exercise-name" data-testid="exercise-name">${name}</span>
           <span class="group-stats text-light" data-testid="group-stats">${this.#groupSummary(group)}</span>
           ${this.#progressBadge(doneCount, group.sets.length)}

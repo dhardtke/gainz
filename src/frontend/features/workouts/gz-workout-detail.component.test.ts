@@ -679,3 +679,20 @@ test('deletes the workout once confirmed, toasts and returns to the workouts', a
   expect(toasts).toEqual(['Workout deleted']);
   expect(location.pathname).toBe('/workouts');
 });
+
+test("heads an exercise group with its muscle group's announced icon, before the name", async () => {
+  const view = await mountView({ ...WORKOUT, exercises: [{ ...SQUAT, muscleGroup: 'Legs' }] });
+  const summary = find(shadow(view), `${testId('exercise-group')} summary`);
+  const icon = find<HTMLElement>(summary, 'gz-muscle-group-icon');
+  expect(icon.nextElementSibling?.classList.contains('exercise-name')).toBe(true);
+  const svg = find(shadow(icon), 'svg');
+  expect(svg.getAttribute('role')).toBe('img');
+  expect(svg.getAttribute('aria-label')).toBe('Legs');
+});
+
+test('hides the icon of an exercise without a muscle group', async () => {
+  const view = await mountView();
+  const icon = find<HTMLElement>(shadow(view), `${testId('exercise-group')} summary gz-muscle-group-icon`);
+  expect(icon.hidden).toBe(true);
+  expect(shadow(icon).querySelector('svg')).toBeNull();
+});
