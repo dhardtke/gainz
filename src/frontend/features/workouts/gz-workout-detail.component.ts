@@ -48,6 +48,9 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
 
   #detailsOpen = false;
 
+  // The bar value last shown, so a re-rendered bar can slide from it.
+  #barValue: number | null = null;
+
   // Loaded once: nothing on this page creates or edits an exercise.
   #exercises: Promise<ExerciseDto[]> | null = null;
 
@@ -268,6 +271,17 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
       // Logged order: the form starts from the last set it is given.
       addSet.sets = sets.toSorted((a, b) => a.position - b.position || a.id - b.id);
     }
+
+    const bar = this.$<HTMLProgressElement>('progress');
+    if (bar) {
+      const target = Number(bar.dataset.value);
+      if (bar.value !== target) {
+        // A fresh element: lay out the old width first, so the transition has a start.
+        void bar.offsetWidth;
+        bar.value = target;
+      }
+    }
+    this.#barValue = bar ? Number(bar.dataset.value) : null;
   }
 
   #openFor(exercises: WorkoutExerciseDto[]): ExerciseId | null {
@@ -327,11 +341,24 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     `;
   }
 
-  #setProgressBadge(doneCount: number, setCount: number): RawHtml {
+  #progressStrip(doneCount: number, setCount: number): RawHtml {
     if (setCount === 0) {
       return html``;
     }
-    return html`<span class="badge outline" data-testid="progress">${doneCount}/${setCount} done</span>`;
+    const complete = doneCount === setCount;
+    return html`
+      <div class="progress-strip ${complete ? 'complete' : ''}" data-testid="progress-strip">
+        <span class="label" data-testid="progress-label">${complete ? '✓ ' : ''}${doneCount}/${setCount} sets</span>
+        <progress
+          value="${this.#barValue ?? doneCount}"
+          data-value="${doneCount}"
+          max="${setCount}"
+          aria-label="${doneCount} of ${setCount} sets done"
+          data-testid="progress-bar"
+        ></progress>
+        <span class="percent text-light" data-testid="progress-percent">${Math.floor((doneCount * 100) / setCount)}%</span>
+      </div>
+    `;
   }
 
   #finishTemplate(workout: WorkoutWithExercisesDto, setCount: number): RawHtml {
@@ -412,13 +439,12 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
 
     return html`
       <div class="vstack">
-        ${this.#headerTemplate(workout)}
+        ${this.#progressStrip(doneCount, sets.length)} ${this.#headerTemplate(workout)}
 
         <div class="summary hstack gap-2" data-testid="summary">
           <span class="text-light" data-testid="totals">
             ${plural(sets.length, 'set')} · ${plural(exercises, 'exercise')} · ${plural(reps, 'rep')} · ${formatVolume(volume)}
           </span>
-          ${this.#setProgressBadge(doneCount, sets.length)}
           ${workout.done ? html`<span class="badge" data-variant="success" data-testid="workout-done">✓ Done</span>` : ''}
         </div>
 

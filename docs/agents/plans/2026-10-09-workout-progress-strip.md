@@ -204,29 +204,29 @@ Header height token, the sticky strip, the badge removal, tests and docs in one 
 
 **Tasks**:
 
-- [ ] `ui/app.css`: declare the token in the existing `:root` block, after the palette:
+- [x] `ui/app.css`: declare the token in the existing `:root` block, after the palette:
       ```css
       /* gz-header's fixed height, border included; sticky page chrome sits below it. */
       --header-height: calc(3.75rem + 1px);
       ```
-- [ ] `ui/app.css`: add the workout page's scroll padding:
+- [x] `ui/app.css`: add the workout page's scroll padding:
       ```css
       /* The workout page's progress strip sticks below the header. */
       :root:has(gz-workout-detail) {
         scroll-padding-top: calc(var(--header-height) + 3rem);
       }
       ```
-- [ ] `app/gz-header.component.css`: add `box-sizing: border-box; block-size: var(--header-height);`
+- [x] `app/gz-header.component.css`: add `box-sizing: border-box; block-size: var(--header-height);`
       to `:host`; `nav` keeps its padding and alignment.
-- [ ] `gz-workout-detail.component.ts`: add `#progressStrip(doneCount: number, setCount: number): RawHtml`
+- [x] `gz-workout-detail.component.ts`: add `#progressStrip(doneCount: number, setCount: number): RawHtml`
       returning `html\`\`` for 0 sets, otherwise the markup above, with `complete` on the strip when
       `doneCount === setCount`, the label `${doneCount}/${setCount} sets` (prefixed `✓ ` when complete),
       the `aria-label` `${doneCount} of ${setCount} sets done`, and the percentage
       `${Math.floor((doneCount * 100) / setCount)}%` (multiplied first, so 29/100 is not 28.999…).
-- [ ] `gz-workout-detail.component.ts`: in `readyTemplate`, render `${this.#progressStrip(doneCount, sets.length)}`
+- [x] `gz-workout-detail.component.ts`: in `readyTemplate`, render `${this.#progressStrip(doneCount, sets.length)}`
       as the `.vstack`'s first child, before the header template; remove `${this.#setProgressBadge(…)}`
       from `.summary` and delete `#setProgressBadge`.
-- [ ] `gz-workout-detail.component.ts`: animate the bar across re-renders. Add
+- [x] `gz-workout-detail.component.ts`: animate the bar across re-renders. Add
       `#barValue: number | null = null`; `#progressStrip` renders `value="${this.#barValue ?? doneCount}"`
       (label, percentage and `aria-label` keep the real count) and the real count in a
       `data-value` attribute. At the end of `afterRender()`:
@@ -244,7 +244,7 @@ Header height token, the sticky strip, the badge removal, tests and docs in one 
       ```
       A workout without sets resets `#barValue` to `null`, so its first set appears without sliding
       from a stale value.
-- [ ] `gz-workout-detail.component.css`: style the strip:
+- [x] `gz-workout-detail.component.css`: style the strip:
       ```css
       .progress-strip {
         position: sticky;
@@ -292,24 +292,24 @@ Header height token, the sticky strip, the badge removal, tests and docs in one 
       }
       ```
       Keep the `z-index` below the header's `10`.
-- [ ] `gz-workout-detail.component.test.ts`: replace the summary badge tests — `counts the sets done
+- [x] `gz-workout-detail.component.test.ts`: replace the summary badge tests — `counts the sets done
       so far`, `shows a done workout as done, beside its set progress`, `shows a workout whose sets are
       all done, but which is not, as not done`, `shows no done badge or finish button for a workout
       without sets` — with strip assertions, keeping their workout-badge and finish-button checks:
-  - [ ] in progress (1 of 3 done): label `1/3 sets`, `<progress>` `value` 1 and `max` 3,
+  - [x] in progress (1 of 3 done): label `1/3 sets`, `<progress>` `value` 1 and `max` 3,
         `aria-label` `1 of 3 sets done`, percentage `33%`, no `complete` class
-  - [ ] all done (3 of 3): label `✓ 3/3 sets`, percentage `100%`, `complete` class
-  - [ ] none done: label `0/3 sets`, percentage `0%`
-  - [ ] the percentage floors: 2 of 3 done shows `66%` (rounding would give 67), built with `withSets`
-  - [ ] a done workout with sets skipped still shows `2/3 sets`, beside the success "✓ Done" badge
-  - [ ] no strip for a workout without sets
-  - [ ] the strip is the view's first element, before the heading
-  - [ ] the summary holds no `progress` badge any more
-- [ ] `gz-workout-detail.component.test.ts`: in `applies an updated set without a reload`, also
+  - [x] all done (3 of 3): label `✓ 3/3 sets`, percentage `100%`, `complete` class
+  - [x] none done: label `0/3 sets`, percentage `0%`
+  - [x] the percentage floors: 2 of 3 done shows `66%` (rounding would give 67), built with `withSets`
+  - [x] a done workout with sets skipped still shows `2/3 sets`, beside the success "✓ Done" badge
+  - [x] no strip for a workout without sets
+  - [x] the strip is the view's first element, before the heading
+  - [x] the summary holds no `progress` badge any more
+- [x] `gz-workout-detail.component.test.ts`: in `applies an updated set without a reload`, also
       assert the strip's label becomes `1/3 sets` and the new `<progress>`'s `value` ends at 1.
-- [ ] `gz-workout-detail.component.test.ts`: on the first render of a workout with 1 of 3 done, the
+- [x] `gz-workout-detail.component.test.ts`: on the first render of a workout with 1 of 3 done, the
       bar's `value` is 1 straight away, with no slide from 0.
-- [ ] `docs/frontend.md`: in the `gz-workout-detail` overview (from the top: …) put the sticky
+- [x] `docs/frontend.md`: in the `gz-workout-detail` overview (from the top: …) put the sticky
       progress strip first and drop "followed by the progress badges" from the summary line; rewrite
       the paragraph that begins "`gz-workout-detail` ends its summary line" so it describes the strip
       (one line, label · bar · floored percentage, `--success` fill and ✓ at 100%, follows the sets
@@ -320,11 +320,11 @@ Header height token, the sticky strip, the badge removal, tests and docs in one 
 
 **Automated Verification**:
 
-- [ ] `bun test --parallel src/frontend/features/workouts/gz-workout-detail.component.test.ts` passes
-- [ ] `bun test --parallel` passes
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
+- [x] `bun test --parallel src/frontend/features/workouts/gz-workout-detail.component.test.ts` passes
+- [x] `bun test --parallel` passes
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
 
 **Manual Verification**:
 
@@ -345,6 +345,11 @@ Header height token, the sticky strip, the badge removal, tests and docs in one 
 ## Implementation Notes
 
 During implementation, document user feedback, problems, and decisions here.
+
+- Setting `progress.value` reflects to the `value` attribute, so the tests cannot tell a slide from a
+  rendered value by the attribute. They wrap `HTMLProgressElement.prototype`'s `value` setter
+  (`slides()`) and assert what the view wrote: nothing on the first render, `[1]` after a set toggle.
+- The strip's tests replace the summary badge's, and keep their done-badge and finish-button checks.
 
 ## References
 

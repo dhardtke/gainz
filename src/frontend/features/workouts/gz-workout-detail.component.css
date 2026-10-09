@@ -1,3 +1,49 @@
+/* Below the header's z-index of 10. */
+.progress-strip {
+  position: sticky;
+  top: var(--header-height);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-medium);
+  background-color: var(--card);
+  box-shadow: var(--shadow-medium);
+  font-variant-numeric: tabular-nums;
+
+  & .label,
+  & .percent {
+    flex: none;
+    white-space: nowrap;
+  }
+
+  & .label {
+    font-weight: 600;
+  }
+
+  & progress {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  &.complete progress {
+    &::-webkit-progress-value {
+      background-color: var(--success);
+    }
+
+    &::-moz-progress-bar {
+      background-color: var(--success);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    & progress::-webkit-progress-value {
+      transition: none;
+    }
+  }
+}
+
 .summary {
   flex-wrap: wrap;
 }

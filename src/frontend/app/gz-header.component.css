@@ -2,6 +2,8 @@
   position: sticky;
   top: 0;
   z-index: 10;
+  box-sizing: border-box;
+  block-size: var(--header-height);
   background-color: var(--card);
   color: var(--foreground);
   border-bottom: 1px solid var(--border);

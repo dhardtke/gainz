@@ -113,36 +113,93 @@ test('totals the sets, exercises, reps and volume in one muted line', async () =
   expect(text(view, testId('totals'))?.trim()).toStartWith('3 sets · 2 exercises · 15 reps · ');
 });
 
-function progress(view: HTMLElement): (string | null)[] {
-  return Array.from(find(shadow(view), testId('summary')).querySelectorAll(testId('progress'))).map((badge) => badge.textContent);
+function strip(view: HTMLElement): HTMLElement | null {
+  return shadow(view).querySelector<HTMLElement>(testId('progress-strip'));
 }
 
-test('counts the sets done so far', async () => {
+function bar(view: HTMLElement): HTMLProgressElement {
+  return find<HTMLProgressElement>(shadow(view), testId('progress-bar'));
+}
+
+function stripText(view: HTMLElement): (string | undefined)[] {
+  return [text(view, testId('progress-label')), text(view, testId('progress-percent'))];
+}
+
+test('shows the sets done so far in the progress strip', async () => {
   const view = await mountView(withSets((item, index) => ({ ...item, done: index === 0 })));
-  expect(progress(view)).toEqual(['1/3 done']);
-  expect(find<HTMLElement>(find(shadow(view), testId('summary')), testId('progress')).dataset.variant).toBeUndefined();
+  expect(stripText(view)).toEqual(['1/3 sets', '33%']);
+  expect([bar(view).value, bar(view).max, bar(view).getAttribute('aria-label')]).toEqual([1, 3, '1 of 3 sets done']);
+  expect(strip(view)?.classList.contains('complete')).toBe(false);
+});
+
+// The values the view slides a bar to; rendered values are not among them.
+async function slides(during: () => Promise<unknown>): Promise<number[]> {
+  const descriptor = Object.getOwnPropertyDescriptor(HTMLProgressElement.prototype, 'value');
+  if (!descriptor?.set) {
+    throw new Error('no value setter on HTMLProgressElement');
+  }
+  const written: number[] = [];
+  Object.defineProperty(HTMLProgressElement.prototype, 'value', {
+    ...descriptor,
+    set(this: HTMLProgressElement, value: number) {
+      written.push(value);
+      descriptor.set?.call(this, value);
+    },
+  });
+  try {
+    await during();
+  } finally {
+    Object.defineProperty(HTMLProgressElement.prototype, 'value', descriptor);
+  }
+  return written;
+}
+
+test('shows the bar at its value on the first render, without a slide from 0', async () => {
+  let view: HTMLElement | undefined;
+  expect(await slides(async () => (view = await mountView(withSets((item, index) => ({ ...item, done: index === 0 })))))).toEqual([]);
+  expect(view && bar(view).value).toBe(1);
+});
+
+test('shows no sets done as 0%', async () => {
+  const view = await mountView();
+  expect(stripText(view)).toEqual(['0/3 sets', '0%']);
+});
+
+test('floors the percentage, so it is never 100% early', async () => {
+  const view = await mountView(withSets((item, index) => ({ ...item, done: index < 2 })));
+  expect(stripText(view)).toEqual(['2/3 sets', '66%']);
+});
+
+test('puts the progress strip first, before the heading', async () => {
+  const view = await mountView();
+  expect(find(shadow(view), '.vstack').firstElementChild).toBe(strip(view));
+});
+
+test('keeps the set progress out of the summary', async () => {
+  const view = await mountView(withSets((item, index) => ({ ...item, done: index === 0 })));
+  expect(find(shadow(view), testId('summary')).querySelector(testId('progress'))).toBeNull();
 });
 
 function workoutBadge(view: HTMLElement): HTMLElement | null {
   return find(shadow(view), testId('summary')).querySelector<HTMLElement>(testId('workout-done'));
 }
 
-test('shows a done workout as done, beside its set progress', async () => {
-  const view = await mountView({ ...withSets((item) => ({ ...item, done: true })), done: true });
-  expect(progress(view)).toEqual(['3/3 done']);
-  expect(find<HTMLElement>(find(shadow(view), testId('summary')), testId('progress')).classList.contains('outline')).toBe(true);
+test('shows a done workout as done, beside the progress of its sets', async () => {
+  const view = await mountView({ ...withSets((item, index) => ({ ...item, done: index !== 1 })), done: true });
+  expect(stripText(view)).toEqual(['2/3 sets', '66%']);
   expect([workoutBadge(view)?.textContent, workoutBadge(view)?.dataset.variant]).toEqual(['✓ Done', 'success']);
 });
 
-test('shows a workout whose sets are all done, but which is not, as not done', async () => {
+test('shows a workout whose sets are all done, but which is not, as complete sets but not done', async () => {
   const view = await mountView(withSets((item) => ({ ...item, done: true })));
-  expect(progress(view)).toEqual(['3/3 done']);
+  expect(stripText(view)).toEqual(['✓ 3/3 sets', '100%']);
+  expect(strip(view)?.classList.contains('complete')).toBe(true);
   expect(workoutBadge(view)).toBeNull();
 });
 
-test('shows no done badge or finish button for a workout without sets', async () => {
+test('shows no progress strip, done badge or finish button for a workout without sets', async () => {
   const view = await mountView({ ...WORKOUT, exercises: [] });
-  expect(progress(view)).toEqual([]);
+  expect(strip(view)).toBeNull();
   for (const id of ['workout-done', 'finish-workout', 'reopen-workout']) {
     expect(shadow(view).querySelector(testId(id))).toBeNull();
   }
@@ -462,11 +519,16 @@ test('applies an updated set without a reload', async () => {
   const view = await mountView();
   const loads = workoutLoads();
   const updated = set({ id: 11, exerciseId: 1, exerciseName: 'Bench Press', weight: 80, done: true });
-  setRow(view, 11).dispatchEvent(new CustomEvent('set-updated', { detail: updated, bubbles: true, composed: true }));
-  await settle();
+  const slid = await slides(async () => {
+    setRow(view, 11).dispatchEvent(new CustomEvent('set-updated', { detail: updated, bubbles: true, composed: true }));
+    await settle();
+  });
   expect(workoutLoads()).toBe(loads);
   expect(headerBadges(view, 1)).toEqual(['1/2 done']);
   expect(find(shadow(setRow(view, 11)), testId('row')).classList.contains('done')).toBe(true);
+  expect(text(view, testId('progress-label'))).toBe('1/3 sets');
+  expect(slid).toEqual([1]);
+  expect(bar(view).value).toBe(1);
 });
 
 test('loads the exercises once, not on every reload', async () => {

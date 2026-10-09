@@ -10,8 +10,16 @@
   --border: light-dark(#8b8b94, #71717a);
   --input: light-dark(#8b8b94, #71717a);
 
+  /* gz-header's fixed height, border included; sticky page chrome sits below it. */
+  --header-height: calc(3.75rem + 1px);
+
   /* Keeps the layout from shifting when a page grows tall enough to scroll. */
   scrollbar-gutter: stable;
+}
+
+/* The workout page's progress strip sticks below the header. */
+:root:has(gz-workout-detail) {
+  scroll-padding-top: calc(var(--header-height) + 3rem);
 }
 
 /* color-scheme inherits, so this reaches every shadow root. */

@@ -92,9 +92,9 @@ and opens it. A done workout's card also takes a `--success` border; both the ba
 follow the workout's stored `done`, not its sets, so a workout finished with sets skipped shows as done. Each view renders `<gz-workout-card data-id>` and hands every card
 its workout in `afterRender()`, as `gz-workout-detail` does its set rows.
 
-`gz-workout-detail` puts the logging first. From the top: the title and the date with its relative
-day; one summary line of muted totals — sets, exercises, reps and volume — followed by the progress
-badges; the exercise groups; `gz-add-set-form`, which a done workout does not render; the finish
+`gz-workout-detail` puts the logging first. From the top: the sticky set progress strip; the title
+and the date with its relative day; one summary line of muted totals — sets, exercises, reps and
+volume — followed, on a done workout, by its "✓ Done" badge; the exercise groups; `gz-add-set-form`, which a done workout does not render; the finish
 button, "Mark workout done" or, on a done workout, an outline "Reopen workout", once the workout has
 sets; and last a collapsed `<details>`, "Details & notes",
 holding the workout's autosaving details form and a danger "Delete workout" button, so editing the
@@ -160,9 +160,27 @@ the field by its id while `#edits` keeps its text. A done row mirrors the backen
 backend locks its sets: the view sets each row's `locked` before its `set`, and a locked row disables
 its toggle, fields, +1 and × whatever the set's own state.
 
-`gz-workout-detail` ends its summary line, once the session has sets, with an outline "x/y done"
-badge for the sets — outline even at "y/y", so the green "✓ Done" means one thing at the workout
-level — and, on a done workout, a separate success "✓ Done" badge from the workout's own flag;
+Once the session has sets, `gz-workout-detail` opens with a progress strip, its first child: one
+line in a floating `--card` box with `--radius-medium` and `--shadow-medium`, holding the label
+"x/y sets", a native `<progress>` filling the rest of the width, and the percentage, floored
+(`Math.floor(x * 100 / y)`) so it reads 100% only when every set is done; the numbers use tabular
+figures and do not wrap, and the full sentence, "x of y sets done", is the bar's `aria-label`. The
+fill is Oat's `--primary` until every set is done, then `--success`, with a ✓ before the label. The
+strip follows the sets, not the workout's `done` flag, so it stays, read-only, on a done workout;
+without sets there is none. It is sticky at `top: var(--header-height)`, so it sits flush below the
+header while the workout scrolls behind it, and `app.css` gives the document
+`:root:has(gz-workout-detail) { scroll-padding-top }` of the header plus 3rem, so a field the view
+focuses after a re-render is scrolled into view below the strip rather than under it; `:has()` sees
+the view because it is light DOM. Every re-render makes a new `<progress>`, which would jump to its
+value, so the view keeps the value it last showed in `#barValue`, renders the new bar at that value
+with the real count in `data-value`, and in `afterRender()` forces a layout (`void bar.offsetWidth`)
+before setting the real value, so Oat's width transition on `::-webkit-progress-value` slides it in
+Chromium. Firefox's `::-moz-progress-bar` has no transition and jumps, as does every browser under
+`prefers-reduced-motion`. `#barValue` starts `null`, and a render without sets sets it back to
+`null`, so a first render shows the value without a slide. The label, percentage and `aria-label`
+always show the real count.
+
+On a done workout the summary line ends in a success "✓ Done" badge from the workout's own flag;
 `gz-workout-card` shows that badge on done workouts' cards only. "Mark workout done" PATCHes
 `{ done: true }` through `workoutFacade`, toasts "Workout done" and shows the workout it answers, keeping the loaded exercises, since that response carries none. When some exercise
 still has sets not done, it first asks through the confirmation dialog, like the app's other
@@ -203,7 +221,11 @@ at 320 px: the parents keep their width and the current crumb ends in an ellipsi
 
 `gz-app` renders `gz-header` above its `<main>`, and `<main>` holds `gz-breadcrumbs` above the
 `<slot>`, both in the shell's shadow root; the header's host is the sticky element, because a
-`<header>` inside its shadow root would be only as tall as its host and could never stick. The view
+`<header>` inside its shadow root would be only as tall as its host and could never stick. The host's
+height is fixed, `block-size: var(--header-height)` with its border included, a token `ui/app.css`
+declares on `:root` as `calc(3.75rem + 1px)` — the theme toggle's 2.75rem button, the nav's padding
+and the border, the same at every width — so page chrome such as the workout's progress strip can
+stick right below it. The view
 is not in that shadow root: it is `gz-app`'s own child, in the document's light DOM, and shows
 through a `<slot>` in `<main>`. That is for password managers, which search the document and, by
 default, not shadow roots, so they could never find a login form inside the shell's shadow root
