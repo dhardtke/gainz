@@ -1,10 +1,11 @@
 import type { ExerciseId, Iso8601Date, Iso8601DateTime, WorkoutId } from '../flavors.ts';
+import type { MuscleGroup } from '../muscle-group.ts';
 import type { BestSetDto } from './set.ts';
 
 export interface ExerciseDto {
   id: ExerciseId;
   name: string;
-  muscleGroup: string | null;
+  muscleGroup: MuscleGroup | null;
   notes: string | null;
   createdAt: Iso8601DateTime;
 }
@@ -18,8 +19,10 @@ export interface ExerciseWithStatsDto extends ExerciseDto {
 
 export interface ExercisePageDto {
   items: ExerciseWithStatsDto[];
-  /** Every exercise, not just this page. */
+  /** Every exercise matching the filter, not just this page. */
   total: number;
+  /** Every exercise, whatever the filter. */
+  all: number;
   /** Null when the request asked for every exercise. */
   limit: number | null;
   offset: number;
@@ -50,12 +53,12 @@ export interface ExerciseProgressDto {
 
 export interface CreateExerciseDto {
   name: string;
-  muscleGroup?: string | null;
+  muscleGroup?: MuscleGroup | null;
   notes?: string | null;
 }
 
 export interface EditExerciseDto {
   name?: string;
-  muscleGroup?: string | null;
+  muscleGroup?: MuscleGroup | null;
   notes?: string | null;
 }

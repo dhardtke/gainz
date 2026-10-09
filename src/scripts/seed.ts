@@ -3,6 +3,7 @@ import { createExerciseFacade } from '../backend/features/exercises/exercises.fa
 import { createStatsFacade } from '../backend/features/stats/stats.facade.ts';
 import { createWorkoutFacades } from '../backend/features/workouts/workouts.facade.ts';
 import type { ExerciseId, Iso8601Date } from '../shared/flavors.ts';
+import type { MuscleGroup } from '../shared/muscle-group.ts';
 
 const EXERCISES = [
   { name: 'Back Squat', muscleGroup: 'Legs', notes: 'Low bar, belt above 100 kg.' },
@@ -11,7 +12,7 @@ const EXERCISES = [
   { name: 'Overhead Press', muscleGroup: 'Shoulders', notes: null },
   { name: 'Barbell Row', muscleGroup: 'Back', notes: null },
   { name: 'Pull-up', muscleGroup: 'Back', notes: 'Bodyweight plus belt.' },
-];
+] satisfies readonly { name: string; muscleGroup: MuscleGroup; notes: string | null }[];
 
 const TEMPLATES = [
   {

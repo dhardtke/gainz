@@ -3,12 +3,13 @@ import { conflict, notFound } from '../../../http/errors.ts';
 import { buildUpdate, isUniqueViolation } from '../../../db/sql.ts';
 import { EST_1RM_SQL, SET_COLUMNS } from '../../workouts/ports/sql.ts';
 import type { ExerciseId, Iso8601Date } from '../../../../shared/flavors.ts';
+import type { MuscleGroup } from '../../../../shared/muscle-group.ts';
 import type { Exercise, ExerciseWithStats, SessionPoint } from '../ports/exercise.ts';
 import type { LiftSet } from '../../workouts/ports/set.ts';
 
 export interface CreateExercise {
   name: string;
-  muscle_group: string | null;
+  muscle_group: MuscleGroup | null;
   notes: string | null;
 }
 
@@ -16,6 +17,11 @@ export type EditExercise = Partial<CreateExercise>;
 
 const EXERCISE_COLUMNS = 'e.id, e.name, e.muscle_group, e.notes, e.created_at';
 const FIELDS = ['name', 'muscle_group', 'notes'] as const;
+
+// `undefined` is every exercise and `null` those without a group; `IS` compares NULL as equal.
+function muscleGroupFilter(muscleGroup: MuscleGroup | null | undefined): { sql: string; params: [MuscleGroup | null] } | null {
+  return muscleGroup === undefined ? null : { sql: 'muscle_group IS ?', params: [muscleGroup] };
+}
 
 export class ExerciseRepository {
   readonly #db: DB;
@@ -25,10 +31,11 @@ export class ExerciseRepository {
   }
 
   /** Joins done sets in the `ON` clause, so an exercise without any still lists. */
-  list(limit: number | null, offset: number): ExerciseWithStats[] {
+  list(limit: number | null, offset: number, muscleGroup?: MuscleGroup | null): ExerciseWithStats[] {
+    const filter = muscleGroupFilter(muscleGroup);
     return (
       this.#db
-        .query<ExerciseWithStats, [number, number]>(
+        .query<ExerciseWithStats, (MuscleGroup | null | number)[]>(
           `SELECT ${EXERCISE_COLUMNS},
                 COUNT(s.id)                  AS set_count,
                 COUNT(DISTINCT s.workout_id) AS workout_count,
@@ -37,23 +44,36 @@ export class ExerciseRepository {
            FROM exercises e
            LEFT JOIN sets s     ON s.exercise_id = e.id AND s.done = 1
            LEFT JOIN workouts w ON w.id = s.workout_id
+          ${filter ? `WHERE e.${filter.sql}` : ''}
           GROUP BY e.id
           ORDER BY e.name COLLATE NOCASE ASC
           LIMIT ? OFFSET ?`,
         )
         // A negative LIMIT is SQLite's "no limit".
-        .all(limit ?? -1, offset)
+        .all(...(filter?.params ?? []), limit ?? -1, offset)
     );
   }
 
-  count(): number {
-    return this.#db.query<{ n: number }, []>('SELECT COUNT(*) AS n FROM exercises').get()?.n ?? 0;
+  count(muscleGroup?: MuscleGroup | null): number {
+    const filter = muscleGroupFilter(muscleGroup);
+    return (
+      this.#db
+        .query<{ n: number }, (MuscleGroup | null)[]>(`SELECT COUNT(*) AS n FROM exercises ${filter ? `WHERE ${filter.sql}` : ''}`)
+        .get(...(filter?.params ?? []))?.n ?? 0
+    );
   }
 
-  /** Names are unique under NOCASE, so counting those sorting before it is its exact position. */
-  index(id: ExerciseId): number {
+  /** Names are unique under NOCASE across all exercises, so within a group too: counting those sorting before it is its exact position. */
+  index(id: ExerciseId, muscleGroup?: MuscleGroup | null): number {
     const { name } = this.require(id);
-    return this.#db.query<{ n: number }, [string]>('SELECT COUNT(*) AS n FROM exercises WHERE name < ? COLLATE NOCASE').get(name)?.n ?? 0;
+    const filter = muscleGroupFilter(muscleGroup);
+    return (
+      this.#db
+        .query<{ n: number }, [string, ...(MuscleGroup | null)[]]>(
+          `SELECT COUNT(*) AS n FROM exercises WHERE name < ? COLLATE NOCASE ${filter ? `AND ${filter.sql}` : ''}`,
+        )
+        .get(name, ...(filter?.params ?? []))?.n ?? 0
+    );
   }
 
   get(id: ExerciseId): Exercise | null {
@@ -71,7 +91,7 @@ export class ExerciseRepository {
   create(input: CreateExercise): Exercise {
     try {
       const row = this.#db
-        .query<Exercise, [string, string | null, string | null]>(
+        .query<Exercise, [string, MuscleGroup | null, string | null]>(
           `INSERT INTO exercises (name, muscle_group, notes) VALUES (?, ?, ?)
            RETURNING id, name, muscle_group, notes, created_at`,
         )

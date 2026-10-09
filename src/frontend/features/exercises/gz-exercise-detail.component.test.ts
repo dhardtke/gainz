@@ -1,5 +1,5 @@
 import { beforeAll, expect, test } from 'bun:test';
-import { collect, find, mount, openDialog, settle, shadow, submit, testId, type, useDom, useFetch, useToasts } from '../../testing.ts';
+import { choose, collect, find, mount, openDialog, settle, shadow, submit, testId, type, useDom, useFetch, useToasts } from '../../testing.ts';
 import type { ExerciseProgressDto, SessionPointDto } from '../../../shared/dto/exercise.ts';
 import { exercise, session } from './exercises.fixtures.ts';
 import type { GzView } from '../../ui/view.ts';
@@ -112,15 +112,36 @@ test('keeps the chosen metric after saving the details', async () => {
   expect(metricButton(view, 'totalVolume').getAttribute('aria-pressed')).toBe('true');
 });
 
+test('preselects the muscle group in the edit form', async () => {
+  const view = await mountView();
+  const select = find<HTMLSelectElement>(shadow(view), testId('muscleGroup'));
+  expect(Array.from(select.options).map((option) => option.textContent)).toEqual(['None', 'Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core', 'Full body']);
+  // happy-dom misreads `selected` on any option after the second, so this reads the markup a browser honors.
+  expect(select.querySelector<HTMLOptionElement>('option[selected]')?.value).toBe('Chest');
+});
+
+test('preselects "None" for an exercise without a muscle group', async () => {
+  const view = await mountView({ ...progress(SESSIONS), exercise: exercise({ id: 7, muscleGroup: null }) });
+  expect(find(shadow(view), `${testId('muscleGroup')} option[selected]`).getAttribute('value')).toBe('');
+});
+
 test('saves the details trimmed', async () => {
   const view = await mountView();
   type(field(view, 'name'), '  Paused Bench ');
-  type(field(view, 'muscleGroup'), ' Chest  ');
+  choose(find<HTMLSelectElement>(shadow(view), testId('muscleGroup')), 'Legs');
   submitDetails(view);
   await settle();
   const patch = fake.requests.find((request) => request.method === 'PATCH');
   expect(patch?.url).toBe('/api/exercises/7');
-  expect(patch?.body).toEqual({ name: 'Paused Bench', muscleGroup: 'Chest', notes: '' });
+  expect(patch?.body).toEqual({ name: 'Paused Bench', muscleGroup: 'Legs', notes: '' });
+});
+
+test('clears the muscle group with "None"', async () => {
+  const view = await mountView();
+  choose(find<HTMLSelectElement>(shadow(view), testId('muscleGroup')), '');
+  submitDetails(view);
+  await settle();
+  expect(fake.requests.find((request) => request.method === 'PATCH')?.body).toMatchObject({ muscleGroup: null });
 });
 
 test('lists the sessions newest first, each linking to its workout, with the 1RM change', async () => {

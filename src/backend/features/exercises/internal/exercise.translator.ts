@@ -9,6 +9,7 @@ import type {
   SessionPointDto,
 } from '../../../../shared/dto/exercise.ts';
 import type { BestSetDto } from '../../../../shared/dto/set.ts';
+import type { MuscleGroup } from '../../../../shared/muscle-group.ts';
 import type { Iso8601Date } from '../../../../shared/flavors.ts';
 import type { LiftSet } from '../../workouts/ports/set.ts';
 import type { Exercise, ExerciseWithStats, SessionPoint } from '../ports/exercise.ts';
@@ -17,7 +18,7 @@ import type { CreateExercise, EditExercise } from './exercise.repository.ts';
 export function translateToCreateExerciseDto(body: Record<string, unknown>): CreateExerciseDto {
   return {
     name: body.name as string,
-    muscleGroup: body.muscleGroup as string | null | undefined,
+    muscleGroup: body.muscleGroup as MuscleGroup | null | undefined,
     notes: body.notes as string | null | undefined,
   };
 }
@@ -25,7 +26,7 @@ export function translateToCreateExerciseDto(body: Record<string, unknown>): Cre
 export function translateToEditExerciseDto(body: Record<string, unknown>): EditExerciseDto {
   return {
     name: body.name as string | undefined,
-    muscleGroup: body.muscleGroup as string | null | undefined,
+    muscleGroup: body.muscleGroup as MuscleGroup | null | undefined,
     notes: body.notes as string | null | undefined,
   };
 }
@@ -76,8 +77,8 @@ export function translateToExerciseWithStatsDto(row: ExerciseWithStats): Exercis
   };
 }
 
-export function translateToExercisePageDto(rows: ExerciseWithStats[], total: number, limit: number | null, offset: number): ExercisePageDto {
-  return { items: rows.map(translateToExerciseWithStatsDto), total, limit, offset };
+export function translateToExercisePageDto(rows: ExerciseWithStats[], total: number, all: number, limit: number | null, offset: number): ExercisePageDto {
+  return { items: rows.map(translateToExerciseWithStatsDto), total, all, limit, offset };
 }
 
 export function translateToExercisePositionDto(index: number): ExercisePositionDto {

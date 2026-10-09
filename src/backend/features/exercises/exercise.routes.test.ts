@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { ErrorDto } from '../../../shared/dto/error.ts';
-import type { ExercisePageDto, ExercisePositionDto, ExerciseProgressDto } from '../../../shared/dto/exercise.ts';
+import type { ExerciseDto, ExercisePageDto, ExercisePositionDto, ExerciseProgressDto } from '../../../shared/dto/exercise.ts';
 import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import { at, body, useServer } from '../../testing.ts';
 import { createExercise } from './exercises.fixtures.ts';
@@ -56,6 +56,28 @@ describe('exercises', () => {
     expect(await res.json()).toMatchObject({ name: 'Bench Press', muscleGroup: 'Chest' });
   });
 
+  test('takes each of the seven muscle groups', async () => {
+    const groups = ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core', 'Full body'] as const;
+    for (const [i, muscleGroup] of groups.entries()) {
+      const res = await post('/api/exercises', { name: `Lift ${i}`, muscleGroup });
+      expect(res.status).toBe(201);
+      expect((await body<ExerciseDto>(res)).muscleGroup).toBe(muscleGroup);
+    }
+  });
+
+  test.each(['Quads', 'legs'])('rejects the muscle group %s', async (muscleGroup) => {
+    const res = await post('/api/exercises', { name: 'Leg Extension', muscleGroup });
+    expect(res.status).toBe(400);
+    expect((await body<ErrorDto>(res)).error).toBe('"muscleGroup" must be one of: Chest, Back, Shoulders, Arms, Legs, Core, Full body');
+  });
+
+  test('changes and clears the muscle group', async () => {
+    const exercise = await createExercise(post);
+    expect(await body<ExerciseDto>(await patch(`/api/exercises/${exercise.id}`, { muscleGroup: 'Arms' }))).toMatchObject({ muscleGroup: 'Arms' });
+    expect(await body<ExerciseDto>(await patch(`/api/exercises/${exercise.id}`, { muscleGroup: null }))).toMatchObject({ muscleGroup: null });
+    expect((await patch(`/api/exercises/${exercise.id}`, { muscleGroup: 'Quads' })).status).toBe(400);
+  });
+
   test('returns 404 for a missing exercise', async () => {
     expect((await api('/api/exercises/9999')).status).toBe(404);
   });
@@ -73,6 +95,79 @@ describe('exercises', () => {
     const exercise = await createExercise(post);
     expect((await api(`/api/exercises/${exercise.id}`, { method: 'DELETE' })).status).toBe(204);
     expect((await api(`/api/exercises/${exercise.id}`)).status).toBe(404);
+  });
+});
+
+describe('filtering by muscle group', () => {
+  // Answers each seeded exercise's id by name.
+  async function seed(): Promise<(name: string) => number> {
+    const ids = new Map<string, number>();
+    for (const [name, muscleGroup] of [
+      ['Leg Press', 'Legs'],
+      ['Back Squat', 'Legs'],
+      ['Bench Press', 'Chest'],
+      ['Burpee', 'Full body'],
+      ['Plank', null],
+      ['Farmer Walk', null],
+    ] as const) {
+      const res = await post('/api/exercises', { name, muscleGroup });
+      expect(res.status).toBe(201);
+      ids.set(name, (await body<ExerciseDto>(res)).id);
+    }
+    return (name) => ids.get(name) ?? 0;
+  }
+
+  const names = (page: ExercisePageDto): string[] => page.items.map((exercise) => exercise.name);
+
+  test('lists only the exercises in the group, counting them and every exercise', async () => {
+    await seed();
+    const page = await body<ExercisePageDto>(await api('/api/exercises?muscleGroup=Legs'));
+    expect(names(page)).toEqual(['Back Squat', 'Leg Press']);
+    expect(page).toMatchObject({ total: 2, all: 6 });
+  });
+
+  test('lists only the exercises without a group for none', async () => {
+    await seed();
+    const page = await body<ExercisePageDto>(await api('/api/exercises?muscleGroup=none'));
+    expect(names(page)).toEqual(['Farmer Walk', 'Plank']);
+    expect(page).toMatchObject({ total: 2, all: 6 });
+  });
+
+  test('decodes a group with a space', async () => {
+    await seed();
+    expect(names(await body<ExercisePageDto>(await api('/api/exercises?muscleGroup=Full+body')))).toEqual(['Burpee']);
+  });
+
+  test('pages within the filter', async () => {
+    await seed();
+    const second = await body<ExercisePageDto>(await api('/api/exercises?muscleGroup=Legs&limit=1&offset=1'));
+    expect(names(second)).toEqual(['Leg Press']);
+    expect(second).toMatchObject({ total: 2, all: 6, limit: 1, offset: 1 });
+  });
+
+  test.each(['', 'muscleGroup='])('counts every exercise in both totals without a filter (%s)', async (query) => {
+    await seed();
+    const page = await body<ExercisePageDto>(await api(`/api/exercises?${query}`));
+    expect(page.items).toHaveLength(6);
+    expect(page).toMatchObject({ total: 6, all: 6 });
+  });
+
+  test.each(['Quads', 'legs'])('rejects %s', async (muscleGroup) => {
+    const res = await api(`/api/exercises?muscleGroup=${muscleGroup}`);
+    expect(res.status).toBe(400);
+    expect((await body<ErrorDto>(res)).error).toBe('"muscleGroup" must be one of: Chest, Back, Shoulders, Arms, Legs, Core, Full body, none');
+  });
+
+  test('positions an exercise among those in its group', async () => {
+    const id = await seed();
+    const indexOf = async (name: string, query: string): Promise<number> =>
+      (await body<ExercisePositionDto>(await api(`/api/exercises/${id(name)}/position${query}`))).index;
+
+    expect(await indexOf('Leg Press', '')).toBe(4);
+    expect(await indexOf('Leg Press', '?muscleGroup=Legs')).toBe(1);
+    expect(await indexOf('Plank', '?muscleGroup=none')).toBe(1);
+    expect(await indexOf('Farmer Walk', '?muscleGroup=none')).toBe(0);
+    expect((await api(`/api/exercises/${id('Plank')}/position?muscleGroup=Quads`)).status).toBe(400);
   });
 });
 

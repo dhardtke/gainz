@@ -202,16 +202,16 @@ Turn the muscle group into one of seven values everywhere it is stored, validate
 
 **Tasks**:
 
-- [ ] Add `src/shared/muscle-group.ts` (types only):
+- [x] Add `src/shared/muscle-group.ts` (types only):
       ```ts
       export type MuscleGroup = 'Chest' | 'Back' | 'Shoulders' | 'Arms' | 'Legs' | 'Core' | 'Full body';
 
       /** A group, or `none` for exercises without one. */
       export type MuscleGroupFilter = MuscleGroup | 'none';
       ```
-- [ ] `src/shared/dto/exercise.ts`: `muscleGroup: MuscleGroup | null` on `ExerciseDto`, and
+- [x] `src/shared/dto/exercise.ts`: `muscleGroup: MuscleGroup | null` on `ExerciseDto`, and
       `muscleGroup?: MuscleGroup | null` on `CreateExerciseDto` and `EditExerciseDto`.
-- [ ] Add `src/backend/db/migrations/005-fixed-muscle-groups.sql`, SQLite's rebuild procedure (the
+- [x] Add `src/backend/db/migrations/005-fixed-muscle-groups.sql`, SQLite's rebuild procedure (the
       runner already turns foreign keys off and runs `foreign_key_check`):
       ```sql
       CREATE TABLE exercises_new (
@@ -248,34 +248,34 @@ Turn the muscle group into one of seven values everywhere it is stored, validate
       Copying `id`s keeps `sets.exercise_id` and `workout_exercises.exercise_id` valid. The
       `INSERT … SELECT` only advances `exercises_new`'s sequence to the largest *surviving* id, hence
       the `UPDATE`; `DROP` removes the old sequence row and `RENAME` carries the new one over.
-- [ ] `src/backend/shared/validate.ts`: add `optionalOneOf(dto, field, values)`. `undefined`, `null`
+- [x] `src/backend/shared/validate.ts`: add `optionalOneOf(dto, field, values)`. `undefined`, `null`
       and `''` give `null`; any other value must pass `isOneOf`, otherwise
       `badRequest('"<field>" must be one of: …')` (the same message `requiredOneOf` uses).
-- [ ] `src/backend/features/exercises/exercises.facade.ts`: export
+- [x] `src/backend/features/exercises/exercises.facade.ts`: export
       `MUSCLE_GROUPS = ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core', 'Full body'] as const satisfies readonly MuscleGroup[]`;
       replace both `optionalString(dto, 'muscleGroup', 60)` with `optionalOneOf(dto, 'muscleGroup', MUSCLE_GROUPS)`.
-- [ ] `src/backend/features/exercises/ports/exercise.ts`: `muscle_group: MuscleGroup | null`
+- [x] `src/backend/features/exercises/ports/exercise.ts`: `muscle_group: MuscleGroup | null`
       (imports `src/shared/muscle-group.ts`, which the `ports/` lint rule allows).
-- [ ] `src/backend/features/exercises/internal/exercise.repository.ts`: `CreateExercise.muscle_group: MuscleGroup | null`;
+- [x] `src/backend/features/exercises/internal/exercise.repository.ts`: `CreateExercise.muscle_group: MuscleGroup | null`;
       the `create` query's parameter tuple follows.
-- [ ] `src/backend/features/exercises/internal/exercise.translator.ts`: body-to-DTO casts become
+- [x] `src/backend/features/exercises/internal/exercise.translator.ts`: body-to-DTO casts become
       `MuscleGroup | null | undefined`.
-- [ ] `src/scripts/seed.ts`: type `EXERCISES` so each `muscleGroup` is checked as a `MuscleGroup`
+- [x] `src/scripts/seed.ts`: type `EXERCISES` so each `muscleGroup` is checked as a `MuscleGroup`
       (e.g. `satisfies readonly { name: string; muscleGroup: MuscleGroup; notes: string | null }[]`).
-- [ ] Add `src/frontend/features/exercises/internal/muscle-groups.ts`:
+- [x] Add `src/frontend/features/exercises/internal/muscle-groups.ts`:
       - `MUSCLE_GROUPS` (same `as const satisfies readonly MuscleGroup[]`),
       - `parseMuscleGroup(value: string | undefined): MuscleGroup | null` (a member, or `null`),
       - `muscleGroupOptions(selected: MuscleGroup | null): RawHtml`, a `<option value="">None</option>`
         followed by one `<option>` per group, with `selected` on the current one.
-- [ ] `gz-exercise-list.component.ts`: replace the muscle group `<input>` in the add form with
+- [x] `gz-exercise-list.component.ts`: replace the muscle group `<input>` in the add form with
       `<select id="muscleGroup" name="muscleGroup" data-testid="muscleGroup">${muscleGroupOptions(null)}</select>`,
       and send `muscleGroup: parseMuscleGroup(values.muscleGroup)`.
-- [ ] `gz-exercise-detail.component.ts`: the same `<select>` in the edit form with
+- [x] `gz-exercise-detail.component.ts`: the same `<select>` in the edit form with
       `muscleGroupOptions(exercise.muscleGroup)`, keeping `data-testid="muscleGroup"`; send
       `parseMuscleGroup(values.muscleGroup)`.
-- [ ] `src/frontend/features/exercises/exercises.fixtures.ts`: the fixture still defaults to
+- [x] `src/frontend/features/exercises/exercises.fixtures.ts`: the fixture still defaults to
       `muscleGroup: null`; fix any test passing a non-member string.
-- [ ] Tests, `src/backend/db/migrations.test.ts` ("the real migrations"): build a database up to 004
+- [x] Tests, `src/backend/db/migrations.test.ts` ("the real migrations"): build a database up to 004
       from a temp dir (as the 004 test does), insert exercises with `' legs '`, `'CHEST'`,
       `'Full Body'`, `'Quads'`, `NULL` and a set on one of them, migrate, and assert
       `Legs`, `Chest`, `Full body`, `NULL`, `NULL`, the same ids, the set still pointing at its
@@ -283,40 +283,40 @@ Turn the muscle group into one of seven values everywhere it is stored, validate
       `UPDATE exercises SET muscle_group = 'Quads'` throwing. Also assert that after deleting the
       exercise with the highest id before 005, the next exercise inserted after 005 gets a new id,
       not the deleted one.
-- [ ] Tests, `src/backend/db/migrations.test.ts`: update the existing expectations that list the
+- [x] Tests, `src/backend/db/migrations.test.ts`: update the existing expectations that list the
       real migrations: `:171-172` (`[1, 2, 3, 4]` and version 4 become `[1, 2, 3, 4, 5]` and 5) and
       `:228` (`[4]` becomes `[4, 5]`).
-- [ ] Tests, `src/backend/shared/validate.test.ts`: `optionalOneOf` returns `null` for `undefined`,
+- [x] Tests, `src/backend/shared/validate.test.ts`: `optionalOneOf` returns `null` for `undefined`,
       `null` and `''`, returns a member, and throws for `'legs'` and a number.
-- [ ] Tests, `src/backend/features/exercises/exercise.routes.test.ts`: `POST` with every one of the
+- [x] Tests, `src/backend/features/exercises/exercise.routes.test.ts`: `POST` with every one of the
       seven groups in order succeeds and echoes it; `POST` with `'Quads'` and with `'legs'` is a
       400; `PATCH` with `'Arms'` changes it and with `null` clears it.
-- [ ] Tests, `gz-exercise-list.component.test.ts`: add a `beforeEach` resetting the URL with
+- [x] Tests, `gz-exercise-list.component.test.ts`: add a `beforeEach` resetting the URL with
       `history.replaceState(null, '', '/exercises')`, as `gz-workout-list.component.test.ts:14-16`
       does, since `navigate()` pushes history that outlives a test. Then: the add form's select lists
       "None" and the seven groups in order, and submitting with "Legs" (picked with `choose()`, `src/frontend/testing.ts:235`) posts
       `muscleGroup: 'Legs'`, with "None" posts `null`. These need new stubs for
       `POST /api/exercises` and `GET /api/exercises/:id/position`.
-- [ ] Tests, `gz-exercise-detail.component.test.ts`: the edit select is preselected with the
+- [x] Tests, `gz-exercise-detail.component.test.ts`: the edit select is preselected with the
       exercise's group (and "None" when it has none). Rewrite "saves the details trimmed" (`:118-123`),
       which types `' Chest  '` into the muscle group field: pick "Chest" with `choose()` and keep
       the trimming assertions for name and notes.
-- [ ] Docs, `docs/backend.md`: in the data-model paragraphs (before "The schema lives in …",
+- [x] Docs, `docs/backend.md`: in the data-model paragraphs (before "The schema lives in …",
       around line 234) describe the seven groups, the `CHECK`, the exact-match 400, and that
       `005-fixed-muscle-groups.sql` kept values matching a group after trimming, ignoring case, and
       cleared the rest; mention `optionalOneOf` beside `requiredOneOf` where `shared/validate.ts`
       is listed (line 10).
-- [ ] Docs, `docs/frontend.md`: where the add form (around line 322) and `gz-exercise-detail`'s edit
+- [x] Docs, `docs/frontend.md`: where the add form (around line 322) and `gz-exercise-detail`'s edit
       form (around line 325) are described, say the muscle group is a `<select>` of "None" and the
       seven groups, rendered by `internal/muscle-groups.ts`, whose list is the frontend's own copy
       of the backend's, typed against `src/shared/muscle-group.ts`.
 
 **Automated Verification**:
 
-- [ ] `bun test --parallel src/backend/db/migrations.test.ts` passes, including the 005 test.
-- [ ] `bun test --parallel src/backend/shared/validate.test.ts src/backend/features/exercises` passes.
-- [ ] `bun test --parallel src/frontend/features/exercises` passes.
-- [ ] `bun test --parallel`, `bun run typecheck`, `bun run lint` and `bun run fmt:check` pass.
+- [x] `bun test --parallel src/backend/db/migrations.test.ts` passes, including the 005 test.
+- [x] `bun test --parallel src/backend/shared/validate.test.ts src/backend/features/exercises` passes.
+- [x] `bun test --parallel src/frontend/features/exercises` passes.
+- [x] `bun test --parallel`, `bun run typecheck`, `bun run lint` and `bun run fmt:check` pass.
 
 ### Phase 2: Filter the exercise list by muscle group
 
@@ -327,12 +327,12 @@ URL state and post-create redirect to the list.
 
 **Tasks**:
 
-- [ ] `src/shared/dto/exercise.ts`: `ExercisePageDto` gains `/** Every exercise, whatever the filter. */ all: number;`;
+- [x] `src/shared/dto/exercise.ts`: `ExercisePageDto` gains `/** Every exercise, whatever the filter. */ all: number;`;
       `total`'s comment becomes "Every exercise matching the filter, not just this page."
-- [ ] `src/backend/http/http.ts`: add
+- [x] `src/backend/http/http.ts`: add
       `optionalQueryOneOf<V extends string>(params, key, values: readonly V[]): V | null`; absent or
       `''` gives `null`, a non-member is `badRequest('"<key>" must be one of: …')`.
-- [ ] `src/backend/features/exercises/internal/exercise.repository.ts`: `list(limit, offset, muscleGroup?)`,
+- [x] `src/backend/features/exercises/internal/exercise.repository.ts`: `list(limit, offset, muscleGroup?)`,
       `count(muscleGroup?)` and `index(id, muscleGroup?)`, where `muscleGroup: MuscleGroup | null | undefined`
       (`undefined` = every exercise, `null` = those without a group). A private helper returns the
       condition and its parameter without a table alias, `{ sql: 'muscle_group IS ?', params: [muscleGroup] }`
@@ -342,27 +342,27 @@ URL state and post-create redirect to the list.
       `index` as `AND muscle_group IS ?` after its `name < ?`. Update
       `index`'s doc comment: names are unique under NOCASE across all exercises, so they are within a
       group too.
-- [ ] `src/backend/features/exercises/exercises.facade.ts`: `list`, `count` and `index` pass the filter through.
-- [ ] `src/backend/features/exercises/internal/exercise.controller.ts`: a private `#muscleGroup(params)`
+- [x] `src/backend/features/exercises/exercises.facade.ts`: `list`, `count` and `index` pass the filter through.
+- [x] `src/backend/features/exercises/internal/exercise.controller.ts`: a private `#muscleGroup(params)`
       reads `optionalQueryOneOf(params, 'muscleGroup', [...MUSCLE_GROUPS, 'none'])` and maps
       absent → `undefined`, `'none'` → `null`. `list` answers
       `translateToExercisePageDto(list(limit, offset, filter), count(filter), count(), limit, offset)`;
       `position` passes the filter to `index`.
-- [ ] `src/backend/features/exercises/internal/exercise.translator.ts`: `translateToExercisePageDto`
+- [x] `src/backend/features/exercises/internal/exercise.translator.ts`: `translateToExercisePageDto`
       takes and returns `all`.
-- [ ] `src/frontend/features/exercises/internal/exercise.api.ts`: `list({ limit, offset, muscleGroup })`
+- [x] `src/frontend/features/exercises/internal/exercise.api.ts`: `list({ limit, offset, muscleGroup })`
       and `position(id, muscleGroup?)` build their query with `URLSearchParams`, keeping today's
       exact URLs when no filter is given (`/exercises` and `/exercises?limit=10&offset=0`, so the
       add-set form's unpaged call is unchanged); `muscleGroup` is a `MuscleGroupFilter`.
-- [ ] `src/frontend/features/exercises/exercises.facade.ts`: `list` and `position` pass `muscleGroup` through.
-- [ ] `internal/muscle-groups.ts`: add
+- [x] `src/frontend/features/exercises/exercises.facade.ts`: `list` and `position` pass `muscleGroup` through.
+- [x] `internal/muscle-groups.ts`: add
       - `parseMuscleGroupFilter(search: string): MuscleGroupFilter | null`, `null` (= All) for an
         absent or unknown value,
       - `exercisesPath(filter: MuscleGroupFilter | null, page: number): string`, `/exercises`, then
         `muscleGroup` and then `page` (left out on page 1), e.g. `/exercises?muscleGroup=Full+body&page=2`,
       - `muscleGroupFilterOptions(selected)`, `<option value="">All</option>`, the seven groups,
         `<option value="none">No muscle group</option>`.
-- [ ] `gz-exercise-list.component.ts`:
+- [x] `gz-exercise-list.component.ts`:
       - `ExerciseListData` gains `all` and `filter: MuscleGroupFilter | null`; `load()` reads the
         filter with `parseMuscleGroupFilter(location.search)` and passes it to `list`.
       - The heading becomes the workouts list's `<div class="hstack justify-between gap-2">` row:
@@ -377,24 +377,24 @@ URL state and post-create redirect to the list.
         "No exercises without a muscle group.".
       - After a create: `const filter = exercise.muscleGroup ?? 'none'`, `position(exercise.id, filter)`,
         `navigate(exercisesPath(filter, Math.floor(index / PAGE_SIZE) + 1))`.
-- [ ] `optionalQueryOneOf` has no unit test of its own, like `optionalQueryInt`: the route tests
+- [x] `optionalQueryOneOf` has no unit test of its own, like `optionalQueryInt`: the route tests
       below cover absent, a member and a non-member 400.
-- [ ] Add `all` to every hand-built `ExercisePageDto` in frontend tests:
+- [x] Add `all` to every hand-built `ExercisePageDto` in frontend tests:
       `src/frontend/app/gz-app.component.test.ts:53` and
       `src/frontend/features/workouts/gz-workout-detail.component.test.ts:19`, besides `page()` in
       `gz-exercise-list.component.test.ts:23`.
-- [ ] Tests, `exercise.routes.test.ts`: with exercises in Legs, Chest and none,
+- [x] Tests, `exercise.routes.test.ts`: with exercises in Legs, Chest and none,
       `?muscleGroup=Legs` lists only Legs with the right `total` and `all`; `?muscleGroup=none` lists
       only those without a group; `?muscleGroup=Full+body` decodes; paging within a filter;
       `?muscleGroup=Quads` and `?muscleGroup=legs` are 400; no parameter keeps `total === all`;
       `/position?muscleGroup=Legs` counts only Legs exercises sorting before it, `?muscleGroup=none`
       likewise, and a bad value is a 400; an empty `?muscleGroup=` is the same as none given.
-- [ ] Tests, `internal/muscle-groups.test.ts` (new): `parseMuscleGroupFilter` (absent, a group,
+- [x] Tests, `internal/muscle-groups.test.ts` (new): `parseMuscleGroupFilter` (absent, a group,
       `Full+body`, `none`, unknown → `null`) and `exercisesPath` (no filter page 1 → `/exercises`,
       filter and page, `none`, encoded space).
-- [ ] Tests, `exercises.facade.test.ts` / API: `list` and `position` request the filtered URLs, and
+- [x] Tests, `exercises.facade.test.ts` / API: `list` and `position` request the filtered URLs, and
       the unfiltered ones are unchanged.
-- [ ] Tests, `gz-exercise-list.component.test.ts` (update `page()` to fill `all`):
+- [x] Tests, `gz-exercise-list.component.test.ts` (update `page()` to fill `all`):
       - with `?muscleGroup=Legs` in the URL it requests the filtered page, preselects "Legs", reads
         "3 of 12 exercises", and keeps the add form closed on an empty filtered page while `all > 0`
         and shows "No Legs exercises yet.";
@@ -403,34 +403,46 @@ URL state and post-create redirect to the list.
       - a `page-change` under a filter keeps it in the URL;
       - creating an "Arms" exercise while filtered to Chest requests `/position?muscleGroup=Arms` and
         navigates to `/exercises?muscleGroup=Arms`; one without a group goes to `?muscleGroup=none`.
-- [ ] Docs, `docs/backend.md` (lines 42-50): `GET /api/exercises` and `/position` take an optional
+- [x] Docs, `docs/backend.md` (lines 42-50): `GET /api/exercises` and `/position` take an optional
       `muscleGroup` (a group or `none`, else 400); `total` counts the filtered rows and the exercise
       page adds `all`; the position is counted within the filter, still exact because names are
       unique under NOCASE overall; `optionalQueryOneOf` beside `optionalQueryInt` (line 10).
-- [ ] Docs, `docs/frontend.md` (lines 301-323): the exercises list keeps its filter in the URL as
+- [x] Docs, `docs/frontend.md` (lines 301-323): the exercises list keeps its filter in the URL as
       `?muscleGroup=` beside `?page=`, built by `exercisesPath`, and a filter change starts at page 1;
       the "3 of 12 exercises" subtitle and filter-specific empty text; the add form opens on `all`;
       adding an exercise navigates to its group's page that holds it.
 
 **Automated Verification**:
 
-- [ ] `bun test --parallel src/backend` passes, including the new filter and position cases.
-- [ ] `bun test --parallel src/frontend/features/exercises` passes, including `muscle-groups.test.ts`.
-- [ ] `bun test --parallel`, `bun run typecheck`, `bun run lint` and `bun run fmt:check` pass.
+- [x] `bun test --parallel src/backend` passes, including the new filter and position cases.
+- [x] `bun test --parallel src/frontend/features/exercises` passes, including `muscle-groups.test.ts`.
+- [x] `bun test --parallel`, `bun run typecheck`, `bun run lint` and `bun run fmt:check` pass.
 
 **Manual Verification**:
 
-- [ ] On a seeded database (`bun run seed`, `bun run start:dev`), filter `/exercises` by Back,
+- [x] On a seeded database (`bun run seed`, `bun run start:dev`), filter `/exercises` by Back,
       check the cards, the subtitle and the URL, reload, then go Back and Forward through filter
       changes.
-- [ ] With a filter active, add an exercise in another group and in none, and confirm the list
+- [x] With a filter active, add an exercise in another group and in none, and confirm the list
       switches to that group with the new card visible.
-- [ ] On a phone-width window, the heading row with the filter wraps cleanly and the selects in the
+- [x] On a phone-width window, the heading row with the filter wraps cleanly and the selects in the
       add and edit forms are usable.
 
 ## Implementation Notes
 
 During implementation, document user feedback, problems, and decisions here.
+
+- Migration 005 replaces the planned `UPDATE sqlite_sequence` with a `DELETE` plus
+  `INSERT … SELECT` for `exercises_new`: when every exercise had been deleted, the copy inserts no
+  row, `exercises_new` gets no sequence row, and the `UPDATE` would have matched nothing and lost
+  the sequence.
+- The facade test "create trims the name and turns a blank muscle group into null" passed `''`,
+  which is no longer a `MuscleGroup`; it now passes `null`, and `validate.test.ts` covers `''`.
+- happy-dom 20.14.6 reports the wrong `select.value` when an `<option selected>` after the second
+  is parsed from markup (it picks the second option). The preselection tests therefore read
+  `option[selected]`, the markup a browser honors, instead of `.value`.
+- `bun test --parallel` occasionally fails in `src/scripts/build.test.ts` with an `ENOENT` on
+  `src/frontend/__version.css`, a race unrelated to this change; reruns pass.
 
 ## References
 

@@ -312,15 +312,29 @@ gap for a hole of two or more), which the component renders. `pageOffset` caps t
 `MAX_OFFSET`, the largest the API accepts, so even `?page=99999999` is a valid request whose `total`
 fills the header, and `pageCount` stops at the last page that cap can reach. A page past
 `pageCount`, given as `gz-pagination`'s `page` and `pages` attributes, shows "No <noun> on this
-page." with a Go to page 1 button in place of the pager, and the list leaves out its cards. Adding an exercise navigates to the page that now holds it, found through
-`exerciseFacade.position()`; should that request fail after the exercise was created, the list
-reloads the page it is on instead.
+page." with a Go to page 1 button in place of the pager, and the list leaves out its cards.
+
+The exercises list also filters by muscle group, through a "Muscle group" `<select>` beside its
+heading: "All", the seven groups and "No muscle group". The filter lives in the URL as
+`?muscleGroup=<group>` or `?muscleGroup=none` beside `?page=`, both built by `exercisesPath` in
+`features/exercises/internal/muscle-groups.ts`, since `pagePath` only knows `?page`; an unknown
+value reads as "All". Changing the filter navigates to page 1 of the new one, and a `page-change`
+keeps it. With a filter the subtitle reads "3 of 12 exercises", from the page's `total` and `all`,
+and an empty page reads "No Legs exercises yet." or "No exercises without a muscle group.". Adding
+an exercise navigates to its own group (`none` when it has none) and to the page of that filtered
+list that now holds it, found through `exerciseFacade.position()` with the same filter, so the new
+card is always in view; should that request fail after the exercise was created, the list reloads
+the page it is on instead.
 
 Both lists show their count as a muted subtitle under the heading. The workouts list has no form:
 its "Start session" header button creates a workout dated today and opens it, as the dashboard's
 "Log today's workout" does, and a title, notes or a past date are set on the workout itself. The
 exercises list keeps its add form in a collapsed `<details class="add">`, "Add an exercise", which
-starts open only while there are no exercises.
+starts open only while there are no exercises at all, whatever the filter. Its muscle group is a `<select>` of "None" and the
+seven groups, as in "Edit exercise", both rendered by `muscleGroupOptions` in
+`features/exercises/internal/muscle-groups.ts`. Its `MUSCLE_GROUPS` is the frontend's own copy of
+the backend's list, since `src/shared/` holds no values; both are typed against `MuscleGroup` in
+`src/shared/muscle-group.ts`, and a test on each side pins the full list.
 
 `gz-exercise-detail` puts the progress first: the name and muscle group, four
 `gz-tile`s, `gz-progress-chart` and `gz-session-table`, and last a collapsed `<details

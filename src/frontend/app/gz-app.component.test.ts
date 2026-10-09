@@ -50,7 +50,7 @@ const WORKOUT: WorkoutWithExercisesDto = {
   exercises: [],
 };
 
-const EXERCISES: ExercisePageDto = { items: [], total: 0, limit: null, offset: 0 };
+const EXERCISES: ExercisePageDto = { items: [], total: 0, all: 0, limit: null, offset: 0 };
 
 async function mountApp(): Promise<HTMLElement> {
   const app = mount('gz-app');

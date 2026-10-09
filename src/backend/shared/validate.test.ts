@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { optionalString, requiredDate, requiredInt, requiredNumber, requiredOneOf, requiredString } from './validate.ts';
+import { optionalOneOf, optionalString, requiredDate, requiredInt, requiredNumber, requiredOneOf, requiredString } from './validate.ts';
 
 describe('requiredString', () => {
   test('trims the value', () => {
@@ -74,5 +74,24 @@ describe('requiredOneOf', () => {
     for (const dto of dtos) {
       expect(() => requiredOneOf(dto, 'direction', directions)).toThrow('"direction" must be one of: up, down');
     }
+  });
+});
+
+describe('optionalOneOf', () => {
+  const directions = ['up', 'down'] as const;
+
+  test('normalizes undefined, null and blank to null', () => {
+    expect(optionalOneOf({ direction: undefined }, 'direction', directions)).toBeNull();
+    expect(optionalOneOf({ direction: null }, 'direction', directions)).toBeNull();
+    expect(optionalOneOf({ direction: '' }, 'direction', directions)).toBeNull();
+  });
+
+  test('returns a listed value', () => {
+    expect(optionalOneOf({ direction: 'up' }, 'direction', directions)).toBe('up');
+  });
+
+  test('rejects another case and a number', () => {
+    expect(() => optionalOneOf({ direction: 'UP' }, 'direction', directions)).toThrow('"direction" must be one of: up, down');
+    expect(() => optionalOneOf({ direction: 1 }, 'direction', directions)).toThrow('"direction" must be one of: up, down');
   });
 });

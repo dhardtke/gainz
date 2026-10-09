@@ -4,9 +4,9 @@ import { thrown } from '../../testing.ts';
 import { createExerciseFacade } from './exercises.facade.ts';
 
 describe('ExerciseFacade validation', () => {
-  test('create trims the name and turns a blank muscle group into null', () => {
+  test('create trims the name and keeps a missing muscle group null', () => {
     const exercises = createExerciseFacade(openDatabase(':memory:'));
-    expect(exercises.create({ name: '  Squat ', muscleGroup: '' })).toMatchObject({ name: 'Squat', muscle_group: null });
+    expect(exercises.create({ name: '  Squat ', muscleGroup: null })).toMatchObject({ name: 'Squat', muscle_group: null });
   });
 
   test('create rejects a blank name', () => {

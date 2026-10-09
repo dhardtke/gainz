@@ -3,17 +3,21 @@ import { define } from '../../ui/base.ts';
 import { html } from '../../ui/html.ts';
 import { formatWeight, plural, relativeDay } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
-import { PAGE_SIZE, pageCount, pageOffset, pagePath, parsePage } from '../../ui/pagination/pagination.ts';
+import { PAGE_SIZE, pageCount, pageOffset, parsePage } from '../../ui/pagination/pagination.ts';
 import '../../ui/pagination/gz-pagination.component.ts';
 import type { ExerciseDto, ExerciseWithStatsDto } from '../../../shared/dto/exercise.ts';
 import { toast, toastError } from '../../ui/toast.ts';
 import { GzView } from '../../ui/view.ts';
 import { exerciseFacade } from './exercises.facade.ts';
+import { exercisesPath, muscleGroupFilterOptions, muscleGroupOptions, parseMuscleGroup, parseMuscleGroupFilter } from './internal/muscle-groups.ts';
+import type { MuscleGroupFilter } from '../../../shared/muscle-group.ts';
 
 interface ExerciseListData {
   items: ExerciseWithStatsDto[];
   total: number;
+  all: number;
   page: number;
+  filter: MuscleGroupFilter | null;
 }
 
 export class GzExerciseListComponent extends GzView<ExerciseListData> {
@@ -23,15 +27,22 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
     super.connectedCallback();
     this.root.addEventListener('page-change', (event) => {
       if (event instanceof CustomEvent && typeof event.detail === 'number') {
-        navigate(pagePath('/exercises', event.detail));
+        navigate(exercisesPath(this.data?.filter ?? null, event.detail));
+      }
+    });
+    this.root.addEventListener('change', (event) => {
+      if (event.target instanceof HTMLSelectElement && event.target.id === 'filter') {
+        const { value } = event.target;
+        navigate(exercisesPath(value === 'none' ? 'none' : parseMuscleGroup(value), 1));
       }
     });
   }
 
   override async load(): Promise<ExerciseListData> {
     const page = parsePage(location.search);
-    const { items, total } = await exerciseFacade.list({ limit: PAGE_SIZE, offset: pageOffset(page, PAGE_SIZE) });
-    return { items, total, page };
+    const filter = parseMuscleGroupFilter(location.search);
+    const { items, total, all } = await exerciseFacade.list({ limit: PAGE_SIZE, offset: pageOffset(page, PAGE_SIZE), muscleGroup: filter ?? undefined });
+    return { items, total, all, page, filter };
   }
 
   override async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
@@ -45,7 +56,7 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
     try {
       exercise = await exerciseFacade.create({
         name,
-        muscleGroup: values.muscleGroup,
+        muscleGroup: parseMuscleGroup(values.muscleGroup),
         notes: values.notes,
       });
     } catch (error) {
@@ -55,8 +66,9 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
     toast(`Added ${name}`, 'success');
 
     try {
-      const { index } = await exerciseFacade.position(exercise.id);
-      navigate(pagePath('/exercises', Math.floor(index / PAGE_SIZE) + 1));
+      const filter = exercise.muscleGroup ?? 'none';
+      const { index } = await exerciseFacade.position(exercise.id, filter);
+      navigate(exercisesPath(filter, Math.floor(index / PAGE_SIZE) + 1));
     } catch (error) {
       toastError(error);
       form.reset();
@@ -82,7 +94,14 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
     `;
   }
 
-  #page(items: ExerciseWithStatsDto[], total: number, page: number): RawHtml {
+  #emptyText(all: number, filter: MuscleGroupFilter | null): string {
+    if (all === 0 || filter === null) {
+      return 'No exercises yet. Add the lifts you train above.';
+    }
+    return filter === 'none' ? 'No exercises without a muscle group.' : `No ${filter} exercises yet.`;
+  }
+
+  #page({ items, total, all, page, filter }: ExerciseListData): RawHtml {
     const pages = pageCount(total, PAGE_SIZE);
     const pager = html` <gz-pagination page="${page}" pages="${pages}" noun="exercises"></gz-pagination> `;
     if (page > pages) {
@@ -90,21 +109,30 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
     }
     return html`
       <div class="vstack gap-2">
-        ${items.length === 0 ? html`<p class="empty">No exercises yet. Add the lifts you train above.</p>` : items.map((exercise) => this.#card(exercise))}
+        ${items.length === 0 ? html`<p class="empty" data-testid="empty">${this.#emptyText(all, filter)}</p>` : items.map((exercise) => this.#card(exercise))}
       </div>
       ${pager}
     `;
   }
 
-  override readyTemplate({ items, total, page }: ExerciseListData): RawHtml {
+  override readyTemplate(data: ExerciseListData): RawHtml {
+    const { total, all, filter } = data;
     return html`
       <div class="vstack">
-        <hgroup>
-          <h1>Exercises</h1>
-          <p class="text-light" data-testid="subtitle">${plural(total, 'exercise')}</p>
-        </hgroup>
+        <div class="hstack justify-between gap-2">
+          <hgroup>
+            <h1>Exercises</h1>
+            <p class="text-light" data-testid="subtitle">${filter === null ? plural(all, 'exercise') : `${total} of ${plural(all, 'exercise')}`}</p>
+          </hgroup>
+          <div class="field">
+            <label for="filter">Muscle group</label>
+            <select id="filter" data-testid="filter">
+              ${muscleGroupFilterOptions(filter)}
+            </select>
+          </div>
+        </div>
 
-        <details class="add" data-testid="add" ${total === 0 ? 'open' : ''}>
+        <details class="add" data-testid="add" ${all === 0 ? 'open' : ''}>
           <summary>Add an exercise</summary>
           <form class="new-form" data-action="create">
             <div class="fields">
@@ -114,7 +142,9 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
               </div>
               <div class="field">
                 <label for="muscleGroup">Muscle group</label>
-                <input id="muscleGroup" name="muscleGroup" type="text" placeholder="Legs" maxlength="60" />
+                <select id="muscleGroup" name="muscleGroup" data-testid="muscleGroup">
+                  ${muscleGroupOptions(null)}
+                </select>
               </div>
               <div class="field field-notes">
                 <label for="notes">Notes</label>
@@ -125,7 +155,7 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
           </form>
         </details>
 
-        ${this.#page(items, total, page)}
+        ${this.#page(data)}
       </div>
     `;
   }

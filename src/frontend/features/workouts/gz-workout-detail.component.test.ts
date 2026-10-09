@@ -25,6 +25,7 @@ const EXERCISES: ExercisePageDto = {
     bestWeight: null,
   })),
   total: 2,
+  all: 2,
   limit: null,
   offset: 0,
 };

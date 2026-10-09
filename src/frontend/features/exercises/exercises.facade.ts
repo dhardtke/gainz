@@ -7,6 +7,7 @@ import type {
   ExerciseProgressDto,
 } from '../../../shared/dto/exercise.ts';
 import type { ExerciseId } from '../../../shared/flavors.ts';
+import type { MuscleGroupFilter } from '../../../shared/muscle-group.ts';
 import { ExerciseApi } from './internal/exercise.api.ts';
 
 export class ExerciseFacade {
@@ -16,7 +17,7 @@ export class ExerciseFacade {
     this.#api = api;
   }
 
-  list(page?: { limit?: number; offset?: number }): Promise<ExercisePageDto> {
+  list(page?: { limit?: number; offset?: number; muscleGroup?: MuscleGroupFilter }): Promise<ExercisePageDto> {
     return this.#api.list(page);
   }
 
@@ -24,8 +25,8 @@ export class ExerciseFacade {
     return this.#api.get(id);
   }
 
-  position(id: ExerciseId): Promise<ExercisePositionDto> {
-    return this.#api.position(id);
+  position(id: ExerciseId, muscleGroup?: MuscleGroupFilter): Promise<ExercisePositionDto> {
+    return this.#api.position(id, muscleGroup);
   }
 
   progress(id: ExerciseId): Promise<ExerciseProgressDto> {

@@ -48,3 +48,15 @@ export function optionalQueryInt(params: URLSearchParams, key: string, { min = 0
   }
   return num;
 }
+
+export function optionalQueryOneOf<V extends string>(params: URLSearchParams, key: string, values: readonly V[]): V | null {
+  const raw = params.get(key);
+  if (raw === null || raw === '') {
+    return null;
+  }
+  const value = values.find((candidate) => candidate === raw);
+  if (value === undefined) {
+    throw badRequest(`"${key}" must be one of: ${values.join(', ')}`);
+  }
+  return value;
+}

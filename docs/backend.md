@@ -6,8 +6,9 @@ its SQL and its mapping end to end, the mapping reached through its controllers 
 feature: `db/` (the connection and its PRAGMAs in `db.ts`, the schema in `migrations.ts` and
 `migrations/`, and the table-agnostic statement helpers in `db/sql.ts`), `http/` (`routing.ts` for
 the `RouteTable` and `ParamRequest` types, `routes.ts` for the registry,
-`http.ts`, `errors.ts`, `access-log.ts` and `server.ts`, with `http.ts` holding `pathId`, `queryInt` and
-`optionalQueryInt` beside `readJsonObject`), `shared/validate.ts` for the request-field rules and their length bounds, `shared/log.ts`, the logger, and
+`http.ts`, `errors.ts`, `access-log.ts` and `server.ts`, with `http.ts` holding `pathId`, `queryInt`,
+`optionalQueryInt` and `optionalQueryOneOf` beside `readJsonObject`), `shared/validate.ts` for the request-field rules and their length bounds (`requiredOneOf` and
+`optionalOneOf` for a field limited to a fixed list), `shared/log.ts`, the logger, and
 `main.ts`, the entry point that opens the database and starts the server
 through `startServer`. There is no `fetch` fallback — every URL the server answers is a declared pattern.
 
@@ -43,11 +44,18 @@ Both list endpoints page. `GET /api/workouts` and `GET /api/exercises` take `lim
 `offset` (0–100000), answer `{ items, total, limit, offset }` with `total` counting every row, and
 refuse a value outside those bounds with a 400. `GET /api/workouts` defaults `limit` to 50;
 `GET /api/exercises` without a `limit` returns every exercise with `limit: null`, which is what the
-workout detail's exercise select asks for. `GET /api/exercises/:id/position` answers `{ index }`,
+workout detail's exercise select asks for. `GET /api/exercises` also takes an optional
+`muscleGroup`, one of the seven groups or `none` for exercises without one, and answers 400 for any
+other value; an empty one is the same as none given. With it, `items` and `total` cover only the
+matching exercises, while `all`, on the exercise page alone, still counts every exercise.
+`GET /api/exercises/:id/position` answers `{ index }`,
 the exercise's 0-based place in that list's name order, so the frontend can open the page a new
-exercise landed on without the API knowing its page size. The index is a `COUNT` of the names that
+exercise landed on without the API knowing its page size; it takes the same `muscleGroup` and then
+counts within the filter. The index is a `COUNT` of the names that
 sort before it, which is exact because `idx_exercises_name` makes names unique under `NOCASE`, the
-same collation the list orders by, so no two exercises tie.
+same collation the list orders by, so no two exercises tie — within a group as much as overall.
+The filter is one `muscle_group IS ?`, since SQLite's `IS` treats two `NULL`s as equal, and is left
+out entirely when no `muscleGroup` is given.
 
 **A controller answers with a DTO, never a row.** The wire format is declared once in `src/shared/dto/` —
 camelCase, type-only, imported by the frontend as well — and each feature holds one function per
@@ -230,6 +238,15 @@ its page, describe the whole session, planned sets included; the exercise delete
 while any set uses the exercise, done or not; and the summary's `workoutCount`,
 `workoutsLast30Days` and `lastPerformedOn` count workouts, so a freshly repeated session counts on
 its date before anything in it is checked.
+
+An exercise's muscle group is one of seven — `Chest`, `Back`, `Shoulders`, `Arms`, `Legs`, `Core`,
+`Full body` — or none. A `CHECK` on `exercises.muscle_group` refuses anything else, and `POST` and
+`PATCH /api/exercises` answer 400 for any other value, matching exactly, case included; `null` or
+`''` clears it. The list is `MUSCLE_GROUPS` in `exercises.facade.ts`, typed against `MuscleGroup`
+in `src/shared/muscle-group.ts`. `005-fixed-muscle-groups.sql` rebuilt the table with the `CHECK`,
+keeping each stored value that matched a group after trimming, ignoring case, and clearing the
+rest; it copies the ids and the `AUTOINCREMENT` sequence, so sets keep their exercise and a deleted
+exercise's id is not handed out again.
 
 The schema lives in `src/backend/db/migrations`, one numbered `.sql` file per change. `openDatabase()`
 applies whatever is pending on every start: each file runs in its own transaction and is recorded in

@@ -1,11 +1,14 @@
 import type { CreateExerciseDto, EditExerciseDto } from '../../../shared/dto/exercise.ts';
 import type { ExerciseId, Iso8601Date } from '../../../shared/flavors.ts';
+import type { MuscleGroup } from '../../../shared/muscle-group.ts';
 import type { DB } from '../../db/db.ts';
-import { optionalString, requiredString } from '../../shared/validate.ts';
+import { optionalOneOf, optionalString, requiredString } from '../../shared/validate.ts';
 import { translateDtoToCreateExercise, translateDtoToEditExercise } from './internal/exercise.translator.ts';
 import { ExerciseRepository } from './internal/exercise.repository.ts';
 import type { Exercise, ExerciseWithStats, SessionPoint } from './ports/exercise.ts';
 import type { LiftSet } from '../workouts/ports/set.ts';
+
+export const MUSCLE_GROUPS = ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core', 'Full body'] as const satisfies readonly MuscleGroup[];
 
 const MAX_EXERCISE_NAME_LENGTH = 120;
 const MAX_EXERCISE_NOTES_LENGTH = 2000;
@@ -17,16 +20,16 @@ export class ExerciseFacade {
     this.#exercises = exercises;
   }
 
-  list(limit: number | null, offset: number): ExerciseWithStats[] {
-    return this.#exercises.list(limit, offset);
+  list(limit: number | null, offset: number, muscleGroup?: MuscleGroup | null): ExerciseWithStats[] {
+    return this.#exercises.list(limit, offset, muscleGroup);
   }
 
-  count(): number {
-    return this.#exercises.count();
+  count(muscleGroup?: MuscleGroup | null): number {
+    return this.#exercises.count(muscleGroup);
   }
 
-  index(id: ExerciseId): number {
-    return this.#exercises.index(id);
+  index(id: ExerciseId, muscleGroup?: MuscleGroup | null): number {
+    return this.#exercises.index(id, muscleGroup);
   }
 
   require(id: ExerciseId): Exercise {
@@ -56,7 +59,7 @@ export class ExerciseFacade {
   #validateCreate(dto: CreateExerciseDto): CreateExerciseDto {
     return {
       name: requiredString(dto, 'name', MAX_EXERCISE_NAME_LENGTH),
-      muscleGroup: optionalString(dto, 'muscleGroup', 60),
+      muscleGroup: optionalOneOf(dto, 'muscleGroup', MUSCLE_GROUPS),
       notes: optionalString(dto, 'notes', MAX_EXERCISE_NOTES_LENGTH),
     };
   }
@@ -67,7 +70,7 @@ export class ExerciseFacade {
       valid.name = requiredString(dto, 'name', MAX_EXERCISE_NAME_LENGTH);
     }
     if (dto.muscleGroup !== undefined) {
-      valid.muscleGroup = optionalString(dto, 'muscleGroup', 60);
+      valid.muscleGroup = optionalOneOf(dto, 'muscleGroup', MUSCLE_GROUPS);
     }
     if (dto.notes !== undefined) {
       valid.notes = optionalString(dto, 'notes', MAX_EXERCISE_NOTES_LENGTH);

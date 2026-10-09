@@ -5,6 +5,7 @@ import { formatDate, formatDelta, formatNumber, formatVolume, relativeDay, UNIT 
 import { navigate } from '../../app/router.ts';
 import type { ExerciseDto, ExerciseProgressDto } from '../../../shared/dto/exercise.ts';
 import { exerciseFacade } from './exercises.facade.ts';
+import { muscleGroupOptions, parseMuscleGroup } from './internal/muscle-groups.ts';
 import type { GzProgressChartComponent } from './internal/gz-progress-chart.component.ts';
 import type { GzSessionTableComponent } from './internal/gz-session-table.component.ts';
 import { toast, toastError } from '../../ui/toast.ts';
@@ -57,7 +58,7 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
     try {
       await exerciseFacade.update(this.numericAttribute('exercise-id'), {
         name: values.name ?? '',
-        muscleGroup: values.muscleGroup,
+        muscleGroup: parseMuscleGroup(values.muscleGroup),
         notes: values.notes,
       });
       toast('Exercise updated', 'success');
@@ -107,7 +108,9 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
               </div>
               <div class="field">
                 <label for="muscleGroup">Muscle group</label>
-                <input id="muscleGroup" name="muscleGroup" type="text" maxlength="60" value="${exercise.muscleGroup ?? ''}" data-testid="muscleGroup" />
+                <select id="muscleGroup" name="muscleGroup" data-testid="muscleGroup">
+                  ${muscleGroupOptions(exercise.muscleGroup)}
+                </select>
               </div>
             </div>
             <div class="field">

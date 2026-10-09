@@ -81,6 +81,14 @@ export function requiredOneOf<T extends object, V extends string>(dto: T, field:
   return value;
 }
 
+export function optionalOneOf<T extends object, V extends string>(dto: T, field: keyof T & string, values: readonly V[]): V | null {
+  const value: unknown = dto[field];
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+  return requiredOneOf(dto, field, values);
+}
+
 export function requiredDate<T extends object>(dto: T, field: keyof T & string): Iso8601Date {
   const value = requiredString(dto, field, 10);
   if (!ISO_DATE.test(value) || Number.isNaN(Date.parse(value))) {

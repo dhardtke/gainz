@@ -1,9 +1,10 @@
 import type { ExerciseId, Iso8601Date, Iso8601DateTime, WorkoutId } from '../../../../shared/flavors.ts';
+import type { MuscleGroup } from '../../../../shared/muscle-group.ts';
 
 export interface Exercise {
   id: ExerciseId;
   name: string;
-  muscle_group: string | null;
+  muscle_group: MuscleGroup | null;
   notes: string | null;
   created_at: Iso8601DateTime;
 }

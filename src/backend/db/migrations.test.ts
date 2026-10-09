@@ -168,8 +168,8 @@ describe('the real migrations', () => {
 
     const result = migrate(legacy);
 
-    expect(result.applied.map((migration) => migration.version)).toEqual([1, 2, 3, 4]);
-    expect(schemaVersion(legacy)).toBe(4);
+    expect(result.applied.map((migration) => migration.version)).toEqual([1, 2, 3, 4, 5]);
+    expect(schemaVersion(legacy)).toBe(5);
     expect(legacy.query<{ name: string }, []>('SELECT name FROM exercises').all()).toEqual([{ name: 'Back Squat' }]);
 
     legacy.close();
@@ -225,10 +225,41 @@ describe('the real migrations', () => {
       'INSERT INTO sets (workout_id, exercise_id, reps, weight, done) VALUES (1, 1, 5, 100, 1), (1, 1, 5, 100, 1), (2, 1, 5, 100, 1), (2, 1, 5, 100, 0)',
     );
 
-    expect(migrate(legacy).applied.map((migration) => migration.version)).toEqual([4]);
+    expect(migrate(legacy).applied.map((migration) => migration.version)).toEqual([4, 5]);
 
     expect(legacy.query<{ done: number }, []>('SELECT done FROM workouts ORDER BY id').all()).toEqual([{ done: 1 }, { done: 0 }, { done: 0 }]);
     expect(() => legacy.run('UPDATE workouts SET done = 2 WHERE id = 1')).toThrow();
+
+    legacy.close();
+  });
+
+  test('keep each muscle group matching one of the groups after trimming, ignoring case, and clear the rest', () => {
+    for (const file of ['001-initial-schema.sql', '002-set-done.sql', '003-workout-exercises.sql', '004-workout-done.sql']) {
+      write(file, readFileSync(join(MIGRATIONS_DIR, file), 'utf8'));
+    }
+    const legacy = new Database(':memory:', { create: true });
+    expect(migrate(legacy, { dir: tempDir() }).version).toBe(4);
+    legacy.run(
+      "INSERT INTO exercises (name, muscle_group) VALUES ('Back Squat', ' legs '), ('Bench Press', 'CHEST'), ('Burpee', 'Full Body'), ('Leg Extension', 'Quads'), ('Plank', NULL), ('Gone', 'Arms')",
+    );
+    legacy.run("INSERT INTO workouts (performed_on) VALUES ('2026-01-05')");
+    legacy.run('INSERT INTO sets (workout_id, exercise_id, reps, weight) VALUES (1, 1, 5, 100)');
+    legacy.run("DELETE FROM exercises WHERE name = 'Gone'");
+
+    expect(migrate(legacy).applied.map((migration) => migration.version)).toEqual([5]);
+
+    expect(legacy.query<{ id: number; muscle_group: string | null }, []>('SELECT id, muscle_group FROM exercises ORDER BY id').all()).toEqual([
+      { id: 1, muscle_group: 'Legs' },
+      { id: 2, muscle_group: 'Chest' },
+      { id: 3, muscle_group: 'Full body' },
+      { id: 4, muscle_group: null },
+      { id: 5, muscle_group: null },
+    ]);
+    expect(legacy.query<{ exercise_id: number }, []>('SELECT exercise_id FROM sets').all()).toEqual([{ exercise_id: 1 }]);
+    expect(() => legacy.run("INSERT INTO exercises (name) VALUES ('back squat')")).toThrow();
+    expect(() => legacy.run("UPDATE exercises SET muscle_group = 'Quads' WHERE id = 1")).toThrow();
+    legacy.run("INSERT INTO exercises (name) VALUES ('Pull-up')");
+    expect(legacy.query<{ id: number }, []>("SELECT id FROM exercises WHERE name = 'Pull-up'").get()).toEqual({ id: 7 });
 
     legacy.close();
   });
