@@ -5,6 +5,53 @@ and the reps, weight and notes for each one. A [Bun](https://bun.sh) and SQLite
 backend serves a frontend of TypeScript custom elements styled with
 [Oat](https://oat.ink).
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/dashboard-dark.png">
+  <img src="docs/screenshots/dashboard-light.png" alt="The dashboard: totals for workouts, volume and exercises above a list of recent workouts">
+</picture>
+
+## A look around
+
+Tick off sets as you go, bump the reps with `+1`, and keep a note on the one
+that felt heavy.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/workout-dark.png">
+  <img src="docs/screenshots/workout-light.png" alt="A workout in progress: two of six sets ticked off, each with weight, reps and a note">
+</picture>
+
+Every exercise charts its estimated one-rep max, top set and volume over time.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/exercise-dark.png">
+  <img src="docs/screenshots/exercise-light.png" alt="The Back Squat page: best set, estimated 1RM and a rising progress chart">
+</picture>
+
+Built for the phone in your hand between sets, with a light and a dark theme.
+
+<table>
+  <tr>
+    <td width="33%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/mobile-dashboard-dark.png">
+        <img src="docs/screenshots/mobile-dashboard-light.png" alt="The dashboard on a phone">
+      </picture>
+    </td>
+    <td width="33%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/mobile-workout-dark.png">
+        <img src="docs/screenshots/mobile-workout-light.png" alt="Logging sets on a phone">
+      </picture>
+    </td>
+    <td width="33%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/mobile-exercise-dark.png">
+        <img src="docs/screenshots/mobile-exercise-light.png" alt="The Deadlift progress chart on a phone">
+      </picture>
+    </td>
+  </tr>
+</table>
+
 ## Quick start
 
 Requires [Bun](https://bun.sh) 1.4 or newer.

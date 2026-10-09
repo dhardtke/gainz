@@ -88,8 +88,8 @@ Other features' route tests import them directly, the one cross-feature import t
 through `ports/`. The static feature keeps its own private modules where the rule
 says they go — `features/static/internal/paths.ts` (the only place a URL becomes a filesystem path)
 and `internal/transpile.ts` — and reaches them through `internal/web-files.ts`; the build's
-`internal/embed.ts` and `internal/bundle.ts` it reaches through the facade's `embed()`. The four operator entry points — `bun run migrate`, `bun run seed`,
-`bun run build` and `bun run hash-password` — live outside the backend entirely, in `src/scripts/`, so that `src/backend/`
+`internal/embed.ts` and `internal/bundle.ts` it reaches through the facade's `embed()`. The five operator entry points — `bun run migrate`, `bun run seed`,
+`bun run build`, `bun run hash-password` and `bun run screenshots` — live outside the backend entirely, in `src/scripts/`, so that `src/backend/`
 holds the running server and nothing else.
 
 A route belongs to the file its URL prefix names, with no exceptions to remember — so

@@ -11,6 +11,7 @@ bun run start:dev        # same, with --watch
 bun run seed             # fill an empty DB with sample workouts
 bun run migrate          # apply pending schema migrations, then exit
 bun run hash-password    # prompt for a password, print its hash for GAINZ_PASSWORD_HASH
+bun run screenshots      # retake the README's screenshots (needs Chrome or Edge, or GAINZ_BROWSER)
 bun run build            # one-file deployment build: dist/gainz.js (+ .map)
 bun test --parallel      # the test suite against in-memory SQLite
 bun test --parallel src/backend/features/workouts/workout.routes.test.ts # one file
@@ -35,7 +36,7 @@ the repository as it stood on the date it carries, so an old path in one is a re
 - `src/frontend/` — no-build-step frontend of TypeScript ES modules and custom elements, organized
   by feature like the backend
 - `src/shared/` — types-only wire contract (DTOs, flavored ids and dates) both halves import
-- `src/scripts/` — the `migrate`, `seed` and `build` entry points
+- `src/scripts/` — the `migrate`, `seed`, `build`, `hash-password` and `screenshots` entry points
 
 Tests sit beside the module they exercise. `bun run lint` enforces the import boundaries.
 
