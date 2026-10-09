@@ -328,18 +328,18 @@ Header height token, the sticky strip, the badge removal, tests and docs in one 
 
 **Manual Verification**:
 
-- [ ] At desktop width and at 320px, in light and dark, the header looks unchanged (brand, links or
+- [x] At desktop width and at 320px, in light and dark, the header looks unchanged (brand, links or
       hamburger, theme toggle vertically centered, nothing clipped)
-- [ ] On a workout with sets, the strip sits above the title, and on scrolling sticks flush below the
+- [x] On a workout with sets, the strip sits above the title, and on scrolling sticks flush below the
       header with no gap or overlap, content passing behind it
-- [ ] In Chrome or Edge, toggling a set slides the bar to its new width and updates the label and
+- [x] In Chrome or Edge, toggling a set slides the bar to its new width and updates the label and
       percentage at once; marking the last set done turns the fill green and adds the ✓; opening the
       workout shows the bar at its value without a slide
-- [ ] With reduced motion turned on in the OS (or emulated in DevTools), the bar jumps instead of
+- [x] With reduced motion turned on in the OS (or emulated in DevTools), the bar jumps instead of
       sliding
-- [ ] At 320px the strip stays one line, the bar keeps a visible width, and the page does not scroll
+- [x] At 320px the strip stays one line, the bar keeps a visible width, and the page does not scroll
       horizontally
-- [ ] Editing a set field near the top of a long workout and committing it leaves the field visible
+- [x] Editing a set field near the top of a long workout and committing it leaves the field visible
       below the strip, not under it
 
 ## Implementation Notes
