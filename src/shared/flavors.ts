@@ -13,3 +13,5 @@ export type LiftSetId = Flavor<number, 'LiftSetId'>;
 export type Iso8601Date = Flavor<string, 'Iso8601Date'>; // YYYY-MM-DD
 
 export type Iso8601DateTime = Flavor<string, 'Iso8601DateTime'>; // YYYY-MM-DDTHH:MM:SSZ
+
+export type Iso8601Month = Flavor<string, 'Iso8601Month'>; // YYYY-MM

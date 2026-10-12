@@ -246,8 +246,8 @@ Because a set not done is a plan, the history aggregates count done sets only �
 workout's unchecked sets stay plans, skipped rather than performed, so they are not counted either: the exercise list's
 `setCount`, `workoutCount`, `lastPerformedOn` and `bestWeight` (its join carries `s.done = 1` in the
 `ON` clause, so an exercise without done sets still lists, with zero counts), the progress points,
-the best set, and the stats summary's `setCount`, `totalReps`, `totalVolume` and
-`volumeLast30Days`. The rest counts every set or workout: a workout's own totals, on its card and
+the best set, the stats summary's `setCount`, `totalReps`, `totalVolume` and
+`volumeLast30Days`, and the training calendar's days and progression. The rest counts every set or workout: a workout's own totals, on its card and
 its page, describe the whole session, planned sets included; the exercise delete guard refuses
 while any set uses the exercise, done or not; and the summary's `workoutCount`,
 `workoutsLast30Days` and `lastPerformedOn` count workouts, so a freshly repeated session counts on
@@ -262,6 +262,23 @@ exercise is checked, so the hint would otherwise describe the session to itself.
 exercise is a 404; the workout id is not checked, since skipping one that does not exist skips
 nothing. The query is `LAST_SESSION_WORKOUT_SQL` in `workouts/ports/sql.ts`, shared with the copy
 below.
+
+`GET /api/stats/calendar?month=YYYY-MM` is the Statistics page's month: `{ month, days }`, where
+`days` holds only the dates with a workout holding at least one done set, oldest first, each with
+its workouts by `performed_on, id`. `month` is required, since the server does not know the user's
+timezone and "this month" is the browser's; a missing or malformed one is a 400. Each workout and
+day also carries a `progression` and a `comparedExerciseCount`. An exercise's progression in a
+workout is its done-set volume (reps × weight) divided by that of its previous session, minus one;
+the previous session is the latest earlier workout by `performed_on, id` with a done set of the
+exercise. When either session's volume is 0 — bodyweight logs weight 0 — total reps are compared
+instead, so moving between bodyweight and weighted never reads as −100%. An exercise without a
+previous session is not compared. A workout's progression is the mean of its compared exercises'
+and a day's the mean over every compared exercise of its workouts, not of the workouts' means, so
+each exercise counts equally; with nothing compared it is `null`. The values are raw fractions
+(`0.041`); where "progressed" begins is the frontend's call. `StatsRepository.calendar()` runs one
+query over all history, since a previous session may lie in any earlier month: a CTE of per-(workout,
+exercise) done reps and volume, `LAG()` over each exercise's sessions, then the month filter, with
+the grouping into workouts and days in TypeScript.
 
 An exercise's muscle group is one of seven — `Chest`, `Back`, `Shoulders`, `Arms`, `Legs`, `Core`,
 `Full body` — or none. A `CHECK` on `exercises.muscle_group` refuses anything else, and `POST` and

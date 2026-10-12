@@ -140,6 +140,7 @@ function stage(db: DB): Shot[] {
     { name: 'dashboard', path: '/', mobile: false },
     { name: 'workout', path: `/workouts/${today.id}`, mobile: false },
     { name: 'exercise', path: `/exercises/${exerciseId('Back Squat')}`, mobile: false },
+    { name: 'stats', path: '/stats', mobile: false },
     { name: 'mobile-dashboard', path: '/', mobile: true },
     { name: 'mobile-workout', path: `/workouts/${today.id}`, mobile: true },
     { name: 'mobile-exercise', path: `/exercises/${exerciseId('Deadlift')}`, mobile: true },

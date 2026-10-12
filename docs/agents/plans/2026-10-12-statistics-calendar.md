@@ -202,8 +202,8 @@ Serve the month's workout days and show them on a new Statistics page, with link
 
 **Tasks**:
 
-- [ ] `src/shared/flavors.ts`: `export type Iso8601Month = Flavor<string, 'Iso8601Month'>; // YYYY-MM`
-- [ ] `src/shared/dto/stats.ts`:
+- [x] `src/shared/flavors.ts`: `export type Iso8601Month = Flavor<string, 'Iso8601Month'>; // YYYY-MM`
+- [x] `src/shared/dto/stats.ts`:
       ```ts
       export interface CalendarWorkoutDto {
         id: WorkoutId;
@@ -222,10 +222,10 @@ Serve the month's workout days and show them on a new Statistics page, with link
         days: CalendarDayDto[];
       }
       ```
-- [ ] `src/backend/http/http.ts`: `queryMonth(params, key): Iso8601Month`, required (no `optional`
+- [x] `src/backend/http/http.ts`: `queryMonth(params, key): Iso8601Month`, required (no `optional`
       prefix: a missing value is the same 400)
-- [ ] `ports/stats.ts`: `CalendarWorkout { id; performed_on; title }`, `CalendarDay { date; workouts: CalendarWorkout[] }`
-- [ ] `StatsRepository.calendar(month)`: workouts with a done set in the month, grouped into days
+- [x] `ports/stats.ts`: `CalendarWorkout { id; performed_on; title }`, `CalendarDay { date; workouts: CalendarWorkout[] }`
+- [x] `StatsRepository.calendar(month)`: workouts with a done set in the month, grouped into days
       in TypeScript
       ```sql
       SELECT w.id, w.performed_on, w.title
@@ -235,11 +235,11 @@ Serve the month's workout days and show them on a new Statistics page, with link
        ORDER BY w.performed_on, w.id
       ```
       binding `${month}-01`
-- [ ] `StatsFacade.calendar(month)` delegating; `translateToCalendarMonthDto(month, days)`;
+- [x] `StatsFacade.calendar(month)` delegating; `translateToCalendarMonthDto(month, days)`;
       `StatsController.calendar(req)` reading `queryMonth(new URL(req.url).searchParams, 'month')`
       the way the other controllers read their query; route `'/api/stats/calendar': { GET }`
-- [ ] Frontend `StatsApi.calendar(month)` → `get(`/stats/calendar?month=${month}`)`, `StatsFacade.calendar`
-- [ ] `internal/month.ts`:
+- [x] Frontend `StatsApi.calendar(month)` → `get(`/stats/calendar?month=${month}`)`, `StatsFacade.calendar`
+- [x] `internal/month.ts`:
   - `parseMonth(search, today: Iso8601Date): Iso8601Month` — `month` if it matches the backend's
     pattern, else `today.slice(0, 7)`
   - `shiftMonth(month, delta): Iso8601Month` — by calendar arithmetic on year and month, no `Date`
@@ -247,7 +247,7 @@ Serve the month's workout days and show them on a new Statistics page, with link
   - `monthGrid(month): (Iso8601Date | null)[]` — leading `null`s up to the first day's Monday-based
     weekday, then every date of the month
   - `formatMonth(month)` — `Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' })`
-- [ ] `internal/gz-calendar.component.ts` (+ `.css`):
+- [x] `internal/gz-calendar.component.ts` (+ `.css`):
   - properties `month: Iso8601Month`, `days: CalendarDayDto[]`, `today: Iso8601Date`; setting
     `days` re-renders, as `gz-chart`'s `series` does
   - header: outline icon buttons ‹ (`data-action="month" data-month="<previous>"`) and ›
@@ -261,42 +261,42 @@ Serve the month's workout days and show them on a new Statistics page, with link
   - each worked tile shows the day number and the marker; today gets `aria-current="date"`
   - CSS: the grid sized so seven tiles fit a phone with the 16px gutter; markers drawn with Oat
     tokens only (`--primary` outline in this phase); no font sizes
-- [ ] `gz-stats.component.ts` (+ `.css`): `GzView<{ month; calendar }>`, `load()` parses the month
+- [x] `gz-stats.component.ts` (+ `.css`): `GzView<{ month; calendar }>`, `load()` parses the month
       from `location.search` and calls `statsFacade.calendar`; `<hgroup><h1>Statistics</h1>…`;
       listens for `month-change` and calls `navigate(`/stats?month=${month}`)`; `titleFor` stays
       the route title
-- [ ] `stats.routes.ts`: a second export, `statisticsRoutes`, holding
+- [x] `stats.routes.ts`: a second export, `statisticsRoutes`, holding
       `{ pattern: /^\/stats\/?$/, keys: [], view: lazy gz-stats, title: 'Statistics', nav: { path: '/stats', label: 'Statistics' } }`;
       `app/routes.ts` spreads it after `exercisesRoutes`, since spread order is header order and
       the dashboard in `statsRoutes` must stay first
-- [ ] `docs/backend.md`: a paragraph on `GET /api/stats/calendar` after the last-session
+- [x] `docs/backend.md`: a paragraph on `GET /api/stats/calendar` after the last-session
       paragraph (`docs/backend.md:256`), with its done-set rule and the 400
-- [ ] `docs/frontend.md`: the `stats` feature now owns the dashboard and the Statistics page; the
+- [x] `docs/frontend.md`: the `stats` feature now owns the dashboard and the Statistics page; the
       tree at lines 22-23; `gz-calendar` and why month changes go through `navigate()`; the
       "Loading" paragraph if its count of shell routes or files changes
 
 **Automated Verification**:
 
-- [ ] `stats.routes.test.ts`: lists the month's days oldest first with their workouts by
+- [x] `stats.routes.test.ts`: lists the month's days oldest first with their workouts by
       `(performed_on, id)`; leaves out a workout without done sets and workouts in the months
       before and after (including the 1st and the last day as boundaries); 400 for a missing
       `month`, `2026-13`, `2026-1` and `abc`
-- [ ] `stats.facade.test.ts` (frontend): `calendar('2026-10')` requests `/api/stats/calendar?month=2026-10`
-- [ ] `internal/month.test.ts`: `parseMonth` default and invalid values; `shiftMonth` across year
+- [x] `stats.facade.test.ts` (frontend): `calendar('2026-10')` requests `/api/stats/calendar?month=2026-10`
+- [x] `internal/month.test.ts`: `parseMonth` default and invalid values; `shiftMonth` across year
       boundaries both ways; `monthGrid` leading blanks for a month starting on Monday (none) and
       on Sunday (six), and lengths for February in a leap and a common year
-- [ ] `gz-calendar.component.test.ts`: renders the label and 7-column grid; a one-workout day links
+- [x] `gz-calendar.component.test.ts`: renders the label and 7-column grid; a one-workout day links
       to the workout; a two-workout day renders a dropdown with both links and the count; today
       has `aria-current`; › is disabled on the current month and on a future one; ‹ emits `month-change` with the
       previous month
-- [ ] `gz-stats.component.test.ts`: loads the current month without `?month`, the given one with
+- [x] `gz-stats.component.test.ts`: loads the current month without `?month`, the given one with
       it, falls back on an invalid one; `month-change` navigates to `/stats?month=…`
-- [ ] `app/routes.test.ts`: header links are Dashboard, Workouts, Exercises, Statistics; `/stats`
+- [x] `app/routes.test.ts`: header links are Dashboard, Workouts, Exercises, Statistics; `/stats`
       is titled `Statistics`
-- [ ] `bun test --parallel`
-- [ ] `bun run typecheck`
-- [ ] `bun run lint`
-- [ ] `bun run fmt:check`
+- [x] `bun test --parallel`
+- [x] `bun run typecheck`
+- [x] `bun run lint`
+- [x] `bun run fmt:check`
 
 ### Phase 2: Training intensity
 
@@ -307,11 +307,11 @@ legend.
 
 **Tasks**:
 
-- [ ] `shared/dto/stats.ts`: add `progression: number | null` (a fraction, `0.041` = +4.1%) and
+- [x] `shared/dto/stats.ts`: add `progression: number | null` (a fraction, `0.041` = +4.1%) and
       `comparedExerciseCount: number` to `CalendarWorkoutDto` and `CalendarDayDto`, documented as
       "mean of the compared exercises' change against their previous session"
-- [ ] `ports/stats.ts`: the same fields in snake_case
-- [ ] `StatsRepository.calendar(month)` switches to one query over all history:
+- [x] `ports/stats.ts`: the same fields in snake_case
+- [x] `StatsRepository.calendar(month)` switches to one query over all history:
       ```sql
       WITH sessions AS (
         SELECT w.id AS workout_id, w.performed_on, w.title, s.exercise_id,
@@ -336,60 +336,70 @@ legend.
       `volume / previous_volume - 1`; otherwise `previous_reps > 0` → `reps / previous_reps - 1`;
       else `null`. Workouts and days average
       their non-null ratios; `compared_exercise_count` counts them
-- [ ] `translateToCalendarMonthDto` maps the new fields
-- [ ] `ui/format.ts`: `formatPercent(fraction)` — one decimal, `+`/`−` sign, `±0%` under 0.05%
-- [ ] `internal/progression.ts`: `type ProgressionLevel = 'up' | 'held' | 'down' | 'none'`,
+- [x] `translateToCalendarMonthDto` maps the new fields
+- [x] `ui/format.ts`: `formatPercent(fraction)` — one decimal, `+`/`−` sign, `±0%` under 0.05%
+- [x] `internal/progression.ts`: `type ProgressionLevel = 'up' | 'held' | 'down' | 'none'`,
       `PROGRESSION_THRESHOLD = 0.025`, `progressionLevel(value)`, and one `LEVELS` table of
       `{ icon, label }` (`▲ progressed`, `■ held`, `▼ regressed`, `◌ nothing to compare`) that the
       tiles, the menu and the legend all read
-- [ ] `gz-calendar.component.ts`: worked tiles carry `data-level="<level>"` and the level's icon;
+- [x] `gz-calendar.component.ts`: worked tiles carry `data-level="<level>"` and the level's icon;
       `title`/`aria-label` `${formatShortDate(date)}: ${formatPercent(p)} across ${plural(n, 'exercise')}`
       plus `, ${plural(k, 'workout')}` when k > 1, or `…: nothing to compare`; menu items show the
       icon, the title and the workout's `formatPercent`; a `<ul class="legend unstyled">` under the
       grid from `LEVELS`
-- [ ] `gz-calendar.component.css`: `[data-level='up']` → `--success`, `held` → `--muted`
+- [x] `gz-calendar.component.css`: `[data-level='up']` → `--success`, `held` → `--muted`
       background with `--muted-foreground` icon, `down` → `--danger`, `none` → `--primary`
       outline; each paired with its `-foreground` token where it fills; legend spacing; no
       `color-mix()`, no font sizes
-- [ ] `src/scripts/screenshots.ts`: add `{ name: 'stats', path: '/stats', mobile: false }`; run
+- [x] `src/scripts/screenshots.ts`: add `{ name: 'stats', path: '/stats', mobile: false }`; run
       `bun run screenshots` and commit `docs/screenshots/stats-{light,dark}.png`
-- [ ] `README.md`: a short paragraph in "A look around" — the calendar marks training days and
+- [x] `README.md`: a short paragraph in "A look around" — the calendar marks training days and
       whether they progressed — with the `stats` picture
-- [ ] `docs/backend.md`: how progression is computed (previous session, reps fallback, means over
+- [x] `docs/backend.md`: how progression is computed (previous session, reps fallback, means over
       exercises, `null`), why it runs over all history, and that it counts done sets only (add it
       to the list of done-set aggregates)
-- [ ] `docs/frontend.md`: the levels, the threshold living in `progression.ts`, and the legend
+- [x] `docs/frontend.md`: the levels, the threshold living in `progression.ts`, and the legend
 
 **Automated Verification**:
 
-- [ ] `stats.routes.test.ts`: a workout whose exercise went 1000 → 1100 volume is `0.1`; two
+- [x] `stats.routes.test.ts`: a workout whose exercise went 1000 → 1100 volume is `0.1`; two
       exercises at +10% and 0% average to `0.05`; the first session of an exercise is not compared
       and alone gives `null` with `comparedExerciseCount: 0`; the previous session is found in an
       earlier month; skipped sets count in neither session; a bodyweight exercise at 30 → 36 reps
       is `0.2`; bodyweight → weighted and weighted → bodyweight both compare reps (never −100%); two workouts on one day give each its own
       value and the day the mean over all their exercises (not of the two means); two sessions on
       the same date order by id
-- [ ] `ui/format.test.ts`: `formatPercent` for positive, negative, near-zero and whole values
-- [ ] `internal/progression.test.ts`: `null` → `none`; `0.025` → `up`; `0.0249` → `held`;
+- [x] `ui/format.test.ts`: `formatPercent` for positive, negative, near-zero and whole values
+- [x] `internal/progression.test.ts`: `null` → `none`; `0.025` → `up`; `0.0249` → `held`;
       `-0.025` → `down`; `0` → `held`
-- [ ] `gz-calendar.component.test.ts`: tiles carry the right `data-level`, icon and `aria-label`;
+- [x] `gz-calendar.component.test.ts`: tiles carry the right `data-level`, icon and `aria-label`;
       the menu shows each workout's %; the legend lists the four levels
-- [ ] `bun test --parallel`
-- [ ] `bun run typecheck`
-- [ ] `bun run lint`
-- [ ] `bun run fmt:check`
+- [x] `bun test --parallel`
+- [x] `bun run typecheck`
+- [x] `bun run lint`
+- [x] `bun run fmt:check`
 
 **Manual Verification**:
 
-- [ ] With `bun run seed` data, `/stats` shows the current month with marked days; ‹ and back keep
+- [x] With `bun run seed` data, `/stats` shows the current month with marked days; ‹ and back keep
       the month in the URL; a day opens its workout
-- [ ] Progressed, held and regressed days are told apart by icon and color, in both themes
-- [ ] On a phone-width screen the grid fits without horizontal scroll and a multi-workout day's
+- [x] Progressed, held and regressed days are told apart by icon and color, in both themes
+- [x] On a phone-width screen the grid fits without horizontal scroll and a multi-workout day's
       menu opens and its links are tappable
 
 ## Implementation Notes
 
 During implementation, document user feedback, problems, and decisions here.
+
+- Both phases were implemented in one pass, so the phase-1 repository query was never written on
+  its own; `calendar()` went straight to the all-history `LAG()` query.
+- The level colors fill a round `.marker` inside each tile rather than the tile itself, so the
+  multi-workout `<button>` stays a plain Oat `.ghost` button (no custom button colors).
+- `ui/contrast.test.ts` gained `--success-foreground` on `--success` and `--muted-foreground` on
+  `--muted`, the two new filled pairs.
+- `gz-calendar` also takes `today` as a property, so › and `aria-current` do not read the clock.
+- `bun run screenshots` retakes every picture; only the new `stats-{light,dark}.png` are kept, as the
+  others changed only by their relative dates.
 
 ## References
 

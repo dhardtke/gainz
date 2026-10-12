@@ -54,6 +54,8 @@ const PAIRS: [string, string, number][] = [
   ),
   ['--primary-foreground', '--primary', TEXT],
   ['--danger-foreground', '--danger', TEXT],
+  ['--success-foreground', '--success', TEXT],
+  ['--muted-foreground', '--muted', TEXT],
   ...['--border', '--input'].flatMap((line) => ['--background', '--card'].map((surface): [string, string, number] => [line, surface, CONTROL])),
 ];
 

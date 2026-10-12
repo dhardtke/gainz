@@ -9,3 +9,9 @@ test('statsFacade.summary()', async () => {
 
   expect(fetch.requests).toMatchObject([{ method: 'GET', url: '/api/stats/summary' }]);
 });
+
+test('statsFacade.calendar()', async () => {
+  await statsFacade.calendar('2026-10');
+
+  expect(fetch.requests).toMatchObject([{ method: 'GET', url: '/api/stats/calendar?month=2026-10' }]);
+});

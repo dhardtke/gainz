@@ -1,6 +1,7 @@
 import type { DB } from '../../db/db.ts';
 import { StatsRepository } from './internal/stats.repository.ts';
-import type { Summary } from './ports/stats.ts';
+import type { Iso8601Month } from '../../../shared/flavors.ts';
+import type { CalendarDay, Summary } from './ports/stats.ts';
 
 export class StatsFacade {
   readonly #stats: StatsRepository;
@@ -11,6 +12,10 @@ export class StatsFacade {
 
   summary(): Summary {
     return this.#stats.summary();
+  }
+
+  calendar(month: Iso8601Month): CalendarDay[] {
+    return this.#stats.calendar(month);
   }
 }
 

@@ -27,6 +27,13 @@ Every exercise charts its estimated one-rep max, top set and volume over time.
   <img src="docs/screenshots/exercise-light.png" alt="The Back Squat page: best set, estimated 1RM and a rising progress chart">
 </picture>
 
+The training calendar marks the days you lifted, and whether each one beat your last sessions.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/stats-dark.png">
+  <img src="docs/screenshots/stats-light.png" alt="The Statistics page: a month calendar with training days marked as progressed, held or regressed">
+</picture>
+
 Built for the phone in your hand between sets, with a light and a dark theme.
 
 <table>

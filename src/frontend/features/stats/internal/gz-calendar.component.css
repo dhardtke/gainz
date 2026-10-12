@@ -1,0 +1,128 @@
+h2 {
+  margin: 0;
+  text-align: center;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--space-1);
+}
+
+.weekday {
+  color: var(--muted-foreground);
+  text-align: center;
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-1);
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 4rem;
+  padding: var(--space-1) 0;
+  border-radius: var(--radius-medium);
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+
+  & .number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+  }
+
+  &[aria-current="date"] .number {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    font-weight: 700;
+  }
+}
+
+.worked {
+  color: var(--foreground);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+a.worked:hover {
+  background-color: var(--muted);
+}
+
+.day-menu {
+  display: flex;
+  min-width: 0;
+
+  & button.day {
+    height: auto;
+    gap: var(--space-1);
+  }
+
+  & menu a {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  & .percent {
+    color: var(--muted-foreground);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.marker-count {
+  display: inline-flex;
+  align-items: flex-start;
+}
+
+.marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  line-height: 1;
+
+  &[data-level="up"] {
+    background-color: var(--success);
+    color: var(--success-foreground);
+  }
+
+  &[data-level="held"] {
+    background-color: var(--muted);
+    color: var(--muted-foreground);
+  }
+
+  &[data-level="down"] {
+    background-color: var(--danger);
+    color: var(--danger-foreground);
+  }
+
+  /* A ring rather than a ◌ glyph, which fonts do not center. */
+  &[data-level="none"] {
+    border: 2px dashed var(--primary);
+  }
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  color: var(--muted-foreground);
+
+  & li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+  }
+}

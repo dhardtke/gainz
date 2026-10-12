@@ -1,4 +1,5 @@
-import type { SummaryDto } from '../../../shared/dto/stats.ts';
+import type { CalendarMonthDto, SummaryDto } from '../../../shared/dto/stats.ts';
+import type { Iso8601Month } from '../../../shared/flavors.ts';
 import { StatsApi } from './internal/stats.api.ts';
 
 export class StatsFacade {
@@ -10,6 +11,10 @@ export class StatsFacade {
 
   summary(): Promise<SummaryDto> {
     return this.#api.summary();
+  }
+
+  calendar(month: Iso8601Month): Promise<CalendarMonthDto> {
+    return this.#api.calendar(month);
   }
 }
 

@@ -102,3 +102,11 @@ export function formatDelta(current: number, previous: number | null | undefined
   }
   return `${diff > 0 ? '+' : '−'}${formatNumber(Math.abs(diff))}`;
 }
+
+export function formatPercent(fraction: number): string {
+  const percent = fraction * 100;
+  if (Math.abs(percent) < 0.05) {
+    return '±0%';
+  }
+  return `${percent > 0 ? '+' : '−'}${formatNumber(Math.abs(percent), 1)}%`;
+}

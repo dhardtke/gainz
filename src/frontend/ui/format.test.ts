@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, setSystemTime, test } from 'bun:test';
-import { formatDate, formatDelta, formatNumber, formatShortDate, formatVolume, formatWeight, plural, relativeDay, todayIso } from './format.ts';
+import { formatDate, formatDelta, formatNumber, formatPercent, formatShortDate, formatVolume, formatWeight, plural, relativeDay, todayIso } from './format.ts';
 
 // Bun ignores LANG on Windows, so the locale is the OS's; avoid thousands separators.
 const decimal = new Intl.NumberFormat().formatToParts(1.5).find((part) => part.type === 'decimal')?.value ?? '.';
@@ -124,5 +124,21 @@ describe('formatDelta', () => {
   test('treats a change below a hundredth as none, which float arithmetic would otherwise show', () => {
     expect(formatDelta(0.1 + 0.2, 0.3)).toBe('±0');
     expect(formatDelta(100, 100)).toBe('±0');
+  });
+});
+
+describe('formatPercent', () => {
+  test('signs the change with a plus or a true minus sign, to one decimal', () => {
+    expect(formatPercent(0.041)).toBe(`+4${decimal}1%`);
+    expect(formatPercent(-0.1234)).toBe(`−12${decimal}3%`);
+  });
+
+  test('drops the decimal of a whole percentage', () => {
+    expect(formatPercent(-0.03)).toBe('−3%');
+  });
+
+  test('treats a change below a twentieth of a percent as none', () => {
+    expect(formatPercent(0.0004)).toBe('±0%');
+    expect(formatPercent(0)).toBe('±0%');
   });
 });

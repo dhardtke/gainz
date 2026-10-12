@@ -11,3 +11,16 @@ export const statsRoutes: RouteDef[] = [
     nav: { path: '/', label: 'Dashboard' },
   },
 ];
+
+export const statisticsRoutes: RouteDef[] = [
+  {
+    pattern: /^\/stats\/?$/,
+    keys: [],
+    view: async () => {
+      const { GzStatsComponent } = await import('./gz-stats.component.ts');
+      return new GzStatsComponent();
+    },
+    title: 'Statistics',
+    nav: { path: '/stats', label: 'Statistics' },
+  },
+];

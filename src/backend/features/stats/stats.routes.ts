@@ -9,5 +9,8 @@ export function statsRoutes(db: DB): RouteTable {
     '/api/stats/summary': {
       GET: () => controller.summary(),
     },
+    '/api/stats/calendar': {
+      GET: (req) => controller.calendar(req),
+    },
   };
 }

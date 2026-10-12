@@ -19,8 +19,8 @@ src/frontend/
     │   └── internal/  exercise.api.ts, gz-chart, gz-progress-chart, gz-session-table
     ├── workouts/   workouts.routes.ts, workouts.facade.ts, gz-workout-list, gz-workout-detail, gz-workout-card
     │   └── internal/  workout.api.ts, set.api.ts, gz-set-row, gz-add-set-form, gz-start-session-dialog, start-session.ts
-    ├── stats/      stats.routes.ts, stats.facade.ts, gz-dashboard
-    │   └── internal/  stats.api.ts
+    ├── stats/      stats.routes.ts, stats.facade.ts, gz-dashboard, gz-stats
+    │   └── internal/  stats.api.ts, gz-calendar, month.ts, progression.ts
     └── auth/       auth.routes.ts, auth.facade.ts, gz-login
         └── internal/  auth.api.ts, next-path.ts
 ```
@@ -66,7 +66,7 @@ which is what lets a route's `view()` lazily `import()` its view and still have 
 the first frame.
 
 Everything else is a feature, shaped like its backend counterpart and named the same:
-`exercises`, `workouts`, `stats`, which owns the dashboard, and `auth`, which owns the login page. `features/workouts/` keeps its
+`exercises`, `workouts`, `stats`, which owns the dashboard and the Statistics page, and `auth`, which owns the login page. `features/workouts/` keeps its
 route views, `gz-workout-list` and `gz-workout-detail`, at its root beside `workouts.facade.ts`,
 and beside them `gz-workout-card`, which is not `internal/` because the dashboard renders it too,
 the feature's front door, and keeps what only it uses in `internal/`: one API class per URL prefix
@@ -357,6 +357,26 @@ list that now holds it, found through `exerciseFacade.position()` with the same 
 card is always in view; should that request fail after the exercise was created, the list reloads
 the page it is on instead.
 
+The Statistics page, `gz-stats` at `/stats`, shows one month of `gz-calendar` from `stats/internal/`,
+a Monday-first grid built by `monthGrid()` in `internal/month.ts`, from
+`statsFacade.calendar(month)`. The month lives in the URL as `?month=YYYY-MM`: `parseMonth()` reads
+it and falls back to the current month by the browser's date (`todayIso()`), which is why the API
+requires it rather than guessing a timezone. The ‹ and › buttons are buttons for the same reason
+`gz-pagination`'s are — `linkPath` leaves a link with a query to the browser — and since an
+`internal/` component does not route, `gz-calendar` emits a composed `month-change` carrying the
+month and `gz-stats` calls `navigate()`; › is disabled on the current month and any later one. A
+day with one workout is a plain link to it, which `gz-app` routes; a day with several is an
+`ot-dropdown` whose button shows their count and whose `<menu popover>`, one id per day, links
+each workout with its level and %. Each workout day shows a marker for its progression, the
+fraction the API computes (see `docs/backend.md`), bucketed by `progressionLevel()` in
+`internal/progression.ts`: ▲ in `--success` from +2.5%, ▼ in `--danger` from −2.5%, ■ in `--muted`
+in between, and a dashed `--primary` ring when nothing was compared — drawn, not a ◌ glyph, which fonts do not center. Today's date sits in a filled `--primary` circle. `PROGRESSION_THRESHOLD` there is
+the one place that 2.5% is written, and its `LEVELS` table gives the tiles, the menu items and the
+legend under the grid the same icons and words. The exact %, the number of compared exercises and,
+on a day of several, the number of workouts are in the tile's `title` and `aria-label`; the
+markers are filled circles in Oat's tokens, so the multi-workout button stays an Oat `.ghost` button
+rather than taking a color of its own.
+
 Both lists show their count as a muted subtitle under the heading. The workouts list has no form:
 its "Start session" header button creates a workout dated today and opens it, as the dashboard's
 "Log today's workout" does, and a title, notes or a past date are set on the workout itself. The
@@ -437,8 +457,8 @@ A plain `number` still assigns into a flavor, which is why `Number(element.datas
 cast on the way in.
 
 Shapes local to one module — a view's loaded data, the chart's points — are declared in that
-module; what a view is doing with that data is `GzView`'s `ViewState<Data>`. The six route views are exported so their route file can construct them with `new`, which
-keeps each tag name written only in its `define()`. `GzBreadcrumbsComponent`, `GzChartComponent`, `GzProgressChartComponent`, `GzSessionTableComponent`, `GzSetRowComponent`
+module; what a view is doing with that data is `GzView`'s `ViewState<Data>`. The seven route views are exported so their route file can construct them with `new`, which
+keeps each tag name written only in its `define()`. `GzBreadcrumbsComponent`, `GzCalendarComponent`, `GzChartComponent`, `GzProgressChartComponent`, `GzSessionTableComponent`, `GzSetRowComponent`
 and `GzAddSetFormComponent` are exported so their parent can type the element it drives; the other six components stay private to their module.
 
 ## Loading
