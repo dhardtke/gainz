@@ -366,7 +366,7 @@ Sets of a bodyweight exercise take no weight, in the API and on the workout page
 
 **Manual Verification**:
 
-- [ ] After `bun run seed` (on a fresh `data/gainz.sqlite`), a workout with Dips shows its rows
+- [x] After `bun run seed` (on a fresh `data/gainz.sqlite`), a workout with Dips shows its rows
       without weight on a phone-width screen and in both themes, and logging Dips from the
       add-set form works without a weight
 
@@ -470,9 +470,9 @@ Reps figures where weighted exercises show kilograms.
 
 **Manual Verification**:
 
-- [ ] With seed data, the Dips page shows reps tiles, chart and table in both themes and at phone
+- [x] With seed data, the Dips page shows reps tiles, chart and table in both themes and at phone
       width; the Back Squat page is unchanged
-- [ ] `/stats` still marks days, and a day with Dips counts it among its compared exercises
+- [x] `/stats` still marks days, and a day with Dips counts it among its compared exercises
 
 ## Implementation Notes
 
