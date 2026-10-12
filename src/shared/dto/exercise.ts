@@ -1,5 +1,5 @@
 import type { ExerciseId, Iso8601Date, Iso8601DateTime, WorkoutId } from '../flavors.ts';
-import type { MuscleGroup } from '../muscle-group.ts';
+import type { MuscleGroup, MuscleGroupFilter } from '../muscle-group.ts';
 import type { BestSetDto, LiftSetDto } from './set.ts';
 
 export interface ExerciseDto {
@@ -19,6 +19,15 @@ export interface ExerciseWithStatsDto extends ExerciseDto {
   bestWeight: number | null;
   /** Most reps in one done set. */
   bestReps: number | null;
+}
+
+/** The `type` filter of `GET /api/exercises`: the exercises with `bodyweight` set, or those without. */
+export type ExerciseType = 'bodyweight' | 'weighted';
+
+/** The query of `GET /api/exercises` and `GET /api/exercises/:id/position`; a missing key filters nothing. */
+export interface ExerciseFilterDto {
+  muscleGroup?: MuscleGroupFilter;
+  type?: ExerciseType;
 }
 
 export interface ExercisePageDto {

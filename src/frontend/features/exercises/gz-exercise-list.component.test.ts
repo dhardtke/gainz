@@ -209,3 +209,67 @@ test("reads a bodyweight card's best in reps", async () => {
   await settle();
   expect(find(shadow(view), testId('card')).textContent.replace(/\s+/g, ' ')).toContain('15 reps best');
 });
+
+const typeSelect = (view: HTMLElement): HTMLSelectElement => find<HTMLSelectElement>(shadow(view), testId('type-filter'));
+
+test('offers "All", "Bodyweight" and "Weighted" as the type filter, with "All" chosen', async () => {
+  const view = await mountAdding();
+  expect(Array.from(typeSelect(view).options).map((option) => [option.value, option.textContent])).toEqual([
+    ['', 'All'],
+    ['bodyweight', 'Bodyweight'],
+    ['weighted', 'Weighted'],
+  ]);
+  expect(typeSelect(view).value).toBe('');
+});
+
+test('lists the type in the URL, with the muscle group, counting it against every exercise', async () => {
+  const view = await mountFiltered('?muscleGroup=Chest&type=bodyweight', page([listed({ id: 1, name: 'Dips', bodyweight: true })], 12));
+  expect(preselected(view)).toBe('Chest');
+  expect(typeSelect(view).value).toBe('bodyweight');
+  expect(text(view, testId('subtitle'))).toBe('1 of 12 exercises');
+});
+
+test.each([
+  ['?type=bodyweight', 'No bodyweight exercises yet.'],
+  ['?muscleGroup=Legs&type=weighted', 'No weighted Legs exercises yet.'],
+  ['?muscleGroup=none&type=bodyweight', 'No bodyweight exercises without a muscle group.'],
+])('says so when %s lists nothing', async (search, empty) => {
+  const view = await mountFiltered(search, page([], 12));
+  expect(text(view, testId('empty'))).toBe(empty);
+});
+
+test.each([
+  ['bodyweight', '/exercises?muscleGroup=Legs&type=bodyweight'],
+  ['', '/exercises?muscleGroup=Legs'],
+])('choosing the type "%s" keeps the muscle group and navigates to %s, on page 1', async (value, path) => {
+  history.replaceState(null, '', '/exercises?muscleGroup=Legs&type=weighted&page=2');
+  fake.respondTo('GET /api/exercises?limit=10&offset=10&muscleGroup=Legs&type=weighted', 200, page([], 12));
+  const view = mount('gz-exercise-list');
+  await settle();
+  choose(typeSelect(view), value);
+  expect(`${location.pathname}${location.search}`).toBe(path);
+});
+
+test('choosing a muscle group keeps the type', async () => {
+  const view = await mountFiltered('?type=bodyweight', page([], 12));
+  choose(filterSelect(view), 'Back');
+  expect(`${location.pathname}${location.search}`).toBe('/exercises?muscleGroup=Back&type=bodyweight');
+});
+
+test('keeps both filters when paging', async () => {
+  const view = await mountFiltered('?muscleGroup=Legs&type=weighted', page([listed()], 12));
+  find(shadow(view), 'gz-pagination').dispatchEvent(new CustomEvent('page-change', { detail: 2, bubbles: true, composed: true }));
+  expect(`${location.pathname}${location.search}`).toBe('/exercises?muscleGroup=Legs&type=weighted&page=2');
+});
+
+test.each([
+  [true, 'bodyweight'],
+  [false, 'weighted'],
+] as const)('adding an exercise while a type is chosen opens its own type too (bodyweight: %p)', async (bodyweight, type) => {
+  const view = await mountFiltered('?type=bodyweight', page([], 3));
+  fake.respondTo('POST /api/exercises', 201, JSON.stringify(exercise({ id: 5, name: 'Dips', muscleGroup: 'Chest', bodyweight })));
+  fake.respondTo(`GET /api/exercises/5/position?muscleGroup=Chest&type=${type}`, 200, JSON.stringify({ index: 0 }));
+  addExercise(view, 'Dips', 'Chest');
+  await settle();
+  expect(`${location.pathname}${location.search}`).toBe(`/exercises?muscleGroup=Chest&type=${type}`);
+});

@@ -2,13 +2,13 @@ import type {
   CreateExerciseDto,
   EditExerciseDto,
   ExerciseDto,
+  ExerciseFilterDto,
   ExerciseLastSessionDto,
   ExercisePageDto,
   ExercisePositionDto,
   ExerciseProgressDto,
 } from '../../../../shared/dto/exercise.ts';
 import type { ExerciseId, WorkoutId } from '../../../../shared/flavors.ts';
-import type { MuscleGroupFilter } from '../../../../shared/muscle-group.ts';
 import { get, patch, post, remove } from '../../../http/http.ts';
 
 function withQuery(path: string, query: URLSearchParams): string {
@@ -16,25 +16,32 @@ function withQuery(path: string, query: URLSearchParams): string {
   return search === '' ? path : `${path}?${search}`;
 }
 
+function setFilter(query: URLSearchParams, { muscleGroup, type }: ExerciseFilterDto): URLSearchParams {
+  if (muscleGroup !== undefined) {
+    query.set('muscleGroup', muscleGroup);
+  }
+  if (type !== undefined) {
+    query.set('type', type);
+  }
+  return query;
+}
+
 export class ExerciseApi {
-  list({ limit, offset, muscleGroup }: { limit?: number; offset?: number; muscleGroup?: MuscleGroupFilter } = {}): Promise<ExercisePageDto> {
+  list({ limit, offset, ...filter }: { limit?: number; offset?: number } & ExerciseFilterDto = {}): Promise<ExercisePageDto> {
     const query = new URLSearchParams();
     if (limit !== undefined) {
       query.set('limit', String(limit));
       query.set('offset', String(offset ?? 0));
     }
-    if (muscleGroup !== undefined) {
-      query.set('muscleGroup', muscleGroup);
-    }
-    return get(withQuery('/exercises', query));
+    return get(withQuery('/exercises', setFilter(query, filter)));
   }
 
   get(id: ExerciseId): Promise<ExerciseDto> {
     return get(`/exercises/${id}`);
   }
 
-  position(id: ExerciseId, muscleGroup?: MuscleGroupFilter): Promise<ExercisePositionDto> {
-    return get(withQuery(`/exercises/${id}/position`, new URLSearchParams(muscleGroup === undefined ? {} : { muscleGroup })));
+  position(id: ExerciseId, filter: ExerciseFilterDto = {}): Promise<ExercisePositionDto> {
+    return get(withQuery(`/exercises/${id}/position`, setFilter(new URLSearchParams(), filter)));
   }
 
   progress(id: ExerciseId): Promise<ExerciseProgressDto> {

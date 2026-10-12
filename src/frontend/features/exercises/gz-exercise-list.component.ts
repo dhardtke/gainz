@@ -6,19 +6,19 @@ import { navigate } from '../../app/router.ts';
 import { PAGE_SIZE, pageCount, pageOffset, parsePage } from '../../ui/pagination/pagination.ts';
 import '../../ui/pagination/gz-pagination.component.ts';
 import './gz-muscle-group-icon.component.ts';
-import type { ExerciseDto, ExerciseWithStatsDto } from '../../../shared/dto/exercise.ts';
+import type { ExerciseDto, ExerciseFilterDto, ExerciseWithStatsDto } from '../../../shared/dto/exercise.ts';
 import { toast, toastError } from '../../ui/toast.ts';
 import { GzView } from '../../ui/view.ts';
 import { exerciseFacade } from './exercises.facade.ts';
-import { exercisesPath, muscleGroupFilterOptions, muscleGroupOptions, parseMuscleGroup, parseMuscleGroupFilter } from './internal/muscle-groups.ts';
-import type { MuscleGroupFilter } from '../../../shared/muscle-group.ts';
+import { muscleGroupFilterOptions, muscleGroupOptions, parseMuscleGroup } from './internal/muscle-groups.ts';
+import { exercisesPath, isFiltered, parseExerciseFilter, parseExerciseType, typeFilterOptions } from './internal/exercise-filter.ts';
 
 interface ExerciseListData {
   items: ExerciseWithStatsDto[];
   total: number;
   all: number;
   page: number;
-  filter: MuscleGroupFilter | null;
+  filter: ExerciseFilterDto;
 }
 
 export class GzExerciseListComponent extends GzView<ExerciseListData> {
@@ -28,21 +28,29 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
     super.connectedCallback();
     this.root.addEventListener('page-change', (event) => {
       if (event instanceof CustomEvent && typeof event.detail === 'number') {
-        navigate(exercisesPath(this.data?.filter ?? null, event.detail));
+        navigate(exercisesPath(this.data?.filter ?? {}, event.detail));
       }
     });
     this.root.addEventListener('change', (event) => {
-      if (event.target instanceof HTMLSelectElement && event.target.id === 'filter') {
-        const { value } = event.target;
-        navigate(exercisesPath(value === 'none' ? 'none' : parseMuscleGroup(value), 1));
+      if (!(event.target instanceof HTMLSelectElement)) {
+        return;
+      }
+      const { id, value } = event.target;
+      const { muscleGroup, type } = this.data?.filter ?? {};
+      if (id === 'filter') {
+        const group = value === 'none' ? 'none' : parseMuscleGroup(value);
+        navigate(exercisesPath({ ...(group === null ? {} : { muscleGroup: group }), ...(type === undefined ? {} : { type }) }, 1));
+      } else if (id === 'type-filter') {
+        const chosen = parseExerciseType(value);
+        navigate(exercisesPath({ ...(muscleGroup === undefined ? {} : { muscleGroup }), ...(chosen === null ? {} : { type: chosen }) }, 1));
       }
     });
   }
 
   override async load(): Promise<ExerciseListData> {
     const page = parsePage(location.search);
-    const filter = parseMuscleGroupFilter(location.search);
-    const { items, total, all } = await exerciseFacade.list({ limit: PAGE_SIZE, offset: pageOffset(page, PAGE_SIZE), muscleGroup: filter ?? undefined });
+    const filter = parseExerciseFilter(location.search);
+    const { items, total, all } = await exerciseFacade.list({ limit: PAGE_SIZE, offset: pageOffset(page, PAGE_SIZE), ...filter });
     return { items, total, all, page, filter };
   }
 
@@ -68,7 +76,11 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
     toast(`Added ${name}`, 'success');
 
     try {
-      const filter = exercise.muscleGroup ?? 'none';
+      // Its own group, and its own type while a type is chosen, so the new card is in view.
+      const filter: ExerciseFilterDto = {
+        muscleGroup: exercise.muscleGroup ?? 'none',
+        ...(this.data?.filter.type === undefined ? {} : { type: exercise.bodyweight ? 'bodyweight' : 'weighted' }),
+      };
       const { index } = await exerciseFacade.position(exercise.id, filter);
       navigate(exercisesPath(filter, Math.floor(index / PAGE_SIZE) + 1));
     } catch (error) {
@@ -108,11 +120,15 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
     return `${bodyweight ? plural(best, 'rep') : formatWeight(best)} best`;
   }
 
-  #emptyText(all: number, filter: MuscleGroupFilter | null): string {
-    if (all === 0 || filter === null) {
+  #emptyText(all: number, { muscleGroup, type }: ExerciseFilterDto): string {
+    if (all === 0 || (muscleGroup === undefined && type === undefined)) {
       return 'No exercises yet. Add the lifts you train above.';
     }
-    return filter === 'none' ? 'No exercises without a muscle group.' : `No ${filter} exercises yet.`;
+    const kind = type === undefined ? '' : `${type} `;
+    if (muscleGroup === 'none') {
+      return `No ${kind}exercises without a muscle group.`;
+    }
+    return `No ${kind}${muscleGroup === undefined ? '' : `${muscleGroup} `}exercises yet.`;
   }
 
   #page({ items, total, all, page, filter }: ExerciseListData): RawHtml {
@@ -136,13 +152,21 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
         <div class="hstack justify-between gap-2">
           <hgroup>
             <h1>Exercises</h1>
-            <p class="text-light" data-testid="subtitle">${filter === null ? plural(all, 'exercise') : `${total} of ${plural(all, 'exercise')}`}</p>
+            <p class="text-light" data-testid="subtitle">${isFiltered(filter) ? `${total} of ${plural(all, 'exercise')}` : plural(all, 'exercise')}</p>
           </hgroup>
-          <div class="field">
-            <label for="filter">Muscle group</label>
-            <select id="filter" class="rich" data-testid="filter">
-              ${muscleGroupFilterOptions(filter)}
-            </select>
+          <div class="hstack gap-2">
+            <div class="field">
+              <label for="filter">Muscle group</label>
+              <select id="filter" class="rich" data-testid="filter">
+                ${muscleGroupFilterOptions(filter.muscleGroup ?? null)}
+              </select>
+            </div>
+            <div class="field">
+              <label for="type-filter">Type</label>
+              <select id="type-filter" data-testid="type-filter">
+                ${typeFilterOptions(filter.type)}
+              </select>
+            </div>
           </div>
         </div>
 

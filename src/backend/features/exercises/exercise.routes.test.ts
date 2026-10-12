@@ -216,6 +216,58 @@ describe('filtering by muscle group', () => {
   });
 });
 
+describe('filtering by type', () => {
+  // Answers each seeded exercise's id by name.
+  async function seed(): Promise<(name: string) => number> {
+    const ids = new Map<string, number>();
+    for (const [name, muscleGroup, bodyweight] of [
+      ['Dips', 'Chest', true],
+      ['Bench Press', 'Chest', false],
+      ['Pull-up', 'Back', true],
+      ['Barbell Row', 'Back', false],
+      ['Plank', null, true],
+    ] as const) {
+      ids.set(name, (await createExercise(post, name, { muscleGroup, bodyweight })).id);
+    }
+    return (name) => ids.get(name) ?? 0;
+  }
+
+  const names = async (query: string): Promise<string[]> =>
+    (await body<ExercisePageDto>(await api(`/api/exercises?${query}`))).items.map((exercise) => exercise.name);
+
+  test('lists only the bodyweight or only the weighted exercises, counting them and every exercise', async () => {
+    await seed();
+    const page = await body<ExercisePageDto>(await api('/api/exercises?type=bodyweight'));
+    expect(page.items.map((exercise) => exercise.name)).toEqual(['Dips', 'Plank', 'Pull-up']);
+    expect(page).toMatchObject({ total: 3, all: 5 });
+    expect(await names('type=weighted')).toEqual(['Barbell Row', 'Bench Press']);
+  });
+
+  test('combines with the muscle group filter', async () => {
+    await seed();
+    expect(await names('type=bodyweight&muscleGroup=Chest')).toEqual(['Dips']);
+    expect(await names('type=weighted&muscleGroup=Back')).toEqual(['Barbell Row']);
+    expect(await names('type=bodyweight&muscleGroup=none')).toEqual(['Plank']);
+    expect(await names('type=weighted&muscleGroup=none')).toEqual([]);
+  });
+
+  test('positions an exercise within both filters', async () => {
+    const id = await seed();
+    const indexOf = async (name: string, query: string): Promise<number> =>
+      (await body<ExercisePositionDto>(await api(`/api/exercises/${id(name)}/position?${query}`))).index;
+
+    expect(await indexOf('Pull-up', 'type=bodyweight')).toBe(2);
+    expect(await indexOf('Pull-up', 'type=bodyweight&muscleGroup=Back')).toBe(0);
+  });
+
+  test.each(['Bodyweight', 'true'])('rejects the type %s', async (type) => {
+    const res = await api(`/api/exercises?type=${type}`);
+    expect(res.status).toBe(400);
+    expect((await body<ErrorDto>(res)).error).toBe('"type" must be one of: bodyweight, weighted');
+    expect((await api(`/api/exercises/1/position?type=${type}`)).status).toBe(400);
+  });
+});
+
 describe('position', () => {
   test('is the 0-based index in the list, ignoring case', async () => {
     const bench = await createExercise(post, 'bench Press');

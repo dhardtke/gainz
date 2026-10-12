@@ -18,18 +18,6 @@ export function parseMuscleGroupFilter(search: string): MuscleGroupFilter | null
   return value === 'none' ? 'none' : parseMuscleGroup(value);
 }
 
-export function exercisesPath(filter: MuscleGroupFilter | null, page: number): string {
-  const query = new URLSearchParams();
-  if (filter !== null) {
-    query.set('muscleGroup', filter);
-  }
-  if (page !== 1) {
-    query.set('page', String(page));
-  }
-  const search = query.toString();
-  return search === '' ? '/exercises' : `/exercises?${search}`;
-}
-
 // For a `<select class="rich">`, whose `selectedcontent` copies the chosen option's icon into the closed select.
 const SELECTED_CONTENT = html`<button><selectedcontent></selectedcontent></button>`;
 

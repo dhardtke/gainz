@@ -2,6 +2,7 @@ import type {
   CreateExerciseDto,
   EditExerciseDto,
   ExerciseDto,
+  ExerciseFilterDto,
   ExerciseLastSessionDto,
   ExercisePageDto,
   ExercisePositionDto,
@@ -13,7 +14,7 @@ import type { BestSetDto, LiftSetDto } from '../../../../shared/dto/set.ts';
 import type { MuscleGroup } from '../../../../shared/muscle-group.ts';
 import type { Iso8601Date } from '../../../../shared/flavors.ts';
 import type { LiftSet } from '../../workouts/ports/set.ts';
-import type { Exercise, ExerciseWithStats, LastSession, SessionPoint } from '../ports/exercise.ts';
+import type { Exercise, ExerciseFilter, ExerciseWithStats, LastSession, SessionPoint } from '../ports/exercise.ts';
 import type { CreateExercise, EditExercise } from './exercise.repository.ts';
 
 export function translateToCreateExerciseDto(body: Record<string, unknown>): CreateExerciseDto {
@@ -58,6 +59,17 @@ export function translateDtoToEditExercise(dto: EditExerciseDto): EditExercise {
     patch.bodyweight = dto.bodyweight ? 1 : 0;
   }
   return patch;
+}
+
+export function translateDtoToExerciseFilter(dto: ExerciseFilterDto): ExerciseFilter {
+  const filter: ExerciseFilter = {};
+  if (dto.muscleGroup !== undefined) {
+    filter.muscle_group = dto.muscleGroup === 'none' ? null : dto.muscleGroup;
+  }
+  if (dto.type !== undefined) {
+    filter.bodyweight = dto.type === 'bodyweight' ? 1 : 0;
+  }
+  return filter;
 }
 
 export function translateToExerciseDto(row: Exercise): ExerciseDto {

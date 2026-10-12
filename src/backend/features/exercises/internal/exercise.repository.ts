@@ -4,7 +4,7 @@ import { buildUpdate, isUniqueViolation } from '../../../db/sql.ts';
 import { EST_1RM_SQL, LAST_SESSION_WORKOUT_SQL, SET_COLUMNS } from '../../workouts/ports/sql.ts';
 import type { ExerciseId, Iso8601Date, WorkoutId } from '../../../../shared/flavors.ts';
 import type { MuscleGroup } from '../../../../shared/muscle-group.ts';
-import type { Exercise, ExerciseWithStats, LastSession, SessionPoint } from '../ports/exercise.ts';
+import type { Exercise, ExerciseFilter, ExerciseWithStats, LastSession, SessionPoint } from '../ports/exercise.ts';
 import type { LiftSet } from '../../workouts/ports/set.ts';
 
 export interface CreateExercise {
@@ -19,9 +19,26 @@ export type EditExercise = Partial<CreateExercise>;
 const EXERCISE_COLUMNS = 'e.id, e.name, e.muscle_group, e.notes, e.bodyweight, e.created_at';
 const FIELDS = ['name', 'muscle_group', 'notes', 'bodyweight'] as const;
 
-// `undefined` is every exercise and `null` those without a group; `IS` compares NULL as equal.
-function muscleGroupFilter(muscleGroup: MuscleGroup | null | undefined): { sql: string; params: [MuscleGroup | null] } | null {
-  return muscleGroup === undefined ? null : { sql: 'muscle_group IS ?', params: [muscleGroup] };
+type FilterParam = MuscleGroup | number | null;
+
+// Unqualified columns: neither `sets` nor `workouts` has one of these, so `list()`'s joins leave them unambiguous.
+function filterConditions(filter: ExerciseFilter): { conditions: string[]; params: FilterParam[] } {
+  const conditions: string[] = [];
+  const params: FilterParam[] = [];
+  if (filter.muscle_group !== undefined) {
+    // `IS` compares NULL as equal.
+    conditions.push('muscle_group IS ?');
+    params.push(filter.muscle_group);
+  }
+  if (filter.bodyweight !== undefined) {
+    conditions.push('bodyweight = ?');
+    params.push(filter.bodyweight);
+  }
+  return { conditions, params };
+}
+
+function where(conditions: string[]): string {
+  return conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 }
 
 export class ExerciseRepository {
@@ -32,11 +49,11 @@ export class ExerciseRepository {
   }
 
   /** Joins done sets in the `ON` clause, so an exercise without any still lists. */
-  list(limit: number | null, offset: number, muscleGroup?: MuscleGroup | null): ExerciseWithStats[] {
-    const filter = muscleGroupFilter(muscleGroup);
+  list(limit: number | null, offset: number, filter: ExerciseFilter = {}): ExerciseWithStats[] {
+    const { conditions, params } = filterConditions(filter);
     return (
       this.#db
-        .query<ExerciseWithStats, (MuscleGroup | null | number)[]>(
+        .query<ExerciseWithStats, FilterParam[]>(
           `SELECT ${EXERCISE_COLUMNS},
                 COUNT(s.id)                  AS set_count,
                 COUNT(DISTINCT s.workout_id) AS workout_count,
@@ -46,35 +63,29 @@ export class ExerciseRepository {
            FROM exercises e
            LEFT JOIN sets s     ON s.exercise_id = e.id AND s.done = 1
            LEFT JOIN workouts w ON w.id = s.workout_id
-          ${filter ? `WHERE e.${filter.sql}` : ''}
+          ${where(conditions)}
           GROUP BY e.id
           ORDER BY e.name COLLATE NOCASE ASC
           LIMIT ? OFFSET ?`,
         )
         // A negative LIMIT is SQLite's "no limit".
-        .all(...(filter?.params ?? []), limit ?? -1, offset)
+        .all(...params, limit ?? -1, offset)
     );
   }
 
-  count(muscleGroup?: MuscleGroup | null): number {
-    const filter = muscleGroupFilter(muscleGroup);
-    return (
-      this.#db
-        .query<{ n: number }, (MuscleGroup | null)[]>(`SELECT COUNT(*) AS n FROM exercises ${filter ? `WHERE ${filter.sql}` : ''}`)
-        .get(...(filter?.params ?? []))?.n ?? 0
-    );
+  count(filter: ExerciseFilter = {}): number {
+    const { conditions, params } = filterConditions(filter);
+    return this.#db.query<{ n: number }, FilterParam[]>(`SELECT COUNT(*) AS n FROM exercises ${where(conditions)}`).get(...params)?.n ?? 0;
   }
 
-  /** Names are unique under NOCASE across all exercises, so within a group too: counting those sorting before it is its exact position. */
-  index(id: ExerciseId, muscleGroup?: MuscleGroup | null): number {
+  /** Names are unique under NOCASE across all exercises, so within a filter too: counting those sorting before it is its exact position. */
+  index(id: ExerciseId, filter: ExerciseFilter = {}): number {
     const { name } = this.require(id);
-    const filter = muscleGroupFilter(muscleGroup);
+    const { conditions, params } = filterConditions(filter);
     return (
       this.#db
-        .query<{ n: number }, [string, ...(MuscleGroup | null)[]]>(
-          `SELECT COUNT(*) AS n FROM exercises WHERE name < ? COLLATE NOCASE ${filter ? `AND ${filter.sql}` : ''}`,
-        )
-        .get(name, ...(filter?.params ?? []))?.n ?? 0
+        .query<{ n: number }, [string, ...FilterParam[]]>(`SELECT COUNT(*) AS n FROM exercises ${where(['name < ? COLLATE NOCASE', ...conditions])}`)
+        .get(name, ...params)?.n ?? 0
     );
   }
 

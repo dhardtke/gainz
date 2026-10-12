@@ -353,17 +353,20 @@ fills the header, and `pageCount` stops at the last page that cap can reach. A p
 `pageCount`, given as `gz-pagination`'s `page` and `pages` attributes, shows "No <noun> on this
 page." with a Go to page 1 button in place of the pager, and the list leaves out its cards.
 
-The exercises list also filters by muscle group, through a "Muscle group" `<select>` beside its
-heading: "All", the seven groups and "No muscle group". The filter lives in the URL as
-`?muscleGroup=<group>` or `?muscleGroup=none` beside `?page=`, both built by `exercisesPath` in
-`features/exercises/internal/muscle-groups.ts`, since `pagePath` only knows `?page`; an unknown
-value reads as "All". Changing the filter navigates to page 1 of the new one, and a `page-change`
-keeps it. With a filter the subtitle reads "3 of 12 exercises", from the page's `total` and `all`,
-and an empty page reads "No Legs exercises yet." or "No exercises without a muscle group.". Adding
-an exercise navigates to its own group (`none` when it has none) and to the page of that filtered
-list that now holds it, found through `exerciseFacade.position()` with the same filter, so the new
-card is always in view; should that request fail after the exercise was created, the list reloads
-the page it is on instead.
+The exercises list also filters by muscle group and by type, through two `<select>`s beside its
+heading: "Muscle group" offers "All", the seven groups and "No muscle group", and "Type" offers
+"All", "Bodyweight" and "Weighted". The filters live in the URL as `?muscleGroup=<group>` or
+`?muscleGroup=none` and `?type=bodyweight` or `?type=weighted`, beside `?page=`, as an
+`ExerciseFilterDto` that `parseExerciseFilter` reads and `exercisesPath` writes, both in
+`features/exercises/internal/exercise-filter.ts`, since `pagePath` only knows `?page`; an unknown
+value of either reads as "All". Changing one filter keeps the other and navigates to page 1, and a
+`page-change` keeps both. With a filter the subtitle reads "3 of 12 exercises", from the page's
+`total` and `all`, and an empty page names what is filtered: "No Legs exercises yet.", "No
+bodyweight exercises yet." or "No weighted exercises without a muscle group.". Adding an exercise
+navigates to its own group (`none` when it has none), and to its own type while a type is chosen,
+then to the page of that filtered list that now holds it, found through
+`exerciseFacade.position()` with the same filter, so the new card is always in view; should that
+request fail after the exercise was created, the list reloads the page it is on instead.
 
 The Statistics page, `gz-stats` at `/stats`, shows one month of `gz-calendar` from `stats/internal/`,
 a Monday-first grid built by `monthGrid()` in `internal/month.ts`, from

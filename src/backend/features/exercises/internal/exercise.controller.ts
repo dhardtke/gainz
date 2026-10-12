@@ -1,8 +1,8 @@
 import { json, noContent, optionalQueryInt, optionalQueryOneOf, pathId, queryInt, readJsonObject } from '../../../http/http.ts';
 import type { ParamRequest } from '../../../http/routing.ts';
+import type { ExerciseFilterDto } from '../../../../shared/dto/exercise.ts';
 import type { ExerciseId, WorkoutId } from '../../../../shared/flavors.ts';
-import type { MuscleGroup } from '../../../../shared/muscle-group.ts';
-import { type ExerciseFacade, MUSCLE_GROUPS } from '../exercises.facade.ts';
+import { EXERCISE_TYPES, type ExerciseFacade, MUSCLE_GROUPS } from '../exercises.facade.ts';
 import {
   translateToCreateExerciseDto,
   translateToEditExerciseDto,
@@ -24,10 +24,8 @@ export class ExerciseController {
     const params = new URL(req.url).searchParams;
     const limit = optionalQueryInt(params, 'limit', { min: 1, max: 200 });
     const offset = queryInt(params, 'offset', 0, { min: 0, max: 100000 });
-    const muscleGroup = this.#muscleGroup(params);
-    return json(
-      translateToExercisePageDto(this.#exercises.list(limit, offset, muscleGroup), this.#exercises.count(muscleGroup), this.#exercises.count(), limit, offset),
-    );
+    const filter = this.#filter(params);
+    return json(translateToExercisePageDto(this.#exercises.list(limit, offset, filter), this.#exercises.count(filter), this.#exercises.count(), limit, offset));
   }
 
   async create(req: Request): Promise<Response> {
@@ -51,8 +49,8 @@ export class ExerciseController {
   }
 
   position(req: ParamRequest): Response {
-    const muscleGroup = this.#muscleGroup(new URL(req.url).searchParams);
-    return json(translateToExercisePositionDto(this.#exercises.index(pathId(req.params.id, 'exercise'), muscleGroup)));
+    const filter = this.#filter(new URL(req.url).searchParams);
+    return json(translateToExercisePositionDto(this.#exercises.index(pathId(req.params.id, 'exercise'), filter)));
   }
 
   progress(req: ParamRequest): Response {
@@ -66,9 +64,16 @@ export class ExerciseController {
     return json(translateToExerciseLastSessionDto(this.#exercises.lastSession(id, exceptWorkout)));
   }
 
-  /** `undefined` for every exercise, `null` for those without a group. */
-  #muscleGroup(params: URLSearchParams): MuscleGroup | null | undefined {
-    const filter = optionalQueryOneOf(params, 'muscleGroup', [...MUSCLE_GROUPS, 'none']);
-    return filter === null ? undefined : filter === 'none' ? null : filter;
+  #filter(params: URLSearchParams): ExerciseFilterDto {
+    const filter: ExerciseFilterDto = {};
+    const muscleGroup = optionalQueryOneOf(params, 'muscleGroup', [...MUSCLE_GROUPS, 'none']);
+    if (muscleGroup !== null) {
+      filter.muscleGroup = muscleGroup;
+    }
+    const type = optionalQueryOneOf(params, 'type', EXERCISE_TYPES);
+    if (type !== null) {
+      filter.type = type;
+    }
+    return filter;
   }
 }

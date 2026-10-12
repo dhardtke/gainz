@@ -46,12 +46,15 @@ refuse a value outside those bounds with a 400. `GET /api/workouts` defaults `li
 `GET /api/exercises` without a `limit` returns every exercise with `limit: null`, which is what the
 workout detail's exercise select asks for. `GET /api/exercises` also takes an optional
 `muscleGroup`, one of the seven groups or `none` for exercises without one, and answers 400 for any
-other value; an empty one is the same as none given. With it, `items` and `total` cover only the
-matching exercises, while `all`, on the exercise page alone, still counts every exercise.
+other value; an empty one is the same as none given. It takes an optional `type` the same way,
+`bodyweight` or `weighted`, for the exercises with or without the `bodyweight` flag, and the two
+combine. With either, `items` and `total` cover only the matching exercises, while `all`, on the
+exercise page alone, still counts every exercise. The controller reads both into an
+`ExerciseFilterDto`, which the translator turns into the repository's `ExerciseFilter`.
 `GET /api/exercises/:id/position` answers `{ index }`,
 the exercise's 0-based place in that list's name order, so the frontend can open the page a new
-exercise landed on without the API knowing its page size; it takes the same `muscleGroup` and then
-counts within the filter. The index is a `COUNT` of the names that
+exercise landed on without the API knowing its page size; it takes the same `muscleGroup` and `type` and
+then counts within them. The index is a `COUNT` of the names that
 sort before it, which is exact because `idx_exercises_name` makes names unique under `NOCASE`, the
 same collation the list orders by, so no two exercises tie — within a group as much as overall.
 The filter is one `muscle_group IS ?`, since SQLite's `IS` treats two `NULL`s as equal, and is left

@@ -11,6 +11,12 @@ export interface Exercise {
   created_at: Iso8601DateTime;
 }
 
+/** A missing key leaves that column unfiltered; `muscle_group: null` is the exercises without a group. */
+export interface ExerciseFilter {
+  muscle_group?: MuscleGroup | null;
+  bodyweight?: 0 | 1;
+}
+
 export interface ExerciseWithStats extends Exercise {
   set_count: number;
   workout_count: number;

@@ -1,14 +1,16 @@
-import type { CreateExerciseDto, EditExerciseDto } from '../../../shared/dto/exercise.ts';
+import type { CreateExerciseDto, EditExerciseDto, ExerciseFilterDto, ExerciseType } from '../../../shared/dto/exercise.ts';
 import type { ExerciseId, Iso8601Date, WorkoutId } from '../../../shared/flavors.ts';
 import type { MuscleGroup } from '../../../shared/muscle-group.ts';
 import type { DB } from '../../db/db.ts';
 import { optionalOneOf, optionalString, requiredBoolean, requiredString } from '../../shared/validate.ts';
-import { translateDtoToCreateExercise, translateDtoToEditExercise } from './internal/exercise.translator.ts';
+import { translateDtoToCreateExercise, translateDtoToEditExercise, translateDtoToExerciseFilter } from './internal/exercise.translator.ts';
 import { ExerciseRepository } from './internal/exercise.repository.ts';
 import type { Exercise, ExerciseWithStats, LastSession, SessionPoint } from './ports/exercise.ts';
 import type { LiftSet } from '../workouts/ports/set.ts';
 
 export const MUSCLE_GROUPS = ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core', 'Full body'] as const satisfies readonly MuscleGroup[];
+
+export const EXERCISE_TYPES = ['bodyweight', 'weighted'] as const satisfies readonly ExerciseType[];
 
 const MAX_EXERCISE_NAME_LENGTH = 120;
 const MAX_EXERCISE_NOTES_LENGTH = 2000;
@@ -20,16 +22,16 @@ export class ExerciseFacade {
     this.#exercises = exercises;
   }
 
-  list(limit: number | null, offset: number, muscleGroup?: MuscleGroup | null): ExerciseWithStats[] {
-    return this.#exercises.list(limit, offset, muscleGroup);
+  list(limit: number | null, offset: number, filter: ExerciseFilterDto = {}): ExerciseWithStats[] {
+    return this.#exercises.list(limit, offset, translateDtoToExerciseFilter(filter));
   }
 
-  count(muscleGroup?: MuscleGroup | null): number {
-    return this.#exercises.count(muscleGroup);
+  count(filter: ExerciseFilterDto = {}): number {
+    return this.#exercises.count(translateDtoToExerciseFilter(filter));
   }
 
-  index(id: ExerciseId, muscleGroup?: MuscleGroup | null): number {
-    return this.#exercises.index(id, muscleGroup);
+  index(id: ExerciseId, filter: ExerciseFilterDto = {}): number {
+    return this.#exercises.index(id, translateDtoToExerciseFilter(filter));
   }
 
   require(id: ExerciseId): Exercise {
