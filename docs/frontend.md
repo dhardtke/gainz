@@ -20,7 +20,7 @@ src/frontend/
     ├── workouts/   workouts.routes.ts, workouts.facade.ts, gz-workout-list, gz-workout-detail, gz-workout-card
     │   └── internal/  workout.api.ts, set.api.ts, gz-set-row, gz-add-set-form, gz-start-session-dialog, start-session.ts
     ├── stats/      stats.routes.ts, stats.facade.ts, gz-dashboard, gz-stats
-    │   └── internal/  stats.api.ts, gz-calendar, month.ts, progression.ts
+    │   └── internal/  stats.api.ts, gz-calendar, gz-exercise-progress, gz-progress-marker, dates.ts, month.ts, progression.ts
     └── auth/       auth.routes.ts, auth.facade.ts, gz-login
         └── internal/  auth.api.ts, next-path.ts
 ```
@@ -378,7 +378,8 @@ requires it rather than guessing a timezone. The ‹ and › buttons are buttons
 month and `gz-stats` calls `navigate()`; › is disabled on the current month and any later one. A
 day with one workout is a plain link to it, which `gz-app` routes; a day with several is an
 `ot-dropdown` whose button shows their count and whose `<menu popover>`, one id per day, links
-each workout with its level and %. Each workout day shows a marker for its progression, the
+each workout with its level and %. Each workout day shows a marker for its progression, a `gz-progress-marker` element shared with the
+section below, for the
 fraction the API computes (see `docs/backend.md`), bucketed by `progressionLevel()` in
 `internal/progression.ts`: ▲ in `--success` from +2.5%, ▼ in `--danger` from −2.5%, ■ in `--muted`
 in between, and a dashed `--primary` ring when nothing was compared — drawn, not a ◌ glyph, which fonts do not center. Today's date sits in a filled `--primary` circle. `PROGRESSION_THRESHOLD` there is
@@ -387,6 +388,17 @@ legend under the grid the same icons and words. The exact %, the number of compa
 on a day of several, the number of workouts are in the tile's `title` and `aria-label`; the
 markers are filled circles in Oat's tokens, so the multi-workout button stays an Oat `.ghost` button
 rather than taking a color of its own.
+
+Below the calendar, `gz-exercise-progress` lists every exercise trained in the last `RECENT_DAYS`
+(30) days from `statsFacade.recentExercises(since)`, loaded beside the calendar with `Promise.all`;
+`since` is `daysBefore(todayIso(), RECENT_DAYS)` from `internal/dates.ts`, by the browser's date and
+independent of the calendar's month. Each exercise is an `article.card` in a plain `<section>`, a
+grid that collapses to one column on a phone: the name linking to the exercise, its overall marker
+and %, then its last three sessions, each linking to its workout with its volume, or total reps for
+a bodyweight exercise, and its marker and % against the session before. Marker and % share one
+`role="img"` span whose `title` and `aria-label` say what was compared. The markers are the same
+`gz-progress-marker` the calendar uses, which owns their CSS so neither shadow root copies it, and
+the cards render in the order the API sends.
 
 Both lists show their count as a muted subtitle under the heading. The workouts list has no form:
 its "Start session" header button creates a workout dated today and opens it, as the dashboard's
@@ -479,8 +491,8 @@ cast on the way in.
 
 Shapes local to one module — a view's loaded data, the chart's points — are declared in that
 module; what a view is doing with that data is `GzView`'s `ViewState<Data>`. The seven route views are exported so their route file can construct them with `new`, which
-keeps each tag name written only in its `define()`. `GzBreadcrumbsComponent`, `GzCalendarComponent`, `GzChartComponent`, `GzProgressChartComponent`, `GzSessionTableComponent`, `GzSetRowComponent`
-and `GzAddSetFormComponent` are exported so their parent can type the element it drives; the other six components stay private to their module.
+keeps each tag name written only in its `define()`. `GzBreadcrumbsComponent`, `GzCalendarComponent`, `GzChartComponent`, `GzExerciseProgressComponent`, `GzProgressChartComponent`, `GzSessionTableComponent`, `GzSetRowComponent`
+and `GzAddSetFormComponent` are exported so their parent can type the element it drives; the other seven components stay private to their module.
 
 ## Loading
 

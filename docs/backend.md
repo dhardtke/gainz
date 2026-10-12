@@ -256,7 +256,7 @@ workout's unchecked sets stay plans, skipped rather than performed, so they are 
 `setCount`, `workoutCount`, `lastPerformedOn`, `bestWeight` and `bestReps` (its join carries `s.done = 1` in the
 `ON` clause, so an exercise without done sets still lists, with zero counts), the progress points with their `topReps`,
 the best set, the stats summary's `setCount`, `totalReps`, `totalVolume` and
-`volumeLast30Days`, and the training calendar's days and progression. The rest counts every set or workout: a workout's own totals, on its card and
+`volumeLast30Days`, the training calendar's days and progression, and the recent exercises' sessions. The rest counts every set or workout: a workout's own totals, on its card and
 its page, describe the whole session, planned sets included; the exercise delete guard refuses
 while any set uses the exercise, done or not; and the summary's `workoutCount`,
 `workoutsLast30Days` and `lastPerformedOn` count workouts, so a freshly repeated session counts on
@@ -290,6 +290,19 @@ each exercise counts equally; with nothing compared it is `null`. The values are
 query over all history, since a previous session may lie in any earlier month: a CTE of per-(workout,
 exercise) done reps and volume, `LAG()` over each exercise's sessions, then the month filter, with
 the grouping into workouts and days in TypeScript.
+
+`GET /api/stats/exercises?since=YYYY-MM-DD` is the page's progress section: `{ since, exercises }`
+with every exercise holding a done set in a workout dated on or after `since`. Like `month`, `since`
+is required and comes from the browser's date; a missing or malformed one is a 400. Each exercise
+carries its three most recent sessions over all history, oldest first, so one trained every other
+week still shows a trend even when the older two lie before `since`. A session's `progression` is
+the calendar's per-exercise value against the session before it, which may be older than the three
+shown; the exercise's `progression` compares the newest shown session against the oldest by the same
+rule, and is `null` with one session or when the rule does not compare them. Exercises come biggest
+regression first, `null` last, ties by name ignoring case, so the order is part of the answer.
+`COMPARED_SESSIONS_SQL` in `stats.repository.ts` holds the sessions CTE with its `LAG()` and a
+`ROW_NUMBER()` newest first, and serves both this query and the calendar's; `sessionChange()` is the
+one place the comparison rule is written.
 
 An exercise's muscle group is one of seven — `Chest`, `Back`, `Shoulders`, `Arms`, `Legs`, `Core`,
 `Full body` — or none. A `CHECK` on `exercises.muscle_group` refuses anything else, and `POST` and

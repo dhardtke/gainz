@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { optionalOneOf, optionalString, requiredDate, requiredIds, requiredInt, requiredNumber, requiredOneOf, requiredString } from './validate.ts';
+import { isIsoDate, optionalOneOf, optionalString, requiredDate, requiredIds, requiredInt, requiredNumber, requiredOneOf, requiredString } from './validate.ts';
 
 describe('requiredString', () => {
   test('trims the value', () => {
@@ -52,6 +52,16 @@ describe('requiredNumber', () => {
   test('rejects NaN and Infinity', () => {
     expect(() => requiredNumber({ weight: Number.NaN }, 'weight')).toThrow('"weight" must be a number');
     expect(() => requiredNumber({ weight: Number.POSITIVE_INFINITY }, 'weight')).toThrow('"weight" must be a number');
+  });
+});
+
+describe('isIsoDate', () => {
+  test('accepts an ISO date', () => {
+    expect(isIsoDate('2026-10-12')).toBe(true);
+  });
+
+  test.each(['2026-1-05', '2026-13-01', 'abc', ''])('rejects %p', (value) => {
+    expect(isIsoDate(value)).toBe(false);
   });
 });
 

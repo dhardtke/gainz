@@ -69,10 +69,8 @@ test('opens a menu of both workouts of a two-workout day, with their count and %
   expect(find(button, testId('count')).textContent).toBe('2');
   const items = Array.from(find(root, '#day-2026-10-09').querySelectorAll<HTMLAnchorElement>(testId('day-workout')));
   expect(items.map((item) => item.getAttribute('href'))).toEqual(['/workouts/41', '/workouts/42']);
-  expect(items.map((item) => item.textContent.replaceAll(/\s+/g, ' ').trim())).toEqual([
-    `▲ Push day ${formatPercent(0.06)}`,
-    `▼ Workout ${formatPercent(-0.09)}`,
-  ]);
+  expect(items.map((item) => find(item, 'gz-progress-marker').getAttribute('level'))).toEqual(['up', 'down']);
+  expect(items.map((item) => item.textContent.replaceAll(/\s+/g, ' ').trim())).toEqual([`Push day ${formatPercent(0.06)}`, `Workout ${formatPercent(-0.09)}`]);
 });
 
 test('marks today', () => {
@@ -82,14 +80,14 @@ test('marks today', () => {
 });
 
 test.each([
-  ['2026-10-01', 'up', '▲'],
-  ['2026-10-09', 'held', '■'],
-  ['2026-10-12', 'none', ''],
-  ['2026-10-14', 'down', '▼'],
-])('gives %s the level %s and its icon', (date, level, icon) => {
+  ['2026-10-01', 'up'],
+  ['2026-10-09', 'held'],
+  ['2026-10-12', 'none'],
+  ['2026-10-14', 'down'],
+])('gives %s the level %s and its marker', (date, level) => {
   const day = tile(mountCalendar(), date);
   expect(day.dataset.level).toBe(level);
-  expect(find(day, '.marker').textContent).toBe(icon);
+  expect(find(day, 'gz-progress-marker').getAttribute('level')).toBe(level);
 });
 
 test('labels a tile with its date, %, exercises and workouts', () => {
@@ -103,7 +101,9 @@ test('labels a tile with its date, %, exercises and workouts', () => {
 
 test('lists the four levels in the legend', () => {
   const legend = find(shadow(mountCalendar()), testId('legend'));
-  expect(Array.from(legend.querySelectorAll('li')).map((item) => item.textContent)).toEqual(['▲progressed', '■held', '▼regressed', 'nothing to compare']);
+  const items = Array.from(legend.querySelectorAll('li'));
+  expect(items.map((item) => find(item, 'gz-progress-marker').getAttribute('level'))).toEqual(['up', 'held', 'down', 'none']);
+  expect(items.map((item) => item.textContent)).toEqual(['progressed', 'held', 'regressed', 'nothing to compare']);
 });
 
 test.each([

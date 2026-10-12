@@ -108,9 +108,13 @@ export function optionalOneOf<T extends object, V extends string>(dto: T, field:
   return requiredOneOf(dto, field, values);
 }
 
+export function isIsoDate(value: string): boolean {
+  return ISO_DATE.test(value) && !Number.isNaN(Date.parse(value));
+}
+
 export function requiredDate<T extends object>(dto: T, field: keyof T & string): Iso8601Date {
   const value = requiredString(dto, field, 10);
-  if (!ISO_DATE.test(value) || Number.isNaN(Date.parse(value))) {
+  if (!isIsoDate(value)) {
     throw badRequest(`"${field}" must be a date in YYYY-MM-DD format`);
   }
   return value;

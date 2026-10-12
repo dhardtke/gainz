@@ -12,5 +12,8 @@ export function statsRoutes(db: DB): RouteTable {
     '/api/stats/calendar': {
       GET: (req) => controller.calendar(req),
     },
+    '/api/stats/exercises': {
+      GET: (req) => controller.recentExercises(req),
+    },
   };
 }

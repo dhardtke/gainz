@@ -1,6 +1,6 @@
 import type { DB } from '../../../db/db.ts';
-import type { Iso8601Date, Iso8601Month, WorkoutId } from '../../../../shared/flavors.ts';
-import type { CalendarDay, CalendarWorkout, Summary } from '../ports/stats.ts';
+import type { ExerciseId, Iso8601Date, Iso8601Month, WorkoutId } from '../../../../shared/flavors.ts';
+import type { CalendarDay, CalendarWorkout, RecentExercise, Summary } from '../ports/stats.ts';
 
 interface SummaryTotals {
   workout_count: number;
@@ -27,15 +27,54 @@ interface ExerciseSession {
   previous_volume: number | null;
 }
 
+interface RecentSessionRow {
+  exercise_id: ExerciseId;
+  name: string;
+  bodyweight: 0 | 1;
+  workout_id: WorkoutId;
+  performed_on: Iso8601Date;
+  reps: number;
+  volume: number;
+  previous_reps: number | null;
+  previous_volume: number | null;
+}
+
+interface SessionTotals {
+  reps: number;
+  volume: number;
+}
+
+// Each exercise's sessions of done sets, with the session before and the rank from the newest.
+const COMPARED_SESSIONS_SQL = `
+  WITH sessions AS (
+    SELECT w.id AS workout_id, w.performed_on, w.title, s.exercise_id, e.name, e.bodyweight,
+           SUM(s.reps) AS reps, SUM(s.reps * s.weight) AS volume
+      FROM sets s
+      JOIN workouts w  ON w.id = s.workout_id
+      JOIN exercises e ON e.id = s.exercise_id
+     WHERE s.done = 1
+     GROUP BY w.id, s.exercise_id
+  ), compared AS (
+    SELECT *, LAG(reps)   OVER history AS previous_reps,
+              LAG(volume) OVER history AS previous_volume,
+              ROW_NUMBER() OVER (PARTITION BY exercise_id ORDER BY performed_on DESC, workout_id DESC) AS recency
+      FROM sessions
+    WINDOW history AS (PARTITION BY exercise_id ORDER BY performed_on, workout_id)
+  )`;
+
 // Bodyweight work compares reps; weighted work compares volume and is not compared beside a session without load.
-function exerciseProgression(row: ExerciseSession): number | null {
-  if (row.previous_reps === null || row.previous_volume === null) {
+function sessionChange(bodyweight: 0 | 1, current: SessionTotals, previous: SessionTotals | null): number | null {
+  if (previous === null) {
     return null;
   }
-  if (row.bodyweight === 1) {
-    return row.reps / row.previous_reps - 1;
+  if (bodyweight === 1) {
+    return previous.reps > 0 ? current.reps / previous.reps - 1 : null;
   }
-  return row.volume > 0 && row.previous_volume > 0 ? row.volume / row.previous_volume - 1 : null;
+  return current.volume > 0 && previous.volume > 0 ? current.volume / previous.volume - 1 : null;
+}
+
+function previousOf(row: { previous_reps: number | null; previous_volume: number | null }): SessionTotals | null {
+  return row.previous_reps === null || row.previous_volume === null ? null : { reps: row.previous_reps, volume: row.previous_volume };
 }
 
 function mean(values: number[]): number | null {
@@ -83,20 +122,7 @@ export class StatsRepository {
   calendar(month: Iso8601Month): CalendarDay[] {
     const rows = this.#db
       .query<ExerciseSession, [string]>(
-        `WITH sessions AS (
-           SELECT w.id AS workout_id, w.performed_on, w.title, s.exercise_id, e.bodyweight,
-                  SUM(s.reps) AS reps, SUM(s.reps * s.weight) AS volume
-             FROM sets s
-             JOIN workouts w  ON w.id = s.workout_id
-             JOIN exercises e ON e.id = s.exercise_id
-            WHERE s.done = 1
-            GROUP BY w.id, s.exercise_id
-         ), compared AS (
-           SELECT *, LAG(reps)   OVER history AS previous_reps,
-                     LAG(volume) OVER history AS previous_volume
-             FROM sessions
-           WINDOW history AS (PARTITION BY exercise_id ORDER BY performed_on, workout_id)
-         )
+        `${COMPARED_SESSIONS_SQL}
          SELECT workout_id, performed_on, title, bodyweight, reps, volume, previous_reps, previous_volume
            FROM compared
           WHERE performed_on >= ?1 AND performed_on < date(?1, '+1 month')
@@ -114,7 +140,7 @@ export class StatsRepository {
         };
         workouts.set(row.workout_id, entry);
       }
-      const ratio = exerciseProgression(row);
+      const ratio = sessionChange(row.bodyweight, row, previousOf(row));
       if (ratio !== null) {
         entry.ratios.push(ratio);
       }
@@ -134,5 +160,47 @@ export class StatsRepository {
     }
 
     return Array.from(days.values(), ({ day, ratios }) => ({ ...day, progression: mean(ratios), compared_exercise_count: ratios.length }));
+  }
+
+  /** Exercises with a session on or after `since`, each with its three newest sessions over all history; done sets only. */
+  recentExercises(since: Iso8601Date): RecentExercise[] {
+    const rows = this.#db
+      .query<RecentSessionRow, [string]>(
+        `${COMPARED_SESSIONS_SQL}
+         SELECT exercise_id, name, bodyweight, workout_id, performed_on, reps, volume, previous_reps, previous_volume
+           FROM compared
+          WHERE recency <= 3
+            AND exercise_id IN (SELECT exercise_id FROM sessions WHERE performed_on >= ?1)
+          ORDER BY exercise_id, performed_on, workout_id`,
+      )
+      .all(since);
+
+    const exercises = new Map<ExerciseId, RecentExercise>();
+    for (const row of rows) {
+      let exercise = exercises.get(row.exercise_id);
+      if (!exercise) {
+        exercise = { id: row.exercise_id, name: row.name, bodyweight: row.bodyweight, progression: null, sessions: [] };
+        exercises.set(row.exercise_id, exercise);
+      }
+      exercise.sessions.push({
+        workout_id: row.workout_id,
+        performed_on: row.performed_on,
+        reps: row.reps,
+        volume: row.volume,
+        progression: sessionChange(row.bodyweight, row, previousOf(row)),
+      });
+    }
+
+    for (const exercise of exercises.values()) {
+      const [oldest] = exercise.sessions;
+      const newest = exercise.sessions.at(-1);
+      if (oldest && newest && oldest !== newest) {
+        exercise.progression = sessionChange(exercise.bodyweight, newest, oldest);
+      }
+    }
+
+    return [...exercises.values()].toSorted(
+      (a, b) => (a.progression ?? Infinity) - (b.progression ?? Infinity) || a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
+    );
   }
 }

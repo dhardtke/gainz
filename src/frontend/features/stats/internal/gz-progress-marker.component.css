@@ -1,0 +1,34 @@
+:host {
+  display: inline-flex;
+}
+
+.marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  line-height: 1;
+
+  &[data-level="up"] {
+    background-color: var(--success);
+    color: var(--success-foreground);
+  }
+
+  &[data-level="held"] {
+    background-color: var(--muted);
+    color: var(--muted-foreground);
+  }
+
+  &[data-level="down"] {
+    background-color: var(--danger);
+    color: var(--danger-foreground);
+  }
+
+  /* A ring rather than a ◌ glyph, which fonts do not center. */
+  &[data-level="none"] {
+    border: 2px dashed var(--primary);
+  }
+}

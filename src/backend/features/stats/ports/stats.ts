@@ -1,4 +1,4 @@
-import type { Iso8601Date, WorkoutId } from '../../../../shared/flavors.ts';
+import type { ExerciseId, Iso8601Date, WorkoutId } from '../../../../shared/flavors.ts';
 
 export interface Summary {
   workout_count: number;
@@ -24,4 +24,20 @@ export interface CalendarDay {
   progression: number | null;
   compared_exercise_count: number;
   workouts: CalendarWorkout[];
+}
+
+export interface RecentSession {
+  workout_id: WorkoutId;
+  performed_on: Iso8601Date;
+  reps: number;
+  volume: number;
+  progression: number | null;
+}
+
+export interface RecentExercise {
+  id: ExerciseId;
+  name: string;
+  bodyweight: 0 | 1;
+  progression: number | null;
+  sessions: RecentSession[];
 }

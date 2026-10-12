@@ -1,4 +1,5 @@
-import type { Iso8601Month } from '../../shared/flavors.ts';
+import type { Iso8601Date, Iso8601Month } from '../../shared/flavors.ts';
+import { isIsoDate } from '../shared/validate.ts';
 import { badRequest } from './errors.ts';
 
 export function json(data: unknown, status = 200, headers: HeadersInit = {}): Response {
@@ -66,6 +67,14 @@ export function queryMonth(params: URLSearchParams, key: string): Iso8601Month {
   const raw = params.get(key) ?? '';
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(raw)) {
     throw badRequest(`"${key}" must be a month as YYYY-MM`);
+  }
+  return raw;
+}
+
+export function queryDate(params: URLSearchParams, key: string): Iso8601Date {
+  const raw = params.get(key) ?? '';
+  if (!isIsoDate(raw)) {
+    throw badRequest(`"${key}" must be a date in YYYY-MM-DD format`);
   }
   return raw;
 }

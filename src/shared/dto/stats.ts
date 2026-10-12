@@ -1,4 +1,4 @@
-import type { Iso8601Date, Iso8601Month, WorkoutId } from '../flavors.ts';
+import type { ExerciseId, Iso8601Date, Iso8601Month, WorkoutId } from '../flavors.ts';
 
 export interface SummaryDto {
   workoutCount: number;
@@ -32,4 +32,29 @@ export interface CalendarMonthDto {
   month: Iso8601Month;
   /** Only days with a workout holding a done set, oldest first. */
   days: CalendarDayDto[];
+}
+
+export interface RecentSessionDto {
+  workoutId: WorkoutId;
+  performedOn: Iso8601Date;
+  reps: number;
+  volume: number;
+  /** Change against the session before it, as a fraction (0.041 = +4.1%). */
+  progression: number | null;
+}
+
+export interface RecentExerciseDto {
+  id: ExerciseId;
+  name: string;
+  bodyweight: boolean;
+  /** Change of the newest shown session against the oldest shown one, as a fraction. */
+  progression: number | null;
+  /** At most three, oldest first. */
+  sessions: RecentSessionDto[];
+}
+
+export interface RecentExercisesDto {
+  since: Iso8601Date;
+  /** Biggest regression first, those without a value last. */
+  exercises: RecentExerciseDto[];
 }

@@ -7,11 +7,12 @@ import type { Iso8601Date, Iso8601Month } from '../../../../shared/flavors.ts';
 import { formatMonth, monthGrid, shiftMonth } from './month.ts';
 import { LEVELS, PROGRESSION_LEVELS, progressionLevel } from './progression.ts';
 import type { ProgressionLevel } from './progression.ts';
+import './gz-progress-marker.component.ts';
 
 const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
 function marker(level: ProgressionLevel): RawHtml {
-  return html`<span class="marker" data-level="${level}" aria-hidden="true">${LEVELS[level].icon}</span>`;
+  return html`<gz-progress-marker level="${level}"></gz-progress-marker>`;
 }
 
 function dayLabel(day: CalendarDayDto): string {

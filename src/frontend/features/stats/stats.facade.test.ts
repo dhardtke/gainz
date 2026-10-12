@@ -15,3 +15,9 @@ test('statsFacade.calendar()', async () => {
 
   expect(fetch.requests).toMatchObject([{ method: 'GET', url: '/api/stats/calendar?month=2026-10' }]);
 });
+
+test('statsFacade.recentExercises()', async () => {
+  await statsFacade.recentExercises('2026-09-12');
+
+  expect(fetch.requests).toMatchObject([{ method: 'GET', url: '/api/stats/exercises?since=2026-09-12' }]);
+});
