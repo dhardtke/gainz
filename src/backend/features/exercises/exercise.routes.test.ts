@@ -78,6 +78,51 @@ describe('exercises', () => {
     expect((await patch(`/api/exercises/${exercise.id}`, { muscleGroup: 'Quads' })).status).toBe(400);
   });
 
+  test('creates a weighted exercise unless told it is bodyweight', async () => {
+    expect((await createExercise(post, 'Back Squat')).bodyweight).toBe(false);
+    expect((await createExercise(post, 'Dips', { bodyweight: true })).bodyweight).toBe(true);
+  });
+
+  test('rejects a bodyweight flag that is not a boolean', async () => {
+    const res = await post('/api/exercises', { name: 'Dips', bodyweight: 'yes' });
+    expect(res.status).toBe(400);
+    expect((await body<ErrorDto>(res)).error).toBe('"bodyweight" must be true or false');
+    const exercise = await createExercise(post);
+    expect((await patch(`/api/exercises/${exercise.id}`, { bodyweight: 'yes' })).status).toBe(400);
+  });
+
+  test('refuses to make bodyweight an exercise with weighted sets', async () => {
+    const exercise = await createExercise(post);
+    const workout = await createWorkout(post);
+    await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 0 });
+    await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
+
+    const res = await patch(`/api/exercises/${exercise.id}`, { bodyweight: true });
+    expect(res.status).toBe(409);
+    expect((await body<ErrorDto>(res)).error).toBe('"Bench Press" has sets with weight; it cannot become bodyweight');
+  });
+
+  test('makes bodyweight an exercise whose sets all weigh 0, and weighted again', async () => {
+    const exercise = await createExercise(post, 'Dips');
+    const workout = await createWorkout(post);
+    await createSet(post, workout.id, { exerciseId: exercise.id, reps: 12, weight: 0 });
+
+    const res = await patch(`/api/exercises/${exercise.id}`, { bodyweight: true });
+    expect(res.status).toBe(200);
+    expect((await body<ExerciseDto>(res)).bodyweight).toBe(true);
+    expect(await body<ExerciseDto>(await patch(`/api/exercises/${exercise.id}`, { bodyweight: false }))).toMatchObject({ bodyweight: false });
+  });
+
+  test('makes weighted an exercise whatever its history', async () => {
+    const exercise = await createExercise(post);
+    const workout = await createWorkout(post);
+    await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
+
+    const res = await patch(`/api/exercises/${exercise.id}`, { bodyweight: false });
+    expect(res.status).toBe(200);
+    expect((await body<ExerciseDto>(res)).bodyweight).toBe(false);
+  });
+
   test('returns 404 for a missing exercise', async () => {
     expect((await api('/api/exercises/9999')).status).toBe(404);
   });
@@ -235,7 +280,8 @@ describe('sets not done', () => {
     const done = await createWorkout(post, '2026-01-05');
     const planned = await createWorkout(post, '2026-01-12');
     await markDone(patch, (await createSet(post, done.id, { exerciseId: exercise.id, reps: 5, weight: 60 })).id);
-    await createSet(post, planned.id, { exerciseId: exercise.id, reps: 5, weight: 100 });
+    await createSet(post, planned.id, { exerciseId: exercise.id, reps: 8, weight: 100 });
+    await createSet(post, done.id, { exerciseId: exercise.id, reps: 9, weight: 50 });
 
     const page = await body<ExercisePageDto>(await api('/api/exercises'));
     expect(page.items.find((item) => item.id === exercise.id)).toMatchObject({
@@ -243,10 +289,12 @@ describe('sets not done', () => {
       workoutCount: 1,
       lastPerformedOn: '2026-01-05',
       bestWeight: 60,
+      bestReps: 5,
     });
 
     const progress = await body<ExerciseProgressDto>(await api(`/api/exercises/${exercise.id}/progress`));
     expect(progress.sessions.map((point) => point.workoutId)).toEqual([done.id]);
+    expect(progress.sessions[0]?.topReps).toBe(5);
     expect(progress.bestSet).toMatchObject({ weight: 60, done: true });
   });
 
@@ -261,6 +309,7 @@ describe('sets not done', () => {
       workoutCount: 0,
       lastPerformedOn: null,
       bestWeight: null,
+      bestReps: null,
     });
     expect((await api(`/api/exercises/${exercise.id}`, { method: 'DELETE' })).status).toBe(409);
   });

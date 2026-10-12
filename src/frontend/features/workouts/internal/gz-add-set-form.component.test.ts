@@ -251,3 +251,52 @@ test('toasts a failed add and emits nothing', async () => {
   expect(logged).toHaveLength(0);
   expect(addLastSession(form)?.disabled).toBe(false);
 });
+
+const DIPS = listedExercise({ id: 3, name: 'Dips', bodyweight: true });
+
+function weightField(form: HTMLElement): HTMLElement {
+  return find(shadow(form), testId('weight-field'));
+}
+
+test('hides and disables the weight while a bodyweight exercise is selected, and shows it again', () => {
+  const form = mountForm([...EXERCISES, DIPS], SETS);
+  expect(weightField(form).hidden).toBe(false);
+  choose(exerciseSelect(form), '3');
+  expect(weightField(form).hidden).toBe(true);
+  expect(field(form, 'weight').disabled).toBe(true);
+  choose(exerciseSelect(form), '1');
+  expect(weightField(form).hidden).toBe(false);
+  expect(field(form, 'weight').disabled).toBe(false);
+});
+
+test('starts with the weight hidden when the last set is of a bodyweight exercise', () => {
+  const form = mountForm([...EXERCISES, DIPS], [set({ id: 14, exerciseId: 3, weight: 0, reps: 12 })]);
+  expect(weightField(form).hidden).toBe(true);
+  expect(field(form, 'weight').disabled).toBe(true);
+});
+
+test('logs a bodyweight set without a weight', async () => {
+  const form = mountForm([...EXERCISES, DIPS], [set({ id: 14, exerciseId: 3, weight: 0, reps: 12 })]);
+  // happy-dom misreads `selected` on any option after the second.
+  choose(exerciseSelect(form), '3');
+  submit(find(shadow(form), testId('form')));
+  await settle();
+  expect(fake.sent('POST /api/workouts/3/sets')).toEqual([{ exerciseId: 3, reps: 12, notes: '' }]);
+});
+
+test("shows a bodyweight exercise's last session in reps", async () => {
+  answerLastSession(3, [
+    { reps: 12, weight: 0 },
+    { reps: 10, weight: 0 },
+  ]);
+  const form = mountForm([DIPS], []);
+  await settle();
+  expect(hint(form)).toBe(`Last · ${formatShortDate('2026-10-05')}: 12 · 10 reps`);
+});
+
+test("ends a bodyweight exercise's hint in its best reps", async () => {
+  answerLastSession(3, [{ reps: 12, weight: 0 }]);
+  const form = mountForm([{ ...DIPS, bestReps: 15 }], []);
+  await settle();
+  expect(hint(form)).toBe(`Last · ${formatShortDate('2026-10-05')}: 12 reps · best 15 reps`);
+});

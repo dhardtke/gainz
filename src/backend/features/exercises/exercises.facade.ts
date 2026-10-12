@@ -2,7 +2,7 @@ import type { CreateExerciseDto, EditExerciseDto } from '../../../shared/dto/exe
 import type { ExerciseId, Iso8601Date, WorkoutId } from '../../../shared/flavors.ts';
 import type { MuscleGroup } from '../../../shared/muscle-group.ts';
 import type { DB } from '../../db/db.ts';
-import { optionalOneOf, optionalString, requiredString } from '../../shared/validate.ts';
+import { optionalOneOf, optionalString, requiredBoolean, requiredString } from '../../shared/validate.ts';
 import { translateDtoToCreateExercise, translateDtoToEditExercise } from './internal/exercise.translator.ts';
 import { ExerciseRepository } from './internal/exercise.repository.ts';
 import type { Exercise, ExerciseWithStats, LastSession, SessionPoint } from './ports/exercise.ts';
@@ -65,6 +65,7 @@ export class ExerciseFacade {
       name: requiredString(dto, 'name', MAX_EXERCISE_NAME_LENGTH),
       muscleGroup: optionalOneOf(dto, 'muscleGroup', MUSCLE_GROUPS),
       notes: optionalString(dto, 'notes', MAX_EXERCISE_NOTES_LENGTH),
+      bodyweight: dto.bodyweight === undefined ? false : requiredBoolean(dto, 'bodyweight'),
     };
   }
 
@@ -78,6 +79,9 @@ export class ExerciseFacade {
     }
     if (dto.notes !== undefined) {
       valid.notes = optionalString(dto, 'notes', MAX_EXERCISE_NOTES_LENGTH);
+    }
+    if (dto.bodyweight !== undefined) {
+      valid.bodyweight = requiredBoolean(dto, 'bodyweight');
     }
     return valid;
   }

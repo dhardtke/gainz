@@ -6,7 +6,7 @@ import type { SessionPointDto } from '../../../../shared/dto/exercise.ts';
 import type { GzChartComponent } from './gz-chart.component.ts';
 import './gz-chart.component.ts';
 
-type MetricKey = 'estOneRepMax' | 'topWeight' | 'totalVolume';
+type MetricKey = 'estOneRepMax' | 'topWeight' | 'totalVolume' | 'topReps' | 'totalReps';
 
 interface Metric {
   key: MetricKey;
@@ -15,8 +15,10 @@ interface Metric {
   hint: string;
 }
 
-// A non-empty tuple, so `METRICS[0]` is always defined.
-const METRICS: [Metric, ...Metric[]] = [
+type Metrics = [Metric, ...Metric[]];
+
+// Non-empty tuples, so the first metric is always defined.
+const METRICS: Metrics = [
   {
     key: 'estOneRepMax',
     label: 'Estimated 1RM',
@@ -27,13 +29,30 @@ const METRICS: [Metric, ...Metric[]] = [
   { key: 'totalVolume', label: 'Volume', unit: UNIT, hint: 'Reps × weight summed over the session.' },
 ];
 
+const BODYWEIGHT_METRICS: Metrics = [
+  { key: 'topReps', label: 'Top set', unit: 'reps', hint: 'Most reps in one set in each session.' },
+  { key: 'totalReps', label: 'Total reps', unit: 'reps', hint: 'Reps summed over the session.' },
+];
+
 export class GzProgressChartComponent extends GzElement {
-  #metric: Metric = METRICS[0];
+  #metrics: Metrics = METRICS;
+
+  // A key, not a metric: it is looked up in whichever list `bodyweight` chooses.
+  #metricKey: string | null = null;
 
   #sessions: SessionPointDto[] = [];
 
+  // Only stored, like `metric`: the parent sets it before `sessions`, which renders.
+  set bodyweight(value: boolean) {
+    this.#metrics = value ? BODYWEIGHT_METRICS : METRICS;
+  }
+
   set metric(value: string) {
-    this.#metric = METRICS.find((candidate) => candidate.key === value) ?? METRICS[0];
+    this.#metricKey = value;
+  }
+
+  get #metric(): Metric {
+    return this.#metrics.find((candidate) => candidate.key === this.#metricKey) ?? this.#metrics[0];
   }
 
   // Set it last: assigning it re-renders.
@@ -45,11 +64,11 @@ export class GzProgressChartComponent extends GzElement {
   }
 
   override handleAction(action: string, element: HTMLElement): void {
-    const chosen = METRICS.find((candidate) => candidate.key === element.dataset.metric);
+    const chosen = this.#metrics.find((candidate) => candidate.key === element.dataset.metric);
     if (action !== 'metric' || !chosen) {
       return;
     }
-    this.#metric = chosen;
+    this.#metricKey = chosen.key;
     this.render();
     this.emit('metric-change', chosen.key);
   }
@@ -76,7 +95,7 @@ export class GzProgressChartComponent extends GzElement {
         <div class="hstack justify-between gap-2">
           <h2 data-testid="heading">${current.label}</h2>
           <div class="metric-switch">
-            ${METRICS.map(
+            ${this.#metrics.map(
               (candidate) => html`
                 <button
                   class="${candidate === current ? '' : 'outline'}"

@@ -82,7 +82,8 @@ export class GzAddSetFormComponent extends GzElement {
       await setFacade.create(workoutId, {
         exerciseId,
         reps: Number(values.reps),
-        weight: Number(values.weight),
+        // A bodyweight exercise's weight input is disabled, so it is not in the form data.
+        ...(values.weight === undefined ? {} : { weight: Number(values.weight) }),
         notes: values.notes,
       });
       this.emit('set-logged', { exerciseId });
@@ -117,6 +118,7 @@ export class GzAddSetFormComponent extends GzElement {
     }
     select.addEventListener('change', () => {
       const exerciseId = Number(select.value);
+      this.#syncWeight(exerciseId);
       const inWorkout = this.#inWorkout(exerciseId);
       if (inWorkout) {
         this.#prefillFrom(exerciseId);
@@ -129,6 +131,17 @@ export class GzAddSetFormComponent extends GzElement {
   #selectedId(): ExerciseId | null {
     const select = this.$<HTMLSelectElement>("select[name='exerciseId']");
     return select ? Number(select.value) : null;
+  }
+
+  #isBodyweight(exerciseId: ExerciseId | undefined): boolean {
+    return this.#exercises.find((exercise) => exercise.id === exerciseId)?.bodyweight ?? false;
+  }
+
+  // A disabled input is neither validated nor submitted.
+  #syncWeight(exerciseId: ExerciseId): void {
+    const bodyweight = this.#isBodyweight(exerciseId);
+    this.$('.field-weight')?.toggleAttribute('hidden', bodyweight);
+    this.$<HTMLInputElement>("input[name='weight']")?.toggleAttribute('disabled', bodyweight);
   }
 
   #inWorkout(exerciseId: ExerciseId): boolean {
@@ -179,12 +192,18 @@ export class GzAddSetFormComponent extends GzElement {
     }
   }
 
-  #hint(session: LastSessionDto | null, best: number | null): string {
+  #hint(session: LastSessionDto | null, exercise: ExerciseWithStatsDto | undefined): string {
     if (!session) {
       return 'No history yet';
     }
+    const last = `Last · ${formatShortDate(session.performedOn)}`;
+    if (exercise?.bodyweight === true) {
+      const best = exercise.bestReps === null ? '' : ` · best ${plural(exercise.bestReps, 'rep')}`;
+      return `${last}: ${session.sets.map((set) => set.reps).join(' · ')} reps${best}`;
+    }
+    const best = exercise?.bestWeight ?? null;
     const sets = session.sets.map((set) => `${set.reps}×${formatNumber(set.weight)}`).join(' · ');
-    return `Last · ${formatShortDate(session.performedOn)}: ${sets}${best !== null && best !== 0 ? ` · best ${formatWeight(best)}` : ''}`;
+    return `${last}: ${sets}${best !== null && best !== 0 ? ` · best ${formatWeight(best)}` : ''}`;
   }
 
   // Empty until the lookup resolves; then rendered from the cache, so a re-render keeps it.
@@ -193,11 +212,14 @@ export class GzAddSetFormComponent extends GzElement {
     if (!found) {
       return html``;
     }
-    const best = this.#exercises.find((exercise) => exercise.id === exerciseId)?.bestWeight ?? null;
     const session = found.session ?? null;
     const count = session?.sets.length ?? 0;
+    const hint = this.#hint(
+      session,
+      this.#exercises.find((exercise) => exercise.id === exerciseId),
+    );
     return html`
-      <p class="last-session text-light" data-testid="last-session">${this.#hint(session, best)}</p>
+      <p class="last-session text-light" data-testid="last-session">${hint}</p>
       ${
         exerciseId !== undefined && count > 0 && !this.#inWorkout(exerciseId)
           ? html`<button type="button" class="outline" data-action="add-last-session" data-testid="add-last-session" ${this.#adding ? 'disabled' : ''}>
@@ -222,6 +244,7 @@ export class GzAddSetFormComponent extends GzElement {
     }
     const last = this.#sets.at(-1);
     const selected = last?.exerciseId ?? this.#exercises[0]?.id;
+    const bodyweight = this.#isBodyweight(selected);
 
     return html`
       <section class="vstack gap-2">
@@ -241,9 +264,19 @@ export class GzAddSetFormComponent extends GzElement {
                 <label for="reps">Reps</label>
                 <input id="reps" name="reps" type="number" step="1" min="1" value="${last?.reps ?? ''}" required data-testid="reps" />
               </div>
-              <div class="field field-num">
+              <div class="field field-num field-weight" data-testid="weight-field" ${bodyweight ? 'hidden' : ''}>
                 <label for="weight">Weight (${UNIT})</label>
-                <input id="weight" name="weight" type="number" step="any" min="0" value="${last?.weight ?? ''}" required data-testid="weight" />
+                <input
+                  id="weight"
+                  name="weight"
+                  type="number"
+                  step="any"
+                  min="0"
+                  value="${last?.weight ?? ''}"
+                  required
+                  data-testid="weight"
+                  ${bodyweight ? 'disabled' : ''}
+                />
               </div>
               <div class="field field-notes">
                 <label for="set-notes">Notes</label>

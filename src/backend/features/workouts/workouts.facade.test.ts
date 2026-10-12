@@ -105,6 +105,31 @@ describe('SetFacade validation', () => {
     expect(thrown(() => sets.create(workout.id, { exerciseId, reps: 0, weight: 60 })).status).toBe(400);
   });
 
+  test('create stores 0 for a bodyweight exercise and refuses any other weight', () => {
+    const { db, workouts, sets } = setup();
+    const dips = createExerciseFacade(db).create({ name: 'Dips', bodyweight: true }).id;
+    const workout = workouts.create({});
+    expect(sets.create(workout.id, { exerciseId: dips, reps: 12 }).weight).toBe(0);
+    expect(sets.create(workout.id, { exerciseId: dips, reps: 12, weight: 0 }).weight).toBe(0);
+    expect(thrown(() => sets.create(workout.id, { exerciseId: dips, reps: 12, weight: 5 })).message).toBe('"weight" must be 0 for a bodyweight exercise');
+  });
+
+  test('create requires a weight for a weighted exercise', () => {
+    const { workouts, sets, exerciseId } = setup();
+    const workout = workouts.create({});
+    const err = thrown(() => sets.create(workout.id, { exerciseId, reps: 5 }));
+    expect(err.status).toBe(400);
+    expect(err.message).toBe('"weight" must be a number');
+  });
+
+  test('update refuses a weight on a bodyweight set', () => {
+    const { db, workouts, sets } = setup();
+    const dips = createExerciseFacade(db).create({ name: 'Dips', bodyweight: true }).id;
+    const set = sets.create(workouts.create({}).id, { exerciseId: dips, reps: 12 });
+    expect(thrown(() => sets.update(set.id, { weight: 5 })).status).toBe(400);
+    expect(sets.update(set.id, { weight: 0 }).weight).toBe(0);
+  });
+
   test('update clears notes and leaves reps', () => {
     const { workouts, sets, exerciseId } = setup();
     const workout = workouts.create({});

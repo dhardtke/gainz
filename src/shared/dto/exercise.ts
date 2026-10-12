@@ -7,6 +7,8 @@ export interface ExerciseDto {
   name: string;
   muscleGroup: MuscleGroup | null;
   notes: string | null;
+  /** Logged as reps only, every set at weight 0. */
+  bodyweight: boolean;
   createdAt: Iso8601DateTime;
 }
 
@@ -15,6 +17,8 @@ export interface ExerciseWithStatsDto extends ExerciseDto {
   workoutCount: number;
   lastPerformedOn: Iso8601Date | null;
   bestWeight: number | null;
+  /** Most reps in one done set. */
+  bestReps: number | null;
 }
 
 export interface ExercisePageDto {
@@ -40,6 +44,8 @@ export interface SessionPointDto {
   totalReps: number;
   totalVolume: number;
   topWeight: number;
+  /** Most reps in one set. */
+  topReps: number;
   /** Epley estimate from the session's best set. */
   estOneRepMax: number;
 }
@@ -66,10 +72,12 @@ export interface CreateExerciseDto {
   name: string;
   muscleGroup?: MuscleGroup | null;
   notes?: string | null;
+  bodyweight?: boolean;
 }
 
 export interface EditExerciseDto {
   name?: string;
   muscleGroup?: MuscleGroup | null;
   notes?: string | null;
+  bodyweight?: boolean;
 }

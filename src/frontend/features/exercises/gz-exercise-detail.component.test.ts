@@ -2,6 +2,7 @@ import { beforeAll, expect, test } from 'bun:test';
 import { choose, collect, find, mount, openDialog, settle, shadow, submit, testId, type, useDom, useFetch, useToasts } from '../../testing.ts';
 import type { ExerciseProgressDto, SessionPointDto } from '../../../shared/dto/exercise.ts';
 import { exercise, session } from './exercises.fixtures.ts';
+import { set } from '../workouts/workouts.fixtures.ts';
 import type { GzView } from '../../ui/view.ts';
 
 useDom();
@@ -133,7 +134,7 @@ test('saves the details trimmed', async () => {
   await settle();
   const patch = fake.requests.find((request) => request.method === 'PATCH');
   expect(patch?.url).toBe('/api/exercises/7');
-  expect(patch?.body).toEqual({ name: 'Paused Bench', muscleGroup: 'Legs', notes: '' });
+  expect(patch?.body).toEqual({ name: 'Paused Bench', muscleGroup: 'Legs', notes: '', bodyweight: false });
 });
 
 test('clears the muscle group with "None"', async () => {
@@ -142,6 +143,22 @@ test('clears the muscle group with "None"', async () => {
   submitDetails(view);
   await settle();
   expect(fake.requests.find((request) => request.method === 'PATCH')?.body).toMatchObject({ muscleGroup: null });
+});
+
+test('starts the bodyweight switch on for a bodyweight exercise and saves it', async () => {
+  const view = await mountView({ ...progress(SESSIONS), exercise: exercise({ id: 7, name: 'Dips', bodyweight: true }) });
+  expect(field(view, 'bodyweight').checked).toBe(true);
+  submitDetails(view);
+  await settle();
+  expect(fake.requests.find((request) => request.method === 'PATCH')?.body).toMatchObject({ bodyweight: true });
+});
+
+test('saves the bodyweight switch turned off', async () => {
+  const view = await mountView({ ...progress(SESSIONS), exercise: exercise({ id: 7, name: 'Dips', bodyweight: true }) });
+  field(view, 'bodyweight').checked = false;
+  submitDetails(view);
+  await settle();
+  expect(fake.requests.find((request) => request.method === 'PATCH')?.body).toMatchObject({ bodyweight: false });
 });
 
 test('lists the sessions newest first, each linking to its workout, with the 1RM change', async () => {
@@ -226,4 +243,34 @@ test('says so without a muscle group, with no icon', async () => {
   const group = find(shadow(view), testId('muscle-group'));
   expect(group.textContent.trim()).toBe('No muscle group set');
   expect(group.querySelector('gz-muscle-group-icon')).toBeNull();
+});
+
+test.each([
+  ['Chest', 'Chest · Bodyweight'],
+  [null, 'Bodyweight'],
+] as const)('labels a bodyweight exercise with the muscle group %s', async (muscleGroup, label) => {
+  const view = await mountView({ ...progress(SESSIONS), exercise: exercise({ id: 7, muscleGroup, bodyweight: true }) });
+  expect(find(shadow(view), testId('muscle-group')).textContent.replace(/\s+/g, ' ').trim()).toBe(label);
+});
+
+test("shows a bodyweight exercise's progress in reps", async () => {
+  const view = await mountView({
+    exercise: exercise({ id: 7, name: 'Dips', bodyweight: true }),
+    sessions: [
+      session({ workoutId: 1, performedOn: '2026-09-01', topReps: 13, totalReps: 33 }),
+      session({ workoutId: 2, performedOn: '2026-09-08', topReps: 15, totalReps: 36 }),
+    ],
+    bestSet: { ...set({ id: 5, reps: 15, weight: 0, done: true }), performedOn: '2026-09-08' },
+  });
+  const tiles = Array.from(shadow(view).querySelectorAll(testId('tile'))).map((tile) => [
+    tile.getAttribute('label'),
+    tile.getAttribute('value'),
+    tile.getAttribute('hint'),
+  ]);
+  expect(tiles.map(([label]) => label)).toEqual(['Sessions', 'Best set', 'Top set', 'Total reps']);
+  expect(tiles[1]?.[1]).toBe('15 reps');
+  expect(tiles[2]?.slice(1)).toEqual(['15 reps', '+2 reps vs. previous session']);
+  expect(tiles[3]?.slice(1)).toEqual(['69', 'across all sessions']);
+  expect(chartHeading(view)).toBe('Top set');
+  expect(Array.from(tableRoot(view).querySelectorAll('th')).map((th) => th.textContent)).toEqual(['Date', 'Sets', 'Top set', 'Reps']);
 });

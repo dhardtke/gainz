@@ -22,6 +22,7 @@ const listed = (overrides: Partial<ExerciseWithStatsDto> = {}): ExerciseWithStat
   workoutCount: 0,
   lastPerformedOn: null,
   bestWeight: null,
+  bestReps: null,
   ...overrides,
 });
 
@@ -71,8 +72,18 @@ test.each([
   fake.respondTo(`GET /api/exercises/5/position?muscleGroup=${filter}`, 200, JSON.stringify({ index: 12 }));
   addExercise(view, 'Back Squat', picked);
   await settle();
-  expect(fake.sent('POST /api/exercises')).toEqual([{ name: 'Back Squat', muscleGroup: sent, notes: '' }]);
+  expect(fake.sent('POST /api/exercises')).toEqual([{ name: 'Back Squat', muscleGroup: sent, notes: '', bodyweight: false }]);
   expect(`${location.pathname}${location.search}`).toBe(`/exercises?muscleGroup=${filter}&page=2`);
+});
+
+test('adds a bodyweight exercise with the switch on', async () => {
+  const view = await mountAdding();
+  fake.respondTo('POST /api/exercises', 201, JSON.stringify(exercise({ id: 5, name: 'Dips', bodyweight: true })));
+  fake.respondTo('GET /api/exercises/5/position?muscleGroup=none', 200, JSON.stringify({ index: 0 }));
+  find<HTMLInputElement>(shadow(view), testId('bodyweight')).checked = true;
+  addExercise(view, 'Dips', '');
+  await settle();
+  expect(fake.sent('POST /api/exercises')).toEqual([{ name: 'Dips', muscleGroup: null, notes: '', bodyweight: true }]);
 });
 
 test('collapses "Add an exercise" once there are some, and counts them', async () => {
@@ -171,6 +182,18 @@ test('heads a card with its muscle group icon before the group, then the notes',
   expect(plain?.querySelector('gz-muscle-group-icon')).toBeNull();
 });
 
+test('labels a bodyweight card between its muscle group and its notes', async () => {
+  fake.respondTo(
+    'GET /api/exercises?limit=10&offset=0',
+    200,
+    page([listed({ id: 1, muscleGroup: 'Chest', notes: 'Lean forward', bodyweight: true }), listed({ id: 2, bodyweight: true })]),
+  );
+  const view = mount('gz-exercise-list');
+  await settle();
+  const subtitles = Array.from(shadow(view).querySelectorAll(testId('card-subtitle'))).map((subtitle) => subtitle.textContent.replace(/\s+/g, ' ').trim());
+  expect(subtitles).toEqual(['Chest · Bodyweight · Lean forward', 'Bodyweight']);
+});
+
 test('puts each muscle group icon in its options, and none in the others', async () => {
   const view = await mountAdding();
   for (const select of [filterSelect(view), find<HTMLSelectElement>(shadow(view), testId('muscleGroup'))]) {
@@ -178,4 +201,11 @@ test('puts each muscle group icon in its options, and none in the others', async
     expect(icons.filter((group) => group !== null)).toEqual(GROUP_LABELS.slice(1));
     expect(select.firstElementChild?.localName).toBe('button');
   }
+});
+
+test("reads a bodyweight card's best in reps", async () => {
+  fake.respondTo('GET /api/exercises?limit=10&offset=0', 200, page([listed({ id: 1, name: 'Dips', bodyweight: true, bestWeight: 0, bestReps: 15 })]));
+  const view = mount('gz-exercise-list');
+  await settle();
+  expect(find(shadow(view), testId('card')).textContent.replace(/\s+/g, ' ')).toContain('15 reps best');
 });

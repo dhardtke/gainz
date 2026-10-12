@@ -6,13 +6,14 @@ import type { ExerciseId, Iso8601Date } from '../shared/flavors.ts';
 import type { MuscleGroup } from '../shared/muscle-group.ts';
 
 const EXERCISES = [
-  { name: 'Back Squat', muscleGroup: 'Legs', notes: 'Low bar, belt above 100 kg.' },
-  { name: 'Bench Press', muscleGroup: 'Chest', notes: null },
-  { name: 'Deadlift', muscleGroup: 'Back', notes: 'Conventional stance.' },
-  { name: 'Overhead Press', muscleGroup: 'Shoulders', notes: null },
-  { name: 'Barbell Row', muscleGroup: 'Back', notes: null },
-  { name: 'Pull-up', muscleGroup: 'Back', notes: 'Bodyweight plus belt.' },
-] satisfies readonly { name: string; muscleGroup: MuscleGroup; notes: string | null }[];
+  { name: 'Back Squat', muscleGroup: 'Legs', notes: 'Low bar, belt above 100 kg.', bodyweight: false },
+  { name: 'Bench Press', muscleGroup: 'Chest', notes: null, bodyweight: false },
+  { name: 'Deadlift', muscleGroup: 'Back', notes: 'Conventional stance.', bodyweight: false },
+  { name: 'Overhead Press', muscleGroup: 'Shoulders', notes: null, bodyweight: false },
+  { name: 'Barbell Row', muscleGroup: 'Back', notes: null, bodyweight: false },
+  { name: 'Pull-up', muscleGroup: 'Back', notes: 'Bodyweight plus belt.', bodyweight: false },
+  { name: 'Dips', muscleGroup: 'Chest', notes: 'Lean forward.', bodyweight: true },
+] satisfies readonly { name: string; muscleGroup: MuscleGroup; notes: string | null; bodyweight: boolean }[];
 
 const TEMPLATES = [
   {
@@ -20,6 +21,8 @@ const TEMPLATES = [
     lifts: [
       { name: 'Bench Press', start: 60, step: 2.5, reps: [8, 8, 6] },
       { name: 'Overhead Press', start: 35, step: 1.25, reps: [10, 8, 8] },
+      // Bodyweight: the reps grow by `repStep` a week instead of the weight.
+      { name: 'Dips', start: 0, step: 0, reps: [12, 10, 8], repStep: 1 },
     ],
   },
   {
@@ -58,6 +61,7 @@ function main(): void {
 
   db.transaction(() => {
     const idByName = new Map<string, ExerciseId>();
+    const bodyweight = new Set(EXERCISES.filter((exercise) => exercise.bodyweight).map((exercise) => exercise.name));
     for (const exercise of EXERCISES) {
       idByName.set(exercise.name, exercises.create(exercise).id);
     }
@@ -83,13 +87,14 @@ function main(): void {
           if (exerciseId === undefined) {
             continue;
           }
-          const weight = lift.start + (weeks - 1 - week) * lift.step;
+          const weeksIn = weeks - 1 - week;
+          const weight = lift.start + weeksIn * lift.step;
 
           lift.reps.forEach((reps, setIndex) => {
             const logged = sets.create(workout.id, {
               exerciseId,
-              reps,
-              weight,
+              reps: reps + weeksIn * (lift.repStep ?? 0),
+              ...(bodyweight.has(lift.name) ? {} : { weight }),
               notes: SET_NOTES[(created + setIndex) % SET_NOTES.length] ?? null,
             });
             if (daysAgo > 0) {

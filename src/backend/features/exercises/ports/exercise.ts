@@ -7,6 +7,7 @@ export interface Exercise {
   name: string;
   muscle_group: MuscleGroup | null;
   notes: string | null;
+  bodyweight: 0 | 1;
   created_at: Iso8601DateTime;
 }
 
@@ -15,6 +16,7 @@ export interface ExerciseWithStats extends Exercise {
   workout_count: number;
   last_performed_on: Iso8601Date | null;
   best_weight: number | null;
+  best_reps: number | null;
 }
 
 export interface SessionPoint {
@@ -24,6 +26,7 @@ export interface SessionPoint {
   total_reps: number;
   total_volume: number;
   top_weight: number;
+  top_reps: number;
   est_one_rep_max: number;
 }
 

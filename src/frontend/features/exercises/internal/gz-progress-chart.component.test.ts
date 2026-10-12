@@ -71,3 +71,33 @@ test('plots one point per session with the chosen metric', () => {
   button(chart, 'totalVolume').click();
   expect(plotted(chart)).toEqual([1200, 1700]);
 });
+
+function mountBodyweightChart(metric?: string): GzProgressChartComponent {
+  const chart = mount<GzProgressChartComponent>('gz-progress-chart');
+  chart.bodyweight = true;
+  if (metric !== undefined) {
+    chart.metric = metric;
+  }
+  chart.sessions = [session({ workoutId: 1, topReps: 12, totalReps: 30 }), session({ workoutId: 2, topReps: 14, totalReps: 33 })];
+  return chart;
+}
+
+test('offers a bodyweight exercise its top set and total reps, charting the top set first', () => {
+  const chart = mountBodyweightChart();
+  expect(Array.from(shadow(chart).querySelectorAll<HTMLElement>('[data-metric]')).map((each) => each.dataset.metric)).toEqual(['topReps', 'totalReps']);
+  expect(heading(chart)).toBe('Top set');
+  expect(plotted(chart)).toEqual([12, 14]);
+});
+
+test('switches between the bodyweight metrics', () => {
+  const changes = collect('metric-change');
+  const chart = mountBodyweightChart();
+  button(chart, 'totalReps').click();
+  expect(heading(chart)).toBe('Total reps');
+  expect(plotted(chart)).toEqual([30, 33]);
+  expect(changes).toEqual(['totalReps']);
+});
+
+test('falls back to the top set for a weighted metric on a bodyweight exercise', () => {
+  expect(heading(mountBodyweightChart('estOneRepMax'))).toBe('Top set');
+});

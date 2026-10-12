@@ -11,12 +11,13 @@ export interface CreateExercise {
   name: string;
   muscle_group: MuscleGroup | null;
   notes: string | null;
+  bodyweight: 0 | 1;
 }
 
 export type EditExercise = Partial<CreateExercise>;
 
-const EXERCISE_COLUMNS = 'e.id, e.name, e.muscle_group, e.notes, e.created_at';
-const FIELDS = ['name', 'muscle_group', 'notes'] as const;
+const EXERCISE_COLUMNS = 'e.id, e.name, e.muscle_group, e.notes, e.bodyweight, e.created_at';
+const FIELDS = ['name', 'muscle_group', 'notes', 'bodyweight'] as const;
 
 // `undefined` is every exercise and `null` those without a group; `IS` compares NULL as equal.
 function muscleGroupFilter(muscleGroup: MuscleGroup | null | undefined): { sql: string; params: [MuscleGroup | null] } | null {
@@ -40,7 +41,8 @@ export class ExerciseRepository {
                 COUNT(s.id)                  AS set_count,
                 COUNT(DISTINCT s.workout_id) AS workout_count,
                 MAX(w.performed_on)          AS last_performed_on,
-                MAX(s.weight)                AS best_weight
+                MAX(s.weight)                AS best_weight,
+                MAX(s.reps)                  AS best_reps
            FROM exercises e
            LEFT JOIN sets s     ON s.exercise_id = e.id AND s.done = 1
            LEFT JOIN workouts w ON w.id = s.workout_id
@@ -91,11 +93,11 @@ export class ExerciseRepository {
   create(input: CreateExercise): Exercise {
     try {
       const row = this.#db
-        .query<Exercise, [string, MuscleGroup | null, string | null]>(
-          `INSERT INTO exercises (name, muscle_group, notes) VALUES (?, ?, ?)
-           RETURNING id, name, muscle_group, notes, created_at`,
+        .query<Exercise, [string, MuscleGroup | null, string | null, 0 | 1]>(
+          `INSERT INTO exercises (name, muscle_group, notes, bodyweight) VALUES (?, ?, ?, ?)
+           RETURNING id, name, muscle_group, notes, bodyweight, created_at`,
         )
-        .get(input.name, input.muscle_group, input.notes);
+        .get(input.name, input.muscle_group, input.notes, input.bodyweight);
       if (!row) {
         throw new Error('Insert of exercise returned no row');
       }
@@ -109,7 +111,13 @@ export class ExerciseRepository {
   }
 
   update(id: ExerciseId, patch: EditExercise): Exercise {
-    this.require(id);
+    const exercise = this.require(id);
+    if (patch.bodyweight === 1 && exercise.bodyweight === 0) {
+      const weighted = this.#db.query<{ n: number }, [ExerciseId]>('SELECT COUNT(*) AS n FROM sets WHERE exercise_id = ? AND weight <> 0').get(id);
+      if (weighted && weighted.n > 0) {
+        throw conflict(`"${exercise.name}" has sets with weight; it cannot become bodyweight`);
+      }
+    }
 
     const update = buildUpdate('exercises', FIELDS, patch);
     if (update) {
@@ -143,6 +151,7 @@ export class ExerciseRepository {
                 SUM(s.reps)            AS total_reps,
                 SUM(s.reps * s.weight) AS total_volume,
                 MAX(s.weight)          AS top_weight,
+                MAX(s.reps)            AS top_reps,
                 MAX(${EST_1RM_SQL})    AS est_one_rep_max
            FROM sets s
            JOIN workouts w ON w.id = s.workout_id

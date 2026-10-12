@@ -23,6 +23,7 @@ const EXERCISES: ExercisePageDto = {
     workoutCount: 0,
     lastPerformedOn: null,
     bestWeight: null,
+    bestReps: null,
   })),
   total: 2,
   all: 2,
@@ -696,4 +697,19 @@ test('hides the icon of an exercise without a muscle group', async () => {
   const icon = find<HTMLElement>(shadow(view), `${testId('exercise-group')} summary gz-muscle-group-icon`);
   expect(icon.hidden).toBe(true);
   expect(shadow(icon).querySelector('svg')).toBeNull();
+});
+
+test('sums up a bodyweight group in reps and hands its rows the flag', async () => {
+  const dips = group({
+    exerciseId: 3,
+    exerciseName: 'Dips',
+    bodyweight: true,
+    position: 3,
+    sets: [12, 10, 8].map((reps, index) => set({ id: 21 + index, exerciseId: 3, exerciseName: 'Dips', reps, weight: 0 })),
+  });
+  const view = await mountView({ ...WORKOUT, exercises: [BENCH, SQUAT, dips] });
+  expect(find(groupOf(view, 3), testId('group-stats')).textContent).toBe('3 sets · 30 reps');
+  const [row] = Array.from(groupOf(view, 3).querySelectorAll(testId('set-row')));
+  expect(shadow(row ?? groupOf(view, 3)).querySelector(testId('weight'))).toBeNull();
+  expect(shadow(find(groupOf(view, 1), testId('set-row'))).querySelector(testId('weight'))).not.toBeNull();
 });

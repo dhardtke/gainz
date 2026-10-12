@@ -1,7 +1,7 @@
 import type { RawHtml } from '../../../ui/html.ts';
 import { define, GzElement } from '../../../ui/base.ts';
 import { html } from '../../../ui/html.ts';
-import { formatNumber, formatVolume, UNIT } from '../../../ui/format.ts';
+import { formatNumber, formatVolume, plural, UNIT } from '../../../ui/format.ts';
 import type { EditSetDto, LiftSetDto } from '../../../../shared/dto/set.ts';
 import { toast, toastError } from '../../../ui/toast.ts';
 import { confirmAction } from '../../../ui/confirm/confirm.ts';
@@ -22,6 +22,8 @@ export class GzSetRowComponent extends GzElement {
 
   #locked = false;
 
+  #bodyweight = false;
+
   // Serialized: a blur save must land before the click that caused it marks the set done.
   #pending: Promise<void> = Promise.resolve();
 
@@ -40,6 +42,11 @@ export class GzSetRowComponent extends GzElement {
   // Only stored, like `index`: the parent sets it before `set`, which renders.
   set locked(value: boolean) {
     this.#locked = value;
+  }
+
+  // Only stored, like `locked`: a bodyweight set has no weight to show or edit.
+  set bodyweight(value: boolean) {
+    this.#bodyweight = value;
   }
 
   focusedField(): FocusedField | null {
@@ -84,7 +91,7 @@ export class GzSetRowComponent extends GzElement {
         await setFacade.create(set.workoutId, {
           exerciseId: set.exerciseId,
           reps: set.reps,
-          weight: set.weight,
+          ...(this.#bodyweight ? {} : { weight: set.weight }),
           notes: set.notes,
         });
         this.emit('sets-changed');
@@ -95,9 +102,8 @@ export class GzSetRowComponent extends GzElement {
     }
 
     if (action === 'delete') {
-      if (
-        !(await confirmAction({ title: 'Delete set?', message: `${formatNumber(set.weight)} ${UNIT} × ${set.reps}`, confirmLabel: 'Delete', danger: true }))
-      ) {
+      const message = this.#bodyweight ? plural(set.reps, 'rep') : `${formatNumber(set.weight)} ${UNIT} × ${set.reps}`;
+      if (!(await confirmAction({ title: 'Delete set?', message, confirmLabel: 'Delete', danger: true }))) {
         return;
       }
       try {
@@ -120,7 +126,7 @@ export class GzSetRowComponent extends GzElement {
     if (Number(values.reps) !== set.reps) {
       changes.reps = Number(values.reps);
     }
-    if (Number(values.weight) !== set.weight) {
+    if (!this.#bodyweight && Number(values.weight) !== set.weight) {
       changes.weight = Number(values.weight);
     }
     if ((values.notes ?? '') !== (set.notes ?? '')) {
@@ -179,22 +185,26 @@ export class GzSetRowComponent extends GzElement {
         ${this.#toggleTemplate(set)}
         <span class="index">${this.#index}</span>
         <span class="load">
-          <fieldset class="group">
-            <input
-              id="weight"
-              name="weight"
-              type="number"
-              step="any"
-              min="0"
-              value="${set.weight}"
-              aria-label="Weight"
-              required
-              data-testid="weight"
-              ${disabled}
-            />
-            <label for="weight">${UNIT}</label>
-          </fieldset>
-          <span aria-hidden="true">×</span>
+          ${
+            this.#bodyweight
+              ? ''
+              : html`<fieldset class="group">
+                    <input
+                      id="weight"
+                      name="weight"
+                      type="number"
+                      step="any"
+                      min="0"
+                      value="${set.weight}"
+                      aria-label="Weight"
+                      required
+                      data-testid="weight"
+                      ${disabled}
+                    />
+                    <label for="weight">${UNIT}</label>
+                  </fieldset>
+                  <span aria-hidden="true">×</span>`
+          }
           <fieldset class="group">
             <input id="reps" name="reps" type="number" step="1" min="1" value="${set.reps}" aria-label="Reps" required data-testid="reps" ${disabled} />
             <label for="reps">reps</label>
@@ -212,7 +222,7 @@ export class GzSetRowComponent extends GzElement {
           ${disabled}
         />
         <div class="actions">
-          <span class="volume mono">${formatVolume(set.weight * set.reps)}</span>
+          ${this.#bodyweight ? '' : html`<span class="volume mono" data-testid="volume">${formatVolume(set.weight * set.reps)}</span>`}
           <button
             type="button"
             class="outline"

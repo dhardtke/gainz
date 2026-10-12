@@ -1,7 +1,7 @@
 import type { RawHtml } from '../../ui/html.ts';
 import { define } from '../../ui/base.ts';
 import { html } from '../../ui/html.ts';
-import { formatDate, formatDelta, formatNumber, formatVolume, relativeDay, UNIT } from '../../ui/format.ts';
+import { formatDate, formatDelta, formatNumber, formatVolume, plural, relativeDay, UNIT } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
 import type { ExerciseDto, ExerciseProgressDto } from '../../../shared/dto/exercise.ts';
 import { exerciseFacade } from './exercises.facade.ts';
@@ -61,6 +61,7 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
         name: values.name ?? '',
         muscleGroup: parseMuscleGroup(values.muscleGroup),
         notes: values.notes,
+        bodyweight: values.bodyweight === 'on',
       });
       toast('Exercise updated', 'success');
       await this.reload();
@@ -70,12 +71,14 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
   }
 
   override afterRender(): void {
-    const sessions = this.data?.sessions;
+    const { sessions, exercise } = this.data ?? {};
     const chart = this.$<GzProgressChartComponent>('gz-progress-chart');
     const table = this.$<GzSessionTableComponent>('gz-session-table');
-    if (!sessions || !chart || !table) {
+    if (!sessions || !exercise || !chart || !table) {
       return;
     }
+    chart.bodyweight = exercise.bodyweight;
+    table.bodyweight = exercise.bodyweight;
     if (this.#metric !== null) {
       chart.metric = this.#metric;
     }
@@ -94,8 +97,11 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
         <p class="text-light" data-testid="muscle-group">
           ${
             exercise.muscleGroup
-              ? html`<gz-muscle-group-icon group="${exercise.muscleGroup}"></gz-muscle-group-icon> ${exercise.muscleGroup}`
-              : 'No muscle group set'
+              ? html`<gz-muscle-group-icon group="${exercise.muscleGroup}"></gz-muscle-group-icon>
+                  ${exercise.muscleGroup}${exercise.bodyweight ? ' · Bodyweight' : ''}`
+              : exercise.bodyweight
+                ? 'Bodyweight'
+                : 'No muscle group set'
           }
         </p>
       </hgroup>
@@ -124,6 +130,7 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
               <label for="notes">Notes</label>
               <textarea id="notes" name="notes" maxlength="2000" placeholder="Low bar, belt over 100 kg" data-testid="notes">${exercise.notes ?? ''}</textarea>
             </div>
+            <label><input type="checkbox" role="switch" name="bodyweight" ${exercise.bodyweight ? 'checked' : ''} data-testid="bodyweight" /> Bodyweight</label>
             <div class="hstack gap-2">
               <button type="submit">Save</button>
             </div>
@@ -134,7 +141,43 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
     `;
   }
 
-  #summaryTiles({ sessions, bestSet }: ExerciseProgressDto): RawHtml {
+  #bodyweightTiles({ sessions, bestSet }: ExerciseProgressDto): RawHtml {
+    const latest = sessions.at(-1);
+    const previous = sessions.at(-2);
+
+    const totalReps = sessions.reduce((sum, session) => sum + session.totalReps, 0);
+    const delta = latest && previous ? formatDelta(latest.topReps, previous.topReps) : '';
+
+    return html`
+      <div class="tiles" data-testid="tiles">
+        <gz-tile
+          data-testid="tile"
+          label="Sessions"
+          value="${sessions.length}"
+          hint="${latest ? `last ${relativeDay(latest.performedOn)}` : 'not trained yet'}"
+        ></gz-tile>
+        <gz-tile
+          data-testid="tile"
+          label="Best set"
+          value="${bestSet ? plural(bestSet.reps, 'rep') : '–'}"
+          hint="${bestSet ? formatDate(bestSet.performedOn) : 'no sets logged'}"
+        ></gz-tile>
+        <gz-tile
+          data-testid="tile"
+          label="Top set"
+          value="${latest ? plural(latest.topReps, 'rep') : '–'}"
+          hint="${delta ? `${delta} reps vs. previous session` : 'needs two sessions'}"
+        ></gz-tile>
+        <gz-tile data-testid="tile" label="Total reps" value="${formatNumber(totalReps)}" hint="across all sessions"></gz-tile>
+      </div>
+    `;
+  }
+
+  #summaryTiles(progress: ExerciseProgressDto): RawHtml {
+    if (progress.exercise.bodyweight) {
+      return this.#bodyweightTiles(progress);
+    }
+    const { sessions, bestSet } = progress;
     const latest = sessions.at(-1);
     const previous = sessions.at(-2);
 

@@ -12,10 +12,14 @@ beforeAll(async () => {
   await import('./gz-set-row.component.ts');
 });
 
-function mountRow(value: LiftSetDto, { index = 1, locked = false }: { index?: number; locked?: boolean } = {}): GzSetRowComponent {
+function mountRow(
+  value: LiftSetDto,
+  { index = 1, locked = false, bodyweight = false }: { index?: number; locked?: boolean; bodyweight?: boolean } = {},
+): GzSetRowComponent {
   const row = mount<GzSetRowComponent>('gz-set-row');
   row.index = index;
   row.locked = locked;
+  row.bodyweight = bodyweight;
   row.set = value;
   return row;
 }
@@ -205,4 +209,38 @@ test('deletes the set once confirmed, toasts and emits sets-changed', async () =
   expect(fake.sent('DELETE /api/sets/7')).toEqual([undefined]);
   expect(toasts).toEqual(['Set deleted']);
   expect(changed).toHaveLength(1);
+});
+
+test('shows a bodyweight set as reps and notes only, without a volume', () => {
+  const root = shadow(mountRow(set({ id: 7, reps: 12, weight: 0 }), { bodyweight: true }));
+  expect(Array.from(root.querySelectorAll<HTMLInputElement>('input')).map(({ name }) => name)).toEqual(['reps', 'notes']);
+  expect(root.querySelector(testId('volume'))).toBeNull();
+  expect(root.querySelector(".load [aria-hidden='true']")).toBeNull();
+  expect(find(shadow(mountRow(set({ id: 8 }))), testId('volume')).textContent).toBe('300 kg');
+});
+
+test('saves the reps of a bodyweight set without a weight', async () => {
+  answerWith(set({ id: 7, reps: 14, weight: 0 }));
+  const row = mountRow(set({ id: 7, reps: 12, weight: 0 }), { bodyweight: true });
+  change(input(row, 'reps'), '14');
+  await settle();
+  expect(fake.sent('PATCH /api/sets/7')).toEqual([{ reps: 14 }]);
+});
+
+test('duplicates a bodyweight set without a weight', async () => {
+  fake.respondTo('POST /api/workouts/3/sets', 201, JSON.stringify(set({ id: 8, reps: 12, weight: 0 })));
+  const row = mountRow(set({ id: 7, reps: 12, weight: 0 }), { bodyweight: true });
+  find<HTMLButtonElement>(shadow(row), testId('duplicate')).click();
+  await settle();
+  expect(fake.sent('POST /api/workouts/3/sets')).toEqual([{ exerciseId: 1, reps: 12, notes: null }]);
+});
+
+test('names a bodyweight set by its reps before deleting it', async () => {
+  const row = mountRow(set({ id: 7, reps: 12, weight: 0 }), { bodyweight: true });
+  deleteButton(row).click();
+  await settle();
+  const dialog = openDialog();
+  expect(find(dialog, testId('message')).textContent).toBe('12 reps');
+  find<HTMLButtonElement>(dialog, testId('cancel')).click();
+  await settle();
 });

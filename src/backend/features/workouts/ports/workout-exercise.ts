@@ -6,5 +6,6 @@ export interface WorkoutExercise {
   exercise_id: ExerciseId;
   exercise_name: string;
   muscle_group: MuscleGroup | null;
+  bodyweight: 0 | 1;
   position: number;
 }

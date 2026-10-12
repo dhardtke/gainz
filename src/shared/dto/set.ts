@@ -20,7 +20,8 @@ export interface BestSetDto extends LiftSetDto {
 export interface CreateSetDto {
   exerciseId: ExerciseId;
   reps: number;
-  weight: number;
+  /** Required for a weighted exercise; 0 or left out for a bodyweight one. */
+  weight?: number;
   notes?: string | null;
 }
 

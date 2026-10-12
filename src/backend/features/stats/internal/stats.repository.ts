@@ -20,21 +20,22 @@ interface ExerciseSession {
   workout_id: WorkoutId;
   performed_on: Iso8601Date;
   title: string | null;
+  bodyweight: 0 | 1;
   reps: number;
   volume: number;
   previous_reps: number | null;
   previous_volume: number | null;
 }
 
-// Reps stand in when either side is bodyweight (volume 0): the only figure both sessions share.
+// Bodyweight work compares reps; weighted work compares volume and is not compared beside a session without load.
 function exerciseProgression(row: ExerciseSession): number | null {
-  if (row.previous_volume === null || row.previous_reps === null) {
+  if (row.previous_reps === null || row.previous_volume === null) {
     return null;
   }
-  if (row.volume > 0 && row.previous_volume > 0) {
-    return row.volume / row.previous_volume - 1;
+  if (row.bodyweight === 1) {
+    return row.reps / row.previous_reps - 1;
   }
-  return row.previous_reps > 0 ? row.reps / row.previous_reps - 1 : null;
+  return row.volume > 0 && row.previous_volume > 0 ? row.volume / row.previous_volume - 1 : null;
 }
 
 function mean(values: number[]): number | null {
@@ -83,10 +84,11 @@ export class StatsRepository {
     const rows = this.#db
       .query<ExerciseSession, [string]>(
         `WITH sessions AS (
-           SELECT w.id AS workout_id, w.performed_on, w.title, s.exercise_id,
+           SELECT w.id AS workout_id, w.performed_on, w.title, s.exercise_id, e.bodyweight,
                   SUM(s.reps) AS reps, SUM(s.reps * s.weight) AS volume
              FROM sets s
-             JOIN workouts w ON w.id = s.workout_id
+             JOIN workouts w  ON w.id = s.workout_id
+             JOIN exercises e ON e.id = s.exercise_id
             WHERE s.done = 1
             GROUP BY w.id, s.exercise_id
          ), compared AS (
@@ -95,7 +97,7 @@ export class StatsRepository {
              FROM sessions
            WINDOW history AS (PARTITION BY exercise_id ORDER BY performed_on, workout_id)
          )
-         SELECT workout_id, performed_on, title, reps, volume, previous_reps, previous_volume
+         SELECT workout_id, performed_on, title, bodyweight, reps, volume, previous_reps, previous_volume
            FROM compared
           WHERE performed_on >= ?1 AND performed_on < date(?1, '+1 month')
           ORDER BY performed_on, workout_id`,

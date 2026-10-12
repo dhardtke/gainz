@@ -23,6 +23,7 @@ export function group(overrides: Partial<WorkoutExerciseDto> = {}): WorkoutExerc
     exerciseId: 1,
     exerciseName: 'Bench Press',
     muscleGroup: null,
+    bodyweight: false,
     position: 1,
     sets: [],
     ...overrides,

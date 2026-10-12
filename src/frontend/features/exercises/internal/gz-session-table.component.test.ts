@@ -49,3 +49,21 @@ test('re-renders when given new sessions', () => {
   table.sessions = [session({ workoutId: 1, performedOn: '2026-09-01', estOneRepMax: 90 })];
   expect(rows(table)).toHaveLength(1);
 });
+
+test('shows a bodyweight exercise as date, sets, top set and reps, with the change on reps', () => {
+  const table = mount<GzSessionTableComponent>('gz-session-table');
+  table.bodyweight = true;
+  table.sessions = [
+    session({ workoutId: 1, performedOn: '2026-09-01', setCount: 3, topReps: 12, totalReps: 30 }),
+    session({ workoutId: 2, performedOn: '2026-09-08', setCount: 3, topReps: 15, totalReps: 36 }),
+  ];
+  expect(Array.from(table.shadowRoot?.querySelectorAll('th') ?? []).map((th) => th.textContent)).toEqual(['Date', 'Sets', 'Top set', 'Reps']);
+  const [latest, oldest] = rows(table);
+  expect(
+    Array.from(latest?.querySelectorAll('td') ?? [])
+      .slice(1)
+      .map((td) => td.textContent.replace(/\s+/g, ' ').trim()),
+  ).toEqual(['3', '15', '36 +6']);
+  expect(latest?.querySelector(testId('change'))?.className).toBe('up');
+  expect(oldest?.querySelector(testId('change'))).toBeNull();
+});

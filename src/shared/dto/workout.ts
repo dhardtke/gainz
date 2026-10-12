@@ -23,6 +23,7 @@ export interface WorkoutExerciseDto {
   exerciseId: ExerciseId;
   exerciseName: string;
   muscleGroup: MuscleGroup | null;
+  bodyweight: boolean;
   /** 1-based place of the exercise in the workout. */
   position: number;
   /** Oldest first. */

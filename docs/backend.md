@@ -181,6 +181,12 @@ source's positions as they are, and nothing changes it afterwards, so sets list 
 were logged (`position, id`). A set's exercise is likewise fixed at creation: `PATCH /api/sets/:id`
 does not take `exerciseId`, and one in the body is ignored like any unknown key.
 
+A set's weight follows its exercise's `bodyweight` flag. `weight` on `POST
+/api/workouts/:id/sets` is required for a weighted exercise, a 400 without it, and optional for a
+bodyweight one, stored as 0; any other weight there, on create or on `PATCH /api/sets/:id`, is a 400. `SetRepository#weightFor` decides inside the write's transaction, reading the flag as it
+stands, so the unknown-exercise 400 now comes from that lookup before the foreign key could fail.
+Each `WorkoutExerciseDto` carries its exercise's `bodyweight` beside its name and muscle group.
+
 `workout_exercises (workout_id, exercise_id, position)` holds the order of a workout's exercises,
 keyed by the pair, with `workout_id` cascading and `exercise_id` restricting like the set's. A row
 exists exactly while the workout has a set of that exercise: `SetRepository.create` appends one at
@@ -244,8 +250,8 @@ aggregate, beside `done`.
 
 Because a set not done is a plan, the history aggregates count done sets only — and a done
 workout's unchecked sets stay plans, skipped rather than performed, so they are not counted either: the exercise list's
-`setCount`, `workoutCount`, `lastPerformedOn` and `bestWeight` (its join carries `s.done = 1` in the
-`ON` clause, so an exercise without done sets still lists, with zero counts), the progress points,
+`setCount`, `workoutCount`, `lastPerformedOn`, `bestWeight` and `bestReps` (its join carries `s.done = 1` in the
+`ON` clause, so an exercise without done sets still lists, with zero counts), the progress points with their `topReps`,
 the best set, the stats summary's `setCount`, `totalReps`, `totalVolume` and
 `volumeLast30Days`, and the training calendar's days and progression. The rest counts every set or workout: a workout's own totals, on its card and
 its page, describe the whole session, planned sets included; the exercise delete guard refuses
@@ -270,9 +276,11 @@ timezone and "this month" is the browser's; a missing or malformed one is a 400.
 day also carries a `progression` and a `comparedExerciseCount`. An exercise's progression in a
 workout is its done-set volume (reps × weight) divided by that of its previous session, minus one;
 the previous session is the latest earlier workout by `performed_on, id` with a done set of the
-exercise. When either session's volume is 0 — bodyweight logs weight 0 — total reps are compared
-instead, so moving between bodyweight and weighted never reads as −100%. An exercise without a
-previous session is not compared. A workout's progression is the mean of its compared exercises'
+exercise. A bodyweight exercise, by its `bodyweight` flag, compares its total done reps instead,
+since its volume is always 0. A weighted exercise is not compared when either session's volume is
+0, so a first loaded session after 0 kg work never reads as +∞ nor the reverse as −100%. The
+sessions CTE joins `exercises` for the flag as it stands now. An exercise without a previous
+session is not compared. A workout's progression is the mean of its compared exercises'
 and a day's the mean over every compared exercise of its workouts, not of the workouts' means, so
 each exercise counts equally; with nothing compared it is `null`. The values are raw fractions
 (`0.041`); where "progressed" begins is the frontend's call. `StatsRepository.calendar()` runs one
@@ -288,6 +296,15 @@ in `src/shared/muscle-group.ts`. `005-fixed-muscle-groups.sql` rebuilt the table
 keeping each stored value that matched a group after trimming, ignoring case, and clearing the
 rest; it copies the ids and the `AUTOINCREMENT` sequence, so sets keep their exercise and a deleted
 exercise's id is not handed out again.
+
+An exercise is weighted or bodyweight: `bodyweight` on `ExerciseDto`, `false` unless `POST` or
+`PATCH /api/exercises` sets it, a boolean or a 400. A bodyweight exercise is logged in reps alone,
+its sets at weight 0; a loaded variant, such as a belted pull-up, is a separate weighted exercise.
+Turning an exercise bodyweight is a 409 while any of its sets has a weight, so no history is
+rewritten; turning it weighted is always allowed, since its old sets read as 0 kg.
+`006-bodyweight-exercises.sql` added `exercises.bodyweight` (0 or 1) and marked bodyweight every
+exercise with at least one set, all of them at weight 0; an exercise mixing 0 kg and loaded sets
+stayed weighted. Its sets follow the flag too: see the set weight rule above.
 
 The schema lives in `src/backend/db/migrations`, one numbered `.sql` file per change. `openDatabase()`
 applies whatever is pending on every start: each file runs in its own transaction and is recorded in

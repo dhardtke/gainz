@@ -59,6 +59,7 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
         name,
         muscleGroup: parseMuscleGroup(values.muscleGroup),
         notes: values.notes,
+        bodyweight: values.bodyweight === 'on',
       });
     } catch (error) {
       toastError(error);
@@ -79,21 +80,32 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
 
   #card(exercise: ExerciseWithStatsDto): RawHtml {
     const { muscleGroup, notes } = exercise;
-    const group = muscleGroup ? html`<gz-muscle-group-icon group="${muscleGroup}"></gz-muscle-group-icon> ${muscleGroup}` : '';
+    const parts = [
+      muscleGroup ? html`<gz-muscle-group-icon group="${muscleGroup}"></gz-muscle-group-icon> ${muscleGroup}` : null,
+      exercise.bodyweight ? 'Bodyweight' : null,
+      notes,
+    ].filter((part) => part !== null);
     return html`
       <article class="card open-card" data-testid="card">
         <div class="head">
           <a class="open" href="/exercises/${exercise.id}">${exercise.name}</a>
         </div>
-        ${muscleGroup || notes ? html`<div class="text-light" data-testid="card-subtitle">${group}${muscleGroup && notes ? ' · ' : ''}${notes}</div>` : ''}
+        ${parts.length > 0 ? html`<div class="text-light" data-testid="card-subtitle">${parts.map((part, i) => html`${i > 0 ? ' · ' : ''}${part}`)}</div>` : ''}
         <div class="foot">
           <span class="text-light">
-            ${plural(exercise.setCount, 'set')} · ${exercise.bestWeight === null ? 'no best yet' : `${formatWeight(exercise.bestWeight)} best`} ·
-            ${exercise.lastPerformedOn ? relativeDay(exercise.lastPerformedOn) : 'never done'}
+            ${plural(exercise.setCount, 'set')} · ${this.#best(exercise)} · ${exercise.lastPerformedOn ? relativeDay(exercise.lastPerformedOn) : 'never done'}
           </span>
         </div>
       </article>
     `;
+  }
+
+  #best({ bodyweight, bestWeight, bestReps }: ExerciseWithStatsDto): string {
+    const best = bodyweight ? bestReps : bestWeight;
+    if (best === null) {
+      return 'no best yet';
+    }
+    return `${bodyweight ? plural(best, 'rep') : formatWeight(best)} best`;
   }
 
   #emptyText(all: number, filter: MuscleGroupFilter | null): string {
@@ -136,7 +148,7 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
 
         <details class="add" data-testid="add" ${all === 0 ? 'open' : ''}>
           <summary>Add an exercise</summary>
-          <form class="new-form" data-action="create">
+          <form class="new-form vstack gap-2" data-action="create">
             <div class="fields">
               <div class="field">
                 <label for="name">Name</label>
@@ -152,6 +164,9 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
                 <label for="notes">Notes</label>
                 <input id="notes" name="notes" type="text" placeholder="Low bar, belt over 100 kg" maxlength="2000" />
               </div>
+            </div>
+            <div class="hstack justify-between gap-2">
+              <label><input type="checkbox" role="switch" name="bodyweight" data-testid="bodyweight" /> Bodyweight</label>
               <button type="submit">Add</button>
             </div>
           </form>

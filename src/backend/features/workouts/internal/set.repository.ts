@@ -10,7 +10,8 @@ import { LAST_SESSION_WORKOUT_SQL, SET_COLUMNS } from '../ports/sql.ts';
 export interface CreateSet {
   exercise_id: ExerciseId;
   reps: number;
-  weight: number;
+  /** `null` when left out, which only a bodyweight exercise allows. */
+  weight: number | null;
   notes: string | null;
 }
 
@@ -61,10 +62,11 @@ export class SetRepository {
     return set;
   }
 
-  /** An unknown exercise trips the foreign key, hence a 400 rather than a 404. */
+  /** An unknown exercise is a 400 rather than a 404, as a bad field of the body. */
   create(workoutId: WorkoutId, input: CreateSet): LiftSet {
     return this.#db.transaction(() => {
       this.#requireOpen(workoutId);
+      const weight = this.#weightFor(input.exercise_id, input.weight);
 
       const position =
         this.#db.query<{ next: number }, [WorkoutId]>('SELECT COALESCE(MAX(position), 0) + 1 AS next FROM sets WHERE workout_id = ?').get(workoutId)?.next ?? 1;
@@ -76,7 +78,7 @@ export class SetRepository {
              VALUES (?, ?, ?, ?, ?, ?)
              RETURNING id`,
           )
-          .get(workoutId, input.exercise_id, input.reps, input.weight, input.notes, position);
+          .get(workoutId, input.exercise_id, input.reps, weight, input.notes, position);
         if (!inserted) {
           throw new Error('Insert of set returned no row');
         }
@@ -135,7 +137,7 @@ export class SetRepository {
         throw conflict('Set is done; mark it as not done before changing it');
       }
 
-      const update = buildUpdate('sets', FIELDS, patch);
+      const update = buildUpdate('sets', FIELDS, patch.weight === undefined ? patch : { ...patch, weight: this.#weightFor(current.exercise_id, patch.weight) });
       if (update) {
         this.#db.query(update.sql).run(...update.values, id);
       }
@@ -153,6 +155,23 @@ export class SetRepository {
       this.#db.query('DELETE FROM sets WHERE id = ?').run(id);
       this.#workoutExercises.removeIfUnused(set.workout_id, set.exercise_id);
     })();
+  }
+
+  #weightFor(exerciseId: ExerciseId, weight: number | null): number {
+    const exercise = this.#db.query<{ bodyweight: 0 | 1 }, [ExerciseId]>('SELECT bodyweight FROM exercises WHERE id = ?').get(exerciseId);
+    if (!exercise) {
+      throw badRequest('"exerciseId" must name an existing exercise');
+    }
+    if (exercise.bodyweight === 1) {
+      if (weight !== null && weight !== 0) {
+        throw badRequest('"weight" must be 0 for a bodyweight exercise');
+      }
+      return 0;
+    }
+    if (weight === null) {
+      throw badRequest('"weight" must be a number');
+    }
+    return weight;
   }
 
   #requireOpen(workoutId: WorkoutId): void {

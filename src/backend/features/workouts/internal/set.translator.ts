@@ -7,7 +7,7 @@ export function translateToCreateSetDto(body: Record<string, unknown>): CreateSe
   return {
     exerciseId: body.exerciseId as ExerciseId,
     reps: body.reps as number,
-    weight: body.weight as number,
+    weight: body.weight as number | undefined,
     notes: body.notes as string | null | undefined,
   };
 }
@@ -25,7 +25,7 @@ export function translateDtoToCreateSet(dto: CreateSetDto): CreateSet {
   return {
     exercise_id: dto.exerciseId,
     reps: dto.reps,
-    weight: dto.weight,
+    weight: dto.weight ?? null,
     notes: dto.notes ?? null,
   };
 }

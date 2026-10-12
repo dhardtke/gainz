@@ -145,22 +145,37 @@ describe('stats calendar', () => {
     expect(workoutIn(await calendar('2026-10'), id)?.progression).toBeCloseTo(0.1);
   });
 
-  test('compares reps for bodyweight, and between bodyweight and weighted either way', async () => {
-    const pullUp = await createExercise(post, 'Pull-up');
+  test('compares reps for a bodyweight exercise', async () => {
+    const pullUp = await createExercise(post, 'Pull-up', { bodyweight: true });
+    await session('2026-10-01', [[pullUp.id, 30, 0]]);
+    const id = await session('2026-10-05', [[pullUp.id, 36, 0]]);
+
+    const workout = workoutIn(await calendar('2026-10'), id);
+    expect(workout?.comparedExerciseCount).toBe(1);
+    expect(workout?.progression).toBeCloseTo(0.2);
+  });
+
+  test.each([
+    [0, 60],
+    [60, 0],
+  ])('does not compare a weighted exercise at %p kg then %p kg', async (before, after) => {
     const dip = await createExercise(post, 'Dip');
-    await session('2026-10-01', [
-      [pullUp.id, 30, 0],
-      [dip.id, 10, 0],
-    ]);
-    const weighted = await session('2026-10-05', [
-      [pullUp.id, 36, 0],
-      [dip.id, 10, 10],
-    ]);
-    const unweighted = await session('2026-10-09', [[dip.id, 12, 0]]);
+    await session('2026-10-01', [[dip.id, 10, before]]);
+    const id = await session('2026-10-05', [[dip.id, 10, after]]);
+
+    expect(workoutIn(await calendar('2026-10'), id)).toMatchObject({ progression: null, comparedExerciseCount: 0 });
+  });
+
+  test('does not compare an exercise turned weighted on its first loaded session', async () => {
+    const dip = await createExercise(post, 'Dip', { bodyweight: true });
+    await session('2026-10-01', [[dip.id, 10, 0]]);
+    expect((await patch(`/api/exercises/${dip.id}`, { bodyweight: false })).status).toBe(200);
+    const loaded = await session('2026-10-05', [[dip.id, 10, 10]]);
+    const next = await session('2026-10-09', [[dip.id, 10, 11]]);
 
     const month = await calendar('2026-10');
-    expect(workoutIn(month, weighted)?.progression).toBeCloseTo(0.1);
-    expect(workoutIn(month, unweighted)?.progression).toBeCloseTo(0.2);
+    expect(workoutIn(month, loaded)).toMatchObject({ progression: null, comparedExerciseCount: 0 });
+    expect(workoutIn(month, next)?.progression).toBeCloseTo(0.1);
   });
 
   test('gives each workout of a day its own value and the day the mean over all their exercises', async () => {

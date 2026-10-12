@@ -125,7 +125,7 @@ export class SetFacade {
     return {
       exerciseId: requiredInt(dto, 'exerciseId', { min: 1 }),
       reps: requiredInt(dto, 'reps', { min: 1, max: 1000 }),
-      weight: requiredNumber(dto, 'weight', { min: 0, max: 100000 }),
+      ...(dto.weight !== undefined ? { weight: requiredNumber(dto, 'weight', { min: 0, max: 100000 }) } : {}),
       notes: optionalString(dto, 'notes', MAX_WORKOUT_NOTES_LENGTH),
     };
   }

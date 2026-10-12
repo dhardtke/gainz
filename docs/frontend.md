@@ -154,7 +154,12 @@ Under its fields the form shows the selected exercise's last session, "Last · O
 5×100 · 5×105 · best 110 kg" in muted text, or "No history yet". The session comes from
 `exerciseFacade.lastSession(id, workoutId)`, which leaves the open workout out, and "best" is the
 `bestWeight` of the exercise list the view already loaded, so it is all-time and left out when
-null or 0. Reps and weight are prefilled from two sources: an exercise with sets in this workout
+null or 0. For a bodyweight exercise the hint is reps only, "Last · Oct 9: 12 · 10 · 8 reps", and
+the weight field is out of the way: `.field-weight` renders `hidden` with its input `disabled`
+while the selected exercise is bodyweight, by the flag on the exercise list it is handed, and the
+select's `change` listener toggles both through `#syncWeight()`. A disabled input is neither
+validated nor in the form data, so the form posts no `weight` and the API stores 0. Its hint ends
+in "best 15 reps" from the exercise's `bestReps` when it has one. Reps and weight are prefilled from two sources: an exercise with sets in this workout
 starts from its last one there, as before; one without starts from the first set of its last
 session — on a selection change, and on the first render of a workout without sets. The lookups
 are cached per exercise in a `LastSessionCache` the view owns and hands to the form, because every
@@ -189,7 +194,10 @@ a new line), PATCHes the details that differ from the workout, and the re-render
 the field by its id while `#edits` keeps its text. A done row mirrors the backend's lock: it keeps its fields and
 × in place but disabled, keeps +1, and mutes its load. A done workout locks every row, as the
 backend locks its sets: the view sets each row's `locked` before its `set`, and a locked row disables
-its toggle, fields, +1 and × whatever the set's own state.
+its toggle, fields, +1 and × whatever the set's own state. The view hands each row its group's
+`bodyweight` the same way; a bodyweight row has no weight input, `×` or volume, saves and
+duplicates its set without a weight, and its delete confirmation names it "12 reps". Such a
+group's header reads "3 sets · 30 reps" instead of its volume.
 
 Once the session has sets, `gz-workout-detail` opens with a progress strip, its first child: one
 line in a floating `--card` box with `--radius-medium` and `--shadow-medium`, holding the label
@@ -385,14 +393,24 @@ starts open only while there are no exercises at all, whatever the filter. Its m
 seven groups, as in "Edit exercise", both rendered by `muscleGroupOptions` in
 `features/exercises/internal/muscle-groups.ts`. Its `MUSCLE_GROUPS` is the frontend's own copy of
 the backend's list, since `src/shared/` holds no values; both are typed against `MuscleGroup` in
-`src/shared/muscle-group.ts`, and a test on each side pins the full list.
+`src/shared/muscle-group.ts`, and a test on each side pins the full list. Below the fields both
+forms have a "Bodyweight" switch, Oat's `input[type=checkbox][role=switch]` named `bodyweight`;
+`formData()` leaves out an unchecked checkbox and gives a checked one `'on'`, so the form sends
+`bodyweight: values.bodyweight === 'on'`, `false` included. A bodyweight exercise's card joins its
+muscle group, "Bodyweight" and its notes with `·`, and its page reads "Chest · Bodyweight" under
+its name, or "Bodyweight" alone without a group.
 
 `gz-exercise-detail` puts the progress first: the name and muscle group, four
 `gz-tile`s, `gz-progress-chart` and `gz-session-table`, and last a collapsed `<details
 class="edit">`, "Edit exercise", holding the save form and a danger "Delete exercise" button. It
 keeps no open state, unlike the workout's "Details & notes": only a successful save reloads the
 view, which closes the section while the toast confirms the save, and a failed save or a metric
-switch re-renders nothing.
+switch re-renders nothing. A bodyweight exercise speaks in reps: its tiles are Sessions, Best
+set ("15 reps"), Top set (the latest session's `topReps`, with its change against the previous
+session) and Total reps; the view sets `bodyweight` on `gz-progress-chart` and `gz-session-table`
+before their `sessions`, so the chart offers Top set and Total reps from its `BODYWEIGHT_METRICS`,
+falling back to the first for a remembered weighted metric, and the table shows Date · Sets · Top
+set · Reps with the change on Reps. Its list card reads "15 reps best" from `bestReps`.
 
 A muscle group is drawn by `gz-muscle-group-icon`, which sits at the root of `features/exercises/`
 rather than in `internal/` because the workout page renders it too, the feature's front door. Its
