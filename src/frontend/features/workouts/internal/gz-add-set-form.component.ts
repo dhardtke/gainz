@@ -1,26 +1,62 @@
 import type { RawHtml } from '../../../ui/html.ts';
 import { define, GzElement } from '../../../ui/base.ts';
 import { html } from '../../../ui/html.ts';
-import { UNIT } from '../../../ui/format.ts';
-import type { ExerciseDto } from '../../../../shared/dto/exercise.ts';
+import { formatNumber, formatShortDate, formatWeight, plural, UNIT } from '../../../ui/format.ts';
+import type { ExerciseLastSessionDto, ExerciseWithStatsDto, LastSessionDto } from '../../../../shared/dto/exercise.ts';
 import type { LiftSetDto } from '../../../../shared/dto/set.ts';
 import type { ExerciseId, WorkoutId } from '../../../../shared/flavors.ts';
 import { toastError } from '../../../ui/toast.ts';
+import { exerciseFacade } from '../../exercises/exercises.facade.ts';
 import { setFacade } from '../workouts.facade.ts';
+
+// Lookups skip the open workout, so nothing on its page makes them stale.
+export class LastSessionCache {
+  readonly resolved = new Map<ExerciseId, ExerciseLastSessionDto>();
+
+  readonly #pending = new Map<ExerciseId, Promise<ExerciseLastSessionDto>>();
+
+  lookup(exerciseId: ExerciseId, workoutId: WorkoutId): Promise<ExerciseLastSessionDto> {
+    let pending = this.#pending.get(exerciseId);
+    if (!pending) {
+      pending = exerciseFacade.lastSession(exerciseId, workoutId).then(
+        (found) => {
+          this.resolved.set(exerciseId, found);
+          this.#pending.delete(exerciseId);
+          return found;
+        },
+        (error: unknown) => {
+          this.#pending.delete(exerciseId);
+          throw error;
+        },
+      );
+      this.#pending.set(exerciseId, pending);
+    }
+    return pending;
+  }
+}
 
 export class GzAddSetFormComponent extends GzElement {
   #workoutId: WorkoutId | null = null;
 
-  #exercises: ExerciseDto[] = [];
+  #exercises: ExerciseWithStatsDto[] = [];
+
+  #lastSessions = new LastSessionCache();
 
   #sets: LiftSetDto[] | null = null;
+
+  // Read by template(), so the button stays disabled through a re-render.
+  #adding = false;
 
   set workoutId(value: WorkoutId) {
     this.#workoutId = value;
   }
 
-  set exercises(value: ExerciseDto[]) {
+  set exercises(value: ExerciseWithStatsDto[]) {
     this.#exercises = value;
+  }
+
+  set lastSessions(value: LastSessionCache) {
+    this.#lastSessions = value;
   }
 
   // Set it last: assigning it re-renders.
@@ -55,18 +91,84 @@ export class GzAddSetFormComponent extends GzElement {
     }
   }
 
+  override async handleAction(action: string): Promise<void> {
+    const workoutId = this.#workoutId;
+    const exerciseId = this.#selectedId();
+    if (action !== 'add-last-session' || workoutId === null || exerciseId === null || this.#adding) {
+      return;
+    }
+    this.#adding = true;
+    this.$<HTMLButtonElement>(`[data-action='add-last-session']`)?.toggleAttribute('disabled', true);
+    try {
+      await setFacade.addExercises(workoutId, [exerciseId]);
+      this.emit('set-logged', { exerciseId });
+    } catch (error) {
+      toastError(error);
+    } finally {
+      this.#adding = false;
+      this.$<HTMLButtonElement>(`[data-action='add-last-session']`)?.toggleAttribute('disabled', false);
+    }
+  }
+
   override afterRender(): void {
     const select = this.$<HTMLSelectElement>("select[name='exerciseId']");
-    select?.addEventListener('change', () => {
-      this.#prefillFrom(Number(select.value));
+    if (!select) {
+      return;
+    }
+    select.addEventListener('change', () => {
+      const exerciseId = Number(select.value);
+      const inWorkout = this.#inWorkout(exerciseId);
+      if (inWorkout) {
+        this.#prefillFrom(exerciseId);
+      }
+      void this.#showLastSession(exerciseId, !inWorkout);
     });
+    void this.#showLastSession(Number(select.value), this.#sets?.length === 0);
+  }
+
+  #selectedId(): ExerciseId | null {
+    const select = this.$<HTMLSelectElement>("select[name='exerciseId']");
+    return select ? Number(select.value) : null;
+  }
+
+  #inWorkout(exerciseId: ExerciseId): boolean {
+    return this.#sets?.some((set) => set.exerciseId === exerciseId) ?? false;
+  }
+
+  async #showLastSession(exerciseId: ExerciseId, prefill: boolean): Promise<void> {
+    const workoutId = this.#workoutId;
+    if (workoutId === null) {
+      return;
+    }
+    let found = this.#lastSessions.resolved.get(exerciseId);
+    if (!found) {
+      try {
+        found = await this.#lastSessions.lookup(exerciseId, workoutId);
+      } catch {
+        return;
+      }
+    }
+    if (this.#selectedId() !== exerciseId) {
+      return;
+    }
+    const slot = this.$('.last-session-slot');
+    if (slot) {
+      slot.innerHTML = String(this.#lastSessionTemplate(exerciseId));
+    }
+    const first = found.session?.sets[0];
+    if (prefill && first) {
+      this.#prefill(first);
+    }
   }
 
   #prefillFrom(exerciseId: ExerciseId): void {
     const previous = this.#sets?.filter((set) => set.exerciseId === exerciseId).at(-1);
-    if (!previous) {
-      return;
+    if (previous) {
+      this.#prefill(previous);
     }
+  }
+
+  #prefill(previous: LiftSetDto): void {
     const weight = this.$<HTMLInputElement>("input[name='weight']");
     const reps = this.$<HTMLInputElement>("input[name='reps']");
     if (weight) {
@@ -75,6 +177,35 @@ export class GzAddSetFormComponent extends GzElement {
     if (reps) {
       reps.value = String(previous.reps);
     }
+  }
+
+  #hint(session: LastSessionDto | null, best: number | null): string {
+    if (!session) {
+      return 'No history yet';
+    }
+    const sets = session.sets.map((set) => `${set.reps}×${formatNumber(set.weight)}`).join(' · ');
+    return `Last · ${formatShortDate(session.performedOn)}: ${sets}${best !== null && best !== 0 ? ` · best ${formatWeight(best)}` : ''}`;
+  }
+
+  // Empty until the lookup resolves; then rendered from the cache, so a re-render keeps it.
+  #lastSessionTemplate(exerciseId: ExerciseId | undefined): RawHtml {
+    const found = exerciseId === undefined ? undefined : this.#lastSessions.resolved.get(exerciseId);
+    if (!found) {
+      return html``;
+    }
+    const best = this.#exercises.find((exercise) => exercise.id === exerciseId)?.bestWeight ?? null;
+    const session = found.session ?? null;
+    const count = session?.sets.length ?? 0;
+    return html`
+      <p class="last-session text-light" data-testid="last-session">${this.#hint(session, best)}</p>
+      ${
+        exerciseId !== undefined && count > 0 && !this.#inWorkout(exerciseId)
+          ? html`<button type="button" class="outline" data-action="add-last-session" data-testid="add-last-session" ${this.#adding ? 'disabled' : ''}>
+              Add last session's ${plural(count, 'set')}
+            </button>`
+          : ''
+      }
+    `;
   }
 
   override template(): RawHtml {
@@ -121,6 +252,7 @@ export class GzAddSetFormComponent extends GzElement {
               <button type="submit">Log set</button>
             </div>
           </form>
+          <div class="last-session-slot">${this.#lastSessionTemplate(selected)}</div>
         </article>
       </section>
     `;

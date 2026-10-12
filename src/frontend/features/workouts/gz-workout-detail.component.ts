@@ -3,18 +3,17 @@ import { define } from '../../ui/base.ts';
 import { html } from '../../ui/html.ts';
 import { formatDate, formatVolume, plural, relativeDay } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
-import type { ExerciseDto } from '../../../shared/dto/exercise.ts';
+import type { ExerciseWithStatsDto } from '../../../shared/dto/exercise.ts';
 import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import type { EditWorkoutDto, MoveDirection, WorkoutDto, WorkoutExerciseDto, WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
 import type { ExerciseId } from '../../../shared/flavors.ts';
-import type { GzAddSetFormComponent } from './internal/gz-add-set-form.component.ts';
+import { type GzAddSetFormComponent, LastSessionCache } from './internal/gz-add-set-form.component.ts';
 import { GzSetRowComponent, SET_UPDATED_EVENT } from './internal/gz-set-row.component.ts';
 import { toast, toastError } from '../../ui/toast.ts';
 import { confirmAction } from '../../ui/confirm/confirm.ts';
 import { GzView } from '../../ui/view.ts';
 import { exerciseFacade } from '../exercises/exercises.facade.ts';
 import { workoutFacade } from './workouts.facade.ts';
-import './internal/gz-add-set-form.component.ts';
 import '../exercises/gz-muscle-group-icon.component.ts';
 
 function isSetLogged(detail: unknown): detail is { exerciseId: number } {
@@ -32,7 +31,7 @@ function workoutName(workout: WorkoutWithExercisesDto): string {
 
 interface WorkoutDetailData {
   workout: WorkoutWithExercisesDto;
-  exercises: ExerciseDto[];
+  exercises: ExerciseWithStatsDto[];
 }
 
 export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
@@ -53,7 +52,10 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
   #barValue: number | null = null;
 
   // Loaded once: nothing on this page creates or edits an exercise.
-  #exercises: Promise<ExerciseDto[]> | null = null;
+  #exercises: Promise<ExerciseWithStatsDto[]> | null = null;
+
+  // Here, not in the form: every render of this page creates a new form.
+  readonly #lastSessions = new LastSessionCache();
 
   override connectedCallback(): void {
     super.connectedCallback();
@@ -269,6 +271,7 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     if (addSet) {
       addSet.workoutId = workout.id;
       addSet.exercises = exercises;
+      addSet.lastSessions = this.#lastSessions;
       // Logged order: the form starts from the last set it is given.
       addSet.sets = sets.toSorted((a, b) => a.position - b.position || a.id - b.id);
     }

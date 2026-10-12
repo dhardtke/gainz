@@ -2,11 +2,12 @@ import type {
   CreateExerciseDto,
   EditExerciseDto,
   ExerciseDto,
+  ExerciseLastSessionDto,
   ExercisePageDto,
   ExercisePositionDto,
   ExerciseProgressDto,
 } from '../../../shared/dto/exercise.ts';
-import type { ExerciseId } from '../../../shared/flavors.ts';
+import type { ExerciseId, WorkoutId } from '../../../shared/flavors.ts';
 import type { MuscleGroupFilter } from '../../../shared/muscle-group.ts';
 import { ExerciseApi } from './internal/exercise.api.ts';
 
@@ -31,6 +32,10 @@ export class ExerciseFacade {
 
   progress(id: ExerciseId): Promise<ExerciseProgressDto> {
     return this.#api.progress(id);
+  }
+
+  lastSession(id: ExerciseId, exceptWorkout?: WorkoutId): Promise<ExerciseLastSessionDto> {
+    return this.#api.lastSession(id, exceptWorkout);
   }
 
   create(dto: CreateExerciseDto): Promise<ExerciseDto> {

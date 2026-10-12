@@ -51,6 +51,11 @@ export class SetFacade {
     return this.#workouts.createSet(workoutId, dto);
   }
 
+  /** Copies each exercise's last session into the workout, in this order. */
+  addExercises(workoutId: WorkoutId, exerciseIds: ExerciseId[]): Promise<WorkoutWithExercisesDto> {
+    return this.#workouts.addExercises(workoutId, { exerciseIds });
+  }
+
   update(id: LiftSetId, dto: EditSetDto): Promise<LiftSetDto> {
     return this.#sets.update(id, dto);
   }

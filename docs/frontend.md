@@ -18,7 +18,7 @@ src/frontend/
     ├── exercises/  exercises.routes.ts, exercises.facade.ts, gz-exercise-list, gz-exercise-detail, gz-muscle-group-icon
     │   └── internal/  exercise.api.ts, gz-chart, gz-progress-chart, gz-session-table
     ├── workouts/   workouts.routes.ts, workouts.facade.ts, gz-workout-list, gz-workout-detail, gz-workout-card
-    │   └── internal/  workout.api.ts, set.api.ts, gz-set-row, gz-add-set-form
+    │   └── internal/  workout.api.ts, set.api.ts, gz-set-row, gz-add-set-form, gz-start-session-dialog, start-session.ts
     ├── stats/      stats.routes.ts, stats.facade.ts, gz-dashboard
     │   └── internal/  stats.api.ts
     └── auth/       auth.routes.ts, auth.facade.ts, gz-login
@@ -92,6 +92,20 @@ and opens it. A done workout's card also takes a `--success` border; both the ba
 follow the workout's stored `done`, not its sets, so a workout finished with sets skipped shows as done. Each view renders `<gz-workout-card data-id>` and hands every card
 its workout in `afterRender()`, as `gz-workout-detail` does its set rows.
 
+The log's "Start session" button builds a session from exercises already trained. On click,
+`gz-workout-list` fetches the unpaged exercise list through `exerciseFacade` — on click, not on
+load, since only this needs it — keeps those with a `lastPerformedOn`, most recent first, then by
+name, and hands them to `pickExercises()` from `internal/start-session.ts`, which opens
+`gz-start-session-dialog` and resolves as `confirmAction()` does for `gz-confirm-dialog`: the
+dialog lists one checkbox per exercise with its muscle-group icon, name and "last Oct 5", records
+the ticks in tick order, and resolves those ids for "Start with N" (disabled at none), `[]` for
+"Start empty", and `null` for Cancel, Escape or the backdrop. It updates the start button in place
+rather than re-rendering, which would close the dialog. `null` starts nothing; otherwise the view
+creates today's workout through `workoutFacade`, copies the picked exercises' last sessions into it
+through `setFacade.addExercises()`, and opens it — a failed copy toasts and still opens the new,
+empty workout. With no exercise history at all the dialog is skipped and an empty session starts,
+and the button is disabled while any of this runs, so a double click starts one session.
+
 `gz-workout-detail` puts the logging first. From the top: the sticky set progress strip; the title
 and the date with its relative day; one summary line of muted totals — sets, exercises, reps and
 volume — followed, on a done workout, by its "✓ Done" badge; the exercise groups; `gz-add-set-form`, which a done workout does not render; the finish
@@ -135,6 +149,23 @@ open exercise stays open, and a failed move toasts and changes nothing.
 The view hands `gz-add-set-form` the sets back in logged order
 (`position`, then `id`): the form starts from the last set it is given, which in group order would
 be the last exercise's.
+
+Under its fields the form shows the selected exercise's last session, "Last · Oct 5: 5×100 ·
+5×100 · 5×105 · best 110 kg" in muted text, or "No history yet". The session comes from
+`exerciseFacade.lastSession(id, workoutId)`, which leaves the open workout out, and "best" is the
+`bestWeight` of the exercise list the view already loaded, so it is all-time and left out when
+null or 0. Reps and weight are prefilled from two sources: an exercise with sets in this workout
+starts from its last one there, as before; one without starts from the first set of its last
+session — on a selection change, and on the first render of a workout without sets. The lookups
+are cached per exercise in a `LastSessionCache` the view owns and hands to the form, because every
+render of the view creates a new form; a resolved lookup renders from the cache in `template()`,
+so the hint survives a logged set, and only a pending one fills the hint in place, once it
+resolves and only if that exercise is still selected. A failed lookup shows no hint and no toast.
+For an exercise not in the workout whose last session was found, an outline "Add last session's N
+sets" button follows the hint, below the `<form>` so it is not part of its submit. It posts the
+selected exercise through `setFacade.addExercises(workoutId, [exerciseId])` and emits the same
+`set-logged` a logged set does, so the view reloads and opens that exercise's group; a failure
+toasts. `#adding`, which `template()` reads, keeps it disabled and ignores clicks while it runs.
 
 `gz-set-row` leaves the exercise to its group: it shows no exercise name, and its number counts
 within its exercise. The rows are not boxes of their own but the exercise's lines, edge to edge

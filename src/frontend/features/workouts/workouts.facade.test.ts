@@ -35,6 +35,12 @@ describe('setFacade', () => {
     ]);
   });
 
+  test('addExercises() posts the ids under the workout', async () => {
+    await setFacade.addExercises(7, [2, 4]);
+
+    expect(fetch.requests).toMatchObject([{ method: 'POST', url: '/api/workouts/7/exercises', body: { exerciseIds: [2, 4] } }]);
+  });
+
   test.each([
     ['update()', (): Promise<unknown> => setFacade.update(3, { reps: 6 }), 'PATCH', '/api/sets/3'],
     ['delete()', (): Promise<unknown> => setFacade.delete(3), 'DELETE', '/api/sets/3'],

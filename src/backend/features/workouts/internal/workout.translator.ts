@@ -1,4 +1,5 @@
 import type {
+  AddWorkoutExercisesDto,
   CreateWorkoutDto,
   EditWorkoutDto,
   MoveDirection,
@@ -9,7 +10,7 @@ import type {
   WorkoutWithExercisesDto,
   WorkoutWithStatsDto,
 } from '../../../../shared/dto/workout.ts';
-import type { Iso8601Date, WorkoutId } from '../../../../shared/flavors.ts';
+import type { ExerciseId, Iso8601Date, WorkoutId } from '../../../../shared/flavors.ts';
 import { today } from '../../../shared/validate.ts';
 import type { LiftSet } from '../ports/set.ts';
 import type { Workout, WorkoutWithStats } from '../ports/workout.ts';
@@ -38,6 +39,12 @@ export function translateToEditWorkoutDto(body: Record<string, unknown>): EditWo
 export function translateToMoveWorkoutExerciseDto(body: Record<string, unknown>): MoveWorkoutExerciseDto {
   return {
     direction: body.direction as MoveDirection,
+  };
+}
+
+export function translateToAddWorkoutExercisesDto(body: Record<string, unknown>): AddWorkoutExercisesDto {
+  return {
+    exerciseIds: body.exerciseIds as ExerciseId[],
   };
 }
 

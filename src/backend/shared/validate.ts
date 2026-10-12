@@ -49,6 +49,25 @@ export function requiredInt<T extends object>(
   return num;
 }
 
+/** Unlike `requiredInt`, a numeric string is refused. */
+export function requiredIds<T extends object>(dto: T, field: keyof T & string, { max = 200 }: { max?: number } = {}): number[] {
+  const value: unknown = dto[field];
+  if (!Array.isArray(value) || value.length === 0 || value.length > max) {
+    throw badRequest(`"${field}" must be a list of 1 to ${max} ids`);
+  }
+  const ids = new Set<number>();
+  for (const id of value as unknown[]) {
+    if (typeof id !== 'number' || !Number.isSafeInteger(id) || id < 1) {
+      throw badRequest(`"${field}" must hold only whole numbers of at least 1`);
+    }
+    if (ids.has(id)) {
+      throw badRequest(`"${field}" must not repeat an id`);
+    }
+    ids.add(id);
+  }
+  return [...ids];
+}
+
 export function requiredNumber<T extends object>(dto: T, field: keyof T & string, { min = 0, max = 100000 }: { min?: number; max?: number } = {}): number {
   const value: unknown = dto[field];
   const num = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;

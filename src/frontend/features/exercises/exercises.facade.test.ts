@@ -18,6 +18,8 @@ test.each([
   ['position()', (): Promise<unknown> => exerciseFacade.position(4), 'GET', '/api/exercises/4/position'],
   ['position(filter)', (): Promise<unknown> => exerciseFacade.position(4, 'Legs'), 'GET', '/api/exercises/4/position?muscleGroup=Legs'],
   ['progress()', (): Promise<unknown> => exerciseFacade.progress(4), 'GET', '/api/exercises/4/progress'],
+  ['lastSession()', (): Promise<unknown> => exerciseFacade.lastSession(4), 'GET', '/api/exercises/4/last-session'],
+  ['lastSession(except)', (): Promise<unknown> => exerciseFacade.lastSession(4, 3), 'GET', '/api/exercises/4/last-session?exceptWorkout=3'],
   ['create()', (): Promise<unknown> => exerciseFacade.create({ name: 'Squat' }), 'POST', '/api/exercises'],
   ['update()', (): Promise<unknown> => exerciseFacade.update(4, { muscleGroup: 'Legs' }), 'PATCH', '/api/exercises/4'],
   ['delete()', (): Promise<unknown> => exerciseFacade.delete(4), 'DELETE', '/api/exercises/4'],

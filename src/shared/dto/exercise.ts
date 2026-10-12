@@ -1,6 +1,6 @@
 import type { ExerciseId, Iso8601Date, Iso8601DateTime, WorkoutId } from '../flavors.ts';
 import type { MuscleGroup } from '../muscle-group.ts';
-import type { BestSetDto } from './set.ts';
+import type { BestSetDto, LiftSetDto } from './set.ts';
 
 export interface ExerciseDto {
   id: ExerciseId;
@@ -49,6 +49,17 @@ export interface ExerciseProgressDto {
   /** Oldest first. */
   sessions: SessionPointDto[];
   bestSet: BestSetDto | null;
+}
+
+export interface LastSessionDto {
+  workoutId: WorkoutId;
+  performedOn: Iso8601Date;
+  /** Done sets only, in logged order. */
+  sets: LiftSetDto[];
+}
+
+export interface ExerciseLastSessionDto {
+  session: LastSessionDto | null;
 }
 
 export interface CreateExerciseDto {

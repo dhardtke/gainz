@@ -39,6 +39,11 @@ export interface MoveWorkoutExerciseDto {
   direction: MoveDirection;
 }
 
+export interface AddWorkoutExercisesDto {
+  /** Each exercise's last session is copied in this order. */
+  exerciseIds: ExerciseId[];
+}
+
 export interface WorkoutPageDto {
   items: WorkoutWithStatsDto[];
   /** Every workout, not just this page. */

@@ -1,12 +1,13 @@
 import { json, noContent, optionalQueryInt, optionalQueryOneOf, pathId, queryInt, readJsonObject } from '../../../http/http.ts';
 import type { ParamRequest } from '../../../http/routing.ts';
-import type { ExerciseId } from '../../../../shared/flavors.ts';
+import type { ExerciseId, WorkoutId } from '../../../../shared/flavors.ts';
 import type { MuscleGroup } from '../../../../shared/muscle-group.ts';
 import { type ExerciseFacade, MUSCLE_GROUPS } from '../exercises.facade.ts';
 import {
   translateToCreateExerciseDto,
   translateToEditExerciseDto,
   translateToExerciseDto,
+  translateToExerciseLastSessionDto,
   translateToExercisePageDto,
   translateToExercisePositionDto,
   translateToExerciseProgressDto,
@@ -57,6 +58,12 @@ export class ExerciseController {
   progress(req: ParamRequest): Response {
     const id: ExerciseId = pathId(req.params.id, 'exercise');
     return json(translateToExerciseProgressDto(this.#exercises.require(id), this.#exercises.progress(id), this.#exercises.bestSet(id)));
+  }
+
+  lastSession(req: ParamRequest): Response {
+    const id: ExerciseId = pathId(req.params.id, 'exercise');
+    const exceptWorkout: WorkoutId | null = optionalQueryInt(new URL(req.url).searchParams, 'exceptWorkout', { min: 1, max: Number.MAX_SAFE_INTEGER });
+    return json(translateToExerciseLastSessionDto(this.#exercises.lastSession(id, exceptWorkout)));
   }
 
   /** `undefined` for every exercise, `null` for those without a group. */

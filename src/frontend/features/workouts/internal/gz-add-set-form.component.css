@@ -11,6 +11,10 @@
     flex: 3 1 12rem;
   }
 
+  & .last-session {
+    margin-block: var(--space-2) 0;
+  }
+
   @media (max-width: 720px) {
     & .field-exercise,
     & .field-notes {

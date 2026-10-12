@@ -532,10 +532,11 @@ test('applies an updated set without a reload', async () => {
   expect(bar(view).value).toBe(1);
 });
 
-test('loads the exercises once, not on every reload', async () => {
+test('loads the exercises and their last sessions once, not on every reload', async () => {
   const view = await mountView();
   await changeSets(view);
-  expect(fake.requests.filter((request) => request.method === 'GET' && request.url.startsWith('/api/exercises'))).toHaveLength(1);
+  expect(fake.requests.filter((request) => request.method === 'GET' && request.url === '/api/exercises')).toHaveLength(1);
+  expect(fake.requests.filter((request) => request.url === '/api/exercises/2/last-session?exceptWorkout=3')).toHaveLength(1);
 });
 
 test("hands focus, and what was typed, back to a set's field after a reload", async () => {

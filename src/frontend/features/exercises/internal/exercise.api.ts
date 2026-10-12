@@ -2,11 +2,12 @@ import type {
   CreateExerciseDto,
   EditExerciseDto,
   ExerciseDto,
+  ExerciseLastSessionDto,
   ExercisePageDto,
   ExercisePositionDto,
   ExerciseProgressDto,
 } from '../../../../shared/dto/exercise.ts';
-import type { ExerciseId } from '../../../../shared/flavors.ts';
+import type { ExerciseId, WorkoutId } from '../../../../shared/flavors.ts';
 import type { MuscleGroupFilter } from '../../../../shared/muscle-group.ts';
 import { get, patch, post, remove } from '../../../http/http.ts';
 
@@ -38,6 +39,10 @@ export class ExerciseApi {
 
   progress(id: ExerciseId): Promise<ExerciseProgressDto> {
     return get(`/exercises/${id}/progress`);
+  }
+
+  lastSession(id: ExerciseId, exceptWorkout?: WorkoutId): Promise<ExerciseLastSessionDto> {
+    return get(withQuery(`/exercises/${id}/last-session`, new URLSearchParams(exceptWorkout === undefined ? {} : { exceptWorkout: String(exceptWorkout) })));
   }
 
   create(dto: CreateExerciseDto): Promise<ExerciseDto> {

@@ -1,0 +1,42 @@
+/* A flex column, so a long list scrolls within Oat's max-height instead of pushing the footer out. */
+dialog {
+  &[open] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  & > div {
+    min-height: 0;
+  }
+
+  /* Three buttons do not fit one line on a phone. */
+  & > footer {
+    flex-wrap: wrap;
+  }
+
+  & footer .cancel {
+    margin-inline-end: auto;
+  }
+}
+
+.picks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  & label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding-block: var(--space-1);
+  }
+
+  & .name {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  & .last {
+    white-space: nowrap;
+  }
+}

@@ -1,8 +1,9 @@
 import { beforeAll, expect, test } from 'bun:test';
 import { choose, collect, find, mount, settle, shadow, submit, testId, useDom, useFetch, useToasts } from '../../../testing.ts';
-import type { ExerciseDto } from '../../../../shared/dto/exercise.ts';
+import type { ExerciseLastSessionDto, ExerciseWithStatsDto } from '../../../../shared/dto/exercise.ts';
 import type { LiftSetDto } from '../../../../shared/dto/set.ts';
-import { exercise } from '../../exercises/exercises.fixtures.ts';
+import { listedExercise } from '../../exercises/exercises.fixtures.ts';
+import { formatShortDate } from '../../../ui/format.ts';
 import { set } from '../workouts.fixtures.ts';
 import type { GzAddSetFormComponent } from './gz-add-set-form.component.ts';
 
@@ -14,7 +15,7 @@ beforeAll(async () => {
   await import('./gz-add-set-form.component.ts');
 });
 
-const EXERCISES = [exercise({ id: 1, name: 'Bench Press' }), exercise({ id: 2, name: 'Back Squat' })];
+const EXERCISES = [listedExercise({ id: 1, name: 'Bench Press' }), listedExercise({ id: 2, name: 'Back Squat' })];
 
 const SETS = [
   set({ id: 11, exerciseId: 1, weight: 80, reps: 5 }),
@@ -22,7 +23,7 @@ const SETS = [
   set({ id: 13, exerciseId: 2, weight: 100, reps: 6 }),
 ];
 
-function mountForm(exercises: ExerciseDto[], sets: LiftSetDto[]): GzAddSetFormComponent {
+function mountForm(exercises: ExerciseWithStatsDto[], sets: LiftSetDto[]): GzAddSetFormComponent {
   const form = mount<GzAddSetFormComponent>('gz-add-set-form');
   form.workoutId = 3;
   form.exercises = exercises;
@@ -102,4 +103,151 @@ test('focusReps() puts focus in the reps field', () => {
   const form = mountForm(EXERCISES, SETS);
   form.focusReps();
   expect(form.shadowRoot?.activeElement).toBe(field(form, 'reps'));
+});
+
+function answerLastSession(exerciseId: number, sets: Partial<LiftSetDto>[] | null, performedOn = '2026-10-05'): void {
+  const dto: ExerciseLastSessionDto = {
+    session:
+      sets === null
+        ? null
+        : { workoutId: 1, performedOn, sets: sets.map((each, index) => set({ id: 100 + index, workoutId: 1, exerciseId, done: true, ...each })) },
+  };
+  fake.respondTo(`GET /api/exercises/${exerciseId}/last-session?exceptWorkout=3`, 200, JSON.stringify(dto));
+}
+
+const SQUAT_SESSION = [
+  { reps: 5, weight: 100 },
+  { reps: 5, weight: 100 },
+  { reps: 5, weight: 105 },
+];
+
+function hint(form: HTMLElement): string | undefined {
+  return form.shadowRoot?.querySelector(testId('last-session'))?.textContent;
+}
+
+test("shows the selected exercise's last session and its best weight", async () => {
+  answerLastSession(2, SQUAT_SESSION);
+  const form = mountForm([listedExercise({ id: 1, name: 'Bench Press' }), listedExercise({ id: 2, name: 'Back Squat', bestWeight: 110 })], SETS);
+  await settle();
+  expect(hint(form)).toBe(`Last · ${formatShortDate('2026-10-05')}: 5×100 · 5×100 · 5×105 · best 110 kg`);
+});
+
+test.each([0, null])('leaves out the best weight when it is %p', async (bestWeight) => {
+  answerLastSession(2, [{ reps: 8, weight: 0 }]);
+  const form = mountForm([listedExercise({ id: 2, name: 'Pull-up', bestWeight })], SETS);
+  await settle();
+  expect(hint(form)).toBe(`Last · ${formatShortDate('2026-10-05')}: 8×0`);
+});
+
+test('says so when the exercise has no history', async () => {
+  answerLastSession(2, null);
+  const form = mountForm(EXERCISES, SETS);
+  await settle();
+  expect(hint(form)).toBe('No history yet');
+});
+
+test('shows no hint when the lookup fails, without a toast', async () => {
+  fake.respondTo('GET /api/exercises/2/last-session?exceptWorkout=3', 500);
+  const form = mountForm(EXERCISES, SETS);
+  await settle();
+  expect(hint(form)).toBeUndefined();
+  expect(toasts).toEqual([]);
+});
+
+test('prefills from the last session when choosing an exercise not in the workout', async () => {
+  answerLastSession(1, [
+    { reps: 3, weight: 90 },
+    { reps: 3, weight: 95 },
+  ]);
+  const form = mountForm(EXERCISES, [set({ id: 13, exerciseId: 2, weight: 100, reps: 6 })]);
+  choose(exerciseSelect(form), '1');
+  await settle();
+  expect(field(form, 'weight').value).toBe('90');
+  expect(field(form, 'reps').value).toBe('3');
+});
+
+test('prefills from the last session on first render of an empty workout', async () => {
+  answerLastSession(1, [{ reps: 3, weight: 90 }]);
+  const form = mountForm(EXERCISES, []);
+  await settle();
+  expect(field(form, 'weight').value).toBe('90');
+  expect(field(form, 'reps').value).toBe('3');
+});
+
+test('still prefills from this workout for an exercise already in it', async () => {
+  answerLastSession(1, [{ reps: 3, weight: 90 }]);
+  const form = mountForm(EXERCISES, SETS);
+  choose(exerciseSelect(form), '1');
+  await settle();
+  expect(field(form, 'weight').value).toBe('82.5');
+  expect(field(form, 'reps').value).toBe('4');
+});
+
+test('keeps the hint through the re-render after a logged set', async () => {
+  answerLastSession(2, SQUAT_SESSION);
+  const form = mountForm(EXERCISES, SETS);
+  await settle();
+  form.sets = [...SETS, set({ id: 14, exerciseId: 2, weight: 100, reps: 5 })];
+  expect(hint(form)).toStartWith('Last · ');
+  expect(fake.requests.filter((request) => request.url.includes('last-session'))).toHaveLength(1);
+});
+
+test('a late lookup for an exercise no longer selected leaves the hint alone', async () => {
+  answerLastSession(1, [{ reps: 3, weight: 90 }]);
+  answerLastSession(2, null);
+  const form = mountForm(EXERCISES, SETS);
+  choose(exerciseSelect(form), '1');
+  choose(exerciseSelect(form), '2');
+  await settle();
+  expect(hint(form)).toBe('No history yet');
+});
+
+function addLastSession(form: HTMLElement): HTMLButtonElement | null {
+  return form.shadowRoot?.querySelector<HTMLButtonElement>(testId('add-last-session')) ?? null;
+}
+
+test("offers to add the last session's sets for an exercise not in the workout", async () => {
+  answerLastSession(1, SQUAT_SESSION);
+  const form = mountForm(EXERCISES, [set({ id: 13, exerciseId: 2, weight: 100, reps: 6 })]);
+  choose(exerciseSelect(form), '1');
+  await settle();
+  expect(addLastSession(form)?.textContent.trim()).toBe("Add last session's 3 sets");
+});
+
+test('offers no button for an exercise already in the workout or one without history', async () => {
+  answerLastSession(1, null);
+  answerLastSession(2, SQUAT_SESSION);
+  const form = mountForm(EXERCISES, [set({ id: 13, exerciseId: 2, weight: 100, reps: 6 })]);
+  await settle();
+  expect(hint(form)).toStartWith('Last · ');
+  expect(addLastSession(form)).toBeNull();
+  choose(exerciseSelect(form), '1');
+  await settle();
+  expect(hint(form)).toBe('No history yet');
+  expect(addLastSession(form)).toBeNull();
+});
+
+test('adds the selected exercise once and emits set-logged', async () => {
+  const logged = collect('set-logged');
+  answerLastSession(1, SQUAT_SESSION);
+  const form = mountForm(EXERCISES, []);
+  await settle();
+  addLastSession(form)?.click();
+  addLastSession(form)?.click();
+  await settle();
+  expect(fake.sent('POST /api/workouts/3/exercises')).toEqual([{ exerciseIds: [1] }]);
+  expect(logged).toEqual([{ exerciseId: 1 }]);
+});
+
+test('toasts a failed add and emits nothing', async () => {
+  const logged = collect('set-logged');
+  answerLastSession(1, SQUAT_SESSION);
+  fake.respondTo('POST /api/workouts/3/exercises', 409, JSON.stringify({ error: '"Bench Press" is already in this workout' }));
+  const form = mountForm(EXERCISES, []);
+  await settle();
+  addLastSession(form)?.click();
+  await settle();
+  expect(toasts).toEqual(['"Bench Press" is already in this workout']);
+  expect(logged).toHaveLength(0);
+  expect(addLastSession(form)?.disabled).toBe(false);
 });

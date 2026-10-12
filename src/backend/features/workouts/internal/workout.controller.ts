@@ -3,6 +3,7 @@ import type { ParamRequest } from '../../../http/routing.ts';
 import type { ExerciseId, WorkoutId } from '../../../../shared/flavors.ts';
 import type { SetFacade, WorkoutFacade } from '../workouts.facade.ts';
 import {
+  translateToAddWorkoutExercisesDto,
   translateToCreateWorkoutDto,
   translateToEditWorkoutDto,
   translateToMoveWorkoutExerciseDto,
@@ -44,6 +45,13 @@ export class WorkoutController {
     const exerciseId: ExerciseId = pathId(req.params.exerciseId, 'exercise');
     const dto = translateToMoveWorkoutExerciseDto(await readJsonObject(req));
     this.#workouts.moveExercise(id, exerciseId, dto);
+    return json(translateToWorkoutWithExercisesDto(this.#workouts.require(id), this.#workouts.exercises(id), this.#sets.list(id)));
+  }
+
+  async addExercises(req: ParamRequest): Promise<Response> {
+    const id: WorkoutId = pathId(req.params.id, 'workout');
+    const dto = translateToAddWorkoutExercisesDto(await readJsonObject(req));
+    this.#sets.addExercises(id, dto);
     return json(translateToWorkoutWithExercisesDto(this.#workouts.require(id), this.#workouts.exercises(id), this.#sets.list(id)));
   }
 

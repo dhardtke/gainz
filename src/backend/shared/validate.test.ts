@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { optionalOneOf, optionalString, requiredDate, requiredInt, requiredNumber, requiredOneOf, requiredString } from './validate.ts';
+import { optionalOneOf, optionalString, requiredDate, requiredIds, requiredInt, requiredNumber, requiredOneOf, requiredString } from './validate.ts';
 
 describe('requiredString', () => {
   test('trims the value', () => {
@@ -93,5 +93,33 @@ describe('optionalOneOf', () => {
   test('rejects another case and a number', () => {
     expect(() => optionalOneOf({ direction: 'UP' }, 'direction', directions)).toThrow('"direction" must be one of: up, down');
     expect(() => optionalOneOf({ direction: 1 }, 'direction', directions)).toThrow('"direction" must be one of: up, down');
+  });
+});
+
+describe('requiredIds', () => {
+  test('returns distinct positive whole numbers in order', () => {
+    expect(requiredIds({ ids: [3, 1, 2] }, 'ids')).toEqual([3, 1, 2]);
+  });
+
+  test('rejects a missing, non-array, empty or too long list', () => {
+    for (const ids of [undefined, 5, '1', {}, [], [1, 2, 3]]) {
+      expect(() => requiredIds({ ids }, 'ids', { max: 2 })).toThrow('"ids" must be a list of 1 to 2 ids');
+    }
+  });
+
+  test('rejects 0, a fraction, an unsafe integer and a numeric string', () => {
+    for (const id of [0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1, '1', null]) {
+      expect(() => requiredIds({ ids: [1, id] }, 'ids')).toThrow('"ids" must hold only whole numbers of at least 1');
+    }
+  });
+
+  test('rejects a repeated id', () => {
+    expect(() => requiredIds({ ids: [1, 2, 1] }, 'ids')).toThrow('"ids" must not repeat an id');
+  });
+
+  test('takes up to 200 ids by default', () => {
+    const ids = Array.from({ length: 200 }, (_, index) => index + 1);
+    expect(requiredIds({ ids }, 'ids')).toHaveLength(200);
+    expect(() => requiredIds({ ids: [...ids, 201] }, 'ids')).toThrow('"ids" must be a list of 1 to 200 ids');
   });
 });

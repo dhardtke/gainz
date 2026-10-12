@@ -163,7 +163,8 @@ into the 400.
 A write that needs more than one statement belongs in a single repository method wrapped in
 `db.transaction()` — `WorkoutRepository.create(input, { copyFrom })` is the example, where the
 workout, its copied sets and its copied exercise order commit together or not at all. Set create
-and set delete are two more, each keeping `workout_exercises` in step with the set it writes.
+and set delete are two more, each keeping `workout_exercises` in step with the set it writes, and
+`SetRepository.copyLastSessions` a fourth.
 Neither the route files nor the controllers ever open a transaction; if a controller finds itself sequencing two writes, the
 sequence belongs in the repository instead.
 
@@ -184,7 +185,8 @@ does not take `exerciseId`, and one in the body is ignored like any unknown key.
 keyed by the pair, with `workout_id` cascading and `exercise_id` restricting like the set's. A row
 exists exactly while the workout has a set of that exercise: `SetRepository.create` appends one at
 `MAX(position) + 1` when it logs the first set of an exercise, `SetRepository.delete` removes it
-with the exercise's last set, "Repeat" copies the source's rows, and deleting a workout cascades.
+with the exercise's last set, "Repeat" copies the source's rows, copying an exercise's last session
+appends one the same way as a logged set, and deleting a workout cascades.
 `003-workout-exercises.sql` created the table and backfilled it from the sets already there, in the
 order each exercise first appears (`position, id`). `GET /api/workouts/:id`, like the answer to
 `POST /api/workouts`, is therefore a `WorkoutWithExercisesDto`: the workout, with the `done` every
@@ -200,6 +202,18 @@ direction is validated first, so a missing or unknown one is a 400 even on an un
 an unknown workout is a 404, as is an exercise the workout has no row for, and a non-numeric id in
 the path is a 400. Order is not part of the done lock below: an exercise whose sets are all done
 still moves, because the order a session is listed in is not performed history.
+
+`POST /api/workouts/:id/exercises` with `{ "exerciseIds": [...] }` builds a workout from exercises
+already trained. For each id in request order, `SetRepository.copyLastSessions` copies the done
+sets of the exercise's last session — the one `GET /api/exercises/:id/last-session` describes —
+after the workout's current sets, keeping reps, weight and notes in logged order with `done` 0, as
+"Repeat" does, and appends the exercise to the workout's order. It answers the whole
+`WorkoutWithExercisesDto`, 200. It is all or nothing, in one transaction, and the checks run in
+this order: `exerciseIds` must be a non-empty list of at most 200 distinct JSON numbers that are
+safe integers of at least 1 (`requiredIds`, which unlike `requiredInt` refuses numeric strings),
+else a 400, even on an unknown workout; then an unknown workout is a 404 and a done one the done
+lock's 409; then, id by id, an unknown exercise is a 400, and an exercise already in the workout
+or one without done sets is a 409 that names it. A failing id rolls back the ids before it.
 
 A set also carries `done`, an integer held to 0 or 1 that the API turns into a boolean: a set not
 done is a plan — what "Repeat" copies into a new session — and a done set is history. New sets,
@@ -238,6 +252,16 @@ its page, describe the whole session, planned sets included; the exercise delete
 while any set uses the exercise, done or not; and the summary's `workoutCount`,
 `workoutsLast30Days` and `lastPerformedOn` count workouts, so a freshly repeated session counts on
 its date before anything in it is checked.
+
+`GET /api/exercises/:id/last-session` is the add-set form's hint: `{ "session": null }`, or
+`{ "session": { workoutId, performedOn, sets } }` with the done sets of the latest workout holding
+at least one done set of the exercise — latest by `performed_on, id` — in logged order. It counts
+done sets only, like the aggregates above. `?exceptWorkout=<id>` leaves that workout out: the form
+asks with the open workout, which becomes the latest session as soon as one of its sets of the
+exercise is checked, so the hint would otherwise describe the session to itself. An unknown
+exercise is a 404; the workout id is not checked, since skipping one that does not exist skips
+nothing. The query is `LAST_SESSION_WORKOUT_SQL` in `workouts/ports/sql.ts`, shared with the copy
+below.
 
 An exercise's muscle group is one of seven — `Chest`, `Back`, `Shoulders`, `Arms`, `Legs`, `Core`,
 `Full body` — or none. A `CHECK` on `exercises.muscle_group` refuses anything else, and `POST` and

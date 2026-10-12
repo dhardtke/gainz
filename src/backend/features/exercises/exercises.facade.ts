@@ -1,11 +1,11 @@
 import type { CreateExerciseDto, EditExerciseDto } from '../../../shared/dto/exercise.ts';
-import type { ExerciseId, Iso8601Date } from '../../../shared/flavors.ts';
+import type { ExerciseId, Iso8601Date, WorkoutId } from '../../../shared/flavors.ts';
 import type { MuscleGroup } from '../../../shared/muscle-group.ts';
 import type { DB } from '../../db/db.ts';
 import { optionalOneOf, optionalString, requiredString } from '../../shared/validate.ts';
 import { translateDtoToCreateExercise, translateDtoToEditExercise } from './internal/exercise.translator.ts';
 import { ExerciseRepository } from './internal/exercise.repository.ts';
-import type { Exercise, ExerciseWithStats, SessionPoint } from './ports/exercise.ts';
+import type { Exercise, ExerciseWithStats, LastSession, SessionPoint } from './ports/exercise.ts';
 import type { LiftSet } from '../workouts/ports/set.ts';
 
 export const MUSCLE_GROUPS = ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core', 'Full body'] as const satisfies readonly MuscleGroup[];
@@ -54,6 +54,10 @@ export class ExerciseFacade {
 
   bestSet(id: ExerciseId): (LiftSet & { performed_on: Iso8601Date }) | null {
     return this.#exercises.bestSet(id);
+  }
+
+  lastSession(id: ExerciseId, exceptWorkout: WorkoutId | null): LastSession | null {
+    return this.#exercises.lastSession(id, exceptWorkout);
   }
 
   #validateCreate(dto: CreateExerciseDto): CreateExerciseDto {

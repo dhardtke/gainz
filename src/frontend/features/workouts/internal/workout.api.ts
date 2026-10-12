@@ -1,5 +1,6 @@
 import type { CreateSetDto, LiftSetDto } from '../../../../shared/dto/set.ts';
 import type {
+  AddWorkoutExercisesDto,
   CreateWorkoutDto,
   EditWorkoutDto,
   MoveWorkoutExerciseDto,
@@ -34,6 +35,10 @@ export class WorkoutApi {
 
   createSet(workoutId: WorkoutId, dto: CreateSetDto): Promise<LiftSetDto> {
     return post(`/workouts/${workoutId}/sets`, dto);
+  }
+
+  addExercises(id: WorkoutId, dto: AddWorkoutExercisesDto): Promise<WorkoutWithExercisesDto> {
+    return post(`/workouts/${id}/exercises`, dto);
   }
 
   moveExercise(id: WorkoutId, exerciseId: ExerciseId, dto: MoveWorkoutExerciseDto): Promise<WorkoutWithExercisesDto> {

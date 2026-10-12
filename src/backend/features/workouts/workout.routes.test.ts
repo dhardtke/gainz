@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import type { ErrorDto } from '../../../shared/dto/error.ts';
 import type { ExerciseDto } from '../../../shared/dto/exercise.ts';
 import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import type { WorkoutDto, WorkoutPageDto, WorkoutWithExercisesDto, WorkoutWithStatsDto } from '../../../shared/dto/workout.ts';
@@ -377,5 +378,119 @@ describe('move exercise', () => {
     await createSet(post, workoutId, { exerciseId: at(ids, 1), reps: 5, weight: 60 });
 
     expect(await order(await api(`/api/workouts/${workoutId}`))).toEqual([at(ids, 0), at(ids, 2), at(ids, 1)]);
+  });
+});
+
+describe('add exercises from their last sessions', () => {
+  async function logDone(workoutId: WorkoutId, exerciseId: number, reps: number, weight: number, notes: string | null = null): Promise<LiftSetDto> {
+    return markDone(patch, (await createSet(post, workoutId, { exerciseId, reps, weight, notes })).id);
+  }
+
+  const shape = (workout: WorkoutWithExercisesDto): unknown =>
+    workout.exercises.map((group) => ({
+      exercise: group.exerciseName,
+      position: group.position,
+      sets: group.sets.map(({ reps, weight, notes, done, position }) => ({ reps, weight, notes, done, position })),
+    }));
+
+  async function current(workoutId: WorkoutId): Promise<unknown> {
+    return shape(await body<WorkoutWithExercisesDto>(await api(`/api/workouts/${workoutId}`)));
+  }
+
+  // Bench is done in an older and a newer session, squat in the older one; the target holds a row.
+  async function seed(): Promise<{ bench: ExerciseDto; squat: ExerciseDto; row: ExerciseDto; target: WorkoutWithExercisesDto }> {
+    const bench = await createExercise(post, 'Bench Press');
+    const squat = await createExercise(post, 'Back Squat');
+    const row = await createExercise(post, 'Barbell Row');
+    const older = await createWorkout(post, '2026-01-05');
+    await logDone(older.id, bench.id, 8, 60);
+    await logDone(older.id, squat.id, 5, 100, 'belt');
+    await createSet(post, older.id, { exerciseId: squat.id, reps: 5, weight: 105 });
+    await logDone(older.id, squat.id, 3, 110);
+    const newer = await createWorkout(post, '2026-01-12');
+    await logDone(newer.id, bench.id, 5, 80);
+    await logDone(newer.id, bench.id, 5, 82.5, 'paused');
+    const target = await createWorkout(post, '2026-01-19');
+    await createSet(post, target.id, { exerciseId: row.id, reps: 10, weight: 50 });
+    return { bench, squat, row, target };
+  }
+
+  test("copies each exercise's last done sets as not done, in request order, after the current sets", async () => {
+    const { bench, squat, target } = await seed();
+    const res = await post(`/api/workouts/${target.id}/exercises`, { exerciseIds: [squat.id, bench.id] });
+    expect(res.status).toBe(200);
+    const workout = await body<WorkoutWithExercisesDto>(res);
+    expect(workout.id).toBe(target.id);
+    expect(shape(workout)).toEqual([
+      { exercise: 'Barbell Row', position: 1, sets: [{ reps: 10, weight: 50, notes: null, done: false, position: 1 }] },
+      {
+        exercise: 'Back Squat',
+        position: 2,
+        sets: [
+          { reps: 5, weight: 100, notes: 'belt', done: false, position: 2 },
+          { reps: 3, weight: 110, notes: null, done: false, position: 3 },
+        ],
+      },
+      {
+        exercise: 'Bench Press',
+        position: 3,
+        sets: [
+          { reps: 5, weight: 80, notes: null, done: false, position: 4 },
+          { reps: 5, weight: 82.5, notes: 'paused', done: false, position: 5 },
+        ],
+      },
+    ]);
+  });
+
+  test.each([
+    ['a missing list', {}],
+    ['an empty list', { exerciseIds: [] }],
+    ['a non-array', { exerciseIds: 1 }],
+    ['a numeric string', { exerciseIds: ['1'] }],
+    ['a repeated id', { exerciseIds: [1, 1] }],
+  ])('refuses %s with a 400', async (_name, payload) => {
+    const { target } = await seed();
+    const before = await current(target.id);
+    expect((await post(`/api/workouts/${target.id}/exercises`, payload)).status).toBe(400);
+    expect(await current(target.id)).toEqual(before);
+  });
+
+  test('refuses an unknown exercise with a 400 and an unknown workout with a 404', async () => {
+    const { bench, target } = await seed();
+    const before = await current(target.id);
+    expect((await post(`/api/workouts/${target.id}/exercises`, { exerciseIds: [bench.id, 9999] })).status).toBe(400);
+    expect(await current(target.id)).toEqual(before);
+    expect((await post('/api/workouts/9999/exercises', { exerciseIds: [bench.id] })).status).toBe(404);
+  });
+
+  test('refuses a done workout with a 409', async () => {
+    const { bench, target } = await seed();
+    await markDone(patch, at(sets(await body<WorkoutWithExercisesDto>(await api(`/api/workouts/${target.id}`))), 0).id);
+    await markWorkoutDone(patch, target.id);
+    const before = await current(target.id);
+    const res = await post(`/api/workouts/${target.id}/exercises`, { exerciseIds: [bench.id] });
+    expect(res.status).toBe(409);
+    expect((await body<ErrorDto>(res)).error).toBe('Workout is done; reopen it before changing its sets');
+    expect(await current(target.id)).toEqual(before);
+  });
+
+  test.each([
+    ['already in the workout', 'row', '"Barbell Row" is already in this workout'],
+    ['without done sets', 'fresh', '"Deadlift" has no done sets to copy'],
+  ] as const)('refuses an exercise %s with a 409 naming it, even as the second id', async (_name, which, error) => {
+    const { bench, row, target } = await seed();
+    const fresh = await createExercise(post, 'Deadlift');
+    const before = await current(target.id);
+    const res = await post(`/api/workouts/${target.id}/exercises`, { exerciseIds: [bench.id, which === 'row' ? row.id : fresh.id] });
+    expect(res.status).toBe(409);
+    expect((await body<ErrorDto>(res)).error).toBe(error);
+    expect(await current(target.id)).toEqual(before);
+  });
+
+  test('checks the body, then the workout, then the ids in order', async () => {
+    const { row, target } = await seed();
+    expect((await post('/api/workouts/9999/exercises', { exerciseIds: [] })).status).toBe(400);
+    expect((await post('/api/workouts/9999/exercises', { exerciseIds: [9999] })).status).toBe(404);
+    expect((await post(`/api/workouts/${target.id}/exercises`, { exerciseIds: [row.id, 9999] })).status).toBe(409);
   });
 });

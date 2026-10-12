@@ -25,5 +25,9 @@ export function exerciseRoutes(db: DB): RouteTable {
     '/api/exercises/:id/progress': {
       GET: (req) => controller.progress(req),
     },
+
+    '/api/exercises/:id/last-session': {
+      GET: (req) => controller.lastSession(req),
+    },
   };
 }

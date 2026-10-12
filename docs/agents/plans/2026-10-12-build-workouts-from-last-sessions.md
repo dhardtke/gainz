@@ -230,7 +230,7 @@ it for an exercise not yet in the workout.
 
 **Tasks**:
 
-- [ ] `src/backend/features/workouts/ports/sql.ts`: add the shared fragment (the file's header
+- [x] `src/backend/features/workouts/ports/sql.ts`: add the shared fragment (the file's header
       comment already says the exercises feature queries sets too)
       ```ts
       /** Binds the exercise id, then a workout id to skip (or null). */
@@ -238,23 +238,23 @@ it for an exercise not yet in the workout.
          WHERE s.exercise_id = ? AND s.done = 1 AND w.id IS NOT ?
          ORDER BY w.performed_on DESC, w.id DESC LIMIT 1`;
       ```
-- [ ] `src/backend/features/exercises/ports/exercise.ts`: add `LastSession { workout_id: WorkoutId; performed_on: Iso8601Date; sets: LiftSet[] }`
-- [ ] `ExerciseRepository.lastSession(id, exceptWorkout: WorkoutId | null): LastSession | null` —
+- [x] `src/backend/features/exercises/ports/exercise.ts`: add `LastSession { workout_id: WorkoutId; performed_on: Iso8601Date; sets: LiftSet[] }`
+- [x] `ExerciseRepository.lastSession(id, exceptWorkout: WorkoutId | null): LastSession | null` —
       `require(id)`, find the workout with `LAST_SESSION_WORKOUT_SQL`, return `null` without one,
       otherwise its `performed_on` and its done sets of the exercise (`SET_COLUMNS`, `ORDER BY s.position, s.id`)
-- [ ] `ExerciseFacade.lastSession(id, exceptWorkout)` delegating
-- [ ] `src/shared/dto/exercise.ts`: `LastSessionDto`, `ExerciseLastSessionDto`
-- [ ] `exercise.translator.ts`: a local set mapper (`LiftSet` → `LiftSetDto`, never importing
+- [x] `ExerciseFacade.lastSession(id, exceptWorkout)` delegating
+- [x] `src/shared/dto/exercise.ts`: `LastSessionDto`, `ExerciseLastSessionDto`
+- [x] `exercise.translator.ts`: a local set mapper (`LiftSet` → `LiftSetDto`, never importing
       `workouts/internal/`), reused by `translateToBestSetDto`, and
       `translateToExerciseLastSessionDto(session | null)`
-- [ ] `ExerciseController.lastSession(req)`: `pathId` for the exercise,
+- [x] `ExerciseController.lastSession(req)`: `pathId` for the exercise,
       `optionalQueryInt(params, 'exceptWorkout', { min: 1, max: Number.MAX_SAFE_INTEGER })` — the
       helper's default `max` is 1000
-- [ ] `exercise.routes.ts`: `'/api/exercises/:id/last-session': { GET }`
-- [ ] Frontend `ExerciseApi.lastSession(id, exceptWorkout?)` and `ExerciseFacade.lastSession`
-- [ ] `gz-workout-detail.component.ts`: type `WorkoutDetailData.exercises` and `#exercises` as
+- [x] `exercise.routes.ts`: `'/api/exercises/:id/last-session': { GET }`
+- [x] Frontend `ExerciseApi.lastSession(id, exceptWorkout?)` and `ExerciseFacade.lastSession`
+- [x] `gz-workout-detail.component.ts`: type `WorkoutDetailData.exercises` and `#exercises` as
       `ExerciseWithStatsDto[]`, and pass them on as before
-- [ ] `gz-add-set-form.component.ts`:
+- [x] `gz-add-set-form.component.ts`:
   - `exercises` setter typed `ExerciseWithStatsDto[]`
   - two caches: `#lastSessions = new Map<ExerciseId, ExerciseLastSessionDto>()` for resolved
     lookups and `#pending = new Map<ExerciseId, Promise<ExerciseLastSessionDto>>()`; a rejected
@@ -272,31 +272,31 @@ it for an exercise not yet in the workout.
     weight come from `session.sets[0]` on a selection change, and on first render when the workout
     has no sets yet (the reps and weight fields are then empty); never after the re-render that
     follows a logged set
-- [ ] `gz-add-set-form.component.css`: spacing for `.last-session` only, no colors or font sizes
-- [ ] `docs/backend.md`: the last-session endpoint beside the history aggregates, including that it
+- [x] `gz-add-set-form.component.css`: spacing for `.last-session` only, no colors or font sizes
+- [x] `docs/backend.md`: the last-session endpoint beside the history aggregates, including that it
       counts done sets only and what `exceptWorkout` is for
-- [ ] `docs/frontend.md`: the form's hint and prefill sources, in the paragraph on `gz-add-set-form`
+- [x] `docs/frontend.md`: the form's hint and prefill sources, in the paragraph on `gz-add-set-form`
 
 **Automated Verification**:
 
-- [ ] `exercise.routes.test.ts`: `last-session` answers the latest session's done sets in logged
+- [x] `exercise.routes.test.ts`: `last-session` answers the latest session's done sets in logged
       order; ignores skipped sets; picks the higher id between two sessions on the same date;
       `exceptWorkout` skips that workout and falls back to the one before; an `exceptWorkout` above
       1000 is accepted; `{ session: null }` without done sets; 404 for an unknown exercise; 400 for
       a non-numeric `exceptWorkout`
-- [ ] `exercise.routes.test.ts`: the progress endpoint's `bestSet` is unchanged after
+- [x] `exercise.routes.test.ts`: the progress endpoint's `bestSet` is unchanged after
       `translateToBestSetDto` moves to the local mapper
-- [ ] `exercises.facade.test.ts` (frontend): `lastSession` calls `/exercises/:id/last-session?exceptWorkout=:id`
-- [ ] `gz-add-set-form.component.test.ts` (expected dates built with `formatShortDate`, which is
+- [x] `exercises.facade.test.ts` (frontend): `lastSession` calls `/exercises/:id/last-session?exceptWorkout=:id`
+- [x] `gz-add-set-form.component.test.ts` (expected dates built with `formatShortDate`, which is
       locale-dependent): the hint renders `Last · …: 5×100 · … · best 110 kg`; no "best" part for a
       `bestWeight` of 0 or null; `No history yet` without a session; selecting an exercise not in the
       workout prefills from `sets[0]`; an empty workout prefills on first render; one already in it
       still prefills from this workout; the hint survives the re-render after a logged set; a late
       lookup for a deselected exercise does not overwrite the hint
-- [ ] `bun test --parallel`
-- [ ] `bun run typecheck`
-- [ ] `bun run lint`
-- [ ] `bun run fmt:check`
+- [x] `bun test --parallel`
+- [x] `bun run typecheck`
+- [x] `bun run lint`
+- [x] `bun run fmt:check`
 
 ### Phase 2: Copy an exercise's last session
 
@@ -306,13 +306,13 @@ Add the batch copy endpoint and the form's "Add last session's N sets" button.
 
 **Tasks**:
 
-- [ ] `src/backend/shared/validate.ts`: `requiredIds(dto, field, { max = 200 })` — 400 unless a
+- [x] `src/backend/shared/validate.ts`: `requiredIds(dto, field, { max = 200 })` — 400 unless a
       non-empty array, at most `max` long, of distinct JSON numbers that are safe integers ≥ 1
       (unlike `requiredInt`, numeric strings are refused); 200 matches the list endpoints' cap and
       bounds the picker
-- [ ] `src/shared/dto/workout.ts`: `AddWorkoutExercisesDto { exerciseIds: ExerciseId[] }`
-- [ ] `workout.translator.ts`: `translateToAddWorkoutExercisesDto(body)`
-- [ ] `SetRepository.copyLastSessions(workoutId, exerciseIds)` in one `db.transaction()`:
+- [x] `src/shared/dto/workout.ts`: `AddWorkoutExercisesDto { exerciseIds: ExerciseId[] }`
+- [x] `workout.translator.ts`: `translateToAddWorkoutExercisesDto(body)`
+- [x] `SetRepository.copyLastSessions(workoutId, exerciseIds)` in one `db.transaction()`:
       `#requireOpen(workoutId)` (404, then 409), then per id in order —
   - look up the exercise's name; missing → `badRequest('"exerciseIds" must name existing exercises')`
   - a `workout_exercises` row for it → `conflict('"<name>" is already in this workout')`
@@ -325,14 +325,14 @@ Add the batch copy endpoint and the form's "Add last session's N sets" button.
       FROM sets WHERE workout_id = ?2 AND exercise_id = ?3 AND done = 1
     ```
   - `this.#workoutExercises.append(workoutId, exerciseId)`
-- [ ] `SetFacade.addExercises(workoutId, dto)`: validate with `requiredIds(dto, 'exerciseIds')`
+- [x] `SetFacade.addExercises(workoutId, dto)`: validate with `requiredIds(dto, 'exerciseIds')`
       before touching the repository, so a malformed body is a 400 even on an unknown workout; an
       unknown exercise is only found per id, after the workout checks
-- [ ] `WorkoutController.addExercises(req)`: answer the `WorkoutWithExercisesDto`, 200, like `moveExercise`
-- [ ] `workout.routes.ts`: `'/api/workouts/:id/exercises': { POST }`
-- [ ] Frontend `WorkoutApi.addExercises(id, dto)` and `SetFacade.addExercises(workoutId, exerciseIds)`
+- [x] `WorkoutController.addExercises(req)`: answer the `WorkoutWithExercisesDto`, 200, like `moveExercise`
+- [x] `workout.routes.ts`: `'/api/workouts/:id/exercises': { POST }`
+- [x] Frontend `WorkoutApi.addExercises(id, dto)` and `SetFacade.addExercises(workoutId, exerciseIds)`
       posting through `WorkoutApi`, as `SetFacade.create` does
-- [ ] `gz-add-set-form.component.ts`: when the selected exercise has no sets in this workout and its
+- [x] `gz-add-set-form.component.ts`: when the selected exercise has no sets in this workout and its
       session is found, render below the `<form>` (outside the submit flow), after the hint,
       `<button type="button" class="outline" data-action="add-last-session" data-testid="add-last-session">Add last session's ${plural(n, 'set')}</button>`
       (Oat's outline variant); it is rendered or filled in place under the same rules as the hint.
@@ -340,32 +340,32 @@ Add the batch copy endpoint and the form's "Add last session's N sets" button.
       `[exerciseId]`, and emits `set-logged` with `{ exerciseId }`, or toasts the error. A
       `#adding` flag, read by `template()`, keeps the button disabled across re-renders and ignores
       clicks while the request runs
-- [ ] `docs/backend.md`: the endpoint after the move paragraph — what is copied, the order checks,
+- [x] `docs/backend.md`: the endpoint after the move paragraph — what is copied, the order checks,
       the status codes, and that it is a fourth way `workout_exercises` rows appear (update the
       paragraph listing them)
-- [ ] `docs/frontend.md`: the button in the `gz-add-set-form` paragraph
+- [x] `docs/frontend.md`: the button in the `gz-add-set-form` paragraph
 
 **Automated Verification**:
 
-- [ ] `workout.routes.test.ts`: copies reps, weight and notes of the last session's done sets, in
+- [x] `workout.routes.test.ts`: copies reps, weight and notes of the last session's done sets, in
       logged order, as not done, positioned after existing sets; several ids append exercises in
       request order; skipped sets are not copied; 400 for a missing, empty, non-array, numeric-string
       or duplicate-holding `exerciseIds` and for an unknown exercise; 404 for an unknown workout;
       409 for a done workout, an exercise already in it and one without done sets — each leaving
       the workout's sets and order unchanged (including when only the second id fails)
-- [ ] `workout.routes.test.ts`, precedence: a malformed body on an unknown workout is a 400; an
+- [x] `workout.routes.test.ts`, precedence: a malformed body on an unknown workout is a 400; an
       unknown exercise on an unknown workout is a 404; `[alreadyInWorkout, unknown]` is the 409
-- [ ] `src/backend/shared/validate.test.ts`: `requiredIds` accepts distinct positive integers and
+- [x] `src/backend/shared/validate.test.ts`: `requiredIds` accepts distinct positive integers and
       refuses an empty array, a non-array, more than `max`, duplicates, 0, fractions, unsafe
       integers and numeric strings
-- [ ] `workouts.facade.test.ts` (frontend): `setFacade.addExercises` posts `{ exerciseIds }` to `/workouts/:id/exercises`
-- [ ] `gz-add-set-form.component.test.ts`: the button shows for an exercise not in the workout with
+- [x] `workouts.facade.test.ts` (frontend): `setFacade.addExercises` posts `{ exerciseIds }` to `/workouts/:id/exercises`
+- [x] `gz-add-set-form.component.test.ts`: the button shows for an exercise not in the workout with
       a session, not for one in it or one without history; clicking it posts the selected id and
       emits `set-logged`; a second click while the request runs posts nothing
-- [ ] `bun test --parallel`
-- [ ] `bun run typecheck`
-- [ ] `bun run lint`
-- [ ] `bun run fmt:check`
+- [x] `bun test --parallel`
+- [x] `bun run typecheck`
+- [x] `bun run lint`
+- [x] `bun run fmt:check`
 
 ### Phase 3: Start-session picker
 
@@ -375,50 +375,61 @@ Let "Start session" build a workout from several exercises' last sessions.
 
 **Tasks**:
 
-- [ ] `internal/gz-start-session-dialog.component.ts` (+ `.css`), modeled on `gz-confirm-dialog`:
+- [x] `internal/gz-start-session-dialog.component.ts` (+ `.css`), modeled on `gz-confirm-dialog`:
   - `exercises: ExerciseWithStatsDto[]` set before it is appended
   - one checkbox per exercise, `<gz-muscle-group-icon>`, the name, and `last ${formatShortDate(lastPerformedOn)}`
   - records tick order in `#picked: ExerciseId[]` from `change` events (unticking removes)
   - footer: outline Cancel, outline "Start empty", primary "Start with N" (disabled at 0)
   - closes on Escape and backdrop like the confirm dialog, and dispatches a non-bubbling
     `start-session-closed` event with `null` (cancel), `[]` (start empty) or the picked ids
-- [ ] `internal/start-session.ts`: `pickExercises(exercises): Promise<ExerciseId[] | null>`, as
+- [x] `internal/start-session.ts`: `pickExercises(exercises): Promise<ExerciseId[] | null>`, as
       `confirmAction()` does for its dialog
-- [ ] `gz-workout-list.component.ts`, `start-session` action:
+- [x] `gz-workout-list.component.ts`, `start-session` action:
   - `exerciseFacade.list()`, keep those with `lastPerformedOn !== null`, sort by `lastPerformedOn`
     descending, then name
   - none → create as today; otherwise `pickExercises`; `null` → stop
   - `workoutFacade.create({ performedOn: todayIso() })`, then, for a non-empty pick,
     `setFacade.addExercises(id, picked)`; a failed copy toasts and still navigates to the new workout
   - the button disables while this runs, so a double click does not start two sessions
-- [ ] `docs/frontend.md`: the picker, next to the paragraph on the workout list and Repeat
+- [x] `docs/frontend.md`: the picker, next to the paragraph on the workout list and Repeat
 
 **Automated Verification**:
 
-- [ ] `gz-start-session-dialog.component.test.ts`: lists the given exercises; "Start with N" counts
+- [x] `gz-start-session-dialog.component.test.ts`: lists the given exercises; "Start with N" counts
       ticks and is disabled at 0; resolves the ids in tick order; unticking removes one; "Start
       empty" resolves `[]`; Cancel and Escape resolve `null`
-- [ ] `gz-workout-list.component.test.ts`: with history, clicking Start session opens the dialog
+- [x] `gz-workout-list.component.test.ts`: with history, clicking Start session opens the dialog
       with only exercises that have history, newest first; picking creates the workout, posts the
       ids and navigates; Cancel creates nothing; without history it creates and navigates directly;
       a failed copy still navigates
-- [ ] `bun test --parallel`
-- [ ] `bun run typecheck`
-- [ ] `bun run lint`
-- [ ] `bun run fmt:check`
+- [x] `bun test --parallel`
+- [x] `bun run typecheck`
+- [x] `bun run lint`
+- [x] `bun run fmt:check`
 
 **Manual Verification**:
 
-- [ ] With `bun run seed` data, Start session → tick two exercises → the new workout opens with
+- [x] With `bun run seed` data, Start session → tick two exercises → the new workout opens with
       their last sessions' sets in tick order, all unchecked
-- [ ] In that workout, select an exercise not in it: the hint and prefill appear, "Add last
+- [x] In that workout, select an exercise not in it: the hint and prefill appear, "Add last
       session's N sets" adds them and opens its group; selecting an exercise already in it shows
       the hint without the button
-- [ ] The dialog and the hint read well on a phone-width screen and in both themes
+- [x] The dialog and the hint read well on a phone-width screen and in both themes
 
 ## Implementation Notes
 
 During implementation, document user feedback, problems, and decisions here.
+
+- Phase 1: `gz-workout-detail` renders through `innerHTML`, so every reload creates a new
+  `gz-add-set-form` and a cache held by the form would be lost after each logged set. The two maps
+  live in a `LastSessionCache` (exported by the form's module) that the view owns for the page's
+  life and hands to the form as `lastSessions`; the form makes its own when none is given.
+- Phase 1: `LAST_SESSION_WORKOUT_SQL` selects `w.performed_on` beside `w.id`, so the lookup needs
+  no second query for the date.
+- Phase 1: the detail test "loads the exercises once" matched every `/api/exercises*` URL, so it
+  now matches `/api/exercises` exactly and also checks the last session is looked up once.
+- Phase 3: the existing workout-list test "starts a session dated today" became the no-history
+  case, since Start session now fetches the exercise list first.
 
 ## References
 

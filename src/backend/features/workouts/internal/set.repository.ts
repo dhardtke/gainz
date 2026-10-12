@@ -5,7 +5,7 @@ import type { WorkoutRepository } from './workout.repository.ts';
 import type { WorkoutExerciseRepository } from './workout-exercise.repository.ts';
 import type { ExerciseId, LiftSetId, WorkoutId } from '../../../../shared/flavors.ts';
 import type { LiftSet } from '../ports/set.ts';
-import { SET_COLUMNS } from '../ports/sql.ts';
+import { LAST_SESSION_WORKOUT_SQL, SET_COLUMNS } from '../ports/sql.ts';
 
 export interface CreateSet {
   exercise_id: ExerciseId;
@@ -88,6 +88,40 @@ export class SetRepository {
           throw badRequest('"exerciseId" must name an existing exercise');
         }
         throw err;
+      }
+    })();
+  }
+
+  /** Copies each exercise's last session, done sets only and as not done; one failing id rolls back them all. */
+  copyLastSessions(workoutId: WorkoutId, exerciseIds: ExerciseId[]): void {
+    this.#db.transaction(() => {
+      this.#requireOpen(workoutId);
+      for (const exerciseId of exerciseIds) {
+        const exercise = this.#db.query<{ name: string }, [ExerciseId]>('SELECT name FROM exercises WHERE id = ?').get(exerciseId);
+        if (!exercise) {
+          throw badRequest('"exerciseIds" must name existing exercises');
+        }
+        if (
+          this.#db
+            .query<{ found: 1 }, [WorkoutId, ExerciseId]>('SELECT 1 AS found FROM workout_exercises WHERE workout_id = ? AND exercise_id = ?')
+            .get(workoutId, exerciseId)
+        ) {
+          throw conflict(`"${exercise.name}" is already in this workout`);
+        }
+        const source = this.#db.query<{ id: WorkoutId }, [ExerciseId, WorkoutId]>(LAST_SESSION_WORKOUT_SQL).get(exerciseId, workoutId);
+        if (!source) {
+          throw conflict(`"${exercise.name}" has no done sets to copy`);
+        }
+        const last =
+          this.#db.query<{ last: number }, [WorkoutId]>('SELECT COALESCE(MAX(position), 0) AS last FROM sets WHERE workout_id = ?').get(workoutId)?.last ?? 0;
+        this.#db
+          .query<unknown, [WorkoutId, WorkoutId, ExerciseId, number]>(
+            `INSERT INTO sets (workout_id, exercise_id, reps, weight, notes, position)
+             SELECT ?1, exercise_id, reps, weight, notes, ?4 + ROW_NUMBER() OVER (ORDER BY position, id)
+               FROM sets WHERE workout_id = ?2 AND exercise_id = ?3 AND done = 1`,
+          )
+          .run(workoutId, source.id, exerciseId, last);
+        this.#workoutExercises.append(workoutId, exerciseId);
       }
     })();
   }

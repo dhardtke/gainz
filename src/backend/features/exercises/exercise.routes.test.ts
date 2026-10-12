@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { ErrorDto } from '../../../shared/dto/error.ts';
-import type { ExerciseDto, ExercisePageDto, ExercisePositionDto, ExerciseProgressDto } from '../../../shared/dto/exercise.ts';
+import type { ExerciseDto, ExerciseLastSessionDto, ExercisePageDto, ExercisePositionDto, ExerciseProgressDto } from '../../../shared/dto/exercise.ts';
 import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import { at, body, useServer } from '../../testing.ts';
 import { createExercise } from './exercises.fixtures.ts';
@@ -263,5 +263,76 @@ describe('sets not done', () => {
       bestWeight: null,
     });
     expect((await api(`/api/exercises/${exercise.id}`, { method: 'DELETE' })).status).toBe(409);
+  });
+});
+
+describe('last session', () => {
+  const lastSession = async (exerciseId: number, query = ''): Promise<ExerciseLastSessionDto> =>
+    body<ExerciseLastSessionDto>(await api(`/api/exercises/${exerciseId}/last-session${query}`));
+
+  async function logDone(workoutId: number, exerciseId: number, reps: number, weight: number, notes: string | null = null): Promise<LiftSetDto> {
+    return markDone(patch, (await createSet(post, workoutId, { exerciseId, reps, weight, notes })).id);
+  }
+
+  test("answers the latest session's done sets in logged order, ignoring skipped ones", async () => {
+    const exercise = await createExercise(post);
+    const older = await createWorkout(post, '2026-01-05');
+    await logDone(older.id, exercise.id, 8, 50);
+    const latest = await createWorkout(post, '2026-01-12');
+    await logDone(latest.id, exercise.id, 5, 100, 'easy');
+    await createSet(post, latest.id, { exerciseId: exercise.id, reps: 5, weight: 102.5 });
+    await logDone(latest.id, exercise.id, 3, 105);
+
+    const { session } = await lastSession(exercise.id);
+    expect(session).toMatchObject({ workoutId: latest.id, performedOn: '2026-01-12' });
+    expect(session?.sets.map(({ reps, weight, notes, done }) => ({ reps, weight, notes, done }))).toEqual([
+      { reps: 5, weight: 100, notes: 'easy', done: true },
+      { reps: 3, weight: 105, notes: null, done: true },
+    ]);
+  });
+
+  test('picks the higher id between two sessions on the same date', async () => {
+    const exercise = await createExercise(post);
+    const first = await createWorkout(post, '2026-01-05');
+    await logDone(first.id, exercise.id, 5, 60);
+    const second = await createWorkout(post, '2026-01-05');
+    await logDone(second.id, exercise.id, 5, 70);
+
+    expect((await lastSession(exercise.id)).session?.workoutId).toBe(second.id);
+  });
+
+  test('skips the excepted workout and falls back to the one before', async () => {
+    const exercise = await createExercise(post);
+    const older = await createWorkout(post, '2026-01-05');
+    await logDone(older.id, exercise.id, 5, 60);
+    const current = await createWorkout(post, '2026-01-12');
+    await logDone(current.id, exercise.id, 5, 70);
+
+    expect((await lastSession(exercise.id, `?exceptWorkout=${current.id}`)).session?.workoutId).toBe(older.id);
+    expect((await lastSession(exercise.id, `?exceptWorkout=${older.id}`)).session?.workoutId).toBe(current.id);
+  });
+
+  test('accepts an excepted workout id above 1000', async () => {
+    const exercise = await createExercise(post);
+    const workout = await createWorkout(post);
+    await logDone(workout.id, exercise.id, 5, 60);
+
+    const res = await api(`/api/exercises/${exercise.id}/last-session?exceptWorkout=123456`);
+    expect(res.status).toBe(200);
+    expect((await body<ExerciseLastSessionDto>(res)).session?.workoutId).toBe(workout.id);
+  });
+
+  test('is null without done sets', async () => {
+    const exercise = await createExercise(post);
+    const workout = await createWorkout(post);
+    await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
+
+    expect(await lastSession(exercise.id)).toEqual({ session: null });
+  });
+
+  test('is 404 for an unknown exercise and 400 for a malformed excepted workout', async () => {
+    const exercise = await createExercise(post);
+    expect((await api('/api/exercises/9999/last-session')).status).toBe(404);
+    expect((await api(`/api/exercises/${exercise.id}/last-session?exceptWorkout=abc`)).status).toBe(400);
   });
 });

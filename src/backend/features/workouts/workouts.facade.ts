@@ -1,8 +1,8 @@
 import type { CreateSetDto, EditSetDto } from '../../../shared/dto/set.ts';
-import type { CreateWorkoutDto, EditWorkoutDto, MoveWorkoutExerciseDto } from '../../../shared/dto/workout.ts';
+import type { AddWorkoutExercisesDto, CreateWorkoutDto, EditWorkoutDto, MoveWorkoutExerciseDto } from '../../../shared/dto/workout.ts';
 import type { ExerciseId, LiftSetId, WorkoutId } from '../../../shared/flavors.ts';
 import type { DB } from '../../db/db.ts';
-import { optionalString, requiredBoolean, requiredDate, requiredInt, requiredNumber, requiredOneOf } from '../../shared/validate.ts';
+import { optionalString, requiredBoolean, requiredDate, requiredIds, requiredInt, requiredNumber, requiredOneOf } from '../../shared/validate.ts';
 import { SetRepository } from './internal/set.repository.ts';
 import { translateDtoToCreateSet, translateDtoToEditSet } from './internal/set.translator.ts';
 import { WorkoutRepository } from './internal/workout.repository.ts';
@@ -106,6 +106,11 @@ export class SetFacade {
 
   create(workoutId: WorkoutId, dto: CreateSetDto): LiftSet {
     return this.#sets.create(workoutId, translateDtoToCreateSet(this.#validateCreate(dto)));
+  }
+
+  /** Validates first, so a malformed body on an unknown workout is a 400. */
+  addExercises(workoutId: WorkoutId, dto: AddWorkoutExercisesDto): void {
+    this.#sets.copyLastSessions(workoutId, requiredIds(dto, 'exerciseIds'));
   }
 
   update(id: LiftSetId, dto: EditSetDto): LiftSet {

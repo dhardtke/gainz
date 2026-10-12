@@ -1,5 +1,6 @@
 import type { ExerciseId, Iso8601Date, Iso8601DateTime, WorkoutId } from '../../../../shared/flavors.ts';
 import type { MuscleGroup } from '../../../../shared/muscle-group.ts';
+import type { LiftSet } from '../../workouts/ports/set.ts';
 
 export interface Exercise {
   id: ExerciseId;
@@ -24,4 +25,10 @@ export interface SessionPoint {
   total_volume: number;
   top_weight: number;
   est_one_rep_max: number;
+}
+
+export interface LastSession {
+  workout_id: WorkoutId;
+  performed_on: Iso8601Date;
+  sets: LiftSet[];
 }

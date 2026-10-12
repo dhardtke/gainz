@@ -23,6 +23,10 @@ export function workoutRoutes(db: DB): RouteTable {
       POST: (req) => controller.addSet(req),
     },
 
+    '/api/workouts/:id/exercises': {
+      POST: (req) => controller.addExercises(req),
+    },
+
     '/api/workouts/:id/exercises/:exerciseId/move': {
       POST: (req) => controller.moveExercise(req),
     },

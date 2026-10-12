@@ -2,17 +2,18 @@ import type {
   CreateExerciseDto,
   EditExerciseDto,
   ExerciseDto,
+  ExerciseLastSessionDto,
   ExercisePageDto,
   ExercisePositionDto,
   ExerciseProgressDto,
   ExerciseWithStatsDto,
   SessionPointDto,
 } from '../../../../shared/dto/exercise.ts';
-import type { BestSetDto } from '../../../../shared/dto/set.ts';
+import type { BestSetDto, LiftSetDto } from '../../../../shared/dto/set.ts';
 import type { MuscleGroup } from '../../../../shared/muscle-group.ts';
 import type { Iso8601Date } from '../../../../shared/flavors.ts';
 import type { LiftSet } from '../../workouts/ports/set.ts';
-import type { Exercise, ExerciseWithStats, SessionPoint } from '../ports/exercise.ts';
+import type { Exercise, ExerciseWithStats, LastSession, SessionPoint } from '../ports/exercise.ts';
 import type { CreateExercise, EditExercise } from './exercise.repository.ts';
 
 export function translateToCreateExerciseDto(body: Record<string, unknown>): CreateExerciseDto {
@@ -98,7 +99,7 @@ function translateToSessionPointDto(row: SessionPoint): SessionPointDto {
 }
 
 // Named field by field: spreading the row would ship its snake_case columns.
-function translateToBestSetDto(row: LiftSet & { performed_on: Iso8601Date }): BestSetDto {
+function translateToSetDto(row: LiftSet): LiftSetDto {
   return {
     id: row.id,
     workoutId: row.workout_id,
@@ -110,8 +111,11 @@ function translateToBestSetDto(row: LiftSet & { performed_on: Iso8601Date }): Be
     position: row.position,
     done: row.done === 1,
     createdAt: row.created_at,
-    performedOn: row.performed_on,
   };
+}
+
+function translateToBestSetDto(row: LiftSet & { performed_on: Iso8601Date }): BestSetDto {
+  return { ...translateToSetDto(row), performedOn: row.performed_on };
 }
 
 export function translateToExerciseProgressDto(
@@ -123,5 +127,11 @@ export function translateToExerciseProgressDto(
     exercise: translateToExerciseDto(exercise),
     sessions: sessions.map(translateToSessionPointDto),
     bestSet: bestSet === null ? null : translateToBestSetDto(bestSet),
+  };
+}
+
+export function translateToExerciseLastSessionDto(session: LastSession | null): ExerciseLastSessionDto {
+  return {
+    session: session === null ? null : { workoutId: session.workout_id, performedOn: session.performed_on, sets: session.sets.map(translateToSetDto) },
   };
 }

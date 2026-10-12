@@ -1,10 +1,10 @@
 import type { DB } from '../../../db/db.ts';
 import { conflict, notFound } from '../../../http/errors.ts';
 import { buildUpdate, isUniqueViolation } from '../../../db/sql.ts';
-import { EST_1RM_SQL, SET_COLUMNS } from '../../workouts/ports/sql.ts';
-import type { ExerciseId, Iso8601Date } from '../../../../shared/flavors.ts';
+import { EST_1RM_SQL, LAST_SESSION_WORKOUT_SQL, SET_COLUMNS } from '../../workouts/ports/sql.ts';
+import type { ExerciseId, Iso8601Date, WorkoutId } from '../../../../shared/flavors.ts';
 import type { MuscleGroup } from '../../../../shared/muscle-group.ts';
-import type { Exercise, ExerciseWithStats, SessionPoint } from '../ports/exercise.ts';
+import type { Exercise, ExerciseWithStats, LastSession, SessionPoint } from '../ports/exercise.ts';
 import type { LiftSet } from '../../workouts/ports/set.ts';
 
 export interface CreateExercise {
@@ -165,5 +165,25 @@ export class ExerciseRepository {
           LIMIT 1`,
       )
       .get(id);
+  }
+
+  lastSession(id: ExerciseId, exceptWorkout: WorkoutId | null): LastSession | null {
+    this.require(id);
+    const workout = this.#db
+      .query<{ id: WorkoutId; performed_on: Iso8601Date }, [ExerciseId, WorkoutId | null]>(LAST_SESSION_WORKOUT_SQL)
+      .get(id, exceptWorkout);
+    if (!workout) {
+      return null;
+    }
+    const sets = this.#db
+      .query<LiftSet, [WorkoutId, ExerciseId]>(
+        `SELECT ${SET_COLUMNS}
+           FROM sets s
+           JOIN exercises e ON e.id = s.exercise_id
+          WHERE s.workout_id = ? AND s.exercise_id = ? AND s.done = 1
+          ORDER BY s.position, s.id`,
+      )
+      .all(workout.id, id);
+    return { workout_id: workout.id, performed_on: workout.performed_on, sets };
   }
 }
