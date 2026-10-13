@@ -45,6 +45,7 @@ Details live in `docs/`:
 - `docs/backend.md` — features, ports/internal, routes, repositories, migrations, the data model, tests
 - `docs/frontend.md` — features and facades, components, import boundaries, loading, theming, tests, and
   why a module's URL is its path
+- `docs/checklists.md` — what adding an endpoint, a migration, a component or a page touches
 - `docs/coding-guidelines.md` — pinning, quote style, comments, American English, commits on `main`
 - `docs/deployment.md` — the CI workflow, the self-hosted runner and its privileges, server setup
 - `docs/styling-guidelines.md` — Oat, no CSS in JavaScript, no font sizes
