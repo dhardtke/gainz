@@ -108,14 +108,14 @@ prune_bun() {
 }
 
 readonly release=$RELEASES/$sha
-previous=$(readlink -f "$CURRENT" || true)
+previous=$(readlink -e "$CURRENT" || true)
 readonly previous
 [[ $release != "$previous" ]] || {
   echo "gainz-deploy: $sha is already the current release"
   exit 0
 }
 # A rollback starts the previous release with its own Bun.
-[[ -z $previous || -x $previous/bun ]] || fail "$previous has no bun to roll back to; see docs/deployment.md"
+[[ -z $previous || -x $previous/bun ]] || fail "$previous has no bun to roll back to"
 
 rm -rf -- "$release.tmp"
 mkdir -p -- "$release.tmp"
