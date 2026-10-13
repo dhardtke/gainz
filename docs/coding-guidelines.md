@@ -13,7 +13,7 @@ the lockfile's transitive dependencies weekly. `bun` and `@types/bun` arrive in 
 as do `oxlint` and `oxlint-tsgolint`, since each pair has to move together. Nothing automerges:
 merging to `main` deploys, so every upgrade is merged by hand once its `check` job is green.
 The `bun` pull request also moves the exact `engines.bun`, and the server follows on deploy (see
-"Bun" in `docs/deployment.md`).
+"How a deploy works" in `docs/deployment.md`).
 
 TypeScript and JavaScript use single quotes, CSS double; `bun run fmt` enforces both.
 
