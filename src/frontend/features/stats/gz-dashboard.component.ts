@@ -11,6 +11,7 @@ import { workoutFacade } from '../workouts/workouts.facade.ts';
 import type { GzWorkoutCardComponent } from '../workouts/gz-workout-card.component.ts';
 import '../workouts/gz-workout-card.component.ts';
 import { statsFacade } from './stats.facade.ts';
+import { daysBefore, RECENT_DAYS } from './internal/dates.ts';
 import '../../ui/tile/gz-tile.component.ts';
 
 interface DashboardData {
@@ -22,7 +23,7 @@ export class GzDashboardComponent extends GzView<DashboardData> {
   override loadingText = 'Loading your log…';
 
   override async load(): Promise<DashboardData> {
-    const [summary, page] = await Promise.all([statsFacade.summary(), workoutFacade.list({ limit: 5 })]);
+    const [summary, page] = await Promise.all([statsFacade.summary(daysBefore(todayIso(), RECENT_DAYS)), workoutFacade.list({ limit: 5 })]);
     return { summary, workouts: page.items };
   }
 
@@ -60,7 +61,7 @@ export class GzDashboardComponent extends GzView<DashboardData> {
         <div class="tiles">
           <gz-tile label="Workouts" value="${summary.workoutCount}" hint="${plural(summary.setCount, 'set')} total"></gz-tile>
           <gz-tile label="Total volume" value="${formatVolume(summary.totalVolume)}" hint="reps × weight, all time"></gz-tile>
-          <gz-tile label="Last 30 days" value="${summary.workoutsLast30Days}" hint="${formatVolume(summary.volumeLast30Days)} moved"></gz-tile>
+          <gz-tile label="Last ${RECENT_DAYS} days" value="${summary.workoutsSince}" hint="${formatVolume(summary.volumeSince)} moved"></gz-tile>
           <gz-tile label="Exercises" value="${summary.exerciseCount}" hint="${plural(summary.totalReps, 'rep')} lifted"></gz-tile>
         </div>
 

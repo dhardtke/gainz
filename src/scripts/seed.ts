@@ -110,7 +110,7 @@ function main(): void {
     }
   })();
 
-  const summary = stats.summary();
+  const summary = stats.summary(isoDaysAgo(30));
   console.log(`Seeded ${summary.workout_count} workouts, ${summary.set_count} sets across ${summary.exercise_count} exercises.`);
   db.close();
 }

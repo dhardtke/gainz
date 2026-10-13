@@ -3,8 +3,8 @@ import type { Iso8601Date, Iso8601Month } from '../../../../shared/flavors.ts';
 import { get } from '../../../http/http.ts';
 
 export class StatsApi {
-  summary(): Promise<SummaryDto> {
-    return get('/stats/summary');
+  summary(since: Iso8601Date): Promise<SummaryDto> {
+    return get(`/stats/summary?since=${since}`);
   }
 
   calendar(month: Iso8601Month): Promise<CalendarMonthDto> {

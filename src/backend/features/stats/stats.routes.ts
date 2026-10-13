@@ -7,7 +7,7 @@ export function statsRoutes(db: DB): RouteTable {
   const controller = new StatsController(createStatsFacade(db));
   return {
     '/api/stats/summary': {
-      GET: () => controller.summary(),
+      GET: (req) => controller.summary(req),
     },
     '/api/stats/calendar': {
       GET: (req) => controller.calendar(req),

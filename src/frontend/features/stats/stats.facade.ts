@@ -9,8 +9,8 @@ export class StatsFacade {
     this.#api = api;
   }
 
-  summary(): Promise<SummaryDto> {
-    return this.#api.summary();
+  summary(since: Iso8601Date): Promise<SummaryDto> {
+    return this.#api.summary(since);
   }
 
   calendar(month: Iso8601Month): Promise<CalendarMonthDto> {

@@ -7,8 +7,8 @@ export interface Summary {
   total_volume: number;
   exercise_count: number;
   last_performed_on: Iso8601Date | null;
-  workouts_last_30_days: number;
-  volume_last_30_days: number;
+  workouts_since: number;
+  volume_since: number;
 }
 
 export interface CalendarWorkout {

@@ -260,11 +260,11 @@ workout's unchecked sets stay plans, skipped rather than performed, so they are 
 the exercise list's `setCount`, `workoutCount`, `lastPerformedOn`, `bestWeight` and `bestReps` (its
 join carries `s.done = 1` in the `ON` clause, so an exercise without done sets still lists, with
 zero counts), the progress points with their `topReps`, the best set, the stats summary's
-`setCount`, `totalReps`, `totalVolume` and `volumeLast30Days`, the training calendar's days and
+`setCount`, `totalReps`, `totalVolume` and `volumeSince`, the training calendar's days and
 progression, the recent exercises' sessions and the last session. The rest counts every set or
 workout: a workout's own totals, on its card and its page, describe the whole session, planned sets
 included; the exercise delete guard refuses while any set uses the exercise, done or not; and the
-summary's `workoutCount`, `workoutsLast30Days` and `lastPerformedOn` count workouts, so a freshly
+summary's `workoutCount`, `workoutsSince` and `lastPerformedOn` count workouts, so a freshly
 repeated session counts on its date before anything in it is checked.
 
 ## Workouts and sets
@@ -398,6 +398,11 @@ checked, since skipping one that does not exist skips nothing. The query is
 `LAST_SESSION_WORKOUT_SQL` in `workouts/ports/sql.ts`, shared with `copyLastSessions`.
 
 ## Statistics
+
+`GET /api/stats/summary?since=YYYY-MM-DD` is the dashboard's tiles: all-time totals, plus
+`workoutsSince` and `volumeSince` over the workouts dated on or after `since`. The dashboard sends
+the date `RECENT_DAYS` days before the browser's today, since the server's `date('now')` is UTC and
+would shift the window by a day for anyone far from it; a missing or malformed `since` is a 400.
 
 `GET /api/stats/calendar?month=YYYY-MM` is the Statistics page's month: `{ month, days }`, where
 `days` holds only the dates with a workout holding at least one done set, oldest first, each with

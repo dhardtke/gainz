@@ -12,8 +12,8 @@ interface SummaryTotals {
 }
 
 interface SummaryRecentActivity {
-  workouts_last_30_days: number;
-  volume_last_30_days: number;
+  workouts_since: number;
+  volume_since: number;
 }
 
 interface ExerciseSession {
@@ -92,8 +92,8 @@ export class StatsRepository {
     this.#db = db;
   }
 
-  /** Set numbers count done sets only; workout numbers count every workout. */
-  summary(): Summary {
+  /** Set numbers count done sets only; workout numbers count every workout; `*_since` only those on or after `since`. */
+  summary(since: Iso8601Date): Summary {
     const totals = this.#db
       .query<SummaryTotals, []>(
         `SELECT (SELECT COUNT(*) FROM workouts)                                   AS workout_count,
@@ -106,14 +106,14 @@ export class StatsRepository {
       .get();
 
     const recent = this.#db
-      .query<SummaryRecentActivity, []>(
-        `SELECT COUNT(DISTINCT w.id)                AS workouts_last_30_days,
-                COALESCE(SUM(s.reps * s.weight), 0) AS volume_last_30_days
+      .query<SummaryRecentActivity, [string]>(
+        `SELECT COUNT(DISTINCT w.id)                AS workouts_since,
+                COALESCE(SUM(s.reps * s.weight), 0) AS volume_since
            FROM workouts w
            LEFT JOIN sets s ON s.workout_id = w.id AND s.done = 1
-          WHERE w.performed_on >= date('now', '-30 day')`,
+          WHERE w.performed_on >= ?1`,
       )
-      .get();
+      .get(since);
 
     // Aggregates always yield a row; spreading a null would silently answer {}.
     if (totals === null || recent === null) {

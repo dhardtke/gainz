@@ -7,8 +7,8 @@ export interface SummaryDto {
   totalVolume: number;
   exerciseCount: number;
   lastPerformedOn: Iso8601Date | null;
-  workoutsLast30Days: number;
-  volumeLast30Days: number;
+  workoutsSince: number;
+  volumeSince: number;
 }
 
 export interface CalendarWorkoutDto {

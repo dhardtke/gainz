@@ -10,8 +10,8 @@ export class StatsFacade {
     this.#stats = stats;
   }
 
-  summary(): Summary {
-    return this.#stats.summary();
+  summary(since: Iso8601Date): Summary {
+    return this.#stats.summary(since);
   }
 
   calendar(month: Iso8601Month): CalendarDay[] {

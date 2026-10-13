@@ -3,7 +3,6 @@ import type { ErrorDto } from '../../../shared/dto/error.ts';
 import type { CalendarMonthDto, CalendarWorkoutDto, RecentExerciseDto, RecentExercisesDto, SummaryDto } from '../../../shared/dto/stats.ts';
 import type { ExerciseId, Iso8601Date, WorkoutId } from '../../../shared/flavors.ts';
 import { body, useServer } from '../../testing.ts';
-import { today } from '../../shared/validate.ts';
 import { createExercise } from '../exercises/exercises.fixtures.ts';
 import { createSet, createWorkout, markDone } from '../workouts/workouts.fixtures.ts';
 
@@ -24,7 +23,7 @@ describe('stats', () => {
     const workout = await createWorkout(post);
     await markDone(patch, (await createSet(post, workout.id, { exerciseId: exercise.id, reps: 10, weight: 40 })).id);
 
-    const summary = await body<SummaryDto>(await api('/api/stats/summary'));
+    const summary = await body<SummaryDto>(await api('/api/stats/summary?since=2026-01-01'));
     expect(summary).toMatchObject({
       workoutCount: 1,
       setCount: 1,
@@ -37,19 +36,35 @@ describe('stats', () => {
 
   test('leaves sets not done out of the set-based numbers, but counts their workout', async () => {
     const exercise = await createExercise(post);
-    const workout = await createWorkout(post, today());
+    const workout = await createWorkout(post, '2026-10-12');
     await markDone(patch, (await createSet(post, workout.id, { exerciseId: exercise.id, reps: 10, weight: 40 })).id);
     await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 100 });
 
-    const summary = await body<SummaryDto>(await api('/api/stats/summary'));
+    const summary = await body<SummaryDto>(await api('/api/stats/summary?since=2026-09-12'));
     expect(summary).toMatchObject({
       workoutCount: 1,
       setCount: 1,
       totalReps: 10,
       totalVolume: 400,
-      workoutsLast30Days: 1,
-      volumeLast30Days: 400,
+      workoutsSince: 1,
+      volumeSince: 400,
     });
+  });
+
+  test('counts recent workouts from since on, inclusive', async () => {
+    const exercise = await createExercise(post);
+    await session('2026-09-11', [[exercise.id, 10, 50]]);
+    await session('2026-09-12', [[exercise.id, 10, 40]]);
+    await session('2026-10-12', [[exercise.id, 5, 20]]);
+
+    const summary = await body<SummaryDto>(await api('/api/stats/summary?since=2026-09-12'));
+    expect(summary).toMatchObject({ workoutCount: 3, workoutsSince: 2, volumeSince: 500 });
+  });
+
+  test.each(['', '?since=', '?since=2026-1-05', '?since=2026-13-01', '?since=abc'])('answers %p with 400', async (query) => {
+    const res = await api(`/api/stats/summary${query}`);
+    expect(res.status).toBe(400);
+    expect((await body<ErrorDto>(res)).error).toBe('"since" must be a date in YYYY-MM-DD format');
   });
 });
 

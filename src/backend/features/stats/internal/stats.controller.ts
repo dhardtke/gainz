@@ -9,8 +9,9 @@ export class StatsController {
     this.#stats = stats;
   }
 
-  summary(): Response {
-    return json(translateToSummaryDto(this.#stats.summary()));
+  summary(req: Request): Response {
+    const since = queryDate(new URL(req.url).searchParams, 'since');
+    return json(translateToSummaryDto(this.#stats.summary(since)));
   }
 
   calendar(req: Request): Response {
