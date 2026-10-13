@@ -39,11 +39,12 @@ export class GzExerciseProgressComponent extends GzElement {
   }
 
   #card(exercise: RecentExerciseDto): RawHtml {
+    const since = exercise.progressionSince === null ? '' : `since ${formatShortDate(exercise.progressionSince)}`;
     return html`
       <article class="card vstack gap-2" data-testid="exercise" data-id="${exercise.id}">
         <header class="hstack justify-between gap-2">
           <a href="/exercises/${exercise.id}" data-testid="name">${exercise.name}</a>
-          ${change(exercise.progression, `over the last ${plural(exercise.sessions.length, 'session')}`)}
+          ${change(exercise.progression, since)}
         </header>
         <ol class="sessions unstyled">
           ${exercise.sessions.map((session) => this.#session(exercise, session))}

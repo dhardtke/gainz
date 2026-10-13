@@ -283,6 +283,7 @@ describe('stats recent exercises', () => {
     const answer = await only('2026-10-01');
     expect(answer.sessions.map((entry) => entry.volume)).toEqual([2400, 2450, 2592]);
     expect(answer.progression).toBeCloseTo(0.08);
+    expect(answer.progressionSince).toBe('2026-09-22');
   });
 
   test('gives an exercise with one session no overall value', async () => {
@@ -315,6 +316,18 @@ describe('stats recent exercises', () => {
     expect(answer.bodyweight).toBe(false);
     expect(answer.sessions[1]?.progression).toBeNull();
     expect(answer.progression).toBeNull();
+    expect(answer.progressionSince).toBeNull();
+  });
+
+  test('gives the exercise its newest session against the oldest shown one with load', async () => {
+    const dip = await createExercise(post, 'Dip');
+    await session('2026-10-01', [[dip.id, 10, 0]]);
+    await session('2026-10-05', [[dip.id, 10, 20]]);
+    await session('2026-10-09', [[dip.id, 10, 25]]);
+
+    const answer = await only('2026-10-01');
+    expect(answer.progression).toBeCloseTo(0.25);
+    expect(answer.progressionSince).toBe('2026-10-05');
   });
 
   test('counts sets not done in no session', async () => {

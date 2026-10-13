@@ -287,9 +287,9 @@ session is not compared. A workout's progression is the mean of its compared exe
 and a day's the mean over every compared exercise of its workouts, not of the workouts' means, so
 each exercise counts equally; with nothing compared it is `null`. The values are raw fractions
 (`0.041`); where "progressed" begins is the frontend's call. `StatsRepository.calendar()` runs one
-query over all history, since a previous session may lie in any earlier month: a CTE of per-(workout,
-exercise) done reps and volume, `LAG()` over each exercise's sessions, then the month filter, with
-the grouping into workouts and days in TypeScript.
+query over the whole history of the exercises trained that month, since a previous session may lie
+in any earlier month: a CTE of per-(workout, exercise) done reps and volume, `LAG()` over each
+exercise's sessions, then the month filter, with the grouping into workouts and days in TypeScript.
 
 `GET /api/stats/exercises?since=YYYY-MM-DD` is the page's progress section: `{ since, exercises }`
 with every exercise holding a done set in a workout dated on or after `since`. Like `month`, `since`
@@ -297,12 +297,15 @@ is required and comes from the browser's date; a missing or malformed one is a 4
 carries its three most recent sessions over all history, oldest first, so one trained every other
 week still shows a trend even when the older two lie before `since`. A session's `progression` is
 the calendar's per-exercise value against the session before it, which may be older than the three
-shown; the exercise's `progression` compares the newest shown session against the oldest by the same
-rule, and is `null` with one session or when the rule does not compare them. Exercises come biggest
-regression first, `null` last, ties by name ignoring case, so the order is part of the answer.
-`COMPARED_SESSIONS_SQL` in `stats.repository.ts` holds the sessions CTE with its `LAG()` and a
-`ROW_NUMBER()` newest first, and serves both this query and the calendar's; `sessionChange()` is the
-one place the comparison rule is written.
+shown; the exercise's `progression` compares the newest shown session against the oldest shown one
+the same rule compares, so a 0 kg first session does not hide the trend after it, and
+`progressionSince` is that session's date. Both are `null` with one session or when the rule
+compares none. Exercises come biggest regression first, `null` last, ties by name in SQLite's
+`NOCASE` collation like the other lists, so the order is part of the answer and does not depend on
+the server's locale. `comparedSessionsSql()` in `stats.repository.ts` builds the sessions CTE with
+its `LAG()` and a `ROW_NUMBER()` newest first for the exercises trained in a window of dates, and
+serves both this query and the calendar's, so neither computes windows over exercises it then
+throws away; `sessionChange()` is the one place the comparison rule is written.
 
 An exercise's muscle group is one of seven — `Chest`, `Back`, `Shoulders`, `Arms`, `Legs`, `Core`,
 `Full body` — or none. A `CHECK` on `exercises.muscle_group` refuses anything else, and `POST` and

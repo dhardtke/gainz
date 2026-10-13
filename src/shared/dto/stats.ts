@@ -47,8 +47,10 @@ export interface RecentExerciseDto {
   id: ExerciseId;
   name: string;
   bodyweight: boolean;
-  /** Change of the newest shown session against the oldest shown one, as a fraction. */
+  /** Change of the newest shown session against the oldest shown one the rule compares, as a fraction. */
   progression: number | null;
+  /** Date of the session `progression` compares against, `null` with it. */
+  progressionSince: Iso8601Date | null;
   /** At most three, oldest first. */
   sessions: RecentSessionDto[];
 }

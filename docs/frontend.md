@@ -375,7 +375,11 @@ it and falls back to the current month by the browser's date (`todayIso()`), whi
 requires it rather than guessing a timezone. The ‹ and › buttons are buttons for the same reason
 `gz-pagination`'s are — `linkPath` leaves a link with a query to the browser — and since an
 `internal/` component does not route, `gz-calendar` emits a composed `month-change` carrying the
-month and `gz-stats` calls `navigate()`; › is disabled on the current month and any later one. A
+month. `gz-stats` loads that month's calendar and only then pushes `?month=` with
+`history.pushState()` and shows it in place, rather than calling `navigate()`, which would remount
+the page and fetch the month-independent section below again; a failed month keeps the shown one
+and its URL and toasts. Back and Forward still go through `gz-app`, which remounts the page. › is
+disabled on the current month and any later one. A
 day with one workout is a plain link to it, which `gz-app` routes; a day with several is an
 `ot-dropdown` whose button shows their count and whose `<menu popover>`, one id per day, links
 each workout with its level and %. Each workout day shows a marker for its progression, a `gz-progress-marker` element shared with the
@@ -390,13 +394,17 @@ markers are filled circles in Oat's tokens, so the multi-workout button stays an
 rather than taking a color of its own.
 
 Below the calendar, `gz-exercise-progress` lists every exercise trained in the last `RECENT_DAYS`
-(30) days from `statsFacade.recentExercises(since)`, loaded beside the calendar with `Promise.all`;
-`since` is `daysBefore(todayIso(), RECENT_DAYS)` from `internal/dates.ts`, by the browser's date and
+(30) days from `statsFacade.recentExercises(since)`, loaded beside the calendar with `Promise.all`
+but caught on its own, so a failure toasts and leaves an error line in the section's place while
+the calendar still shows; `since` is `daysBefore(todayIso(), RECENT_DAYS)` from `internal/dates.ts`, by the browser's date and
 independent of the calendar's month. Each exercise is an `article.card` in a plain `<section>`, a
 grid that collapses to one column on a phone: the name linking to the exercise, its overall marker
 and %, then its last three sessions, each linking to its workout with its volume, or total reps for
 a bodyweight exercise, and its marker and % against the session before. Marker and % share one
-`role="img"` span whose `title` and `aria-label` say what was compared. The markers are the same
+`role="img"` span whose `title` and `aria-label` say what was compared, for the overall value the
+date of the session it compares against (`progressionSince`). The sessions are an `<ol>` whose items
+lay out on a shared grid with `subgrid`, not `display: contents`, which drops the list's semantics
+in WebKit. The markers are the same
 `gz-progress-marker` the calendar uses, which owns their CSS so neither shadow root copies it, and
 the cards render in the order the API sends.
 

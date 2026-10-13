@@ -44,8 +44,10 @@ interface SessionTotals {
   volume: number;
 }
 
-// Each exercise's sessions of done sets, with the session before and the rank from the newest.
-const COMPARED_SESSIONS_SQL = `
+// Each exercise's sessions of done sets, with the session before and the rank from the newest,
+// for the exercises with a done set in a workout matching `window` (on `ww`).
+function comparedSessionsSql(window: string): string {
+  return `
   WITH sessions AS (
     SELECT w.id AS workout_id, w.performed_on, w.title, s.exercise_id, e.name, e.bodyweight,
            SUM(s.reps) AS reps, SUM(s.reps * s.weight) AS volume
@@ -53,6 +55,7 @@ const COMPARED_SESSIONS_SQL = `
       JOIN workouts w  ON w.id = s.workout_id
       JOIN exercises e ON e.id = s.exercise_id
      WHERE s.done = 1
+       AND s.exercise_id IN (SELECT ws.exercise_id FROM sets ws JOIN workouts ww ON ww.id = ws.workout_id WHERE ws.done = 1 AND ${window})
      GROUP BY w.id, s.exercise_id
   ), compared AS (
     SELECT *, LAG(reps)   OVER history AS previous_reps,
@@ -61,6 +64,7 @@ const COMPARED_SESSIONS_SQL = `
       FROM sessions
     WINDOW history AS (PARTITION BY exercise_id ORDER BY performed_on, workout_id)
   )`;
+}
 
 // Bodyweight work compares reps; weighted work compares volume and is not compared beside a session without load.
 function sessionChange(bodyweight: 0 | 1, current: SessionTotals, previous: SessionTotals | null): number | null {
@@ -122,7 +126,7 @@ export class StatsRepository {
   calendar(month: Iso8601Month): CalendarDay[] {
     const rows = this.#db
       .query<ExerciseSession, [string]>(
-        `${COMPARED_SESSIONS_SQL}
+        `${comparedSessionsSql(`ww.performed_on >= ?1 AND ww.performed_on < date(?1, '+1 month')`)}
          SELECT workout_id, performed_on, title, bodyweight, reps, volume, previous_reps, previous_volume
            FROM compared
           WHERE performed_on >= ?1 AND performed_on < date(?1, '+1 month')
@@ -166,12 +170,11 @@ export class StatsRepository {
   recentExercises(since: Iso8601Date): RecentExercise[] {
     const rows = this.#db
       .query<RecentSessionRow, [string]>(
-        `${COMPARED_SESSIONS_SQL}
+        `${comparedSessionsSql('ww.performed_on >= ?1')}
          SELECT exercise_id, name, bodyweight, workout_id, performed_on, reps, volume, previous_reps, previous_volume
            FROM compared
           WHERE recency <= 3
-            AND exercise_id IN (SELECT exercise_id FROM sessions WHERE performed_on >= ?1)
-          ORDER BY exercise_id, performed_on, workout_id`,
+          ORDER BY name COLLATE NOCASE, exercise_id, performed_on, workout_id`,
       )
       .all(since);
 
@@ -179,7 +182,7 @@ export class StatsRepository {
     for (const row of rows) {
       let exercise = exercises.get(row.exercise_id);
       if (!exercise) {
-        exercise = { id: row.exercise_id, name: row.name, bodyweight: row.bodyweight, progression: null, sessions: [] };
+        exercise = { id: row.exercise_id, name: row.name, bodyweight: row.bodyweight, progression: null, progression_since: null, sessions: [] };
         exercises.set(row.exercise_id, exercise);
       }
       exercise.sessions.push({
@@ -191,16 +194,20 @@ export class StatsRepository {
       });
     }
 
+    // Against the oldest shown session the rule compares, so a 0 kg first session does not hide the trend after it.
     for (const exercise of exercises.values()) {
-      const [oldest] = exercise.sessions;
       const newest = exercise.sessions.at(-1);
-      if (oldest && newest && oldest !== newest) {
-        exercise.progression = sessionChange(exercise.bodyweight, newest, oldest);
+      for (const earlier of exercise.sessions.slice(0, -1)) {
+        const change = newest ? sessionChange(exercise.bodyweight, newest, earlier) : null;
+        if (change !== null) {
+          exercise.progression = change;
+          exercise.progression_since = earlier.performed_on;
+          break;
+        }
       }
     }
 
-    return [...exercises.values()].toSorted(
-      (a, b) => (a.progression ?? Infinity) - (b.progression ?? Infinity) || a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
-    );
+    // A stable sort, so ties keep the query's name order.
+    return [...exercises.values()].toSorted((a, b) => (a.progression ?? Infinity) - (b.progression ?? Infinity));
   }
 }

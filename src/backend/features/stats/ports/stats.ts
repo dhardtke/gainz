@@ -39,5 +39,6 @@ export interface RecentExercise {
   name: string;
   bodyweight: 0 | 1;
   progression: number | null;
+  progression_since: Iso8601Date | null;
   sessions: RecentSession[];
 }

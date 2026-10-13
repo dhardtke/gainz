@@ -16,6 +16,7 @@ const EXERCISES: RecentExerciseDto[] = [
     name: 'Overhead Press',
     bodyweight: false,
     progression: -0.061,
+    progressionSince: '2026-09-15',
     sessions: [
       { workoutId: 10, performedOn: '2026-09-15', reps: 30, volume: 1230, progression: 0.01 },
       { workoutId: 11, performedOn: '2026-09-29', reps: 30, volume: 1200, progression: -0.024 },
@@ -27,6 +28,7 @@ const EXERCISES: RecentExerciseDto[] = [
     name: 'Pull-up',
     bodyweight: true,
     progression: 0.065,
+    progressionSince: '2026-10-01',
     sessions: [
       { workoutId: 13, performedOn: '2026-10-01', reps: 31, volume: 0, progression: null },
       { workoutId: 14, performedOn: '2026-10-08', reps: 33, volume: 0, progression: 0.065 },
@@ -37,6 +39,7 @@ const EXERCISES: RecentExerciseDto[] = [
     name: 'Lunge',
     bodyweight: false,
     progression: null,
+    progressionSince: null,
     sessions: [{ workoutId: 15, performedOn: '2026-10-10', reps: 24, volume: 960, progression: null }],
   },
 ];
@@ -92,8 +95,8 @@ test('marks the overall change with its level, % and label', () => {
   const change = overall(card(root, 3));
   expect(level(change)).toBe('down');
   expect(find(change, '.percent').textContent).toBe(formatPercent(-0.061));
-  expect(change.getAttribute('aria-label')).toBe(`${formatPercent(-0.061)} over the last 3 sessions`);
-  expect(overall(card(root, 5)).getAttribute('aria-label')).toBe(`${formatPercent(0.065)} over the last 2 sessions`);
+  expect(change.getAttribute('aria-label')).toBe(`${formatPercent(-0.061)} since ${formatShortDate('2026-09-15')}`);
+  expect(overall(card(root, 5)).getAttribute('aria-label')).toBe(`${formatPercent(0.065)} since ${formatShortDate('2026-10-01')}`);
 });
 
 test("marks each session's change against the one before", () => {
