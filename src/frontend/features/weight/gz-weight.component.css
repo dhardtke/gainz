@@ -1,0 +1,13 @@
+form h2 {
+  margin-block: 0 var(--space-3);
+}
+
+.trend-head {
+  flex-wrap: wrap;
+}
+
+.range-switch {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}

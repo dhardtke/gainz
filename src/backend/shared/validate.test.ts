@@ -1,5 +1,16 @@
 import { describe, expect, test } from 'bun:test';
-import { isIsoDate, optionalOneOf, optionalString, requiredDate, requiredIds, requiredInt, requiredNumber, requiredOneOf, requiredString } from './validate.ts';
+import {
+  isIsoDate,
+  isRealDate,
+  optionalOneOf,
+  optionalString,
+  requiredDate,
+  requiredIds,
+  requiredInt,
+  requiredNumber,
+  requiredOneOf,
+  requiredString,
+} from './validate.ts';
 
 describe('requiredString', () => {
   test('trims the value', () => {
@@ -62,6 +73,16 @@ describe('isIsoDate', () => {
 
   test.each(['2026-1-05', '2026-13-01', 'abc', ''])('rejects %p', (value) => {
     expect(isIsoDate(value)).toBe(false);
+  });
+});
+
+describe('isRealDate', () => {
+  test.each(['2026-02-28', '2028-02-29', '2026-12-31'])('accepts %p', (value) => {
+    expect(isRealDate(value)).toBe(true);
+  });
+
+  test.each(['2026-02-29', '2026-02-30', '2026-04-31', '2026-13-01', '2026-1-05', ''])('rejects %p', (value) => {
+    expect(isRealDate(value)).toBe(false);
   });
 });
 

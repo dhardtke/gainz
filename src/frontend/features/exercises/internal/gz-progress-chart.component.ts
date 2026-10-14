@@ -3,8 +3,8 @@ import { define, GzElement } from '../../../ui/base.ts';
 import { html } from '../../../ui/html.ts';
 import { formatShortDate, plural, UNIT } from '../../../ui/format.ts';
 import type { SessionPointDto } from '../../../../shared/dto/exercise.ts';
-import type { GzChartComponent } from './gz-chart.component.ts';
-import './gz-chart.component.ts';
+import type { GzChartComponent } from '../../../ui/chart/gz-chart.component.ts';
+import '../../../ui/chart/gz-chart.component.ts';
 
 type MetricKey = 'estOneRepMax' | 'topWeight' | 'totalVolume' | 'topReps' | 'totalReps';
 

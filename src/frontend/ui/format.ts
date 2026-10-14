@@ -28,6 +28,10 @@ export function formatWeight(value: number | null | undefined): string {
   return `${formatNumber(value)} ${UNIT}`;
 }
 
+export function formatBodyWeight(value: number): string {
+  return `${value.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ${UNIT}`;
+}
+
 export function formatVolume(value: number | null | undefined): string {
   const num = value ?? 0;
   if (num >= 10000) {
@@ -90,6 +94,11 @@ export function todayIso(): Iso8601Date {
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   return now.toISOString().slice(0, 10);
+}
+
+export function daysBefore(date: Iso8601Date, days: number): Iso8601Date {
+  const [year, month, day] = date.split('-').map(Number);
+  return new Date(Date.UTC(year ?? 0, (month ?? 1) - 1, (day ?? 1) - days)).toISOString().slice(0, 10);
 }
 
 export function formatDelta(current: number, previous: number | null | undefined): string {

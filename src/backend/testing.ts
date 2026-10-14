@@ -14,6 +14,8 @@ export interface TestServer {
   api: (path: string, init?: RequestInit) => Promise<Response>;
   post: (path: string, body: unknown) => Promise<Response>;
   patch: (path: string, body: unknown) => Promise<Response>;
+  put: (path: string, body: unknown) => Promise<Response>;
+  del: (path: string) => Promise<Response>;
   logs: () => LogLine[];
 }
 
@@ -64,23 +66,20 @@ export function useServer(options: { auth?: AuthOptions } = {}): TestServer {
     return fetch(`${base}${path}`, init);
   }
 
-  function post(path: string, body: unknown): Promise<Response> {
+  function send(method: string, path: string, body: unknown): Promise<Response> {
     return api(path, {
-      method: 'POST',
+      method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
   }
 
-  function patch(path: string, body: unknown): Promise<Response> {
-    return api(path, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-  }
+  const post = (path: string, body: unknown): Promise<Response> => send('POST', path, body);
+  const patch = (path: string, body: unknown): Promise<Response> => send('PATCH', path, body);
+  const put = (path: string, body: unknown): Promise<Response> => send('PUT', path, body);
+  const del = (path: string): Promise<Response> => api(path, { method: 'DELETE' });
 
-  return { api, post, patch, logs };
+  return { api, post, patch, put, del, logs };
 }
 
 export function useTempDir(): () => string {

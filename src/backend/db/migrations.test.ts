@@ -168,8 +168,8 @@ describe('the real migrations', () => {
 
     const result = migrate(legacy);
 
-    expect(result.applied.map((migration) => migration.version)).toEqual([1, 2, 3, 4, 5, 6]);
-    expect(schemaVersion(legacy)).toBe(6);
+    expect(result.applied.map((migration) => migration.version)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(schemaVersion(legacy)).toBe(7);
     expect(legacy.query<{ name: string }, []>('SELECT name FROM exercises').all()).toEqual([{ name: 'Back Squat' }]);
 
     legacy.close();
@@ -225,7 +225,7 @@ describe('the real migrations', () => {
       'INSERT INTO sets (workout_id, exercise_id, reps, weight, done) VALUES (1, 1, 5, 100, 1), (1, 1, 5, 100, 1), (2, 1, 5, 100, 1), (2, 1, 5, 100, 0)',
     );
 
-    expect(migrate(legacy).applied.map((migration) => migration.version)).toEqual([4, 5, 6]);
+    expect(migrate(legacy).applied.map((migration) => migration.version)).toEqual([4, 5, 6, 7]);
 
     expect(legacy.query<{ done: number }, []>('SELECT done FROM workouts ORDER BY id').all()).toEqual([{ done: 1 }, { done: 0 }, { done: 0 }]);
     expect(() => legacy.run('UPDATE workouts SET done = 2 WHERE id = 1')).toThrow();
@@ -246,7 +246,7 @@ describe('the real migrations', () => {
     legacy.run('INSERT INTO sets (workout_id, exercise_id, reps, weight) VALUES (1, 1, 5, 100)');
     legacy.run("DELETE FROM exercises WHERE name = 'Gone'");
 
-    expect(migrate(legacy).applied.map((migration) => migration.version)).toEqual([5, 6]);
+    expect(migrate(legacy).applied.map((migration) => migration.version)).toEqual([5, 6, 7]);
 
     expect(legacy.query<{ id: number; muscle_group: string | null }, []>('SELECT id, muscle_group FROM exercises ORDER BY id').all()).toEqual([
       { id: 1, muscle_group: 'Legs' },
@@ -274,7 +274,7 @@ describe('the real migrations', () => {
     legacy.run("INSERT INTO workouts (performed_on) VALUES ('2026-01-05')");
     legacy.run('INSERT INTO sets (workout_id, exercise_id, reps, weight) VALUES (1, 1, 12, 0), (1, 1, 10, 0), (1, 2, 8, 0), (1, 2, 5, 2.5)');
 
-    expect(migrate(legacy).applied.map((migration) => migration.version)).toEqual([6]);
+    expect(migrate(legacy).applied.map((migration) => migration.version)).toEqual([6, 7]);
 
     expect(legacy.query<{ bodyweight: number }, []>('SELECT bodyweight FROM exercises ORDER BY id').all()).toEqual([
       { bodyweight: 1 },
@@ -282,6 +282,27 @@ describe('the real migrations', () => {
       { bodyweight: 0 },
     ]);
     expect(() => legacy.run('UPDATE exercises SET bodyweight = 2 WHERE id = 1')).toThrow();
+
+    legacy.close();
+  });
+
+  test('create weigh_ins and keep the rows from before 007', () => {
+    for (const file of readMigrations(MIGRATIONS_DIR).filter((source) => !source.filename.startsWith('007-'))) {
+      write(file.filename, file.sql);
+    }
+    const legacy = new Database(':memory:', { create: true });
+    expect(migrate(legacy, { dir: tempDir() }).version).toBe(6);
+    legacy.run("INSERT INTO exercises (name) VALUES ('Back Squat')");
+    legacy.run("INSERT INTO workouts (performed_on) VALUES ('2026-01-05')");
+    legacy.run('INSERT INTO sets (workout_id, exercise_id, reps, weight) VALUES (1, 1, 5, 100)');
+
+    expect(migrate(legacy).applied.map((migration) => migration.version)).toEqual([7]);
+
+    expect(tables(legacy)).toContain('weigh_ins');
+    expect(legacy.query<{ reps: number; weight: number }, []>('SELECT reps, weight FROM sets').all()).toEqual([{ reps: 5, weight: 100 }]);
+    legacy.run("INSERT INTO weigh_ins (measured_on, weight) VALUES ('2026-10-13', 82.4)");
+    expect(() => legacy.run("INSERT INTO weigh_ins (measured_on, weight) VALUES ('2026-10-13', 82.5)")).toThrow();
+    expect(() => legacy.run("INSERT INTO weigh_ins (measured_on, weight) VALUES ('2026-10-14', 0)")).toThrow();
 
     legacy.close();
   });

@@ -22,3 +22,27 @@ article.card {
 .hint {
   color: var(--muted-foreground);
 }
+
+/* As in shared.css's article.open-card: the link's own ::after is the hit area, so it stays a real anchor. */
+article.linked {
+  position: relative;
+
+  & a.label {
+    text-decoration: none;
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+    }
+  }
+
+  &:hover {
+    background-color: var(--muted);
+  }
+
+  &:hover a.label {
+    color: var(--primary);
+  }
+}

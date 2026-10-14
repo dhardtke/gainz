@@ -33,3 +33,9 @@ test('shows markup in its label as text', () => {
   expect(text(tile, testId('label'))).toBe('<b>bold</b>');
   expect(tile.shadowRoot?.querySelector('b')).toBeNull();
 });
+
+test('links its label when it has an href, and not otherwise', () => {
+  const linked = mount('gz-tile', { label: 'Body weight', href: '/weight' });
+  expect(linked.shadowRoot?.querySelector(testId('label'))?.getAttribute('href')).toBe('/weight');
+  expect(mount('gz-tile', { label: 'Workouts' }).shadowRoot?.querySelector('a')).toBeNull();
+});

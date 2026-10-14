@@ -1,6 +1,6 @@
 import { ApiError, UNAUTHORIZED_EVENT } from './errors.ts';
 
-async function request<T>(method: 'GET' | 'POST' | 'PATCH' | 'DELETE', path: string, body?: unknown): Promise<T> {
+async function request<T>(method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', path: string, body?: unknown): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`/api${path}`, {
@@ -38,6 +38,8 @@ async function request<T>(method: 'GET' | 'POST' | 'PATCH' | 'DELETE', path: str
 export const get = <T>(path: string): Promise<T> => request<T>('GET', path);
 
 export const post = <T>(path: string, body?: unknown): Promise<T> => request<T>('POST', path, body ?? {});
+
+export const put = <T>(path: string, body?: unknown): Promise<T> => request<T>('PUT', path, body ?? {});
 
 export const patch = <T>(path: string, body?: unknown): Promise<T> => request<T>('PATCH', path, body ?? {});
 

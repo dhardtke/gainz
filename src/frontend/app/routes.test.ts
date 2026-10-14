@@ -37,7 +37,7 @@ describe('routes', () => {
     expect(matchRoute(ROUTES, path)).toBeNull();
   });
 
-  test('the header links are Dashboard, Workouts, Exercises, Statistics, each matching its own route', () => {
+  test('the header links are Dashboard, Workouts, Exercises, Statistics, Weight, each matching its own route', () => {
     const withNav = ROUTES.filter((route) => route.nav);
 
     expect(withNav.map((route) => route.nav)).toEqual([
@@ -45,6 +45,7 @@ describe('routes', () => {
       { path: '/workouts', label: 'Workouts' },
       { path: '/exercises', label: 'Exercises' },
       { path: '/stats', label: 'Statistics' },
+      { path: '/weight', label: 'Weight' },
     ]);
     for (const route of withNav) {
       expect(matchRoute(ROUTES, route.nav?.path ?? '')?.route).toBe(route);
@@ -58,6 +59,7 @@ describe('routes', () => {
     ['/exercises', 'Exercises'],
     ['/exercises/1', 'Exercise'],
     ['/stats', 'Statistics'],
+    ['/weight', 'Weight'],
     ['/login', 'Log in'],
   ])('%s is titled %p', (path, title) => {
     expect(matchRoute(ROUTES, path)?.route.title).toBe(title);

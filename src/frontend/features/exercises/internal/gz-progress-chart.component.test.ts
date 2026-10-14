@@ -1,7 +1,7 @@
 import { beforeAll, expect, test } from 'bun:test';
 import { collect, find, mount, shadow, testId, useDom } from '../../../testing.ts';
 import { session } from '../exercises.fixtures.ts';
-import type { GzChartComponent } from './gz-chart.component.ts';
+import type { GzChartComponent } from '../../../ui/chart/gz-chart.component.ts';
 import type { GzProgressChartComponent } from './gz-progress-chart.component.ts';
 
 useDom();

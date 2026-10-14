@@ -1,5 +1,18 @@
 import { afterEach, beforeEach, describe, expect, setSystemTime, test } from 'bun:test';
-import { formatDate, formatDelta, formatNumber, formatPercent, formatShortDate, formatVolume, formatWeight, plural, relativeDay, todayIso } from './format.ts';
+import {
+  daysBefore,
+  formatBodyWeight,
+  formatDate,
+  formatDelta,
+  formatNumber,
+  formatPercent,
+  formatShortDate,
+  formatVolume,
+  formatWeight,
+  plural,
+  relativeDay,
+  todayIso,
+} from './format.ts';
 
 // Bun ignores LANG on Windows, so the locale is the OS's; avoid thousands separators.
 const decimal = new Intl.NumberFormat().formatToParts(1.5).find((part) => part.type === 'decimal')?.value ?? '.';
@@ -33,6 +46,16 @@ describe('formatWeight', () => {
   });
 });
 
+describe('formatBodyWeight', () => {
+  test.each([
+    [82.4, '82.4 kg'],
+    [82.46, '82.5 kg'],
+    [80, '80.0 kg'],
+  ])('shows %p as %p, with one decimal', (value, expected) => {
+    expect(formatBodyWeight(value)).toBe(local(expected));
+  });
+});
+
 describe('formatVolume', () => {
   test('stays in kg below ten tonnes, without decimals', () => {
     expect(formatVolume(512.6)).toBe('513 kg');
@@ -62,6 +85,18 @@ describe('dates', () => {
     const expected = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' }).format(new Date(2024, 0, 1));
 
     expect(formatShortDate('2024-01-01')).toBe(expected);
+  });
+});
+
+describe('daysBefore', () => {
+  test.each([
+    ['2026-10-12', 10, '2026-10-02'],
+    ['2026-10-12', 30, '2026-09-12'],
+    ['2026-01-15', 30, '2025-12-16'],
+    ['2028-03-10', 30, '2028-02-09'],
+    ['2028-03-01', 1, '2028-02-29'],
+  ])('%s minus %d days is %s', (date, days, expected) => {
+    expect(daysBefore(date, days)).toBe(expected);
   });
 });
 

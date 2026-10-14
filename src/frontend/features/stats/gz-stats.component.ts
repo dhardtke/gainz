@@ -1,7 +1,7 @@
 import type { RawHtml } from '../../ui/html.ts';
 import { define } from '../../ui/base.ts';
 import { html } from '../../ui/html.ts';
-import { todayIso } from '../../ui/format.ts';
+import { daysBefore, todayIso } from '../../ui/format.ts';
 import { toastError } from '../../ui/toast.ts';
 import { errorMessage } from '../../http/errors.ts';
 import type { CalendarMonthDto, RecentExerciseDto } from '../../../shared/dto/stats.ts';
@@ -9,7 +9,7 @@ import type { Iso8601Date, Iso8601Month } from '../../../shared/flavors.ts';
 import { GzView } from '../../ui/view.ts';
 import { statsFacade } from './stats.facade.ts';
 import { parseMonth } from './internal/month.ts';
-import { daysBefore, RECENT_DAYS } from './internal/dates.ts';
+import { RECENT_DAYS } from './internal/dates.ts';
 import type { GzCalendarComponent } from './internal/gz-calendar.component.ts';
 import type { GzExerciseProgressComponent } from './internal/gz-exercise-progress.component.ts';
 import './internal/gz-calendar.component.ts';

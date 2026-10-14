@@ -1,16 +1,27 @@
-import type { RawHtml } from '../../../ui/html.ts';
-import { define, GzElement } from '../../../ui/base.ts';
-import { html, raw } from '../../../ui/html.ts';
-import { formatNumber } from '../../../ui/format.ts';
+import type { RawHtml } from '../html.ts';
+import { define, GzElement } from '../base.ts';
+import { html, raw } from '../html.ts';
+import { formatNumber } from '../format.ts';
+import type { Iso8601Date } from '../../../shared/flavors.ts';
 
 const W = 600;
 const H = 220;
 const GRIDLINES = 4;
+const DAY_MS = 86_400_000;
 
 export interface ChartPoint {
   label: string;
   value: number;
   hint?: string;
+  /** Spaces the points by date when every point has one. */
+  x?: Iso8601Date;
+  /** When any point has one, the line and area follow the trend and the dots stay at `value`. */
+  trend?: number | null;
+}
+
+function dayNumber(date: Iso8601Date): number {
+  const [year, month, day] = date.split('-').map(Number);
+  return Date.UTC(year ?? 0, (month ?? 1) - 1, day ?? 1) / DAY_MS;
 }
 
 interface ChartScale {
@@ -20,10 +31,12 @@ interface ChartScale {
   high: number;
 }
 
-// Spaced by index, not date; labels are HTML so viewBox scaling doesn't resize their text.
+// Spaced by index unless every point has a date; labels are HTML so viewBox scaling doesn't resize their text.
 export class GzChartComponent extends GzElement {
   #series: ChartPoint[] = [];
   #unit = '';
+  #empty = 'No sessions logged yet — add a set to start the curve.';
+  #label = 'Progress over the logged sessions';
 
   set series(value: ChartPoint[]) {
     this.#series = Array.isArray(value) ? value.filter((point) => Number.isFinite(point.value)) : [];
@@ -43,18 +56,46 @@ export class GzChartComponent extends GzElement {
     }
   }
 
+  set empty(value: string) {
+    this.#empty = value;
+    if (this.isConnected) {
+      this.render();
+    }
+  }
+
+  set label(value: string) {
+    this.#label = value;
+    if (this.isConnected) {
+      this.render();
+    }
+  }
+
+  #trends(): { index: number; value: number }[] {
+    return this.#series.flatMap((point, index) => (typeof point.trend === 'number' && Number.isFinite(point.trend) ? [{ index, value: point.trend }] : []));
+  }
+
+  #xFraction(): (index: number) => number {
+    const last = this.#series.length - 1;
+    const days = this.#series.map((point) => (point.x === undefined ? Number.NaN : dayNumber(point.x)));
+    if (days.every((day) => Number.isFinite(day))) {
+      const first = days[0] ?? 0;
+      const span = (days.at(-1) ?? first) - first;
+      return (index) => (span === 0 ? 0.5 : ((days[index] ?? first) - first) / span);
+    }
+    return (index) => (last === 0 ? 0.5 : index / last);
+  }
+
   #scale(): ChartScale {
-    const values = this.#series.map((point) => point.value);
+    const values = [...this.#series.map((point) => point.value), ...this.#trends().map((trend) => trend.value)];
     const min = Math.min(...values);
     const max = Math.max(...values);
     const span = max - min;
     const padding = span === 0 ? Math.max(Math.abs(max) * 0.1, 1) : span * 0.15;
     const low = min - padding;
     const high = max + padding;
-    const last = this.#series.length - 1;
 
     return {
-      xFraction: (index) => (last === 0 ? 0.5 : index / last),
+      xFraction: this.#xFraction(),
       yFraction: (value) => 1 - (value - low) / (high - low),
       low,
       high,
@@ -73,15 +114,17 @@ export class GzChartComponent extends GzElement {
 
   override template(): RawHtml {
     if (this.#series.length === 0) {
-      return html`<p class="empty">No sessions logged yet — add a set to start the curve.</p>`;
+      return html`<p class="empty" data-testid="empty">${this.#empty}</p>`;
     }
 
     const scale = this.#scale();
     const gridValues = this.#gridValues(scale);
     const gridLabels = gridValues.map((value) => formatNumber(value, 1));
-    const points = this.#series.map((point, index) => ({
+    const trends = this.#trends();
+    const through = trends.length > 0 ? trends : this.#series.map((point, index) => ({ index, value: point.value }));
+    const points = through.map(({ index, value }) => ({
       x: scale.xFraction(index) * W,
-      y: scale.yFraction(point.value) * H,
+      y: scale.yFraction(value) * H,
     }));
     const line = points.map(({ x, y }) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
     const first = points[0];
@@ -99,13 +142,13 @@ export class GzChartComponent extends GzElement {
         </div>
 
         <div class="plot">
-          <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Progress over the logged sessions">
+          <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${this.#label}">
             ${gridValues.map((value) => {
               const y = (scale.yFraction(value) * H).toFixed(1);
               return html`<line class="grid" x1="0" y1="${y}" x2="${W}" y2="${y}" />`;
             })}
             <path class="area" d="${area}" />
-            ${raw(this.#series.length > 1 ? `<polyline class="line" points="${line}" />` : '')}
+            ${raw(points.length > 1 ? `<polyline class="line" points="${line}" data-testid="line" />` : '')}
           </svg>
 
           ${this.#series.map((point, index) => {
@@ -113,6 +156,7 @@ export class GzChartComponent extends GzElement {
             return html`
               <span
                 class="dot"
+                data-testid="dot"
                 style="left: ${(scale.xFraction(index) * 100).toFixed(2)}%; top: ${(scale.yFraction(point.value) * 100).toFixed(2)}%"
                 title="${title}"
               ></span>

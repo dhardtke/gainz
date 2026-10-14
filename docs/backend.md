@@ -7,15 +7,15 @@ does, for the change that touches it.
 ## Layout
 
 The backend is organized by feature, not by layer. `features/` holds one directory per thing the
-app is about — `exercises/`, `workouts/`, `stats/`, `auth/`, `meta/`, `static/`, `dev/` — and each
+app is about — `exercises/`, `workouts/`, `stats/`, `weight/`, `auth/`, `meta/`, `static/`, `dev/` — and each
 owns its routes, its SQL and its mapping end to end, the mapping reached through its controllers
 and its facade. What is left outside `features/` is only what belongs to no feature:
 
 - `db/` — the connection and its PRAGMAs in `db.ts`, the schema in `migrations.ts` and
   `migrations/`, and the table-agnostic statement helpers in `db/sql.ts`
 - `http/` — `routing.ts` for the `RouteTable` and `ParamRequest` types, `routes.ts` for the
-  registry, `http.ts` with the request readers (`pathId`, `queryInt`, `readJsonObject` and the
-  rest), `errors.ts`, `access-log.ts` and `server.ts`
+  registry, `http.ts` with the request readers (`pathId`, `pathDate`, `queryInt`,
+  `optionalQueryDate`, `readJsonObject` and the rest), `errors.ts`, `access-log.ts` and `server.ts`
 - `shared/` — `validate.ts` for the request-field rules and their length bounds (`requiredOneOf`
   and `optionalOneOf` for a field limited to a fixed list), `log.ts`, the logger, and
   `embedded.ts` (see "Single-file build")
@@ -97,7 +97,8 @@ the local (`const id: WorkoutId = pathId(req.params.id, 'workout')`).
 ### Facades
 
 **Every data-owning feature has a front door.** Each publishes exactly one facade module at its
-root — `exercises/exercises.facade.ts`, `workouts/workouts.facade.ts`, `stats/stats.facade.ts` —
+root — `exercises/exercises.facade.ts`, `workouts/workouts.facade.ts`, `stats/stats.facade.ts`,
+`weight/weight.facade.ts` —
 holding a `<Entity>Facade` per repository. A facade is not reserved for data, though: `static`,
 `dev` and `auth` publish one too, with no table behind any of them, because another feature needs
 something from them and the house rule is that a feature is reached through its facade. A route
@@ -116,7 +117,8 @@ through its feature's translator, and the camelCase rename is still what the com
 
 There is no composition root. Each route factory takes the database and builds what it uses:
 `workoutRoutes(db)` and `setRoutes(db)` each call `createWorkoutFacades(db)`, `exerciseRoutes(db)`
-calls `createExerciseFacade(db)`, and `statsRoutes(db)` calls `createStatsFacade(db)`, then each
+calls `createExerciseFacade(db)`, `statsRoutes(db)` calls `createStatsFacade(db)`, and
+`weightRoutes(db)` calls `createWeighInFacade(db)`, then each
 builds its controller from those facades. `allRoutes(db, auth)` passes the database along and
 builds the one `AuthFacade` the server has, handing it to `metaRoutes(auth)` and `authRoutes(auth)`
 and wrapping the data tables in `auth.guard()`; one instance, because it holds the login throttle.
@@ -198,8 +200,9 @@ file gets its own hooks and its own database rather than sharing one through the
 `testing.ts` stays at the top of `src/backend/` because it belongs to no feature: it holds only
 technical hooks such as `useServer()`, `useTempDir()` and `useLogs()`. The fixtures that create a
 feature's data over HTTP — `createExercise` in `exercises/exercises.fixtures.ts`, `createWorkout`
-and `createSet` in `workouts/workouts.fixtures.ts` — live in the feature that owns the endpoint and
-take `post` from `useServer()` as their first argument. Other features' route tests import them
+and `createSet` in `workouts/workouts.fixtures.ts`, `putWeighIn` in `weight/weight.fixtures.ts` — live
+in the feature that owns the endpoint and take `post` (or `put`) from `useServer()` as their first
+argument. Other features' route tests import them
 directly, the one cross-feature import that does not go through `ports/`.
 
 Every `*.test.ts` sits beside the module it exercises, and each route test covers the module
@@ -227,7 +230,7 @@ has defined components in.
 
 The suite prints nothing. `useLogs()` swaps the logger's sink for one that captures each line as
 `{ level, text }` around every test, and `useServer()` calls it and returns `logs` beside `api`,
-`post` and `patch`, so a route test can assert what the server logged. Since one test sees every
+`post`, `patch`, `put` and `del`, so a route test can assert what the server logged. Since one test sees every
 topic, a test that checks one feature's lines filters `logs()` by topic or uses `toContainEqual`.
 
 ## Data model
@@ -247,6 +250,10 @@ with the exercise's last set, "Repeat" copies the source's rows, copying an exer
 appends one the same way as a logged set, and deleting a workout cascades.
 `003-workout-exercises.sql` created the table and backfilled it from the sets already there, in the
 order each exercise first appears (`position, id`).
+
+`weigh_ins (measured_on, weight)` stands apart from the rest: one row per date, keyed by the date
+itself, with `CHECK (weight > 0)`. It references nothing and nothing references it, and its primary
+key is the index the range query uses. `007-weigh-ins.sql` created it.
 
 ### Plans and history
 
@@ -438,6 +445,28 @@ the server's locale. `comparedSessionsSql()` in `stats.repository.ts` builds the
 its `LAG()` and a `ROW_NUMBER()` newest first for the exercises trained in a window of dates, and
 serves both this query and the calendar's, so neither computes windows over exercises it then
 throws away; `sessionChange()` is the one place the comparison rule is written.
+
+## Weight (`features/weight/`)
+
+The body weight log holds one weigh-in per date, keyed by the date, with no id:
+
+- `PUT /api/weigh-ins/:date` with `{ "weight": 82.4 }` creates that date's weigh-in (201) or
+  replaces it (200), and answers the `WeighInDto`. `WeighInRepository.put` decides which in one
+  transaction, a `SELECT` and then an `INSERT … ON CONFLICT (measured_on) DO UPDATE`, so the last
+  reading of a day wins. The weight is `requiredNumber` between 20 and 500, a numeric string
+  included, rounded to 0.01; anything else is a 400.
+- `GET /api/weigh-ins/:date` answers that date's `WeighInDto`, or 404.
+- `DELETE /api/weigh-ins/:date` answers 204, or 404 for a date without a weigh-in.
+- `GET /api/weigh-ins?since=YYYY-MM-DD` answers `{ since, items, latest }`: `items` from `since` on,
+  oldest first, and `latest` the newest weigh-in overall, in the range or not, or `null`. Without
+  `since` it answers every weigh-in with `since: null`. There is no paging, since ten years of daily
+  weigh-ins is under 4,000 small rows.
+
+The date in the path is read by `pathDate` and `since` by `optionalQueryDate`, both of which call
+`isRealDate`: `isIsoDate` plus a round trip through `Date.UTC`, so `2026-02-30` is a 400 rather than
+a key that aliases March 2. A malformed date is a 400 before anything is looked up. Changing a
+weigh-in's date is a delete and a new `PUT`. The routes sit behind the auth guard like every data
+route, and the API is shaped so a later scale listener can simply `PUT` today's date.
 
 ## Static files (`features/static/`)
 

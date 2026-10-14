@@ -7,7 +7,7 @@ backend serves a frontend of TypeScript custom elements styled with
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/dashboard-dark.png">
-  <img src="docs/screenshots/dashboard-light.png" alt="The dashboard: totals for workouts, volume and exercises above a list of recent workouts">
+  <img src="docs/screenshots/dashboard-light.png" alt="The dashboard: totals for workouts, volume and body weight above a list of recent workouts">
 </picture>
 
 ## A look around
@@ -32,6 +32,13 @@ The training calendar marks the days you lifted, and whether each one beat your 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/stats-dark.png">
   <img src="docs/screenshots/stats-light.png" alt="The Statistics page: a month calendar with training days marked as progressed, held or regressed, and below it cards of recent exercises with their last three sessions">
+</picture>
+
+Log your body weight each morning, and its 7-day average smooths out the day-to-day swings into a trend.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/weight-dark.png">
+  <img src="docs/screenshots/weight-light.png" alt="The Weight page: a 90-day trend of daily weigh-ins with their 7-day average, above the history">
 </picture>
 
 Built for the phone in your hand between sets, with a light and a dark theme.

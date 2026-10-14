@@ -38,23 +38,27 @@ What belongs to no feature sits beside `features/`:
   `ROUTES` table, and `tab-title.ts`, which formats the browser tab's title. `app/` reaches a
   feature only through those route lists, with one exception: `gz-header` imports
   `features/auth/auth.facade.ts` for its Log out button and whether to show it.
-- `http/` is the request plumbing: `http.ts` holds the `get`/`post`/`patch`/`remove` helpers over
+- `http/` is the request plumbing: `http.ts` holds the `get`/`post`/`put`/`patch`/`remove` helpers over
   `fetch`, and `errors.ts` holds `ApiError` and `errorMessage`, kept apart so a component can catch
   an error without being able to make a request.
 - `ui/` is what any component may use: `base.ts` with `GzElement` (open shadow root,
   `data-action` click/submit delegation, `template()`/`render()`) and `define()`; `view.ts` with
   `GzView`, the base of the route views (see below); `html.ts` with the escaping `html` tagged
-  template and `raw()`; `styles.ts`, `theme.ts` and `format.ts`; the document stylesheet `app.css`
+  template and `raw()`; `styles.ts`, `theme.ts` and `format.ts`, which holds the display formats and
+  the date helpers `todayIso()` and `daysBefore()`; the document stylesheet `app.css`
   and the utilities in `shared.css`; `toast.ts`, whose `toast()` and `toastError()` show Oat's
   toasts through `ot.toast()`; and the shared widgets — `tile/gz-tile`, the stat tile several
-  views use; `pagination/`, the paged lists' page arithmetic in `pagination.ts` beside
+  views use; `chart/gz-chart`, the line chart of the exercise and weight pages, whose `series` of
+  `ChartPoint`s it spaces by index, or by date when every point carries an `x`, and draws through
+  the points' `trend` values instead of their own when any has one, with the raw values as dots,
+  and whose `empty` and `label` set the empty-state text and the plot's `aria-label`; `pagination/`, the paged lists' page arithmetic in `pagination.ts` beside
   `gz-pagination`, their pager; and `confirm/`, whose `confirmAction()` appends a
   `gz-confirm-dialog` to the body, a modal Oat `<dialog>`, and resolves `true` only for its action
   button. Cancel, Escape and a click on the backdrop resolve `false`, and the dialog removes itself
   once it closes.
 
 The features are `exercises`, `workouts`, `stats`, which owns the dashboard and the Statistics
-page, and `auth`, which owns the login page.
+page, `weight`, which owns the body weight log, and `auth`, which owns the login page.
 
 ## Components
 
@@ -101,8 +105,8 @@ click; a click there carries no anchor in its composed path, so `gz-app` leaves 
 
 A feature is shaped like its backend counterpart and named the same. It keeps its route views at
 its root beside its `<feature>.facade.ts`, together with any component another feature renders —
-`gz-workout-card`, which the dashboard renders too, and `gz-muscle-group-icon`, which the workout
-page renders — since the root is the feature's front door. What only it uses goes in `internal/`:
+`gz-workout-card`, which the dashboard renders too, `gz-muscle-group-icon`, which the workout page
+renders, and `gz-weight-tile`, which the dashboard renders — since the root is the feature's front door. What only it uses goes in `internal/`:
 one API class per URL prefix — `workout.api.ts` owns every `/api/workouts/**` URL, `set.api.ts`
 every `/api/sets/**` one — and the child components only its views render.
 
@@ -117,7 +121,8 @@ A component reads data only through a facade; composition across facades stays i
 as it stays in the backend controller. That holds across features too: `gz-workout-detail` loads a
 workout through `workoutFacade` and the exercises for `gz-add-set-form`'s select through
 `exerciseFacade` from `features/exercises/`, never through anything in `exercises/internal/`, and
-`gz-dashboard` takes its summary from `statsFacade` and its recent workouts from `workoutFacade`.
+`gz-dashboard` takes its summary from `statsFacade`, its recent workouts from `workoutFacade` and its
+weigh-ins from `weighInFacade`.
 
 ## Routing
 
@@ -586,8 +591,8 @@ taking a color of its own.
 Below the calendar, `gz-exercise-progress` lists every exercise trained in the last `RECENT_DAYS`
 days from `statsFacade.recentExercises(since)`, loaded beside the calendar with `Promise.all` but
 caught on its own, so a failure toasts and leaves an error line in the section's place while the
-calendar still shows; `since` is `daysBefore(todayIso(), RECENT_DAYS)` from `internal/dates.ts`, by
-the browser's date and independent of the calendar's month. Each exercise is an `article.card` in a
+calendar still shows; `since` is `daysBefore(todayIso(), RECENT_DAYS)`, `daysBefore` from `ui/format.ts` and
+`RECENT_DAYS` from `internal/dates.ts`, by the browser's date and independent of the calendar's month. Each exercise is an `article.card` in a
 plain `<section>`, a grid that collapses to one column on a phone: the name linking to the
 exercise, its overall marker and %, then its last three sessions, each linking to its workout with
 its volume, or total reps for a bodyweight exercise, and its marker and % against the session
@@ -597,6 +602,76 @@ The sessions are an `<ol>` whose items lay out on a shared grid with `subgrid`, 
 `display: contents`, which drops the list's semantics in WebKit. The markers are the same
 `gz-progress-marker` the calendar uses, which owns their CSS so neither shadow root copies it, and
 the cards render in the order the API sends.
+
+## Weight
+
+The Weight page, `gz-weight` at `/weight`, is the body weight log: one weigh-in per date (see
+"Weight" in `docs/backend.md`). It opens with the heading and, as its subtitle, the latest weight
+and its 30-day change, "82.4 kg · ▼ 0.6 kg in 30 days", or "Log your first weigh-in to start the
+trend." without any. The value shown is always the API's `latest`, the newest weigh-in overall,
+never merely the newest one loaded.
+
+### Range and trend
+
+The range — `30d`, `90d`, `1y` or `all`, `90d` by default — lives in the URL as `?range=`, with
+`90d` as the bare `/weight`, and `internal/range.ts` reads and writes it: `parseRange()` reads
+anything unknown as `90d`, `rangeFrom()` is the first date shown and `loadSince()` the first one
+loaded, 6 days earlier, so the 7-day average is complete at the left edge; `all` has neither. One
+`weighInFacade.list(since)` request feeds the chart, the history and the subtitle. The Trend card
+switches the range with a row of buttons styled like `gz-progress-chart`'s metric switch — `outline`
+unless current, with `aria-pressed` — and, like `gz-stats`' months, loads the new range, then pushes
+its URL and shows it in place without remounting, guarded by a token against a slower earlier
+answer; a failure toasts and keeps the shown range. Back and Forward go through `gz-app`.
+
+`internal/trend.ts` holds the math. `averageAt(items, date)` is the mean of the weigh-ins in the 7
+calendar days ending on that date, so a gap leaves fewer to average rather than shifting the window.
+`trendPoints(items, from)` gives each weigh-in from `from` on its average over every loaded item,
+and the chart plots them by date, its line through the averages and its dots at the weigh-ins,
+under the hint "Dots are single weigh-ins; the line is their 7-day average." The history lists
+only the weigh-ins from `from` on, so the 6 extra days are not shown. `change(items, today)` is the
+average of the 7 days ending today minus that of the 7 days ending 30 days ago, anchored at today
+rather than at the newest weigh-in, since every range loads at least today − 36 days and so always
+holds both windows; it reads "▼ 0.6 kg", "▲ 0.3 kg" or, below 0.05 either way, "± 0 kg", each "in
+30 days". Without one of the two windows, after a week without weigh-ins, the subtitle shows the
+latest weigh-in's date instead.
+
+### Logging a weigh-in
+
+The "Log a weigh-in" card is a form of a date, defaulting to the browser's today (`todayIso()`) and
+going no later, and a weight prefilled with `latest`'s, submitted by "Log". Before it PUTs, it finds
+the date's current weigh-in: among the loaded items when the date is on or after the loaded
+`since`, and otherwise through `weighInFacade.get(date)`, where a 404 means there is none — so a
+date outside the shown range is still asked about. When there is one it asks first, "Replace
+weigh-in?" with "Oct 12 · 82.9 kg → 82.4 kg", and Cancel sends nothing. It then toasts "Weigh-in
+logged" or "Weigh-in replaced" and reloads the page. A failed lookup toasts and sends nothing.
+
+### The history
+
+Below the form, the history lists the weigh-ins newest first as `gz-weigh-in-row`s from
+`weight/internal/`, each handed its weigh-in in `afterRender()`. A row is the date, the weight as an
+input with "kg" in Oat's `fieldset.group`, and a `.ghost` × named "Delete Oct 13's weigh-in". Like
+`gz-set-row`, it has no save button: a committed `change` or Enter PUTs the weight when it differs
+and is valid, one request after another, and emits `weigh-in-saved` with the weigh-in the API
+answers; the page swaps it into its data and re-renders without a request, keeping the focused field
+through `focusedField()` and `restoreField()` as `gz-workout-detail` does. × asks "Delete
+weigh-in?" in a danger dialog, then DELETEs and emits `weigh-in-deleted` with the date, and the page
+drops that row. A failure toasts and changes nothing. Both inputs take any decimal (`step="any"`)
+between 20 and 500, since the API keeps two decimals and a stored 82.46 would otherwise read as
+invalid.
+
+### The dashboard tile
+
+The dashboard's fourth tile is Body weight, drawn by `gz-weight-tile`, which sits at the weight
+feature's root because the dashboard renders it, so the trend math stays inside `weight`. The
+dashboard loads `weighInFacade.list()` from 36 days back — the 30-day change's two 7-day windows —
+beside its summary, caught on its own like `gz-stats`' recent exercises: a failure toasts and hands
+the tile `null`, and the rest of the dashboard still shows. The tile wraps
+`<gz-tile label="Body weight" href="/weight">` and shows `latest`'s weight with the 30-day change,
+else `latest`'s date, else "–" with "Log your weight". Its host stretches, so the tiles keep equal
+heights. `gz-tile` takes an optional `href`: with one, its label is a link whose `::after` covers
+the tile, as in `article.open-card`, so the whole tile opens `/weight` and Ctrl-click still opens a
+tab. The Workouts tile's hint is "318 sets · 4,120 reps"; `SummaryDto.exerciseCount` stays in the
+API, unread by the dashboard.
 
 ## Loading
 
@@ -621,7 +696,7 @@ file that does not parse comes back as a 500 naming it, which the toast then rep
 
 A route's script and stylesheet arrive the first time that route is opened, and never otherwise.
 Opening the dashboard fetches only the components the dashboard renders; the chart is downloaded
-only once you open an exercise. Two pieces make that safe: `define()` awaits the component's
+only once you open an exercise or the Weight page. Two pieces make that safe: `define()` awaits the component's
 stylesheet before registering the element, and a top-level `await` blocks the modules that import
 it — so the `await import('./gz-exercise-detail.component.ts')` in the exercise route's `view()`
 resolves only when that view _and_ everything it renders have their scripts and their CSS. A lazily

@@ -212,7 +212,7 @@ describe('versions', () => {
 
   test('the import map names every module, stylesheet and vendor file by its current tag', async () => {
     const imports = importMap(await (await api('/')).text());
-    for (const url of ['/main.ts', '/ui/app.css', '/vendor/oat.css', '/vendor/oat.js', '/features/exercises/internal/gz-chart.component.css']) {
+    for (const url of ['/main.ts', '/ui/app.css', '/vendor/oat.css', '/vendor/oat.js', '/ui/chart/gz-chart.component.css']) {
       expect(imports).toHaveProperty([url]);
     }
     expect(Object.keys(imports).filter((url) => url.endsWith('.test.ts') || url.startsWith('/dev/') || url === '/testing.ts')).toEqual([]);

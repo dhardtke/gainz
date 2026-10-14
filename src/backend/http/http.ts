@@ -1,5 +1,5 @@
 import type { Iso8601Date, Iso8601Month } from '../../shared/flavors.ts';
-import { isIsoDate } from '../shared/validate.ts';
+import { isIsoDate, isRealDate } from '../shared/validate.ts';
 import { badRequest } from './errors.ts';
 
 export function json(data: unknown, status = 200, headers: HeadersInit = {}): Response {
@@ -74,6 +74,24 @@ export function queryMonth(params: URLSearchParams, key: string): Iso8601Month {
 export function queryDate(params: URLSearchParams, key: string): Iso8601Date {
   const raw = params.get(key) ?? '';
   if (!isIsoDate(raw)) {
+    throw badRequest(`"${key}" must be a date in YYYY-MM-DD format`);
+  }
+  return raw;
+}
+
+export function pathDate(raw: string | undefined): Iso8601Date {
+  if (raw === undefined || !isRealDate(raw)) {
+    throw badRequest('Invalid date');
+  }
+  return raw;
+}
+
+export function optionalQueryDate(params: URLSearchParams, key: string): Iso8601Date | null {
+  const raw = params.get(key);
+  if (raw === null || raw === '') {
+    return null;
+  }
+  if (!isRealDate(raw)) {
     throw badRequest(`"${key}" must be a date in YYYY-MM-DD format`);
   }
   return raw;

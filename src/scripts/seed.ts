@@ -1,6 +1,7 @@
 import { DEFAULT_DB_PATH, openDatabase } from '../backend/db/db.ts';
 import { createExerciseFacade } from '../backend/features/exercises/exercises.facade.ts';
 import { createStatsFacade } from '../backend/features/stats/stats.facade.ts';
+import { createWeighInFacade } from '../backend/features/weight/weight.facade.ts';
 import { createWorkoutFacades } from '../backend/features/workouts/workouts.facade.ts';
 import type { ExerciseId, Iso8601Date } from '../shared/flavors.ts';
 import type { MuscleGroup } from '../shared/muscle-group.ts';
@@ -41,6 +42,15 @@ const TEMPLATES = [
 
 const SET_NOTES = [null, null, null, 'Felt strong.', 'Last rep grindy.', 'Left shoulder tight.'];
 
+const WEIGH_IN_DAYS = 130;
+
+// Drifts from about 84.5 kg to 82 kg with a wobble of up to ±0.6 kg; no Math.random, so screenshots are stable.
+function seededWeight(daysAgo: number): number {
+  const progress = (WEIGH_IN_DAYS - 1 - daysAgo) / (WEIGH_IN_DAYS - 1);
+  const wobble = 0.4 * Math.sin(daysAgo * 1.7) + 0.2 * Math.sin(daysAgo * 0.45);
+  return Math.round((84.5 - 2.5 * progress + wobble) * 10) / 10;
+}
+
 function isoDaysAgo(days: number): Iso8601Date {
   const date = new Date();
   date.setDate(date.getDate() - days);
@@ -52,6 +62,7 @@ function main(): void {
   const exercises = createExerciseFacade(db);
   const { workouts, sets } = createWorkoutFacades(db);
   const stats = createStatsFacade(db);
+  const weighIns = createWeighInFacade(db);
 
   if (workouts.count() > 0) {
     console.log('Database already contains workouts — nothing seeded.');
@@ -108,10 +119,19 @@ function main(): void {
         created++;
       });
     }
+
+    // A few skipped days, as a real log has.
+    for (let daysAgo = WEIGH_IN_DAYS - 1; daysAgo >= 0; daysAgo--) {
+      if (daysAgo % 13 !== 6) {
+        weighIns.put(isoDaysAgo(daysAgo), { weight: seededWeight(daysAgo) });
+      }
+    }
   })();
 
   const summary = stats.summary(isoDaysAgo(30));
-  console.log(`Seeded ${summary.workout_count} workouts, ${summary.set_count} sets across ${summary.exercise_count} exercises.`);
+  console.log(
+    `Seeded ${summary.workout_count} workouts, ${summary.set_count} sets across ${summary.exercise_count} exercises, and ${weighIns.list(null).length} weigh-ins.`,
+  );
   db.close();
 }
 

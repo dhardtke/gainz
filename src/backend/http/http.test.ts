@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { useServer } from '../testing.ts';
-import { queryDate } from './http.ts';
+import { optionalQueryDate, pathDate, queryDate } from './http.ts';
 
 const { api, post } = useServer();
 
@@ -27,5 +27,29 @@ describe('queryDate', () => {
 
   test.each(['', 'since=', 'since=2026-1-05', 'since=2026-13-01', 'since=abc'])('rejects %p', (query) => {
     expect(() => queryDate(new URLSearchParams(query), 'since')).toThrow('"since" must be a date in YYYY-MM-DD format');
+  });
+});
+
+describe('pathDate', () => {
+  test('reads a date', () => {
+    expect(pathDate('2026-10-12')).toBe('2026-10-12');
+  });
+
+  test.each([undefined, '', '2026-13-01', '2026-02-30'])('rejects %p', (raw) => {
+    expect(() => pathDate(raw)).toThrow('Invalid date');
+  });
+});
+
+describe('optionalQueryDate', () => {
+  test('reads a date', () => {
+    expect(optionalQueryDate(new URLSearchParams('since=2026-10-12'), 'since')).toBe('2026-10-12');
+  });
+
+  test.each(['', 'since='])('reads %p as null', (query) => {
+    expect(optionalQueryDate(new URLSearchParams(query), 'since')).toBeNull();
+  });
+
+  test.each(['since=2026-13-01', 'since=2026-02-30', 'since=abc'])('rejects %p', (query) => {
+    expect(() => optionalQueryDate(new URLSearchParams(query), 'since')).toThrow('"since" must be a date in YYYY-MM-DD format');
   });
 });

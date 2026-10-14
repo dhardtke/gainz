@@ -9,6 +9,7 @@ import type { RouteTable } from './routing.ts';
 import { statsRoutes } from '../features/stats/stats.routes.ts';
 import { staticRoutes } from '../features/static/static.routes.ts';
 import { workoutRoutes } from '../features/workouts/workout.routes.ts';
+import { weightRoutes } from '../features/weight/weight.routes.ts';
 import { accessLog } from './access-log.ts';
 
 // accessLog wraps the guard so 401s are logged. Spread order is cosmetic: Bun matches by specificity.
@@ -22,6 +23,7 @@ export function allRoutes(db: DB, authOptions: AuthOptions): RouteTable {
       ...exerciseRoutes(db),
       ...workoutRoutes(db),
       ...setRoutes(db),
+      ...weightRoutes(db),
     }),
     ...devRoutes(),
     ...staticRoutes(auth),

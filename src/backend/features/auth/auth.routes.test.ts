@@ -42,6 +42,16 @@ describe('the guard', () => {
     expect((await post('/api/workouts', { performedOn: '2026-01-01' })).status).toBe(401);
   });
 
+  test.each([
+    ['GET', '/api/weigh-ins'],
+    ['GET', '/api/weigh-ins/2026-10-13'],
+    ['PUT', '/api/weigh-ins/2026-10-13'],
+    ['DELETE', '/api/weigh-ins/2026-10-13'],
+  ])('refuses %s %s without a cookie', async (method, path) => {
+    const res = await api(path, { method, headers: { 'Content-Type': 'application/json' }, body: method === 'PUT' ? '{"weight":82.4}' : undefined });
+    expect(res.status).toBe(401);
+  });
+
   test('leaves health, the /api 404s, the frontend and the vendor files public', async () => {
     const health = await api('/api/health');
     expect(health.status).toBe(200);

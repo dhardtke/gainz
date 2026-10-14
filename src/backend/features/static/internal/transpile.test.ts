@@ -18,8 +18,8 @@ describe('typescript modules', () => {
   });
 
   test('leaves import specifiers alone, so a URL names a real file', async () => {
-    const body = await (await api('/features/exercises/internal/gz-chart.component.ts')).text();
-    expect(body).toContain('from "../../../ui/format.ts"');
+    const body = await (await api('/ui/chart/gz-chart.component.ts')).text();
+    expect(body).toContain('from "../format.ts"');
   });
 
   test('serves the entry point index.html names', async () => {
@@ -39,7 +39,7 @@ describe('typescript modules', () => {
   });
 
   test('keeps the load-bearing top-level await that pairs a module with its CSS', async () => {
-    const body = await (await api('/features/exercises/internal/gz-chart.component.ts')).text();
+    const body = await (await api('/ui/chart/gz-chart.component.ts')).text();
     expect(body).toContain('await define("gz-chart"');
   });
 

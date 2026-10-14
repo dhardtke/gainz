@@ -16,7 +16,7 @@ describe('the frontend bundle', () => {
     // Not only `.url`: the rewrite is textual, so any `import.meta` left would be one it missed.
     expect(bundle).not.toContain('import.meta');
     expect(bundle).toContain('"/app/gz-app.component.ts"');
-    expect(bundle).toContain('"/features/exercises/internal/gz-chart.component.ts"');
+    expect(bundle).toContain('"/ui/chart/gz-chart.component.ts"');
   });
 
   test('carries every component stylesheet and the base sheets', async () => {

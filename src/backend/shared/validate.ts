@@ -112,6 +112,12 @@ export function isIsoDate(value: string): boolean {
   return ISO_DATE.test(value) && !Number.isNaN(Date.parse(value));
 }
 
+/** Unlike `isIsoDate`, refuses a day the month lacks, such as 2026-02-30. */
+export function isRealDate(value: string): boolean {
+  const [year, month, day] = value.split('-').map(Number);
+  return isIsoDate(value) && new Date(Date.UTC(year ?? 0, (month ?? 1) - 1, day ?? 1)).toISOString().slice(0, 10) === value;
+}
+
 export function requiredDate<T extends object>(dto: T, field: keyof T & string): Iso8601Date {
   const value = requiredString(dto, field, 10);
   if (!isIsoDate(value)) {

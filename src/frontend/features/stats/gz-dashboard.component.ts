@@ -1,30 +1,52 @@
 import type { RawHtml } from '../../ui/html.ts';
 import { define } from '../../ui/base.ts';
 import { html } from '../../ui/html.ts';
-import { formatVolume, plural, relativeDay, todayIso } from '../../ui/format.ts';
+import { daysBefore, formatVolume, plural, relativeDay, todayIso } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
 import type { SummaryDto } from '../../../shared/dto/stats.ts';
 import type { WorkoutWithStatsDto } from '../../../shared/dto/workout.ts';
+import type { WeighInListDto } from '../../../shared/dto/weight.ts';
+import type { Iso8601Date } from '../../../shared/flavors.ts';
 import { toastError } from '../../ui/toast.ts';
 import { GzView } from '../../ui/view.ts';
 import { workoutFacade } from '../workouts/workouts.facade.ts';
 import type { GzWorkoutCardComponent } from '../workouts/gz-workout-card.component.ts';
 import '../workouts/gz-workout-card.component.ts';
+import { weighInFacade } from '../weight/weight.facade.ts';
+import type { GzWeightTileComponent } from '../weight/gz-weight-tile.component.ts';
+import '../weight/gz-weight-tile.component.ts';
 import { statsFacade } from './stats.facade.ts';
-import { daysBefore, RECENT_DAYS } from './internal/dates.ts';
+import { RECENT_DAYS } from './internal/dates.ts';
 import '../../ui/tile/gz-tile.component.ts';
 
 interface DashboardData {
   summary: SummaryDto;
   workouts: WorkoutWithStatsDto[];
+  // Null when the weigh-ins failed to load; the rest of the dashboard still shows.
+  weighIns: WeighInListDto | null;
 }
 
 export class GzDashboardComponent extends GzView<DashboardData> {
   override loadingText = 'Loading your log…';
 
   override async load(): Promise<DashboardData> {
-    const [summary, page] = await Promise.all([statsFacade.summary(daysBefore(todayIso(), RECENT_DAYS)), workoutFacade.list({ limit: 5 })]);
-    return { summary, workouts: page.items };
+    const today = todayIso();
+    const [summary, page, weighIns] = await Promise.all([
+      statsFacade.summary(daysBefore(today, RECENT_DAYS)),
+      workoutFacade.list({ limit: 5 }),
+      this.#loadWeighIns(today),
+    ]);
+    return { summary, workouts: page.items, weighIns };
+  }
+
+  // Both windows of the 30-day change: the 7 days ending today and those ending 30 days ago.
+  async #loadWeighIns(today: Iso8601Date): Promise<WeighInListDto | null> {
+    try {
+      return await weighInFacade.list(daysBefore(today, RECENT_DAYS + 6));
+    } catch (error) {
+      toastError(error);
+      return null;
+    }
   }
 
   override async handleAction(action: string): Promise<void> {
@@ -40,6 +62,10 @@ export class GzDashboardComponent extends GzView<DashboardData> {
   }
 
   override afterRender(): void {
+    const weight = this.$<GzWeightTileComponent>('gz-weight-tile');
+    if (weight && this.data) {
+      weight.list = this.data.weighIns;
+    }
     for (const card of this.$$<GzWorkoutCardComponent>('gz-workout-card')) {
       card.workout = this.data?.workouts.find((workout) => workout.id === Number(card.dataset.id));
     }
@@ -59,10 +85,10 @@ export class GzDashboardComponent extends GzView<DashboardData> {
         </div>
 
         <div class="tiles">
-          <gz-tile label="Workouts" value="${summary.workoutCount}" hint="${plural(summary.setCount, 'set')} total"></gz-tile>
+          <gz-tile label="Workouts" value="${summary.workoutCount}" hint="${plural(summary.setCount, 'set')} · ${plural(summary.totalReps, 'rep')}"></gz-tile>
           <gz-tile label="Total volume" value="${formatVolume(summary.totalVolume)}" hint="reps × weight, all time"></gz-tile>
           <gz-tile label="Last ${RECENT_DAYS} days" value="${summary.workoutsSince}" hint="${formatVolume(summary.volumeSince)} moved"></gz-tile>
-          <gz-tile label="Exercises" value="${summary.exerciseCount}" hint="${plural(summary.totalReps, 'rep')} lifted"></gz-tile>
+          <gz-weight-tile data-testid="weight-tile"></gz-weight-tile>
         </div>
 
         <section class="vstack gap-2">

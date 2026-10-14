@@ -83,7 +83,7 @@ describe('single-file build', () => {
     expect(bundle).not.toContain('GzDashboardComponent');
     expect(bundle).not.toContain('import.meta');
 
-    for (const url of ['/app/gz-app.component.ts', '/ui/format.ts', '/ui/inline-styles.ts', '/features/exercises/internal/gz-chart.component.ts']) {
+    for (const url of ['/app/gz-app.component.ts', '/ui/format.ts', '/ui/inline-styles.ts', '/ui/chart/gz-chart.component.ts']) {
       expect({ url, status: (await get(url)).status }).toEqual({ url, status: 404 });
     }
   });

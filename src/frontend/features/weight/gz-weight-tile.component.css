@@ -1,0 +1,8 @@
+/* Stretched like its sibling tiles, so the dashboard's grid keeps their heights equal. */
+:host {
+  height: 100%;
+}
+
+gz-tile {
+  height: 100%;
+}

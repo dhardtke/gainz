@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { useFetch } from '../testing.ts';
 import { ApiError, UNAUTHORIZED_EVENT } from './errors.ts';
-import { get, patch, post, remove } from './http.ts';
+import { get, patch, post, put, remove } from './http.ts';
 
 const fetch = useFetch();
 
@@ -26,6 +26,7 @@ describe('requests', () => {
 
   test.each([
     ['POST', post],
+    ['PUT', put],
     ['PATCH', patch],
   ] as const)('%s sends its body as JSON', async (method, send) => {
     await send('/sets/1', { reps: 5, note: 'easy' });
@@ -35,6 +36,7 @@ describe('requests', () => {
 
   test.each([
     ['POST', post],
+    ['PUT', put],
     ['PATCH', patch],
   ] as const)('%s without a body still sends an empty object, so the server always gets JSON', async (method, send) => {
     await send('/workouts');
