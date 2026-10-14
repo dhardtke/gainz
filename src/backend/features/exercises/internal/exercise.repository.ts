@@ -1,7 +1,9 @@
 import type { DB } from '../../../db/db.ts';
 import { conflict, notFound } from '../../../http/errors.ts';
 import { buildUpdate, isUniqueViolation } from '../../../db/sql.ts';
-import { EST_1RM_SQL, LAST_SESSION_WORKOUT_SQL, SET_COLUMNS } from '../../workouts/ports/sql.ts';
+import { bodyWeightOnSql } from '../../weight/ports/sql.ts';
+import { EST_1RM_SQL, effectiveVolumeSql, LAST_SESSION_WORKOUT_SQL, SET_COLUMNS } from '../../workouts/ports/sql.ts';
+import type { ExerciseKind } from '../../../../shared/exercise-kind.ts';
 import type { ExerciseId, Iso8601Date, WorkoutId } from '../../../../shared/flavors.ts';
 import type { MuscleGroup } from '../../../../shared/muscle-group.ts';
 import type { Exercise, ExerciseFilter, ExerciseWithStats, LastSession, SessionPoint } from '../ports/exercise.ts';
@@ -11,15 +13,15 @@ export interface CreateExercise {
   name: string;
   muscle_group: MuscleGroup | null;
   notes: string | null;
-  bodyweight: 0 | 1;
+  kind: ExerciseKind;
 }
 
 export type EditExercise = Partial<CreateExercise>;
 
-const EXERCISE_COLUMNS = 'e.id, e.name, e.muscle_group, e.notes, e.bodyweight, e.created_at';
-const FIELDS = ['name', 'muscle_group', 'notes', 'bodyweight'] as const;
+const EXERCISE_COLUMNS = 'e.id, e.name, e.muscle_group, e.notes, e.kind, e.created_at';
+const FIELDS = ['name', 'muscle_group', 'notes', 'kind'] as const;
 
-type FilterParam = MuscleGroup | number | null;
+type FilterParam = MuscleGroup | ExerciseKind | number | null;
 
 // Unqualified columns: neither `sets` nor `workouts` has one of these, so `list()`'s joins leave them unambiguous.
 function filterConditions(filter: ExerciseFilter): { conditions: string[]; params: FilterParam[] } {
@@ -30,9 +32,9 @@ function filterConditions(filter: ExerciseFilter): { conditions: string[]; param
     conditions.push('muscle_group IS ?');
     params.push(filter.muscle_group);
   }
-  if (filter.bodyweight !== undefined) {
-    conditions.push('bodyweight = ?');
-    params.push(filter.bodyweight);
+  if (filter.kind !== undefined) {
+    conditions.push('kind = ?');
+    params.push(filter.kind);
   }
   return { conditions, params };
 }
@@ -59,7 +61,8 @@ export class ExerciseRepository {
                 COUNT(DISTINCT s.workout_id) AS workout_count,
                 MAX(w.performed_on)          AS last_performed_on,
                 MAX(s.weight)                AS best_weight,
-                MAX(s.reps)                  AS best_reps
+                MAX(s.reps)                  AS best_reps,
+                MIN(s.weight)                AS least_weight
            FROM exercises e
            LEFT JOIN sets s     ON s.exercise_id = e.id AND s.done = 1
            LEFT JOIN workouts w ON w.id = s.workout_id
@@ -104,11 +107,11 @@ export class ExerciseRepository {
   create(input: CreateExercise): Exercise {
     try {
       const row = this.#db
-        .query<Exercise, [string, MuscleGroup | null, string | null, 0 | 1]>(
-          `INSERT INTO exercises (name, muscle_group, notes, bodyweight) VALUES (?, ?, ?, ?)
-           RETURNING id, name, muscle_group, notes, bodyweight, created_at`,
+        .query<Exercise, [string, MuscleGroup | null, string | null, ExerciseKind]>(
+          `INSERT INTO exercises (name, muscle_group, notes, kind) VALUES (?, ?, ?, ?)
+           RETURNING id, name, muscle_group, notes, kind, created_at`,
         )
-        .get(input.name, input.muscle_group, input.notes, input.bodyweight);
+        .get(input.name, input.muscle_group, input.notes, input.kind);
       if (!row) {
         throw new Error('Insert of exercise returned no row');
       }
@@ -122,14 +125,7 @@ export class ExerciseRepository {
   }
 
   update(id: ExerciseId, patch: EditExercise): Exercise {
-    const exercise = this.require(id);
-    if (patch.bodyweight === 1 && exercise.bodyweight === 0) {
-      const weighted = this.#db.query<{ n: number }, [ExerciseId]>('SELECT COUNT(*) AS n FROM sets WHERE exercise_id = ? AND weight <> 0').get(id);
-      if (weighted && weighted.n > 0) {
-        throw conflict(`"${exercise.name}" has sets with weight; it cannot become bodyweight`);
-      }
-    }
-
+    this.require(id);
     const update = buildUpdate('exercises', FIELDS, patch);
     if (update) {
       try {
@@ -163,7 +159,9 @@ export class ExerciseRepository {
                 SUM(s.reps * s.weight) AS total_volume,
                 MAX(s.weight)          AS top_weight,
                 MAX(s.reps)            AS top_reps,
-                MAX(${EST_1RM_SQL})    AS est_one_rep_max
+                MAX(${EST_1RM_SQL})    AS est_one_rep_max,
+                MIN(s.weight)          AS least_weight,
+                ${effectiveVolumeSql(bodyWeightOnSql('w.performed_on'), 'SUM(s.reps)', 'SUM(s.reps * s.weight)', 'MAX(s.weight)')} AS effective_volume
            FROM sets s
            JOIN workouts w ON w.id = s.workout_id
           WHERE s.exercise_id = ? AND s.done = 1
@@ -173,7 +171,9 @@ export class ExerciseRepository {
       .all(id);
   }
 
-  bestSet(id: ExerciseId): (LiftSet & { performed_on: Iso8601Date }) | null {
+  bestSet(id: ExerciseId, kind: ExerciseKind): (LiftSet & { performed_on: Iso8601Date }) | null {
+    // An assisted exercise's best set is its least assisted, ties broken by reps.
+    const order = kind === 'assisted' ? 's.weight ASC, s.reps DESC' : `${EST_1RM_SQL} DESC, s.weight DESC, s.reps DESC`;
     return this.#db
       .query<LiftSet & { performed_on: Iso8601Date }, [ExerciseId]>(
         `SELECT ${SET_COLUMNS}, w.performed_on
@@ -181,7 +181,7 @@ export class ExerciseRepository {
            JOIN exercises e ON e.id = s.exercise_id
            JOIN workouts w  ON w.id = s.workout_id
           WHERE s.exercise_id = ? AND s.done = 1
-          ORDER BY ${EST_1RM_SQL} DESC, s.weight DESC, s.reps DESC
+          ORDER BY ${order}
           LIMIT 1`,
       )
       .get(id);

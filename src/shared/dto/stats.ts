@@ -1,13 +1,16 @@
 import type { ExerciseId, Iso8601Date, Iso8601Month, WorkoutId } from '../flavors.ts';
+import type { ExerciseKind } from '../exercise-kind.ts';
 
 export interface SummaryDto {
   workoutCount: number;
   setCount: number;
   totalReps: number;
+  /** Weighted exercises only. */
   totalVolume: number;
   exerciseCount: number;
   lastPerformedOn: Iso8601Date | null;
   workoutsSince: number;
+  /** Weighted exercises only. */
   volumeSince: number;
 }
 
@@ -39,6 +42,8 @@ export interface RecentSessionDto {
   performedOn: Iso8601Date;
   reps: number;
   volume: number;
+  /** reps × (body weight − weight); null without a weigh-in on or before the date or with assistance at or above it. */
+  effectiveVolume: number | null;
   /** Change against the session before it, as a fraction (0.041 = +4.1%). */
   progression: number | null;
 }
@@ -46,7 +51,7 @@ export interface RecentSessionDto {
 export interface RecentExerciseDto {
   id: ExerciseId;
   name: string;
-  bodyweight: boolean;
+  kind: ExerciseKind;
   /** Change of the newest shown session against the oldest shown one the rule compares, as a fraction. */
   progression: number | null;
   /** Date of the session `progression` compares against, `null` with it. */

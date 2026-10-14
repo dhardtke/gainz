@@ -1,8 +1,9 @@
-import type { CreateExerciseDto, EditExerciseDto, ExerciseFilterDto, ExerciseType } from '../../../shared/dto/exercise.ts';
+import type { CreateExerciseDto, EditExerciseDto, ExerciseFilterDto } from '../../../shared/dto/exercise.ts';
+import type { ExerciseKind } from '../../../shared/exercise-kind.ts';
 import type { ExerciseId, Iso8601Date, WorkoutId } from '../../../shared/flavors.ts';
 import type { MuscleGroup } from '../../../shared/muscle-group.ts';
 import type { DB } from '../../db/db.ts';
-import { optionalOneOf, optionalString, requiredBoolean, requiredString } from '../../shared/validate.ts';
+import { optionalOneOf, optionalString, requiredOneOf, requiredString } from '../../shared/validate.ts';
 import { translateDtoToCreateExercise, translateDtoToEditExercise, translateDtoToExerciseFilter } from './internal/exercise.translator.ts';
 import { ExerciseRepository } from './internal/exercise.repository.ts';
 import type { Exercise, ExerciseWithStats, LastSession, SessionPoint } from './ports/exercise.ts';
@@ -10,7 +11,7 @@ import type { LiftSet } from '../workouts/ports/set.ts';
 
 export const MUSCLE_GROUPS = ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core', 'Full body'] as const satisfies readonly MuscleGroup[];
 
-export const EXERCISE_TYPES = ['bodyweight', 'weighted'] as const satisfies readonly ExerciseType[];
+export const EXERCISE_KINDS = ['weighted', 'bodyweight', 'assisted'] as const satisfies readonly ExerciseKind[];
 
 const MAX_EXERCISE_NAME_LENGTH = 120;
 const MAX_EXERCISE_NOTES_LENGTH = 2000;
@@ -54,8 +55,8 @@ export class ExerciseFacade {
     return this.#exercises.progress(id);
   }
 
-  bestSet(id: ExerciseId): (LiftSet & { performed_on: Iso8601Date }) | null {
-    return this.#exercises.bestSet(id);
+  bestSet(id: ExerciseId, kind: ExerciseKind): (LiftSet & { performed_on: Iso8601Date }) | null {
+    return this.#exercises.bestSet(id, kind);
   }
 
   lastSession(id: ExerciseId, exceptWorkout: WorkoutId | null): LastSession | null {
@@ -67,7 +68,8 @@ export class ExerciseFacade {
       name: requiredString(dto, 'name', MAX_EXERCISE_NAME_LENGTH),
       muscleGroup: optionalOneOf(dto, 'muscleGroup', MUSCLE_GROUPS),
       notes: optionalString(dto, 'notes', MAX_EXERCISE_NOTES_LENGTH),
-      bodyweight: dto.bodyweight === undefined ? false : requiredBoolean(dto, 'bodyweight'),
+      // Not optionalOneOf, which would take '' and null for absent.
+      kind: dto.kind === undefined ? 'weighted' : requiredOneOf(dto, 'kind', EXERCISE_KINDS),
     };
   }
 
@@ -82,8 +84,8 @@ export class ExerciseFacade {
     if (dto.notes !== undefined) {
       valid.notes = optionalString(dto, 'notes', MAX_EXERCISE_NOTES_LENGTH);
     }
-    if (dto.bodyweight !== undefined) {
-      valid.bodyweight = requiredBoolean(dto, 'bodyweight');
+    if (dto.kind !== undefined) {
+      valid.kind = requiredOneOf(dto, 'kind', EXERCISE_KINDS);
     }
     return valid;
   }

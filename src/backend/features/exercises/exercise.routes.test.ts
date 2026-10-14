@@ -2,11 +2,13 @@ import { describe, expect, test } from 'bun:test';
 import type { ErrorDto } from '../../../shared/dto/error.ts';
 import type { ExerciseDto, ExerciseLastSessionDto, ExercisePageDto, ExercisePositionDto, ExerciseProgressDto } from '../../../shared/dto/exercise.ts';
 import type { LiftSetDto } from '../../../shared/dto/set.ts';
+import type { Iso8601Date } from '../../../shared/flavors.ts';
 import { at, body, useServer } from '../../testing.ts';
 import { createExercise } from './exercises.fixtures.ts';
+import { putWeighIn } from '../weight/weight.fixtures.ts';
 import { createSet, createWorkout, markDone } from '../workouts/workouts.fixtures.ts';
 
-const { api, post, patch } = useServer();
+const { api, post, patch, put } = useServer();
 
 describe('exercises', () => {
   test('creates and lists exercises', async () => {
@@ -78,49 +80,30 @@ describe('exercises', () => {
     expect((await patch(`/api/exercises/${exercise.id}`, { muscleGroup: 'Quads' })).status).toBe(400);
   });
 
-  test('creates a weighted exercise unless told it is bodyweight', async () => {
-    expect((await createExercise(post, 'Back Squat')).bodyweight).toBe(false);
-    expect((await createExercise(post, 'Dips', { bodyweight: true })).bodyweight).toBe(true);
+  test('creates a weighted exercise unless told its kind', async () => {
+    expect((await createExercise(post, 'Back Squat')).kind).toBe('weighted');
+    expect((await createExercise(post, 'Dips', { kind: 'bodyweight' })).kind).toBe('bodyweight');
+    expect((await createExercise(post, 'Assisted Pull-up', { kind: 'assisted' })).kind).toBe('assisted');
   });
 
-  test('rejects a bodyweight flag that is not a boolean', async () => {
-    const res = await post('/api/exercises', { name: 'Dips', bodyweight: 'yes' });
+  test.each(['heavy', '', null])('rejects the kind %p', async (kind) => {
+    const res = await post('/api/exercises', { name: 'Dips', kind });
     expect(res.status).toBe(400);
-    expect((await body<ErrorDto>(res)).error).toBe('"bodyweight" must be true or false');
+    expect((await body<ErrorDto>(res)).error).toBe('"kind" must be one of: weighted, bodyweight, assisted');
     const exercise = await createExercise(post);
-    expect((await patch(`/api/exercises/${exercise.id}`, { bodyweight: 'yes' })).status).toBe(400);
+    expect((await patch(`/api/exercises/${exercise.id}`, { kind })).status).toBe(400);
   });
 
-  test('refuses to make bodyweight an exercise with weighted sets', async () => {
-    const exercise = await createExercise(post);
-    const workout = await createWorkout(post);
-    await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 0 });
-    await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
-
-    const res = await patch(`/api/exercises/${exercise.id}`, { bodyweight: true });
-    expect(res.status).toBe(409);
-    expect((await body<ErrorDto>(res)).error).toBe('"Bench Press" has sets with weight; it cannot become bodyweight');
-  });
-
-  test('makes bodyweight an exercise whose sets all weigh 0, and weighted again', async () => {
-    const exercise = await createExercise(post, 'Dips');
-    const workout = await createWorkout(post);
-    await createSet(post, workout.id, { exerciseId: exercise.id, reps: 12, weight: 0 });
-
-    const res = await patch(`/api/exercises/${exercise.id}`, { bodyweight: true });
-    expect(res.status).toBe(200);
-    expect((await body<ExerciseDto>(res)).bodyweight).toBe(true);
-    expect(await body<ExerciseDto>(await patch(`/api/exercises/${exercise.id}`, { bodyweight: false }))).toMatchObject({ bodyweight: false });
-  });
-
-  test('makes weighted an exercise whatever its history', async () => {
+  test('changes the kind in every direction whatever its history', async () => {
     const exercise = await createExercise(post);
     const workout = await createWorkout(post);
     await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
 
-    const res = await patch(`/api/exercises/${exercise.id}`, { bodyweight: false });
-    expect(res.status).toBe(200);
-    expect((await body<ExerciseDto>(res)).bodyweight).toBe(false);
+    for (const kind of ['bodyweight', 'assisted', 'weighted', 'assisted', 'bodyweight', 'weighted'] as const) {
+      const res = await patch(`/api/exercises/${exercise.id}`, { kind });
+      expect(res.status).toBe(200);
+      expect((await body<ExerciseDto>(res)).kind).toBe(kind);
+    }
   });
 
   test('returns 404 for a missing exercise', async () => {
@@ -220,14 +203,15 @@ describe('filtering by type', () => {
   // Answers each seeded exercise's id by name.
   async function seed(): Promise<(name: string) => number> {
     const ids = new Map<string, number>();
-    for (const [name, muscleGroup, bodyweight] of [
-      ['Dips', 'Chest', true],
-      ['Bench Press', 'Chest', false],
-      ['Pull-up', 'Back', true],
-      ['Barbell Row', 'Back', false],
-      ['Plank', null, true],
+    for (const [name, muscleGroup, kind] of [
+      ['Dips', 'Chest', 'bodyweight'],
+      ['Bench Press', 'Chest', 'weighted'],
+      ['Pull-up', 'Back', 'bodyweight'],
+      ['Barbell Row', 'Back', 'weighted'],
+      ['Plank', null, 'bodyweight'],
+      ['Assisted Dip', 'Chest', 'assisted'],
     ] as const) {
-      ids.set(name, (await createExercise(post, name, { muscleGroup, bodyweight })).id);
+      ids.set(name, (await createExercise(post, name, { muscleGroup, kind })).id);
     }
     return (name) => ids.get(name) ?? 0;
   }
@@ -235,17 +219,19 @@ describe('filtering by type', () => {
   const names = async (query: string): Promise<string[]> =>
     (await body<ExercisePageDto>(await api(`/api/exercises?${query}`))).items.map((exercise) => exercise.name);
 
-  test('lists only the bodyweight or only the weighted exercises, counting them and every exercise', async () => {
+  test('lists only the exercises of one kind, counting them and every exercise', async () => {
     await seed();
     const page = await body<ExercisePageDto>(await api('/api/exercises?type=bodyweight'));
     expect(page.items.map((exercise) => exercise.name)).toEqual(['Dips', 'Plank', 'Pull-up']);
-    expect(page).toMatchObject({ total: 3, all: 5 });
+    expect(page).toMatchObject({ total: 3, all: 6 });
     expect(await names('type=weighted')).toEqual(['Barbell Row', 'Bench Press']);
+    expect(await names('type=assisted')).toEqual(['Assisted Dip']);
   });
 
   test('combines with the muscle group filter', async () => {
     await seed();
     expect(await names('type=bodyweight&muscleGroup=Chest')).toEqual(['Dips']);
+    expect(await names('type=assisted&muscleGroup=Chest')).toEqual(['Assisted Dip']);
     expect(await names('type=weighted&muscleGroup=Back')).toEqual(['Barbell Row']);
     expect(await names('type=bodyweight&muscleGroup=none')).toEqual(['Plank']);
     expect(await names('type=weighted&muscleGroup=none')).toEqual([]);
@@ -260,10 +246,10 @@ describe('filtering by type', () => {
     expect(await indexOf('Pull-up', 'type=bodyweight&muscleGroup=Back')).toBe(0);
   });
 
-  test.each(['Bodyweight', 'true'])('rejects the type %s', async (type) => {
+  test.each(['Bodyweight', 'true', 'other'])('rejects the type %s', async (type) => {
     const res = await api(`/api/exercises?type=${type}`);
     expect(res.status).toBe(400);
-    expect((await body<ErrorDto>(res)).error).toBe('"type" must be one of: bodyweight, weighted');
+    expect((await body<ErrorDto>(res)).error).toBe('"type" must be one of: weighted, bodyweight, assisted');
     expect((await api(`/api/exercises/1/position?type=${type}`)).status).toBe(400);
   });
 });
@@ -342,6 +328,7 @@ describe('sets not done', () => {
       lastPerformedOn: '2026-01-05',
       bestWeight: 60,
       bestReps: 5,
+      leastWeight: 60,
     });
 
     const progress = await body<ExerciseProgressDto>(await api(`/api/exercises/${exercise.id}/progress`));
@@ -362,6 +349,7 @@ describe('sets not done', () => {
       lastPerformedOn: null,
       bestWeight: null,
       bestReps: null,
+      leastWeight: null,
     });
     expect((await api(`/api/exercises/${exercise.id}`, { method: 'DELETE' })).status).toBe(409);
   });
@@ -435,5 +423,63 @@ describe('last session', () => {
     const exercise = await createExercise(post);
     expect((await api('/api/exercises/9999/last-session')).status).toBe(404);
     expect((await api(`/api/exercises/${exercise.id}/last-session?exceptWorkout=abc`)).status).toBe(400);
+  });
+});
+
+describe('progress of an assisted exercise', () => {
+  async function logDone(date: Iso8601Date, exerciseId: number, sets: [number, number][]): Promise<void> {
+    const workout = await createWorkout(post, date);
+    for (const [reps, weight] of sets) {
+      await markDone(patch, (await createSet(post, workout.id, { exerciseId, reps, weight })).id);
+    }
+  }
+
+  test("reads each session's least assistance and effective volume from the weigh-in on or before it", async () => {
+    const pullUp = await createExercise(post, 'Assisted Pull-up', { kind: 'assisted' });
+    await logDone('2026-10-01', pullUp.id, [
+      [8, 30],
+      [6, 25],
+    ]);
+    await putWeighIn(put, '2026-10-02', 80);
+    await putWeighIn(put, '2026-10-20', 90);
+    await logDone('2026-10-05', pullUp.id, [
+      [8, 25],
+      [8, 22.5],
+    ]);
+    const open = await createWorkout(post, '2026-10-05');
+    await createSet(post, open.id, { exerciseId: pullUp.id, reps: 8, weight: 5 });
+
+    const progress = await body<ExerciseProgressDto>(await api(`/api/exercises/${pullUp.id}/progress`));
+    expect(progress.sessions.map(({ leastWeight, effectiveVolume }) => ({ leastWeight, effectiveVolume }))).toEqual([
+      { leastWeight: 25, effectiveVolume: null },
+      { leastWeight: 22.5, effectiveVolume: 16 * 80 - (8 * 25 + 8 * 22.5) },
+    ]);
+  });
+
+  test('has no effective volume for a session with assistance at or above the body weight', async () => {
+    const pullUp = await createExercise(post, 'Assisted Pull-up', { kind: 'assisted' });
+    await putWeighIn(put, '2026-09-30', 60);
+    await logDone('2026-10-01', pullUp.id, [
+      [8, 30],
+      [5, 60],
+    ]);
+
+    const progress = await body<ExerciseProgressDto>(await api(`/api/exercises/${pullUp.id}/progress`));
+    expect(progress.sessions[0]?.effectiveVolume).toBeNull();
+  });
+
+  test('takes the least assisted set as the best, ties broken by reps', async () => {
+    const pullUp = await createExercise(post, 'Assisted Pull-up', { kind: 'assisted' });
+    await logDone('2026-10-01', pullUp.id, [
+      [10, 30],
+      [6, 17.5],
+    ]);
+    await logDone('2026-10-05', pullUp.id, [
+      [8, 17.5],
+      [12, 20],
+    ]);
+
+    const progress = await body<ExerciseProgressDto>(await api(`/api/exercises/${pullUp.id}/progress`));
+    expect(progress.bestSet).toMatchObject({ weight: 17.5, reps: 8, performedOn: '2026-10-05' });
   });
 });

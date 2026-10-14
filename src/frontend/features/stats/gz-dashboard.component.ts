@@ -86,7 +86,7 @@ export class GzDashboardComponent extends GzView<DashboardData> {
 
         <div class="tiles">
           <gz-tile label="Workouts" value="${summary.workoutCount}" hint="${plural(summary.setCount, 'set')} · ${plural(summary.totalReps, 'rep')}"></gz-tile>
-          <gz-tile label="Total volume" value="${formatVolume(summary.totalVolume)}" hint="reps × weight, all time"></gz-tile>
+          <gz-tile label="Total volume" value="${formatVolume(summary.totalVolume)}" hint="weighted lifts, all time"></gz-tile>
           <gz-tile label="Last ${RECENT_DAYS} days" value="${summary.workoutsSince}" hint="${formatVolume(summary.volumeSince)} moved"></gz-tile>
           <gz-weight-tile data-testid="weight-tile"></gz-weight-tile>
         </div>

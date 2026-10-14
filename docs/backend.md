@@ -264,9 +264,13 @@ existed before it as done, since each of those was really performed.
 
 Because a set not done is a plan, the history aggregates count done sets only — and a done
 workout's unchecked sets stay plans, skipped rather than performed, so they are not counted either:
-the exercise list's `setCount`, `workoutCount`, `lastPerformedOn`, `bestWeight` and `bestReps` (its
-join carries `s.done = 1` in the `ON` clause, so an exercise without done sets still lists, with
-zero counts), the progress points with their `topReps`, the best set, the stats summary's
+the exercise list's `setCount`, `workoutCount`, `lastPerformedOn`, `bestWeight`, `bestReps` and
+`leastWeight`, an assisted exercise's least assistance (its join carries `s.done = 1` in the `ON`
+clause, so an exercise without done sets still lists, with zero counts), the progress points with
+their `topReps`, `leastWeight` and `effectiveVolume` — the latter by the statistics' rule (see
+"Statistics"), from the weigh-in on or before each session — the best set, which for an assisted
+exercise is the least assisted (`weight ASC, reps DESC`) rather than the best Epley estimate, the
+stats summary's
 `setCount`, `totalReps`, `totalVolume` and `volumeSince`, the training calendar's days and
 progression, the recent exercises' sessions and the last session. The rest counts every set or
 workout: a workout's own totals, on its card and its page, describe the whole session, planned sets
@@ -284,11 +288,11 @@ were logged (`position, id`). A set's exercise is likewise fixed at creation: `P
 does not take `exerciseId`, and one in the body is ignored like any unknown key, as is a
 `position`.
 
-A set's weight follows its exercise's `bodyweight` flag. `weight` on
-`POST /api/workouts/:id/sets` is required for a weighted exercise, a 400 without it, and optional
-for a bodyweight one, stored as 0; any other weight there, on create or on `PATCH /api/sets/:id`,
-is a 400. `SetRepository#weightFor` decides inside the write's transaction, reading the flag as it
-stands, so the unknown-exercise 400 comes from that lookup before the foreign key could fail.
+A set's weight follows its exercise's `kind`. `weight` on `POST /api/workouts/:id/sets` is
+required for a weighted exercise and an assisted one, where it is the load or the assistance, a 400
+without it, and optional for a bodyweight one, stored as 0; any other weight there, on create or on
+`PATCH /api/sets/:id`, is a 400. `SetRepository#weightFor` decides inside the write's transaction,
+reading the kind as it stands, so the unknown-exercise 400 comes from that lookup before the foreign key could fail.
 
 `PATCH /api/sets/:id` with `{ "done": true | false }` toggles `done`; nothing but a JSON boolean is
 accepted.
@@ -320,7 +324,7 @@ one set with all of them done, so nothing that showed as done changed. The list 
 
 `GET /api/workouts/:id`, like the answer to `POST /api/workouts`, is a `WorkoutWithExercisesDto`:
 the workout, with the `done` every workout DTO carries, and `exercises` in their order, each
-`{ exerciseId, exerciseName, muscleGroup, bodyweight, position, sets }` with its sets in logged
+`{ exerciseId, exerciseName, muscleGroup, kind, position, sets }` with its sets in logged
 order. `GET /api/workouts/:id/sets` still answers the flat list.
 
 `POST /api/workouts/:id/exercises/:exerciseId/move` with `{ "direction": "up" | "down" }` swaps an
@@ -357,8 +361,8 @@ workout detail's exercise select asks for.
 
 `GET /api/exercises` also takes an optional `muscleGroup`, one of the muscle groups or `none` for
 exercises without one, and answers 400 for any other value; an empty one is the same as none
-given. It takes an optional `type` the same way, `bodyweight` or `weighted`, for the exercises with
-or without the `bodyweight` flag, and the two combine. With either, `items` and `total` cover only
+given. It takes an optional `type` the same way, `weighted`, `bodyweight` or `assisted`, for the
+exercises of that `kind`, and the two combine. With either, `items` and `total` cover only
 the matching exercises, while `all`, on the exercise page alone, still counts every exercise. The
 controller reads both into an `ExerciseFilterDto`, which the translator turns into the repository's
 `ExerciseFilter`.
@@ -382,16 +386,23 @@ keeping each stored value that matched a group after trimming, ignoring case, an
 rest; it copies the ids and the `AUTOINCREMENT` sequence, so sets keep their exercise and a deleted
 exercise's id is not handed out again.
 
-### Bodyweight exercises
+### Exercise kinds
 
-An exercise is weighted or bodyweight: `bodyweight` on `ExerciseDto`, `false` unless `POST` or
-`PATCH /api/exercises` sets it, a boolean or a 400. A bodyweight exercise is logged in reps alone,
-its sets at weight 0 (see "Sets"); a loaded variant, such as a belted pull-up, is a separate
-weighted exercise. Turning an exercise bodyweight is a 409 while any of its sets has a weight, so
-no history is rewritten; turning it weighted is always allowed, since its old sets read as 0 kg.
-`006-bodyweight-exercises.sql` added `exercises.bodyweight` (0 or 1) and marked bodyweight every
-exercise with at least one set, all of them at weight 0; an exercise mixing 0 kg and loaded sets
-stayed weighted.
+An exercise's `kind` is `weighted`, `bodyweight` or `assisted`: `kind` on `ExerciseDto`,
+`weighted` unless `POST` or `PATCH /api/exercises` sets it, and a 400 for anything but one of the
+three strings, `''` and `null` included. The type is `ExerciseKind` in `src/shared/exercise-kind.ts`,
+outside the DTOs so `ports/` may use it, and the list is `EXERCISE_KINDS` in `exercises.facade.ts`.
+A bodyweight exercise is logged in reps alone, its sets at weight 0 (see "Sets"); a loaded
+variant, such as a belted pull-up, is a separate weighted exercise. An assisted exercise, such as a
+pull-up on a counterweight machine, stores its assistance in `weight`, so less is better. The kind
+changes freely in every direction, whatever the history: a change reinterprets the stored weights,
+which bodyweight views ignore and assisted views read as assistance.
+
+`006-bodyweight-exercises.sql` added a `bodyweight` flag (0 or 1) and marked bodyweight every
+exercise with at least one set, all of them at weight 0. `008-exercise-kinds.sql` rebuilt the table
+like 005, replacing the flag with `kind TEXT NOT NULL DEFAULT 'weighted'` and a `CHECK` on the three
+values; a flagged exercise became `bodyweight` and every other one `weighted`, keeping the ids and
+the sequence.
 
 ### Last session
 
@@ -407,7 +418,11 @@ checked, since skipping one that does not exist skips nothing. The query is
 ## Statistics
 
 `GET /api/stats/summary?since=YYYY-MM-DD` is the dashboard's tiles: all-time totals, plus
-`workoutsSince` and `volumeSince` over the workouts dated on or after `since`. The dashboard sends
+`workoutsSince` and `volumeSince` over the workouts dated on or after `since`. Both volumes,
+`totalVolume` and `volumeSince`, count the done sets of weighted exercises only — load put on a bar
+or a machine — since a bodyweight set adds 0 and an assisted one would add its assistance;
+`volumeSince` keeps that condition in its `LEFT JOIN … ON`, so a workout without such sets still
+counts in `workoutsSince`. The dashboard sends
 the date `RECENT_DAYS` days before the browser's today, since the server's `date('now')` is UTC and
 would shift the window by a day for anyone far from it; a missing or malformed `since` is a 400.
 
@@ -418,17 +433,22 @@ timezone and "this month" is the browser's; a missing or malformed one is a 400.
 day also carries a `progression` and a `comparedExerciseCount`. An exercise's progression in a
 workout is its done-set volume (reps × weight) divided by that of its previous session, minus one;
 the previous session is the latest earlier workout by `performed_on, id` with a done set of the
-exercise. A bodyweight exercise, by its `bodyweight` flag, compares its total done reps instead,
-since its volume is always 0. A weighted exercise is not compared when either session's volume is
+exercise. A bodyweight exercise, by its `kind`, compares its total done reps instead,
+since its volume is always 0. An assisted exercise compares its effective volume, Σ reps × (body
+weight − assistance), so less assistance and more reps both count; the body weight is the latest
+weigh-in on or before the workout's date, `bodyWeightOnSql()` in `weight/ports/sql.ts`, and the
+figure is `effectiveVolumeSql()` in `workouts/ports/sql.ts`, `NULL` without such a weigh-in or with
+any set's assistance at or above that body weight, and an assisted session without one is not
+compared on either side. A weighted exercise is not compared when either session's volume is
 0, so a first loaded session after 0 kg work never reads as +∞ nor the reverse as −100%. The
-sessions CTE joins `exercises` for the flag as it stands now. An exercise without a previous
+sessions CTE joins `exercises` for the kind as it stands now. An exercise without a previous
 session is not compared. A workout's progression is the mean of its compared exercises', and a
 day's the mean over every compared exercise of its workouts, not of the workouts' means, so each
 exercise counts equally; with nothing compared it is `null`. The values are raw fractions
 (`0.041`); where "progressed" begins is the frontend's call. `StatsRepository.calendar()` runs one
 query over the whole history of the exercises trained that month, since a previous session may lie
-in any earlier month: a CTE of per-(workout, exercise) done reps and volume, `LAG()` over each
-exercise's sessions, then the month filter, with the grouping into workouts and days in TypeScript.
+in any earlier month: a CTE of per-(workout, exercise) done reps, volume, top weight and body
+weight, a second adding the effective volume, `LAG()` over each exercise's sessions, then the month filter, with the grouping into workouts and days in TypeScript.
 
 `GET /api/stats/exercises?since=YYYY-MM-DD` is the page's progress section: `{ since, exercises }`
 with every exercise holding a done set in a workout dated on or after `since`. Like `month`,
@@ -439,7 +459,8 @@ every other week still shows a trend even when the older two lie before `since`.
 older than the three shown; the exercise's `progression` compares the newest shown session against
 the oldest shown one the same rule compares, so a 0 kg first session does not hide the trend after
 it, and `progressionSince` is that session's date. Both are `null` with one session or when the
-rule compares none. Exercises come biggest regression first, `null` last, ties by name in SQLite's
+rule compares none. Each session also carries `effectiveVolume`, the figure an assisted exercise is
+compared by, or `null` as above. Exercises come biggest regression first, `null` last, ties by name in SQLite's
 `NOCASE` collation like the other lists, so the order is part of the answer and does not depend on
 the server's locale. `comparedSessionsSql()` in `stats.repository.ts` builds the sessions CTE with
 its `LAG()` and a `ROW_NUMBER()` newest first for the exercises trained in a window of dates, and

@@ -1,11 +1,12 @@
 import type { RawHtml } from '../../ui/html.ts';
 import { define } from '../../ui/base.ts';
 import { html } from '../../ui/html.ts';
-import { formatDate, formatDelta, formatNumber, formatVolume, plural, relativeDay, UNIT } from '../../ui/format.ts';
+import { formatAssistance, formatDate, formatDelta, formatNumber, formatVolume, plural, relativeDay, UNIT } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
 import type { ExerciseDto, ExerciseProgressDto } from '../../../shared/dto/exercise.ts';
 import { exerciseFacade } from './exercises.facade.ts';
 import { muscleGroupOptions, parseMuscleGroup } from './internal/muscle-groups.ts';
+import { KIND_LABELS, kindOptions, parseExerciseKind } from './internal/exercise-filter.ts';
 import type { GzProgressChartComponent } from './internal/gz-progress-chart.component.ts';
 import type { GzSessionTableComponent } from './internal/gz-session-table.component.ts';
 import { toast, toastError } from '../../ui/toast.ts';
@@ -61,7 +62,7 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
         name: values.name ?? '',
         muscleGroup: parseMuscleGroup(values.muscleGroup),
         notes: values.notes,
-        bodyweight: values.bodyweight === 'on',
+        kind: parseExerciseKind(values.kind) ?? 'weighted',
       });
       toast('Exercise updated', 'success');
       await this.reload();
@@ -77,8 +78,8 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
     if (!sessions || !exercise || !chart || !table) {
       return;
     }
-    chart.bodyweight = exercise.bodyweight;
-    table.bodyweight = exercise.bodyweight;
+    chart.kind = exercise.kind;
+    table.kind = exercise.kind;
     if (this.#metric !== null) {
       chart.metric = this.#metric;
     }
@@ -91,17 +92,15 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
   }
 
   #headerTemplate(exercise: ExerciseDto): RawHtml {
+    const kind = exercise.kind === 'weighted' ? null : KIND_LABELS[exercise.kind];
     return html`
       <hgroup>
         <h1 data-testid="heading">${exercise.name}</h1>
         <p class="text-light" data-testid="muscle-group">
           ${
             exercise.muscleGroup
-              ? html`<gz-muscle-group-icon group="${exercise.muscleGroup}"></gz-muscle-group-icon>
-                  ${exercise.muscleGroup}${exercise.bodyweight ? ' · Bodyweight' : ''}`
-              : exercise.bodyweight
-                ? 'Bodyweight'
-                : 'No muscle group set'
+              ? html`<gz-muscle-group-icon group="${exercise.muscleGroup}"></gz-muscle-group-icon> ${exercise.muscleGroup}${kind === null ? '' : ` · ${kind}`}`
+              : (kind ?? 'No muscle group set')
           }
         </p>
       </hgroup>
@@ -130,7 +129,12 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
               <label for="notes">Notes</label>
               <textarea id="notes" name="notes" maxlength="2000" placeholder="Low bar, belt over 100 kg" data-testid="notes">${exercise.notes ?? ''}</textarea>
             </div>
-            <label><input type="checkbox" role="switch" name="bodyweight" ${exercise.bodyweight ? 'checked' : ''} data-testid="bodyweight" /> Bodyweight</label>
+            <div class="field">
+              <label for="kind">Type</label>
+              <select id="kind" name="kind" data-testid="kind">
+                ${kindOptions(exercise.kind)}
+              </select>
+            </div>
             <div class="hstack gap-2">
               <button type="submit">Save</button>
             </div>
@@ -173,9 +177,44 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
     `;
   }
 
+  #assistedTiles({ sessions, bestSet }: ExerciseProgressDto): RawHtml {
+    const latest = sessions.at(-1);
+    const previous = sessions.at(-2);
+
+    const effectiveVolume = sessions.reduce((sum, session) => sum + (session.effectiveVolume ?? 0), 0);
+    const delta = latest && previous ? formatDelta(latest.leastWeight, previous.leastWeight) : '';
+
+    return html`
+      <div class="tiles" data-testid="tiles">
+        <gz-tile
+          data-testid="tile"
+          label="Sessions"
+          value="${sessions.length}"
+          hint="${latest ? `last ${relativeDay(latest.performedOn)}` : 'not trained yet'}"
+        ></gz-tile>
+        <gz-tile
+          data-testid="tile"
+          label="Best set"
+          value="${bestSet ? `${formatAssistance(bestSet.weight)} × ${bestSet.reps}` : '–'}"
+          hint="${bestSet ? formatDate(bestSet.performedOn) : 'no sets logged'}"
+        ></gz-tile>
+        <gz-tile
+          data-testid="tile"
+          label="Least assistance"
+          value="${latest ? `${formatNumber(latest.leastWeight)} ${UNIT}` : '–'}"
+          hint="${delta ? `${delta} ${UNIT} vs. previous session` : 'needs two sessions'}"
+        ></gz-tile>
+        <gz-tile data-testid="tile" label="Effective volume" value="${formatVolume(effectiveVolume)}" hint="across all sessions"></gz-tile>
+      </div>
+    `;
+  }
+
   #summaryTiles(progress: ExerciseProgressDto): RawHtml {
-    if (progress.exercise.bodyweight) {
+    if (progress.exercise.kind === 'bodyweight') {
       return this.#bodyweightTiles(progress);
+    }
+    if (progress.exercise.kind === 'assisted') {
+      return this.#assistedTiles(progress);
     }
     const { sessions, bestSet } = progress;
     const latest = sessions.at(-1);

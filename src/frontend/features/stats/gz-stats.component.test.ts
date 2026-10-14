@@ -93,10 +93,10 @@ test('lists the recent exercises below the calendar', async () => {
     {
       id: 3,
       name: 'Squat',
-      bodyweight: false,
+      kind: 'weighted',
       progression: null,
       progressionSince: null,
-      sessions: [{ workoutId: 9, performedOn: SINCE, reps: 5, volume: 500, progression: null }],
+      sessions: [{ workoutId: 9, performedOn: SINCE, reps: 5, volume: 500, effectiveVolume: null, progression: null }],
     },
   ]);
   const view = await open('/stats?month=2025-02');

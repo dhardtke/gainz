@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { ErrorDto } from '../../../shared/dto/error.ts';
+import type { ExerciseKind } from '../../../shared/exercise-kind.ts';
 import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import type { WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
 import { body, useServer } from '../../testing.ts';
@@ -162,34 +163,42 @@ describe('sets', () => {
 });
 
 describe('weight', () => {
-  async function setup(bodyweight: boolean): Promise<{ exerciseId: number; workoutId: number }> {
-    const exercise = await createExercise(post, bodyweight ? 'Dips' : 'Bench Press', { bodyweight });
+  async function setup(kind: ExerciseKind): Promise<{ exerciseId: number; workoutId: number }> {
+    const exercise = await createExercise(post, { weighted: 'Bench Press', bodyweight: 'Dips', assisted: 'Assisted Pull-up' }[kind], { kind });
     const workout = await createWorkout(post);
     return { exerciseId: exercise.id, workoutId: workout.id };
   }
 
   test('is stored as 0 for a bodyweight exercise, left out or given as 0', async () => {
-    const { exerciseId, workoutId } = await setup(true);
+    const { exerciseId, workoutId } = await setup('bodyweight');
     expect((await createSet(post, workoutId, { exerciseId, reps: 12 })).weight).toBe(0);
     expect((await createSet(post, workoutId, { exerciseId, reps: 10, weight: 0 })).weight).toBe(0);
   });
 
   test('is refused for a bodyweight exercise unless 0', async () => {
-    const { exerciseId, workoutId } = await setup(true);
+    const { exerciseId, workoutId } = await setup('bodyweight');
     const res = await post(`/api/workouts/${workoutId}/sets`, { exerciseId, reps: 12, weight: 5 });
     expect(res.status).toBe(400);
     expect((await body<ErrorDto>(res)).error).toBe('"weight" must be 0 for a bodyweight exercise');
   });
 
   test('is required for a weighted exercise', async () => {
-    const { exerciseId, workoutId } = await setup(false);
+    const { exerciseId, workoutId } = await setup('weighted');
     const res = await post(`/api/workouts/${workoutId}/sets`, { exerciseId, reps: 5 });
     expect(res.status).toBe(400);
     expect((await body<ErrorDto>(res)).error).toBe('"weight" must be a number');
   });
 
+  test('is required for an assisted exercise, its assistance', async () => {
+    const { exerciseId, workoutId } = await setup('assisted');
+    const res = await post(`/api/workouts/${workoutId}/sets`, { exerciseId, reps: 8 });
+    expect(res.status).toBe(400);
+    expect((await body<ErrorDto>(res)).error).toBe('"weight" must be a number');
+    expect((await createSet(post, workoutId, { exerciseId, reps: 8, weight: 30 })).weight).toBe(30);
+  });
+
   test('of a bodyweight set changes only to 0', async () => {
-    const { exerciseId, workoutId } = await setup(true);
+    const { exerciseId, workoutId } = await setup('bodyweight');
     const set = await createSet(post, workoutId, { exerciseId, reps: 12 });
     expect((await patch(`/api/sets/${set.id}`, { weight: 5 })).status).toBe(400);
     expect((await patch(`/api/sets/${set.id}`, { weight: 0 })).status).toBe(200);
@@ -197,7 +206,7 @@ describe('weight', () => {
   });
 
   test('leaves an unknown exercise a 400, with or without a weight', async () => {
-    const { workoutId } = await setup(false);
+    const { workoutId } = await setup('weighted');
     for (const set of [
       { exerciseId: 4242, reps: 5 },
       { exerciseId: 4242, reps: 5, weight: 60 },
@@ -208,17 +217,17 @@ describe('weight', () => {
     }
   });
 
-  test("is carried on the workout's groups as their exercise's flag", async () => {
-    const dips = await createExercise(post, 'Dips', { bodyweight: true });
+  test("is carried on the workout's groups as their exercise's kind", async () => {
+    const dips = await createExercise(post, 'Dips', { kind: 'bodyweight' });
     const bench = await createExercise(post);
     const workout = await createWorkout(post);
     await createSet(post, workout.id, { exerciseId: dips.id, reps: 12 });
     await createSet(post, workout.id, { exerciseId: bench.id, reps: 5, weight: 60 });
 
     const detail = await body<WorkoutWithExercisesDto>(await api(`/api/workouts/${workout.id}`));
-    expect(detail.exercises.map((group) => [group.exerciseName, group.bodyweight])).toEqual([
-      ['Dips', true],
-      ['Bench Press', false],
+    expect(detail.exercises.map((group) => [group.exerciseName, group.kind])).toEqual([
+      ['Dips', 'bodyweight'],
+      ['Bench Press', 'weighted'],
     ]);
   });
 });

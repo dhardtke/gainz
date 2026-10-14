@@ -3,21 +3,25 @@ import { define, GzElement } from '../../../ui/base.ts';
 import { html } from '../../../ui/html.ts';
 import { formatDate, formatDelta, formatNumber, formatVolume, UNIT } from '../../../ui/format.ts';
 import type { SessionPointDto } from '../../../../shared/dto/exercise.ts';
+import type { ExerciseKind } from '../../../../shared/exercise-kind.ts';
 
-function changeTemplate(current: number, earlier: number | undefined, decimals?: number): RawHtml {
+// `up` and `down` color a change as progress and regress, so with `lowerIsBetter` a drop is `up`.
+function changeTemplate(current: number, earlier: number | undefined, decimals?: number, lowerIsBetter = false): RawHtml {
   const change = earlier === undefined ? '' : formatDelta(current, earlier);
-  const direction = change.startsWith('+') ? 'up' : change.startsWith('−') ? 'down' : '';
+  const rose = change.startsWith('+');
+  const fell = change.startsWith('−');
+  const direction = (lowerIsBetter ? fell : rose) ? 'up' : (lowerIsBetter ? rose : fell) ? 'down' : '';
   return html`${formatNumber(current, decimals)} ${change ? html`<span class="${direction}" data-testid="change"> ${change}</span>` : ''}`;
 }
 
 export class GzSessionTableComponent extends GzElement {
   #sessions: SessionPointDto[] = [];
 
-  #bodyweight = false;
+  #kind: ExerciseKind = 'weighted';
 
   // Only stored: the parent sets it before `sessions`, which renders.
-  set bodyweight(value: boolean) {
-    this.#bodyweight = value;
+  set kind(value: ExerciseKind) {
+    this.#kind = value;
   }
 
   set sessions(value: SessionPointDto[]) {
@@ -54,6 +58,33 @@ export class GzSessionTableComponent extends GzElement {
     `;
   }
 
+  #assistedRows(): RawHtml {
+    return html`<thead>
+        <tr>
+          <th scope="col">Date</th>
+          <th scope="col" class="num">Sets</th>
+          <th scope="col" class="num">Reps</th>
+          <th scope="col" class="num">Least assist</th>
+          <th scope="col" class="num">Effective volume</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${[...this.#sessions].reverse().map(
+          (session, index, reversed) => html`
+            <tr data-testid="session">
+              <td class="name nowrap">
+                <a href="/workouts/${session.workoutId}" data-testid="workout-link">${formatDate(session.performedOn)}</a>
+              </td>
+              <td class="num">${session.setCount}</td>
+              <td class="num">${session.totalReps}</td>
+              <td class="num">${changeTemplate(session.leastWeight, reversed[index + 1]?.leastWeight, undefined, true)}</td>
+              <td class="num">${session.effectiveVolume === null ? '–' : formatVolume(session.effectiveVolume)}</td>
+            </tr>
+          `,
+        )}
+      </tbody> `;
+  }
+
   #weightedRows(): RawHtml {
     return html`
       <thead>
@@ -85,6 +116,13 @@ export class GzSessionTableComponent extends GzElement {
     `;
   }
 
+  #rows(): RawHtml {
+    if (this.#kind === 'bodyweight') {
+      return this.#bodyweightRows();
+    }
+    return this.#kind === 'assisted' ? this.#assistedRows() : this.#weightedRows();
+  }
+
   override template(): RawHtml {
     if (this.#sessions.length === 0) {
       return html`<p class="empty" data-testid="empty">No sets logged for this exercise yet.</p>`;
@@ -95,7 +133,7 @@ export class GzSessionTableComponent extends GzElement {
         <h2>Session history</h2>
         <div class="table">
           <table data-testid="table">
-            ${this.#bodyweight ? this.#bodyweightRows() : this.#weightedRows()}
+            ${this.#rows()}
           </table>
         </div>
       </article>

@@ -1,5 +1,6 @@
 import { beforeAll, expect, test } from 'bun:test';
 import { collect, find, mount, openDialog, settle, shadow, testId, useDom, useFetch, useToasts } from '../../../testing.ts';
+import type { ExerciseKind } from '../../../../shared/exercise-kind.ts';
 import type { LiftSetDto } from '../../../../shared/dto/set.ts';
 import { set } from '../workouts.fixtures.ts';
 import type { GzSetRowComponent } from './gz-set-row.component.ts';
@@ -14,12 +15,12 @@ beforeAll(async () => {
 
 function mountRow(
   value: LiftSetDto,
-  { index = 1, locked = false, bodyweight = false }: { index?: number; locked?: boolean; bodyweight?: boolean } = {},
+  { index = 1, locked = false, kind = 'weighted' }: { index?: number; locked?: boolean; kind?: ExerciseKind } = {},
 ): GzSetRowComponent {
   const row = mount<GzSetRowComponent>('gz-set-row');
   row.index = index;
   row.locked = locked;
-  row.bodyweight = bodyweight;
+  row.kind = kind;
   row.set = value;
   return row;
 }
@@ -212,7 +213,7 @@ test('deletes the set once confirmed, toasts and emits sets-changed', async () =
 });
 
 test('shows a bodyweight set as reps and notes only, without a volume', () => {
-  const root = shadow(mountRow(set({ id: 7, reps: 12, weight: 0 }), { bodyweight: true }));
+  const root = shadow(mountRow(set({ id: 7, reps: 12, weight: 0 }), { kind: 'bodyweight' }));
   expect(Array.from(root.querySelectorAll<HTMLInputElement>('input')).map(({ name }) => name)).toEqual(['reps', 'notes']);
   expect(root.querySelector(testId('volume'))).toBeNull();
   expect(root.querySelector(".load [aria-hidden='true']")).toBeNull();
@@ -221,7 +222,7 @@ test('shows a bodyweight set as reps and notes only, without a volume', () => {
 
 test('saves the reps of a bodyweight set without a weight', async () => {
   answerWith(set({ id: 7, reps: 14, weight: 0 }));
-  const row = mountRow(set({ id: 7, reps: 12, weight: 0 }), { bodyweight: true });
+  const row = mountRow(set({ id: 7, reps: 12, weight: 0 }), { kind: 'bodyweight' });
   change(input(row, 'reps'), '14');
   await settle();
   expect(fake.sent('PATCH /api/sets/7')).toEqual([{ reps: 14 }]);
@@ -229,18 +230,43 @@ test('saves the reps of a bodyweight set without a weight', async () => {
 
 test('duplicates a bodyweight set without a weight', async () => {
   fake.respondTo('POST /api/workouts/3/sets', 201, JSON.stringify(set({ id: 8, reps: 12, weight: 0 })));
-  const row = mountRow(set({ id: 7, reps: 12, weight: 0 }), { bodyweight: true });
+  const row = mountRow(set({ id: 7, reps: 12, weight: 0 }), { kind: 'bodyweight' });
   find<HTMLButtonElement>(shadow(row), testId('duplicate')).click();
   await settle();
   expect(fake.sent('POST /api/workouts/3/sets')).toEqual([{ exerciseId: 1, reps: 12, notes: null }]);
 });
 
 test('names a bodyweight set by its reps before deleting it', async () => {
-  const row = mountRow(set({ id: 7, reps: 12, weight: 0 }), { bodyweight: true });
+  const row = mountRow(set({ id: 7, reps: 12, weight: 0 }), { kind: 'bodyweight' });
   deleteButton(row).click();
   await settle();
   const dialog = openDialog();
   expect(find(dialog, testId('message')).textContent).toBe('12 reps');
+  find<HTMLButtonElement>(dialog, testId('cancel')).click();
+  await settle();
+});
+
+test("labels an assisted set's weight as assistance, without a volume", () => {
+  const root = shadow(mountRow(set({ id: 7, reps: 8, weight: 30 }), { kind: 'assisted' }));
+  expect(find(root, "label[for='weight']").textContent).toBe('kg assist');
+  expect(find(root, testId('weight')).getAttribute('aria-label')).toBe('Assistance');
+  expect(root.querySelector(testId('volume'))).toBeNull();
+});
+
+test('saves the assistance of an assisted set', async () => {
+  answerWith(set({ id: 7, reps: 8, weight: 25 }));
+  const row = mountRow(set({ id: 7, reps: 8, weight: 30 }), { kind: 'assisted' });
+  change(input(row, 'weight'), '25');
+  await settle();
+  expect(fake.sent('PATCH /api/sets/7')).toEqual([{ weight: 25 }]);
+});
+
+test('names an assisted set by its assistance before deleting it', async () => {
+  const row = mountRow(set({ id: 7, reps: 8, weight: 30 }), { kind: 'assisted' });
+  deleteButton(row).click();
+  await settle();
+  const dialog = openDialog();
+  expect(find(dialog, testId('message')).textContent).toBe('30 kg assist × 8');
   find<HTMLButtonElement>(dialog, testId('cancel')).click();
   await settle();
 });

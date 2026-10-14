@@ -38,7 +38,7 @@ export function translateToRecentExercisesDto(since: Iso8601Date, exercises: Rec
     exercises: exercises.map((exercise) => ({
       id: exercise.id,
       name: exercise.name,
-      bodyweight: exercise.bodyweight === 1,
+      kind: exercise.kind,
       progression: exercise.progression,
       progressionSince: exercise.progression_since,
       sessions: exercise.sessions.map((session) => ({
@@ -46,6 +46,7 @@ export function translateToRecentExercisesDto(since: Iso8601Date, exercises: Rec
         performedOn: session.performed_on,
         reps: session.reps,
         volume: session.volume,
+        effectiveVolume: session.effective_volume,
         progression: session.progression,
       })),
     })),

@@ -23,6 +23,7 @@ const listed = (overrides: Partial<ExerciseWithStatsDto> = {}): ExerciseWithStat
   lastPerformedOn: null,
   bestWeight: null,
   bestReps: null,
+  leastWeight: null,
   ...overrides,
 });
 
@@ -72,18 +73,18 @@ test.each([
   fake.respondTo(`GET /api/exercises/5/position?muscleGroup=${filter}`, 200, JSON.stringify({ index: 12 }));
   addExercise(view, 'Back Squat', picked);
   await settle();
-  expect(fake.sent('POST /api/exercises')).toEqual([{ name: 'Back Squat', muscleGroup: sent, notes: '', bodyweight: false }]);
+  expect(fake.sent('POST /api/exercises')).toEqual([{ name: 'Back Squat', muscleGroup: sent, notes: '', kind: 'weighted' }]);
   expect(`${location.pathname}${location.search}`).toBe(`/exercises?muscleGroup=${filter}&page=2`);
 });
 
-test('adds a bodyweight exercise with the switch on', async () => {
+test('adds an exercise of the chosen type', async () => {
   const view = await mountAdding();
-  fake.respondTo('POST /api/exercises', 201, JSON.stringify(exercise({ id: 5, name: 'Dips', bodyweight: true })));
+  fake.respondTo('POST /api/exercises', 201, JSON.stringify(exercise({ id: 5, name: 'Dips', kind: 'bodyweight' })));
   fake.respondTo('GET /api/exercises/5/position?muscleGroup=none', 200, JSON.stringify({ index: 0 }));
-  find<HTMLInputElement>(shadow(view), testId('bodyweight')).checked = true;
+  choose(find<HTMLSelectElement>(shadow(view), testId('kind')), 'bodyweight');
   addExercise(view, 'Dips', '');
   await settle();
-  expect(fake.sent('POST /api/exercises')).toEqual([{ name: 'Dips', muscleGroup: null, notes: '', bodyweight: true }]);
+  expect(fake.sent('POST /api/exercises')).toEqual([{ name: 'Dips', muscleGroup: null, notes: '', kind: 'bodyweight' }]);
 });
 
 test('collapses "Add an exercise" once there are some, and counts them', async () => {
@@ -186,12 +187,19 @@ test('labels a bodyweight card between its muscle group and its notes', async ()
   fake.respondTo(
     'GET /api/exercises?limit=10&offset=0',
     200,
-    page([listed({ id: 1, muscleGroup: 'Chest', notes: 'Lean forward', bodyweight: true }), listed({ id: 2, bodyweight: true })]),
+    page([listed({ id: 1, muscleGroup: 'Chest', notes: 'Lean forward', kind: 'bodyweight' }), listed({ id: 2, kind: 'bodyweight' })]),
   );
   const view = mount('gz-exercise-list');
   await settle();
   const subtitles = Array.from(shadow(view).querySelectorAll(testId('card-subtitle'))).map((subtitle) => subtitle.textContent.replace(/\s+/g, ' ').trim());
   expect(subtitles).toEqual(['Chest · Bodyweight · Lean forward', 'Bodyweight']);
+});
+
+test('labels an assisted card as assisted', async () => {
+  fake.respondTo('GET /api/exercises?limit=10&offset=0', 200, page([listed({ id: 1, muscleGroup: 'Back', notes: 'Knees on the pad', kind: 'assisted' })]));
+  const view = mount('gz-exercise-list');
+  await settle();
+  expect(find(shadow(view), testId('card-subtitle')).textContent.replace(/\s+/g, ' ').trim()).toBe('Back · Assisted · Knees on the pad');
 });
 
 test('puts each muscle group icon in its options, and none in the others', async () => {
@@ -204,28 +212,45 @@ test('puts each muscle group icon in its options, and none in the others', async
 });
 
 test("reads a bodyweight card's best in reps", async () => {
-  fake.respondTo('GET /api/exercises?limit=10&offset=0', 200, page([listed({ id: 1, name: 'Dips', bodyweight: true, bestWeight: 0, bestReps: 15 })]));
+  fake.respondTo('GET /api/exercises?limit=10&offset=0', 200, page([listed({ id: 1, name: 'Dips', kind: 'bodyweight', bestWeight: 0, bestReps: 15 })]));
   const view = mount('gz-exercise-list');
   await settle();
   expect(find(shadow(view), testId('card')).textContent.replace(/\s+/g, ' ')).toContain('15 reps best');
 });
 
+test("reads an assisted card's best as its least assistance, or none yet", async () => {
+  fake.respondTo(
+    'GET /api/exercises?limit=10&offset=0',
+    200,
+    page([
+      listed({ id: 1, name: 'Assisted Pull-up', kind: 'assisted', bestWeight: 30, leastWeight: 17.5 }),
+      listed({ id: 2, name: 'Assisted Dip', kind: 'assisted' }),
+    ]),
+  );
+  const view = mount('gz-exercise-list');
+  await settle();
+  const cards = Array.from(shadow(view).querySelectorAll(testId('card'))).map((card) => card.textContent.replace(/\s+/g, ' '));
+  expect(cards[0]).toContain('17.5 kg assist least');
+  expect(cards[1]).toContain('no best yet');
+});
+
 const typeSelect = (view: HTMLElement): HTMLSelectElement => find<HTMLSelectElement>(shadow(view), testId('type-filter'));
 
-test('offers "All", "Bodyweight" and "Weighted" as the type filter, with "All" chosen', async () => {
+test('offers "All" and the three kinds as the type filter, with "All" chosen', async () => {
   const view = await mountAdding();
   expect(Array.from(typeSelect(view).options).map((option) => [option.value, option.textContent])).toEqual([
     ['', 'All'],
-    ['bodyweight', 'Bodyweight'],
     ['weighted', 'Weighted'],
+    ['bodyweight', 'Bodyweight'],
+    ['assisted', 'Assisted'],
   ]);
   expect(typeSelect(view).value).toBe('');
 });
 
 test('lists the type in the URL, with the muscle group, counting it against every exercise', async () => {
-  const view = await mountFiltered('?muscleGroup=Chest&type=bodyweight', page([listed({ id: 1, name: 'Dips', bodyweight: true })], 12));
+  const view = await mountFiltered('?muscleGroup=Chest&type=bodyweight', page([listed({ id: 1, name: 'Dips', kind: 'bodyweight' })], 12));
   expect(preselected(view)).toBe('Chest');
-  expect(typeSelect(view).value).toBe('bodyweight');
+  expect(typeSelect(view).querySelector<HTMLOptionElement>('option[selected]')?.value).toBe('bodyweight');
   expect(text(view, testId('subtitle'))).toBe('1 of 12 exercises');
 });
 
@@ -262,12 +287,9 @@ test('keeps both filters when paging', async () => {
   expect(`${location.pathname}${location.search}`).toBe('/exercises?muscleGroup=Legs&type=weighted&page=2');
 });
 
-test.each([
-  [true, 'bodyweight'],
-  [false, 'weighted'],
-] as const)('adding an exercise while a type is chosen opens its own type too (bodyweight: %p)', async (bodyweight, type) => {
+test.each(['bodyweight', 'weighted', 'assisted'] as const)('adding an exercise while a type is chosen opens its own type too (%p)', async (type) => {
   const view = await mountFiltered('?type=bodyweight', page([], 3));
-  fake.respondTo('POST /api/exercises', 201, JSON.stringify(exercise({ id: 5, name: 'Dips', muscleGroup: 'Chest', bodyweight })));
+  fake.respondTo('POST /api/exercises', 201, JSON.stringify(exercise({ id: 5, name: 'Dips', muscleGroup: 'Chest', kind: type })));
   fake.respondTo(`GET /api/exercises/5/position?muscleGroup=Chest&type=${type}`, 200, JSON.stringify({ index: 0 }));
   addExercise(view, 'Dips', 'Chest');
   await settle();

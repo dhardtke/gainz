@@ -252,7 +252,7 @@ test('toasts a failed add and emits nothing', async () => {
   expect(addLastSession(form)?.disabled).toBe(false);
 });
 
-const DIPS = listedExercise({ id: 3, name: 'Dips', bodyweight: true });
+const DIPS = listedExercise({ id: 3, name: 'Dips', kind: 'bodyweight' });
 
 function weightField(form: HTMLElement): HTMLElement {
   return find(shadow(form), testId('weight-field'));
@@ -299,4 +299,40 @@ test("ends a bodyweight exercise's hint in its best reps", async () => {
   const form = mountForm([{ ...DIPS, bestReps: 15 }], []);
   await settle();
   expect(hint(form)).toBe(`Last · ${formatShortDate('2026-10-05')}: 12 reps · best 15 reps`);
+});
+
+const PULL_UP = listedExercise({ id: 4, name: 'Assisted Pull-up', kind: 'assisted' });
+
+function weightLabel(form: HTMLElement): string {
+  return find(shadow(form), "label[for='weight']").textContent;
+}
+
+test('labels the weight as assistance while an assisted exercise is selected, keeping it required', () => {
+  const form = mountForm([...EXERCISES, PULL_UP], SETS);
+  expect(weightLabel(form)).toBe('Weight (kg)');
+  choose(exerciseSelect(form), '4');
+  expect(weightLabel(form)).toBe('Assistance (kg)');
+  expect(weightField(form).hidden).toBe(false);
+  expect(field(form, 'weight').required).toBe(true);
+  expect(field(form, 'weight').disabled).toBe(false);
+  choose(exerciseSelect(form), '1');
+  expect(weightLabel(form)).toBe('Weight (kg)');
+});
+
+test('logs an assisted set with its assistance', async () => {
+  const form = mountForm([PULL_UP], [set({ id: 14, exerciseId: 4, weight: 30, reps: 8 })]);
+  expect(weightLabel(form)).toBe('Assistance (kg)');
+  submit(find(shadow(form), testId('form')));
+  await settle();
+  expect(fake.sent('POST /api/workouts/3/sets')).toEqual([{ exerciseId: 4, reps: 8, weight: 30, notes: '' }]);
+});
+
+test("shows an assisted exercise's last session in assistance, ending in its least", async () => {
+  answerLastSession(4, [
+    { reps: 8, weight: 30 },
+    { reps: 6, weight: 25 },
+  ]);
+  const form = mountForm([{ ...PULL_UP, leastWeight: 25 }], []);
+  await settle();
+  expect(hint(form)).toBe(`Last · ${formatShortDate('2026-10-05')}: 8×30 · 6×25 kg assist · least 25 kg`);
 });

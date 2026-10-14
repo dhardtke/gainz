@@ -2,7 +2,7 @@ import { json, noContent, optionalQueryInt, optionalQueryOneOf, pathId, queryInt
 import type { ParamRequest } from '../../../http/routing.ts';
 import type { ExerciseFilterDto } from '../../../../shared/dto/exercise.ts';
 import type { ExerciseId, WorkoutId } from '../../../../shared/flavors.ts';
-import { EXERCISE_TYPES, type ExerciseFacade, MUSCLE_GROUPS } from '../exercises.facade.ts';
+import { EXERCISE_KINDS, type ExerciseFacade, MUSCLE_GROUPS } from '../exercises.facade.ts';
 import {
   translateToCreateExerciseDto,
   translateToEditExerciseDto,
@@ -55,7 +55,8 @@ export class ExerciseController {
 
   progress(req: ParamRequest): Response {
     const id: ExerciseId = pathId(req.params.id, 'exercise');
-    return json(translateToExerciseProgressDto(this.#exercises.require(id), this.#exercises.progress(id), this.#exercises.bestSet(id)));
+    const exercise = this.#exercises.require(id);
+    return json(translateToExerciseProgressDto(exercise, this.#exercises.progress(id), this.#exercises.bestSet(id, exercise.kind)));
   }
 
   lastSession(req: ParamRequest): Response {
@@ -70,7 +71,7 @@ export class ExerciseController {
     if (muscleGroup !== null) {
       filter.muscleGroup = muscleGroup;
     }
-    const type = optionalQueryOneOf(params, 'type', EXERCISE_TYPES);
+    const type = optionalQueryOneOf(params, 'type', EXERCISE_KINDS);
     if (type !== null) {
       filter.type = type;
     }

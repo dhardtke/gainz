@@ -1,3 +1,4 @@
+import type { ExerciseKind } from '../../../../shared/exercise-kind.ts';
 import type { ExerciseId, Iso8601Date, Iso8601DateTime, WorkoutId } from '../../../../shared/flavors.ts';
 import type { MuscleGroup } from '../../../../shared/muscle-group.ts';
 import type { LiftSet } from '../../workouts/ports/set.ts';
@@ -7,14 +8,14 @@ export interface Exercise {
   name: string;
   muscle_group: MuscleGroup | null;
   notes: string | null;
-  bodyweight: 0 | 1;
+  kind: ExerciseKind;
   created_at: Iso8601DateTime;
 }
 
 /** A missing key leaves that column unfiltered; `muscle_group: null` is the exercises without a group. */
 export interface ExerciseFilter {
   muscle_group?: MuscleGroup | null;
-  bodyweight?: 0 | 1;
+  kind?: ExerciseKind;
 }
 
 export interface ExerciseWithStats extends Exercise {
@@ -23,6 +24,7 @@ export interface ExerciseWithStats extends Exercise {
   last_performed_on: Iso8601Date | null;
   best_weight: number | null;
   best_reps: number | null;
+  least_weight: number | null;
 }
 
 export interface SessionPoint {
@@ -34,6 +36,8 @@ export interface SessionPoint {
   top_weight: number;
   top_reps: number;
   est_one_rep_max: number;
+  least_weight: number;
+  effective_volume: number | null;
 }
 
 export interface LastSession {

@@ -28,6 +28,10 @@ export function formatWeight(value: number | null | undefined): string {
   return `${formatNumber(value)} ${UNIT}`;
 }
 
+export function formatAssistance(kg: number): string {
+  return `${formatNumber(kg)} ${UNIT} assist`;
+}
+
 export function formatBodyWeight(value: number): string {
   return `${value.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ${UNIT}`;
 }

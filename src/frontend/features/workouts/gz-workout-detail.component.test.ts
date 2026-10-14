@@ -24,6 +24,7 @@ const EXERCISES: ExercisePageDto = {
     lastPerformedOn: null,
     bestWeight: null,
     bestReps: null,
+    leastWeight: null,
   })),
   total: 2,
   all: 2,
@@ -699,11 +700,11 @@ test('hides the icon of an exercise without a muscle group', async () => {
   expect(shadow(icon).querySelector('svg')).toBeNull();
 });
 
-test('sums up a bodyweight group in reps and hands its rows the flag', async () => {
+test('sums up a bodyweight group in reps and hands its rows the kind', async () => {
   const dips = group({
     exerciseId: 3,
     exerciseName: 'Dips',
-    bodyweight: true,
+    kind: 'bodyweight',
     position: 3,
     sets: [12, 10, 8].map((reps, index) => set({ id: 21 + index, exerciseId: 3, exerciseName: 'Dips', reps, weight: 0 })),
   });
@@ -712,4 +713,23 @@ test('sums up a bodyweight group in reps and hands its rows the flag', async () 
   const [row] = Array.from(groupOf(view, 3).querySelectorAll(testId('set-row')));
   expect(shadow(row ?? groupOf(view, 3)).querySelector(testId('weight'))).toBeNull();
   expect(shadow(find(groupOf(view, 1), testId('set-row'))).querySelector(testId('weight'))).not.toBeNull();
+});
+
+test('sums up an assisted group in reps and hands its rows the kind', async () => {
+  const pullUp = group({
+    exerciseId: 4,
+    exerciseName: 'Assisted Pull-up',
+    kind: 'assisted',
+    position: 3,
+    sets: [
+      [8, 30],
+      [8, 30],
+      [6, 25],
+    ].map(([reps, weight], index) => set({ id: 31 + index, exerciseId: 4, exerciseName: 'Assisted Pull-up', reps, weight })),
+  });
+  const view = await mountView({ ...WORKOUT, exercises: [BENCH, SQUAT, pullUp] });
+  expect(find(groupOf(view, 4), testId('group-stats')).textContent).toBe('3 sets · 22 reps');
+  const row = find(groupOf(view, 4), testId('set-row'));
+  expect(find(shadow(row), "label[for='weight']").textContent).toBe('kg assist');
+  expect(shadow(row).querySelector(testId('volume'))).toBeNull();
 });

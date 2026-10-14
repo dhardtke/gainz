@@ -106,7 +106,7 @@ function translateToWorkoutExerciseDto(row: WorkoutExercise, sets: LiftSet[]): W
     exerciseId: row.exercise_id,
     exerciseName: row.exercise_name,
     muscleGroup: row.muscle_group,
-    bodyweight: row.bodyweight === 1,
+    kind: row.kind,
     position: row.position,
     sets: sets.filter((set) => set.exercise_id === row.exercise_id).map(translateToLiftSetDto),
   };

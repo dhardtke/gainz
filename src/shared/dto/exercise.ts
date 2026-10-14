@@ -1,4 +1,5 @@
 import type { ExerciseId, Iso8601Date, Iso8601DateTime, WorkoutId } from '../flavors.ts';
+import type { ExerciseKind } from '../exercise-kind.ts';
 import type { MuscleGroup, MuscleGroupFilter } from '../muscle-group.ts';
 import type { BestSetDto, LiftSetDto } from './set.ts';
 
@@ -7,8 +8,7 @@ export interface ExerciseDto {
   name: string;
   muscleGroup: MuscleGroup | null;
   notes: string | null;
-  /** Logged as reps only, every set at weight 0. */
-  bodyweight: boolean;
+  kind: ExerciseKind;
   createdAt: Iso8601DateTime;
 }
 
@@ -19,15 +19,14 @@ export interface ExerciseWithStatsDto extends ExerciseDto {
   bestWeight: number | null;
   /** Most reps in one done set. */
   bestReps: number | null;
+  /** Least weight in one done set: an assisted exercise's least assistance. */
+  leastWeight: number | null;
 }
-
-/** The `type` filter of `GET /api/exercises`: the exercises with `bodyweight` set, or those without. */
-export type ExerciseType = 'bodyweight' | 'weighted';
 
 /** The query of `GET /api/exercises` and `GET /api/exercises/:id/position`; a missing key filters nothing. */
 export interface ExerciseFilterDto {
   muscleGroup?: MuscleGroupFilter;
-  type?: ExerciseType;
+  type?: ExerciseKind;
 }
 
 export interface ExercisePageDto {
@@ -57,6 +56,10 @@ export interface SessionPointDto {
   topReps: number;
   /** Epley estimate from the session's best set. */
   estOneRepMax: number;
+  /** Least weight in one set: an assisted exercise's least assistance. */
+  leastWeight: number;
+  /** reps × (body weight − weight); null without a weigh-in on or before the date or with assistance at or above it. */
+  effectiveVolume: number | null;
 }
 
 export interface ExerciseProgressDto {
@@ -81,12 +84,12 @@ export interface CreateExerciseDto {
   name: string;
   muscleGroup?: MuscleGroup | null;
   notes?: string | null;
-  bodyweight?: boolean;
+  kind?: ExerciseKind;
 }
 
 export interface EditExerciseDto {
   name?: string;
   muscleGroup?: MuscleGroup | null;
   notes?: string | null;
-  bodyweight?: boolean;
+  kind?: ExerciseKind;
 }

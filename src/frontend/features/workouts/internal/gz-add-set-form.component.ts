@@ -3,6 +3,7 @@ import { define, GzElement } from '../../../ui/base.ts';
 import { html } from '../../../ui/html.ts';
 import { formatNumber, formatShortDate, formatWeight, plural, UNIT } from '../../../ui/format.ts';
 import type { ExerciseLastSessionDto, ExerciseWithStatsDto, LastSessionDto } from '../../../../shared/dto/exercise.ts';
+import type { ExerciseKind } from '../../../../shared/exercise-kind.ts';
 import type { LiftSetDto } from '../../../../shared/dto/set.ts';
 import type { ExerciseId, WorkoutId } from '../../../../shared/flavors.ts';
 import { toastError } from '../../../ui/toast.ts';
@@ -33,6 +34,10 @@ export class LastSessionCache {
     }
     return pending;
   }
+}
+
+function weightLabel(kind: ExerciseKind): string {
+  return kind === 'assisted' ? `Assistance (${UNIT})` : `Weight (${UNIT})`;
 }
 
 export class GzAddSetFormComponent extends GzElement {
@@ -133,13 +138,18 @@ export class GzAddSetFormComponent extends GzElement {
     return select ? Number(select.value) : null;
   }
 
-  #isBodyweight(exerciseId: ExerciseId | undefined): boolean {
-    return this.#exercises.find((exercise) => exercise.id === exerciseId)?.bodyweight ?? false;
+  #kindOf(exerciseId: ExerciseId | undefined): ExerciseKind {
+    return this.#exercises.find((exercise) => exercise.id === exerciseId)?.kind ?? 'weighted';
   }
 
   // A disabled input is neither validated nor submitted.
   #syncWeight(exerciseId: ExerciseId): void {
-    const bodyweight = this.#isBodyweight(exerciseId);
+    const kind = this.#kindOf(exerciseId);
+    const bodyweight = kind === 'bodyweight';
+    const label = this.$("label[for='weight']");
+    if (label) {
+      label.textContent = weightLabel(kind);
+    }
     this.$('.field-weight')?.toggleAttribute('hidden', bodyweight);
     this.$<HTMLInputElement>("input[name='weight']")?.toggleAttribute('disabled', bodyweight);
   }
@@ -197,12 +207,16 @@ export class GzAddSetFormComponent extends GzElement {
       return 'No history yet';
     }
     const last = `Last · ${formatShortDate(session.performedOn)}`;
-    if (exercise?.bodyweight === true) {
+    if (exercise?.kind === 'bodyweight') {
       const best = exercise.bestReps === null ? '' : ` · best ${plural(exercise.bestReps, 'rep')}`;
       return `${last}: ${session.sets.map((set) => set.reps).join(' · ')} reps${best}`;
     }
-    const best = exercise?.bestWeight ?? null;
     const sets = session.sets.map((set) => `${set.reps}×${formatNumber(set.weight)}`).join(' · ');
+    if (exercise?.kind === 'assisted') {
+      const least = exercise.leastWeight === null ? '' : ` · least ${formatNumber(exercise.leastWeight)} ${UNIT}`;
+      return `${last}: ${sets} ${UNIT} assist${least}`;
+    }
+    const best = exercise?.bestWeight ?? null;
     return `${last}: ${sets}${best !== null && best !== 0 ? ` · best ${formatWeight(best)}` : ''}`;
   }
 
@@ -244,7 +258,8 @@ export class GzAddSetFormComponent extends GzElement {
     }
     const last = this.#sets.at(-1);
     const selected = last?.exerciseId ?? this.#exercises[0]?.id;
-    const bodyweight = this.#isBodyweight(selected);
+    const kind = this.#kindOf(selected);
+    const bodyweight = kind === 'bodyweight';
 
     return html`
       <section class="vstack gap-2">
@@ -265,7 +280,7 @@ export class GzAddSetFormComponent extends GzElement {
                 <input id="reps" name="reps" type="number" step="1" min="1" value="${last?.reps ?? ''}" required data-testid="reps" />
               </div>
               <div class="field field-num field-weight" data-testid="weight-field" ${bodyweight ? 'hidden' : ''}>
-                <label for="weight">Weight (${UNIT})</label>
+                <label for="weight">${weightLabel(kind)}</label>
                 <input
                   id="weight"
                   name="weight"

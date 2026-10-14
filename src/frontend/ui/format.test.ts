@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, setSystemTime, test } from 'bun:test';
 import {
+  formatAssistance,
   daysBefore,
   formatBodyWeight,
   formatDate,
@@ -43,6 +44,13 @@ describe('formatWeight', () => {
 
   test.each([null, undefined])('shows a dash for %p', (value) => {
     expect(formatWeight(value)).toBe('–');
+  });
+});
+
+describe('formatAssistance', () => {
+  test('reads the kilos of assistance', () => {
+    expect(formatAssistance(17.5)).toBe('17.5 kg assist');
+    expect(formatAssistance(0)).toBe('0 kg assist');
   });
 });
 

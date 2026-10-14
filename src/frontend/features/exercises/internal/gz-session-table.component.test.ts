@@ -1,6 +1,7 @@
 import { beforeAll, expect, test } from 'bun:test';
 import { mount, testId, useDom } from '../../../testing.ts';
 import type { SessionPointDto } from '../../../../shared/dto/exercise.ts';
+import { formatVolume } from '../../../ui/format.ts';
 import { session } from '../exercises.fixtures.ts';
 import type { GzSessionTableComponent } from './gz-session-table.component.ts';
 
@@ -52,7 +53,7 @@ test('re-renders when given new sessions', () => {
 
 test('shows a bodyweight exercise as date, sets, top set and reps, with the change on reps', () => {
   const table = mount<GzSessionTableComponent>('gz-session-table');
-  table.bodyweight = true;
+  table.kind = 'bodyweight';
   table.sessions = [
     session({ workoutId: 1, performedOn: '2026-09-01', setCount: 3, topReps: 12, totalReps: 30 }),
     session({ workoutId: 2, performedOn: '2026-09-08', setCount: 3, topReps: 15, totalReps: 36 }),
@@ -66,4 +67,32 @@ test('shows a bodyweight exercise as date, sets, top set and reps, with the chan
   ).toEqual(['3', '15', '36 +6']);
   expect(latest?.querySelector(testId('change'))?.className).toBe('up');
   expect(oldest?.querySelector(testId('change'))).toBeNull();
+});
+
+test('shows an assisted exercise as date, sets, reps, least assistance and effective volume, a drop in assistance as up', () => {
+  const table = mount<GzSessionTableComponent>('gz-session-table');
+  table.kind = 'assisted';
+  table.sessions = [
+    session({ workoutId: 1, performedOn: '2026-09-01', setCount: 3, totalReps: 22, leastWeight: 20, effectiveVolume: null }),
+    session({ workoutId: 2, performedOn: '2026-09-08', setCount: 3, totalReps: 22, leastWeight: 17.5, effectiveVolume: 1405 }),
+    session({ workoutId: 3, performedOn: '2026-09-15', setCount: 3, totalReps: 22, leastWeight: 20, effectiveVolume: 1350 }),
+  ];
+  expect(Array.from(table.shadowRoot?.querySelectorAll('th') ?? []).map((th) => th.textContent)).toEqual([
+    'Date',
+    'Sets',
+    'Reps',
+    'Least assist',
+    'Effective volume',
+  ]);
+  const cells = rows(table).map((row) =>
+    Array.from(row.querySelectorAll('td'))
+      .slice(1)
+      .map((td) => td.textContent.replace(/\s+/g, ' ').trim()),
+  );
+  expect(cells).toEqual([
+    ['3', '22', '20 +2.5', formatVolume(1350)],
+    ['3', '22', '17.5 −2.5', formatVolume(1405)],
+    ['3', '22', '20', '–'],
+  ]);
+  expect(rows(table).map((row) => row.querySelector(testId('change'))?.className ?? null)).toEqual(['down', 'up', null]);
 });

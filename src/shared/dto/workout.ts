@@ -1,4 +1,5 @@
 import type { ExerciseId, Iso8601Date, Iso8601DateTime, WorkoutId } from '../flavors.ts';
+import type { ExerciseKind } from '../exercise-kind.ts';
 import type { LiftSetDto } from './set.ts';
 import type { MuscleGroup } from '../muscle-group.ts';
 
@@ -23,7 +24,7 @@ export interface WorkoutExerciseDto {
   exerciseId: ExerciseId;
   exerciseName: string;
   muscleGroup: MuscleGroup | null;
-  bodyweight: boolean;
+  kind: ExerciseKind;
   /** 1-based place of the exercise in the workout. */
   position: number;
   /** Oldest first. */

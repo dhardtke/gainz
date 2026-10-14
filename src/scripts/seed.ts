@@ -4,17 +4,19 @@ import { createStatsFacade } from '../backend/features/stats/stats.facade.ts';
 import { createWeighInFacade } from '../backend/features/weight/weight.facade.ts';
 import { createWorkoutFacades } from '../backend/features/workouts/workouts.facade.ts';
 import type { ExerciseId, Iso8601Date } from '../shared/flavors.ts';
+import type { ExerciseKind } from '../shared/exercise-kind.ts';
 import type { MuscleGroup } from '../shared/muscle-group.ts';
 
 const EXERCISES = [
-  { name: 'Back Squat', muscleGroup: 'Legs', notes: 'Low bar, belt above 100 kg.', bodyweight: false },
-  { name: 'Bench Press', muscleGroup: 'Chest', notes: null, bodyweight: false },
-  { name: 'Deadlift', muscleGroup: 'Back', notes: 'Conventional stance.', bodyweight: false },
-  { name: 'Overhead Press', muscleGroup: 'Shoulders', notes: null, bodyweight: false },
-  { name: 'Barbell Row', muscleGroup: 'Back', notes: null, bodyweight: false },
-  { name: 'Pull-up', muscleGroup: 'Back', notes: 'Bodyweight plus belt.', bodyweight: false },
-  { name: 'Dips', muscleGroup: 'Chest', notes: 'Lean forward.', bodyweight: true },
-] satisfies readonly { name: string; muscleGroup: MuscleGroup; notes: string | null; bodyweight: boolean }[];
+  { name: 'Back Squat', muscleGroup: 'Legs', notes: 'Low bar, belt above 100 kg.', kind: 'weighted' },
+  { name: 'Bench Press', muscleGroup: 'Chest', notes: null, kind: 'weighted' },
+  { name: 'Deadlift', muscleGroup: 'Back', notes: 'Conventional stance.', kind: 'weighted' },
+  { name: 'Overhead Press', muscleGroup: 'Shoulders', notes: null, kind: 'weighted' },
+  { name: 'Barbell Row', muscleGroup: 'Back', notes: null, kind: 'weighted' },
+  { name: 'Pull-up', muscleGroup: 'Back', notes: 'Bodyweight plus belt.', kind: 'weighted' },
+  { name: 'Dips', muscleGroup: 'Chest', notes: 'Lean forward.', kind: 'bodyweight' },
+  { name: 'Assisted Pull-up', muscleGroup: 'Back', notes: 'Knees on the pad.', kind: 'assisted' },
+] satisfies readonly { name: string; muscleGroup: MuscleGroup; notes: string | null; kind: ExerciseKind }[];
 
 const TEMPLATES = [
   {
@@ -32,6 +34,8 @@ const TEMPLATES = [
       { name: 'Deadlift', start: 100, step: 5, reps: [5, 5, 5] },
       { name: 'Barbell Row', start: 50, step: 2.5, reps: [10, 10, 8] },
       { name: 'Pull-up', start: 0, step: 2.5, reps: [8, 6, 5] },
+      // Assisted: the assistance drops, from 30 kg to 17.5 kg over the six weeks.
+      { name: 'Assisted Pull-up', start: 30, step: -2.5, reps: [8, 8, 6] },
     ],
   },
   {
@@ -72,7 +76,7 @@ function main(): void {
 
   db.transaction(() => {
     const idByName = new Map<string, ExerciseId>();
-    const bodyweight = new Set(EXERCISES.filter((exercise) => exercise.bodyweight).map((exercise) => exercise.name));
+    const bodyweight = new Set(EXERCISES.filter((exercise) => exercise.kind === 'bodyweight').map((exercise) => exercise.name));
     for (const exercise of EXERCISES) {
       idByName.set(exercise.name, exercises.create(exercise).id);
     }

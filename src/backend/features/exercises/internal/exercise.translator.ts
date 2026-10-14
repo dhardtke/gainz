@@ -11,6 +11,7 @@ import type {
   SessionPointDto,
 } from '../../../../shared/dto/exercise.ts';
 import type { BestSetDto, LiftSetDto } from '../../../../shared/dto/set.ts';
+import type { ExerciseKind } from '../../../../shared/exercise-kind.ts';
 import type { MuscleGroup } from '../../../../shared/muscle-group.ts';
 import type { Iso8601Date } from '../../../../shared/flavors.ts';
 import type { LiftSet } from '../../workouts/ports/set.ts';
@@ -22,7 +23,7 @@ export function translateToCreateExerciseDto(body: Record<string, unknown>): Cre
     name: body.name as string,
     muscleGroup: body.muscleGroup as MuscleGroup | null | undefined,
     notes: body.notes as string | null | undefined,
-    bodyweight: body.bodyweight as boolean | undefined,
+    kind: body.kind as ExerciseKind | undefined,
   };
 }
 
@@ -31,7 +32,7 @@ export function translateToEditExerciseDto(body: Record<string, unknown>): EditE
     name: body.name as string | undefined,
     muscleGroup: body.muscleGroup as MuscleGroup | null | undefined,
     notes: body.notes as string | null | undefined,
-    bodyweight: body.bodyweight as boolean | undefined,
+    kind: body.kind as ExerciseKind | undefined,
   };
 }
 
@@ -40,7 +41,7 @@ export function translateDtoToCreateExercise(dto: CreateExerciseDto): CreateExer
     name: dto.name,
     muscle_group: dto.muscleGroup ?? null,
     notes: dto.notes ?? null,
-    bodyweight: dto.bodyweight === true ? 1 : 0,
+    kind: dto.kind ?? 'weighted',
   };
 }
 
@@ -55,8 +56,8 @@ export function translateDtoToEditExercise(dto: EditExerciseDto): EditExercise {
   if (dto.notes !== undefined) {
     patch.notes = dto.notes;
   }
-  if (dto.bodyweight !== undefined) {
-    patch.bodyweight = dto.bodyweight ? 1 : 0;
+  if (dto.kind !== undefined) {
+    patch.kind = dto.kind;
   }
   return patch;
 }
@@ -67,7 +68,7 @@ export function translateDtoToExerciseFilter(dto: ExerciseFilterDto): ExerciseFi
     filter.muscle_group = dto.muscleGroup === 'none' ? null : dto.muscleGroup;
   }
   if (dto.type !== undefined) {
-    filter.bodyweight = dto.type === 'bodyweight' ? 1 : 0;
+    filter.kind = dto.type;
   }
   return filter;
 }
@@ -78,7 +79,7 @@ export function translateToExerciseDto(row: Exercise): ExerciseDto {
     name: row.name,
     muscleGroup: row.muscle_group,
     notes: row.notes,
-    bodyweight: row.bodyweight === 1,
+    kind: row.kind,
     createdAt: row.created_at,
   };
 }
@@ -89,13 +90,14 @@ export function translateToExerciseWithStatsDto(row: ExerciseWithStats): Exercis
     name: row.name,
     muscleGroup: row.muscle_group,
     notes: row.notes,
-    bodyweight: row.bodyweight === 1,
+    kind: row.kind,
     createdAt: row.created_at,
     setCount: row.set_count,
     workoutCount: row.workout_count,
     lastPerformedOn: row.last_performed_on,
     bestWeight: row.best_weight,
     bestReps: row.best_reps,
+    leastWeight: row.least_weight,
   };
 }
 
@@ -117,6 +119,8 @@ function translateToSessionPointDto(row: SessionPoint): SessionPointDto {
     topWeight: row.top_weight,
     topReps: row.top_reps,
     estOneRepMax: row.est_one_rep_max,
+    leastWeight: row.least_weight,
+    effectiveVolume: row.effective_volume,
   };
 }
 

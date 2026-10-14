@@ -74,7 +74,7 @@ test('plots one point per session with the chosen metric', () => {
 
 function mountBodyweightChart(metric?: string): GzProgressChartComponent {
   const chart = mount<GzProgressChartComponent>('gz-progress-chart');
-  chart.bodyweight = true;
+  chart.kind = 'bodyweight';
   if (metric !== undefined) {
     chart.metric = metric;
   }
@@ -100,4 +100,20 @@ test('switches between the bodyweight metrics', () => {
 
 test('falls back to the top set for a weighted metric on a bodyweight exercise', () => {
   expect(heading(mountBodyweightChart('estOneRepMax'))).toBe('Top set');
+});
+
+test('offers an assisted exercise least assistance, effective volume and total reps, skipping a session without an effective volume', () => {
+  const chart = mount<GzProgressChartComponent>('gz-progress-chart');
+  chart.kind = 'assisted';
+  chart.sessions = [session({ workoutId: 1, leastWeight: 30, effectiveVolume: null }), session({ workoutId: 2, leastWeight: 27.5, effectiveVolume: 1350 })];
+  expect(Array.from(shadow(chart).querySelectorAll<HTMLElement>('[data-metric]')).map((each) => each.dataset.metric)).toEqual([
+    'leastWeight',
+    'effectiveVolume',
+    'totalReps',
+  ]);
+  expect(heading(chart)).toBe('Least assistance');
+  expect(plotted(chart)).toEqual([30, 27.5]);
+  button(chart, 'effectiveVolume').click();
+  expect(heading(chart)).toBe('Effective volume');
+  expect(plotted(chart)).toEqual([1350]);
 });

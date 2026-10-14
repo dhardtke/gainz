@@ -1,7 +1,8 @@
 import type { RawHtml } from '../../../ui/html.ts';
 import { define, GzElement } from '../../../ui/base.ts';
 import { html } from '../../../ui/html.ts';
-import { formatNumber, formatVolume, plural, UNIT } from '../../../ui/format.ts';
+import { formatAssistance, formatNumber, formatVolume, plural, UNIT } from '../../../ui/format.ts';
+import type { ExerciseKind } from '../../../../shared/exercise-kind.ts';
 import type { EditSetDto, LiftSetDto } from '../../../../shared/dto/set.ts';
 import { toast, toastError } from '../../../ui/toast.ts';
 import { confirmAction } from '../../../ui/confirm/confirm.ts';
@@ -22,7 +23,7 @@ export class GzSetRowComponent extends GzElement {
 
   #locked = false;
 
-  #bodyweight = false;
+  #kind: ExerciseKind = 'weighted';
 
   // Serialized: a blur save must land before the click that caused it marks the set done.
   #pending: Promise<void> = Promise.resolve();
@@ -44,9 +45,13 @@ export class GzSetRowComponent extends GzElement {
     this.#locked = value;
   }
 
-  // Only stored, like `locked`: a bodyweight set has no weight to show or edit.
-  set bodyweight(value: boolean) {
-    this.#bodyweight = value;
+  // Only stored, like `locked`: a bodyweight set has no weight to show or edit, an assisted one shows its assistance.
+  set kind(value: ExerciseKind) {
+    this.#kind = value;
+  }
+
+  get #bodyweight(): boolean {
+    return this.#kind === 'bodyweight';
   }
 
   focusedField(): FocusedField | null {
@@ -102,7 +107,8 @@ export class GzSetRowComponent extends GzElement {
     }
 
     if (action === 'delete') {
-      const message = this.#bodyweight ? plural(set.reps, 'rep') : `${formatNumber(set.weight)} ${UNIT} × ${set.reps}`;
+      const load = this.#kind === 'assisted' ? formatAssistance(set.weight) : `${formatNumber(set.weight)} ${UNIT}`;
+      const message = this.#bodyweight ? plural(set.reps, 'rep') : `${load} × ${set.reps}`;
       if (!(await confirmAction({ title: 'Delete set?', message, confirmLabel: 'Delete', danger: true }))) {
         return;
       }
@@ -179,6 +185,7 @@ export class GzSetRowComponent extends GzElement {
       return html``;
     }
     const disabled = set.done || this.#locked ? 'disabled' : '';
+    const assisted = this.#kind === 'assisted';
 
     return html`
       <form class="row-view ${set.done ? 'done' : ''}" data-testid="row">
@@ -196,12 +203,12 @@ export class GzSetRowComponent extends GzElement {
                       step="any"
                       min="0"
                       value="${set.weight}"
-                      aria-label="Weight"
+                      aria-label="${assisted ? 'Assistance' : 'Weight'}"
                       required
                       data-testid="weight"
                       ${disabled}
                     />
-                    <label for="weight">${UNIT}</label>
+                    <label for="weight">${assisted ? `${UNIT} assist` : UNIT}</label>
                   </fieldset>
                   <span aria-hidden="true">×</span>`
           }
@@ -222,7 +229,7 @@ export class GzSetRowComponent extends GzElement {
           ${disabled}
         />
         <div class="actions">
-          ${this.#bodyweight ? '' : html`<span class="volume mono" data-testid="volume">${formatVolume(set.weight * set.reps)}</span>`}
+          ${this.#kind === 'weighted' ? html`<span class="volume mono" data-testid="volume">${formatVolume(set.weight * set.reps)}</span>` : ''}
           <button
             type="button"
             class="outline"

@@ -122,7 +122,8 @@ as it stays in the backend controller. That holds across features too: `gz-worko
 workout through `workoutFacade` and the exercises for `gz-add-set-form`'s select through
 `exerciseFacade` from `features/exercises/`, never through anything in `exercises/internal/`, and
 `gz-dashboard` takes its summary from `statsFacade`, its recent workouts from `workoutFacade` and its
-weigh-ins from `weighInFacade`.
+weigh-ins from `weighInFacade`. Its "Total volume" tile reads "weighted lifts, all time", since the
+summary's volumes count weighted exercises only.
 
 ## Routing
 
@@ -383,7 +384,8 @@ Every other change to a set leaves the open exercise open.
 
 Each header (`<summary>`) holds only the muscle group's labeled `gz-muscle-group-icon` (none for an
 exercise without a group), the exercise name, its stats "N sets · volume" in muted text — "3 sets ·
-30 reps" for a bodyweight exercise — and a progress badge — an outline "x/y done", or a success "✓
+30 reps" for a bodyweight exercise and "3 sets · 22 reps" for an assisted one, whose client has no
+body weight to turn assistance into volume — and a progress badge — an outline "x/y done", or a success "✓
 Done" once all of its sets are — so a collapsed exercise is a glanceable name, stats and state, and
 nothing in it can be tapped by mistake. On a phone the icon and name keep the first line beside the
 chevron, and the stats and badge take the second.
@@ -413,10 +415,13 @@ Under its fields the form shows the selected exercise's last session, "Last · O
 `bestWeight` of the exercise list the view already loaded, so it is all-time and left out when null
 or 0. For a bodyweight exercise the hint is reps only, "Last · Oct 9: 12 · 10 · 8 reps", and the
 weight field is out of the way: `.field-weight` renders `hidden` with its input `disabled` while
-the selected exercise is bodyweight, by the flag on the exercise list it is handed, and the
+the selected exercise is bodyweight, by the `kind` on the exercise list it is handed, and the
 select's `change` listener toggles both through `#syncWeight()`. A disabled input is neither
 validated nor in the form data, so the form posts no `weight` and the API stores 0. Its hint ends
-in "best 15 reps" from the exercise's `bestReps` when it has one.
+in "best 15 reps" from the exercise's `bestReps` when it has one. For an assisted exercise the weight
+field stays, required, but its label reads "Assistance (kg)" — `weightLabel()` in the template and
+again in `#syncWeight()` on a selection change — and the hint reads "Last · Oct 9: 8×30 · 8×30 · 6×25
+kg assist · least 25 kg", ending in the list's `leastWeight` when it has one.
 
 Reps and weight are prefilled from two sources: an exercise with sets in this workout starts from
 its last one there; one without starts from the first set of its last session — on a selection
@@ -462,9 +467,11 @@ the replacing row's `restoreField()`, with whatever was typed there by then.
 A done row mirrors the backend's lock: it keeps its fields and × in place but disabled, keeps +1,
 and mutes its load. A done workout locks every row, as the backend locks its sets: the view sets
 each row's `locked` before its `set`, and a locked row disables its toggle, fields, +1 and ×
-whatever the set's own state. The view hands each row its group's `bodyweight` the same way; a
+whatever the set's own state. The view hands each row its group's `kind` the same way; a
 bodyweight row has no weight input, `×` or volume, saves and duplicates its set without a weight,
-and its delete confirmation names it "12 reps".
+and its delete confirmation names it "12 reps". An assisted row keeps its weight input, labeled
+"kg assist" with the `aria-label` "Assistance", has no volume, and its delete confirmation names it
+"30 kg assist × 8" through `formatAssistance()` in `ui/format.ts`.
 
 ### The progress strip
 
@@ -506,8 +513,9 @@ a failure and changes nothing.
 
 The exercises list filters by muscle group and by type, through two `<select>`s beside its
 heading: "Muscle group" offers "All", the muscle groups and "No muscle group", and "Type" offers
-"All", "Bodyweight" and "Weighted". The filters live in the URL as `?muscleGroup=<group>` or
-`?muscleGroup=none` and `?type=bodyweight` or `?type=weighted`, beside `?page=`, as an
+"All", "Weighted", "Bodyweight" and "Assisted". The filters live in the URL as
+`?muscleGroup=<group>` or `?muscleGroup=none` and `?type=weighted`, `?type=bodyweight` or
+`?type=assisted`, beside `?page=`, as an
 `ExerciseFilterDto` that `parseExerciseFilter` reads and `exercisesPath` writes, both in
 `features/exercises/internal/exercise-filter.ts`, since `pagePath` only knows `?page`; an unknown
 value of either reads as "All". Changing one filter keeps the other and navigates to page 1, and a
@@ -525,12 +533,13 @@ open only while there are no exercises at all, whatever the filter. Its muscle g
 `muscleGroupOptions` in `features/exercises/internal/muscle-groups.ts`. Its `MUSCLE_GROUPS` is the
 frontend's own copy of the backend's list, since `src/shared/` holds no values; both are typed
 against `MuscleGroup` in `src/shared/muscle-group.ts`, and a test on each side pins the full list.
-Below the fields both forms have a "Bodyweight" switch, Oat's
-`input[type=checkbox][role=switch]` named `bodyweight`; `formData()` leaves out an unchecked
-checkbox and gives a checked one `'on'`, so the form sends `bodyweight: values.bodyweight === 'on'`,
-`false` included. A bodyweight exercise's card joins its muscle group, "Bodyweight" and its notes
-with `·`, and its page reads "Chest · Bodyweight" under its name, or "Bodyweight" alone without a
-group. Its list card reads "15 reps best" from `bestReps`.
+Below the fields both forms have a "Type" `<select name="kind">` of Weighted, Bodyweight and
+Assisted, rendered by `kindOptions` in `exercise-filter.ts` beside the filter's
+`typeFilterOptions` and labeled by its `KIND_LABELS`; the add form starts on Weighted and the edit
+form on the exercise's kind, and both send `kind`. A bodyweight or assisted exercise's card joins
+its muscle group, its kind's label and its notes with `·`, and its page reads "Chest · Bodyweight"
+or "Back · Assisted" under its name, or the label alone without a group. A bodyweight card reads
+"15 reps best" from `bestReps`, and an assisted one "17.5 kg assist least" from `leastWeight`.
 
 ### The exercise page
 
@@ -541,10 +550,16 @@ unlike the workout's "Details & notes": only a successful save reloads the view,
 section while the toast confirms the save, and a failed save or a metric switch re-renders nothing.
 A bodyweight exercise speaks in reps: its tiles are Sessions, Best set ("15 reps"), Top set (the
 latest session's `topReps`, with its change against the previous session) and Total reps; the view
-sets `bodyweight` on `gz-progress-chart` and `gz-session-table` before their `sessions`, so the
+sets `kind` on `gz-progress-chart` and `gz-session-table` before their `sessions`, so the
 chart offers Top set and Total reps from its `BODYWEIGHT_METRICS`, falling back to the first for a
 remembered weighted metric, and the table shows Date · Sets · Top set · Reps with the change on
-Reps.
+Reps. An assisted exercise speaks in assistance: its tiles are Sessions, Best set ("17.5 kg assist ×
+8", the least assisted), Least assistance (the latest session's `leastWeight`, "−2.5 kg vs. previous
+session") and Effective volume, summed over the sessions that have one; the chart offers Least
+assistance, Effective volume and Total reps from its `ASSISTED_METRICS`, a session without an
+effective volume passed to `gz-chart` as `NaN`, which it leaves out; and the table shows Date ·
+Sets · Reps · Least assist · Effective volume ("–" without one), where `changeTemplate()`'s
+`lowerIsBetter` colors a drop in assistance `up`.
 
 ### Muscle-group icons
 
@@ -595,7 +610,8 @@ calendar still shows; `since` is `daysBefore(todayIso(), RECENT_DAYS)`, `daysBef
 `RECENT_DAYS` from `internal/dates.ts`, by the browser's date and independent of the calendar's month. Each exercise is an `article.card` in a
 plain `<section>`, a grid that collapses to one column on a phone: the name linking to the
 exercise, its overall marker and %, then its last three sessions, each linking to its workout with
-its volume, or total reps for a bodyweight exercise, and its marker and % against the session
+its volume, total reps for a bodyweight exercise or effective volume for an assisted one ("–"
+without one), and its marker and % against the session
 before. Marker and % share one `role="img"` span whose `title` and `aria-label` say what was
 compared, for the overall value the date of the session it compares against (`progressionSince`).
 The sessions are an `<ol>` whose items lay out on a shared grid with `subgrid`, not

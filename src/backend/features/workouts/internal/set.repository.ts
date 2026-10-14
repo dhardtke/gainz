@@ -3,6 +3,7 @@ import { badRequest, conflict, notFound } from '../../../http/errors.ts';
 import { buildUpdate, isForeignKeyViolation } from '../../../db/sql.ts';
 import type { WorkoutRepository } from './workout.repository.ts';
 import type { WorkoutExerciseRepository } from './workout-exercise.repository.ts';
+import type { ExerciseKind } from '../../../../shared/exercise-kind.ts';
 import type { ExerciseId, LiftSetId, WorkoutId } from '../../../../shared/flavors.ts';
 import type { LiftSet } from '../ports/set.ts';
 import { LAST_SESSION_WORKOUT_SQL, SET_COLUMNS } from '../ports/sql.ts';
@@ -158,11 +159,11 @@ export class SetRepository {
   }
 
   #weightFor(exerciseId: ExerciseId, weight: number | null): number {
-    const exercise = this.#db.query<{ bodyweight: 0 | 1 }, [ExerciseId]>('SELECT bodyweight FROM exercises WHERE id = ?').get(exerciseId);
+    const exercise = this.#db.query<{ kind: ExerciseKind }, [ExerciseId]>('SELECT kind FROM exercises WHERE id = ?').get(exerciseId);
     if (!exercise) {
       throw badRequest('"exerciseId" must name an existing exercise');
     }
-    if (exercise.bodyweight === 1) {
+    if (exercise.kind === 'bodyweight') {
       if (weight !== null && weight !== 0) {
         throw badRequest('"weight" must be 0 for a bodyweight exercise');
       }

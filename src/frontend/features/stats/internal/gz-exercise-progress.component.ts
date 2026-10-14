@@ -27,8 +27,18 @@ export class GzExerciseProgressComponent extends GzElement {
     }
   }
 
+  #value({ kind }: RecentExerciseDto, session: RecentSessionDto): string {
+    if (kind === 'bodyweight') {
+      return plural(session.reps, 'rep');
+    }
+    if (kind === 'assisted') {
+      return session.effectiveVolume === null ? '–' : formatVolume(session.effectiveVolume);
+    }
+    return formatVolume(session.volume);
+  }
+
   #session(exercise: RecentExerciseDto, session: RecentSessionDto): RawHtml {
-    const value = exercise.bodyweight ? plural(session.reps, 'rep') : formatVolume(session.volume);
+    const value = this.#value(exercise, session);
     return html`
       <li data-testid="session">
         <a class="date" href="/workouts/${session.workoutId}">${formatShortDate(session.performedOn)}</a>

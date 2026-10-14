@@ -1,3 +1,4 @@
+import type { ExerciseKind } from '../../../../shared/exercise-kind.ts';
 import type { ExerciseId, Iso8601Date, WorkoutId } from '../../../../shared/flavors.ts';
 
 export interface Summary {
@@ -31,13 +32,14 @@ export interface RecentSession {
   performed_on: Iso8601Date;
   reps: number;
   volume: number;
+  effective_volume: number | null;
   progression: number | null;
 }
 
 export interface RecentExercise {
   id: ExerciseId;
   name: string;
-  bodyweight: 0 | 1;
+  kind: ExerciseKind;
   progression: number | null;
   progression_since: Iso8601Date | null;
   sessions: RecentSession[];

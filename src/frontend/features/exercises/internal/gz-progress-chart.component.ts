@@ -3,10 +3,11 @@ import { define, GzElement } from '../../../ui/base.ts';
 import { html } from '../../../ui/html.ts';
 import { formatShortDate, plural, UNIT } from '../../../ui/format.ts';
 import type { SessionPointDto } from '../../../../shared/dto/exercise.ts';
+import type { ExerciseKind } from '../../../../shared/exercise-kind.ts';
 import type { GzChartComponent } from '../../../ui/chart/gz-chart.component.ts';
 import '../../../ui/chart/gz-chart.component.ts';
 
-type MetricKey = 'estOneRepMax' | 'topWeight' | 'totalVolume' | 'topReps' | 'totalReps';
+type MetricKey = 'estOneRepMax' | 'topWeight' | 'totalVolume' | 'topReps' | 'totalReps' | 'leastWeight' | 'effectiveVolume';
 
 interface Metric {
   key: MetricKey;
@@ -34,17 +35,30 @@ const BODYWEIGHT_METRICS: Metrics = [
   { key: 'totalReps', label: 'Total reps', unit: 'reps', hint: 'Reps summed over the session.' },
 ];
 
+const ASSISTED_METRICS: Metrics = [
+  { key: 'leastWeight', label: 'Least assistance', unit: UNIT, hint: 'Least assistance in each session — lower is better.' },
+  {
+    key: 'effectiveVolume',
+    label: 'Effective volume',
+    unit: UNIT,
+    hint: 'Reps × (body weight − assistance), from the weigh-in on or before each session.',
+  },
+  { key: 'totalReps', label: 'Total reps', unit: 'reps', hint: 'Reps summed over the session.' },
+];
+
+const METRICS_BY_KIND: Record<ExerciseKind, Metrics> = { weighted: METRICS, bodyweight: BODYWEIGHT_METRICS, assisted: ASSISTED_METRICS };
+
 export class GzProgressChartComponent extends GzElement {
   #metrics: Metrics = METRICS;
 
-  // A key, not a metric: it is looked up in whichever list `bodyweight` chooses.
+  // A key, not a metric: it is looked up in whichever list `kind` chooses.
   #metricKey: string | null = null;
 
   #sessions: SessionPointDto[] = [];
 
   // Only stored, like `metric`: the parent sets it before `sessions`, which renders.
-  set bodyweight(value: boolean) {
-    this.#metrics = value ? BODYWEIGHT_METRICS : METRICS;
+  set kind(value: ExerciseKind) {
+    this.#metrics = METRICS_BY_KIND[value];
   }
 
   set metric(value: string) {
@@ -82,7 +96,8 @@ export class GzProgressChartComponent extends GzElement {
     chart.unit = metric.unit;
     chart.series = this.#sessions.map((session) => ({
       label: formatShortDate(session.performedOn),
-      value: session[metric.key],
+      // A session without an effective volume is NaN, which the chart leaves out.
+      value: session[metric.key] ?? Number.NaN,
       hint: `${plural(session.setCount, 'set')}, ${plural(session.totalReps, 'rep')}`,
     }));
   }

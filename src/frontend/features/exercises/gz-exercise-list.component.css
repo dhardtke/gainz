@@ -1,3 +1,8 @@
 .add .new-form .field-notes {
   flex: 2 1 15rem;
 }
+
+/* The Add button lines up with the Type select, not its label. */
+.add .new-form .submit-row {
+  align-items: flex-end;
+}

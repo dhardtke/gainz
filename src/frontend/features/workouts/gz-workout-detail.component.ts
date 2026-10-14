@@ -230,7 +230,7 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
       const id = Number(row.dataset.id);
       row.index = Number(row.dataset.index);
       row.locked = workout.done;
-      row.bodyweight = workout.exercises.find((group) => group.sets.some((candidate) => candidate.id === id))?.bodyweight ?? false;
+      row.kind = workout.exercises.find((group) => group.sets.some((candidate) => candidate.id === id))?.kind ?? 'weighted';
       row.set = sets.find((candidate) => candidate.id === id);
     }
 
@@ -389,7 +389,7 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
 
   #groupSummary(group: WorkoutExerciseDto): string {
     const count = group.sets.length;
-    if (group.bodyweight) {
+    if (group.kind !== 'weighted') {
       const reps = group.sets.reduce((total, set) => total + set.reps, 0);
       return `${plural(count, 'set')} · ${plural(reps, 'rep')}`;
     }

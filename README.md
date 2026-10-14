@@ -20,7 +20,7 @@ that felt heavy.
   <img src="docs/screenshots/workout-light.png" alt="A workout in progress: two of six sets ticked off, each with weight, reps and a note">
 </picture>
 
-Every exercise charts its estimated one-rep max, top set and volume over time; bodyweight exercises chart their reps.
+Every exercise charts its estimated one-rep max, top set and volume over time; bodyweight exercises chart their reps, and assisted exercises their assistance and effective volume.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/exercise-dark.png">

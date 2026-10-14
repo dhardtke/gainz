@@ -1,7 +1,7 @@
 import type { RawHtml } from '../../ui/html.ts';
 import { define } from '../../ui/base.ts';
 import { html } from '../../ui/html.ts';
-import { formatWeight, plural, relativeDay } from '../../ui/format.ts';
+import { formatAssistance, formatWeight, plural, relativeDay } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
 import { PAGE_SIZE, pageCount, pageOffset, parsePage } from '../../ui/pagination/pagination.ts';
 import '../../ui/pagination/gz-pagination.component.ts';
@@ -11,7 +11,7 @@ import { toast, toastError } from '../../ui/toast.ts';
 import { GzView } from '../../ui/view.ts';
 import { exerciseFacade } from './exercises.facade.ts';
 import { muscleGroupFilterOptions, muscleGroupOptions, parseMuscleGroup } from './internal/muscle-groups.ts';
-import { exercisesPath, isFiltered, parseExerciseFilter, parseExerciseType, typeFilterOptions } from './internal/exercise-filter.ts';
+import { exercisesPath, isFiltered, KIND_LABELS, kindOptions, parseExerciseFilter, parseExerciseKind, typeFilterOptions } from './internal/exercise-filter.ts';
 
 interface ExerciseListData {
   items: ExerciseWithStatsDto[];
@@ -41,7 +41,7 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
         const group = value === 'none' ? 'none' : parseMuscleGroup(value);
         navigate(exercisesPath({ ...(group === null ? {} : { muscleGroup: group }), ...(type === undefined ? {} : { type }) }, 1));
       } else if (id === 'type-filter') {
-        const chosen = parseExerciseType(value);
+        const chosen = parseExerciseKind(value);
         navigate(exercisesPath({ ...(muscleGroup === undefined ? {} : { muscleGroup }), ...(chosen === null ? {} : { type: chosen }) }, 1));
       }
     });
@@ -67,7 +67,7 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
         name,
         muscleGroup: parseMuscleGroup(values.muscleGroup),
         notes: values.notes,
-        bodyweight: values.bodyweight === 'on',
+        kind: parseExerciseKind(values.kind) ?? 'weighted',
       });
     } catch (error) {
       toastError(error);
@@ -79,7 +79,7 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
       // Its own group, and its own type while a type is chosen, so the new card is in view.
       const filter: ExerciseFilterDto = {
         muscleGroup: exercise.muscleGroup ?? 'none',
-        ...(this.data?.filter.type === undefined ? {} : { type: exercise.bodyweight ? 'bodyweight' : 'weighted' }),
+        ...(this.data?.filter.type === undefined ? {} : { type: exercise.kind }),
       };
       const { index } = await exerciseFacade.position(exercise.id, filter);
       navigate(exercisesPath(filter, Math.floor(index / PAGE_SIZE) + 1));
@@ -94,7 +94,7 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
     const { muscleGroup, notes } = exercise;
     const parts = [
       muscleGroup ? html`<gz-muscle-group-icon group="${muscleGroup}"></gz-muscle-group-icon> ${muscleGroup}` : null,
-      exercise.bodyweight ? 'Bodyweight' : null,
+      exercise.kind === 'weighted' ? null : KIND_LABELS[exercise.kind],
       notes,
     ].filter((part) => part !== null);
     return html`
@@ -112,7 +112,11 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
     `;
   }
 
-  #best({ bodyweight, bestWeight, bestReps }: ExerciseWithStatsDto): string {
+  #best({ kind, bestWeight, bestReps, leastWeight }: ExerciseWithStatsDto): string {
+    if (kind === 'assisted') {
+      return leastWeight === null ? 'no best yet' : `${formatAssistance(leastWeight)} least`;
+    }
+    const bodyweight = kind === 'bodyweight';
     const best = bodyweight ? bestReps : bestWeight;
     if (best === null) {
       return 'no best yet';
@@ -189,8 +193,13 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
                 <input id="notes" name="notes" type="text" placeholder="Low bar, belt over 100 kg" maxlength="2000" />
               </div>
             </div>
-            <div class="hstack justify-between gap-2">
-              <label><input type="checkbox" role="switch" name="bodyweight" data-testid="bodyweight" /> Bodyweight</label>
+            <div class="hstack justify-between gap-2 submit-row">
+              <div class="field">
+                <label for="kind">Type</label>
+                <select id="kind" name="kind" data-testid="kind">
+                  ${kindOptions('weighted')}
+                </select>
+              </div>
               <button type="submit">Add</button>
             </div>
           </form>

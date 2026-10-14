@@ -4,9 +4,10 @@ import type { CalendarMonthDto, CalendarWorkoutDto, RecentExerciseDto, RecentExe
 import type { ExerciseId, Iso8601Date, WorkoutId } from '../../../shared/flavors.ts';
 import { body, useServer } from '../../testing.ts';
 import { createExercise } from '../exercises/exercises.fixtures.ts';
+import { putWeighIn } from '../weight/weight.fixtures.ts';
 import { createSet, createWorkout, markDone } from '../workouts/workouts.fixtures.ts';
 
-const { api, post, patch } = useServer();
+const { api, post, patch, put } = useServer();
 
 // One done set per entry, each `[exerciseId, reps, weight]`.
 async function session(date: Iso8601Date, sets: [ExerciseId, number, number][]): Promise<WorkoutId> {
@@ -161,7 +162,7 @@ describe('stats calendar', () => {
   });
 
   test('compares reps for a bodyweight exercise', async () => {
-    const pullUp = await createExercise(post, 'Pull-up', { bodyweight: true });
+    const pullUp = await createExercise(post, 'Pull-up', { kind: 'bodyweight' });
     await session('2026-10-01', [[pullUp.id, 30, 0]]);
     const id = await session('2026-10-05', [[pullUp.id, 36, 0]]);
 
@@ -182,9 +183,9 @@ describe('stats calendar', () => {
   });
 
   test('does not compare an exercise turned weighted on its first loaded session', async () => {
-    const dip = await createExercise(post, 'Dip', { bodyweight: true });
+    const dip = await createExercise(post, 'Dip', { kind: 'bodyweight' });
     await session('2026-10-01', [[dip.id, 10, 0]]);
-    expect((await patch(`/api/exercises/${dip.id}`, { bodyweight: false })).status).toBe(200);
+    expect((await patch(`/api/exercises/${dip.id}`, { kind: 'weighted' })).status).toBe(200);
     const loaded = await session('2026-10-05', [[dip.id, 10, 10]]);
     const next = await session('2026-10-09', [[dip.id, 10, 11]]);
 
@@ -311,12 +312,12 @@ describe('stats recent exercises', () => {
   });
 
   test('compares reps for a bodyweight exercise', async () => {
-    const pullUp = await createExercise(post, 'Pull-up', { bodyweight: true });
+    const pullUp = await createExercise(post, 'Pull-up', { kind: 'bodyweight' });
     await session('2026-10-01', [[pullUp.id, 30, 0]]);
     await session('2026-10-05', [[pullUp.id, 36, 0]]);
 
     const answer = await only('2026-10-01');
-    expect(answer.bodyweight).toBe(true);
+    expect(answer.kind).toBe('bodyweight');
     expect(answer.sessions[1]?.reps).toBe(36);
     expect(answer.sessions[1]?.progression).toBeCloseTo(0.2);
     expect(answer.progression).toBeCloseTo(0.2);
@@ -328,7 +329,7 @@ describe('stats recent exercises', () => {
     await session('2026-10-05', [[dip.id, 10, 20]]);
 
     const answer = await only('2026-10-01');
-    expect(answer.bodyweight).toBe(false);
+    expect(answer.kind).toBe('weighted');
     expect(answer.sessions[1]?.progression).toBeNull();
     expect(answer.progression).toBeNull();
     expect(answer.progressionSince).toBeNull();
@@ -380,5 +381,93 @@ describe('stats recent exercises', () => {
     const res = await api(`/api/stats/exercises${query}`);
     expect(res.status).toBe(400);
     expect((await body<ErrorDto>(res)).error).toBe('"since" must be a date in YYYY-MM-DD format');
+  });
+});
+
+describe('stats of assisted exercises', () => {
+  async function calendar(month: string): Promise<CalendarMonthDto> {
+    return body<CalendarMonthDto>(await api(`/api/stats/calendar?month=${month}`));
+  }
+
+  function workoutIn(month: CalendarMonthDto, id: WorkoutId): CalendarWorkoutDto | undefined {
+    return month.days.flatMap((day) => day.workouts).find((workout) => workout.id === id);
+  }
+
+  // Three done sets of 8 reps at the given assistance.
+  const threeByEight = (exerciseId: ExerciseId, assistance: number): [ExerciseId, number, number][] => [
+    [exerciseId, 8, assistance],
+    [exerciseId, 8, assistance],
+    [exerciseId, 8, assistance],
+  ];
+
+  test('compares effective volume, reps × (body weight − assistance)', async () => {
+    const pullUp = await createExercise(post, 'Assisted Pull-up', { kind: 'assisted' });
+    await putWeighIn(put, '2026-09-30', 80);
+    await session('2026-10-01', threeByEight(pullUp.id, 30));
+    const id = await session('2026-10-05', threeByEight(pullUp.id, 25));
+
+    const workout = workoutIn(await calendar('2026-10'), id);
+    expect(workout?.comparedExerciseCount).toBe(1);
+    expect(workout?.progression).toBeCloseTo(1320 / 1200 - 1);
+  });
+
+  test('takes the latest weigh-in on or before each date', async () => {
+    const pullUp = await createExercise(post, 'Assisted Pull-up', { kind: 'assisted' });
+    await putWeighIn(put, '2026-09-30', 80);
+    await putWeighIn(put, '2026-10-03', 90);
+    await putWeighIn(put, '2026-10-10', 100);
+    await session('2026-10-01', threeByEight(pullUp.id, 30));
+    const id = await session('2026-10-05', threeByEight(pullUp.id, 30));
+
+    expect(workoutIn(await calendar('2026-10'), id)?.progression).toBeCloseTo((24 * 60) / (24 * 50) - 1);
+  });
+
+  test('does not compare a session without a weigh-in on or before it', async () => {
+    const pullUp = await createExercise(post, 'Assisted Pull-up', { kind: 'assisted' });
+    await putWeighIn(put, '2026-10-03', 80);
+    await session('2026-10-01', threeByEight(pullUp.id, 30));
+    const id = await session('2026-10-05', threeByEight(pullUp.id, 25));
+
+    expect(workoutIn(await calendar('2026-10'), id)).toMatchObject({ progression: null, comparedExerciseCount: 0 });
+  });
+
+  test('does not compare a session with assistance at or above the body weight', async () => {
+    const pullUp = await createExercise(post, 'Assisted Pull-up', { kind: 'assisted' });
+    const bench = await createExercise(post);
+    await putWeighIn(put, '2026-09-30', 80);
+    await session('2026-10-01', [...threeByEight(pullUp.id, 30), [bench.id, 5, 100]]);
+    const id = await session('2026-10-05', [...threeByEight(pullUp.id, 25), [pullUp.id, 3, 80], [bench.id, 5, 110]]);
+
+    const day = (await calendar('2026-10')).days.find((each) => each.date === '2026-10-05');
+    expect(day?.comparedExerciseCount).toBe(1);
+    expect(day?.progression).toBeCloseTo(0.1);
+    expect(workoutIn(await calendar('2026-10'), id)?.comparedExerciseCount).toBe(1);
+  });
+
+  test("carries each recent session's effective volume and skips back past one without it", async () => {
+    const pullUp = await createExercise(post, 'Assisted Pull-up', { kind: 'assisted' });
+    await session('2026-10-01', threeByEight(pullUp.id, 30));
+    await putWeighIn(put, '2026-10-02', 80);
+    await session('2026-10-03', threeByEight(pullUp.id, 30));
+    await session('2026-10-05', threeByEight(pullUp.id, 25));
+
+    const [answer] = (await body<RecentExercisesDto>(await api('/api/stats/exercises?since=2026-10-01'))).exercises;
+    expect(answer?.kind).toBe('assisted');
+    expect(answer?.sessions.map((each) => each.effectiveVolume)).toEqual([null, 1200, 1320]);
+    expect(answer?.sessions.map((each) => each.progression)).toEqual([null, null, expect.closeTo(0.1)]);
+    expect(answer?.progression).toBeCloseTo(0.1);
+    expect(answer?.progressionSince).toBe('2026-10-03');
+  });
+
+  test("leaves an assisted exercise's sets out of the summary's volumes", async () => {
+    const pullUp = await createExercise(post, 'Assisted Pull-up', { kind: 'assisted' });
+    const bench = await createExercise(post);
+    await session('2026-10-05', [
+      [bench.id, 10, 40],
+      [pullUp.id, 8, 30],
+    ]);
+
+    const summary = await body<SummaryDto>(await api('/api/stats/summary?since=2026-10-01'));
+    expect(summary).toMatchObject({ totalVolume: 400, volumeSince: 400, totalReps: 18, workoutsSince: 1 });
   });
 });

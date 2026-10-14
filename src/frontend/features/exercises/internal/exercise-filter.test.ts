@@ -1,9 +1,21 @@
 import { expect, test } from 'bun:test';
 import type { ExerciseFilterDto } from '../../../../shared/dto/exercise.ts';
-import { EXERCISE_TYPES, exercisesPath, isFiltered, parseExerciseFilter } from './exercise-filter.ts';
+import { EXERCISE_KINDS, exercisesPath, isFiltered, kindOptions, parseExerciseFilter, typeFilterOptions } from './exercise-filter.ts';
 
-test('lists both types', () => {
-  expect(EXERCISE_TYPES).toEqual(['bodyweight', 'weighted']);
+test('lists the three kinds', () => {
+  expect(EXERCISE_KINDS).toEqual(['weighted', 'bodyweight', 'assisted']);
+});
+
+const labels = (options: string): string[] => [...options.matchAll(/>([^<]+)<\/option>/g)].map((match) => match[1] ?? '');
+
+test('offers All and the three kinds to filter by', () => {
+  expect(labels(typeFilterOptions('assisted').value)).toEqual(['All', 'Weighted', 'Bodyweight', 'Assisted']);
+  expect(typeFilterOptions('assisted').value).toContain('<option value="assisted" selected>');
+});
+
+test('offers the three kinds to choose from, the given one selected', () => {
+  expect(labels(kindOptions('bodyweight').value)).toEqual(['Weighted', 'Bodyweight', 'Assisted']);
+  expect(kindOptions('bodyweight').value).toContain('<option value="bodyweight" selected>');
 });
 
 test.each([
@@ -11,6 +23,7 @@ test.each([
   ['?page=2', {}],
   ['?muscleGroup=Legs', { muscleGroup: 'Legs' }],
   ['?type=bodyweight', { type: 'bodyweight' }],
+  ['?type=assisted', { type: 'assisted' }],
   ['?muscleGroup=none&type=weighted&page=3', { muscleGroup: 'none', type: 'weighted' }],
   ['?type=Bodyweight', {}],
   ['?muscleGroup=Quads&type=true', {}],

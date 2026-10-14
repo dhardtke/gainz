@@ -1,20 +1,21 @@
-import type { ExerciseFilterDto, ExerciseType } from '../../../../shared/dto/exercise.ts';
+import type { ExerciseFilterDto } from '../../../../shared/dto/exercise.ts';
+import type { ExerciseKind } from '../../../../shared/exercise-kind.ts';
 import type { RawHtml } from '../../../ui/html.ts';
 import { html } from '../../../ui/html.ts';
 import { parseMuscleGroupFilter } from './muscle-groups.ts';
 
-export const EXERCISE_TYPES = ['bodyweight', 'weighted'] as const satisfies readonly ExerciseType[];
+export const EXERCISE_KINDS = ['weighted', 'bodyweight', 'assisted'] as const satisfies readonly ExerciseKind[];
 
-const TYPE_LABELS: Record<ExerciseType, string> = { bodyweight: 'Bodyweight', weighted: 'Weighted' };
+export const KIND_LABELS: Record<ExerciseKind, string> = { weighted: 'Weighted', bodyweight: 'Bodyweight', assisted: 'Assisted' };
 
-export function parseExerciseType(value: string | null | undefined): ExerciseType | null {
-  return EXERCISE_TYPES.find((type) => type === value) ?? null;
+export function parseExerciseKind(value: string | null | undefined): ExerciseKind | null {
+  return EXERCISE_KINDS.find((kind) => kind === value) ?? null;
 }
 
 /** An unknown value of either filter reads as "All". */
 export function parseExerciseFilter(search: string): ExerciseFilterDto {
   const muscleGroup = parseMuscleGroupFilter(search);
-  const type = parseExerciseType(new URLSearchParams(search).get('type'));
+  const type = parseExerciseKind(new URLSearchParams(search).get('type'));
   return { ...(muscleGroup === null ? {} : { muscleGroup }), ...(type === null ? {} : { type }) };
 }
 
@@ -37,9 +38,13 @@ export function exercisesPath(filter: ExerciseFilterDto, page: number): string {
   return search === '' ? '/exercises' : `/exercises?${search}`;
 }
 
-export function typeFilterOptions(selected: ExerciseType | undefined): RawHtml {
+export function typeFilterOptions(selected: ExerciseKind | undefined): RawHtml {
   return html`
     <option value="" ${selected === undefined ? 'selected' : ''}>All</option>
-    ${EXERCISE_TYPES.map((type) => html`<option value="${type}" ${type === selected ? 'selected' : ''}>${TYPE_LABELS[type]}</option>`)}
+    ${kindOptions(selected)}
   `;
+}
+
+export function kindOptions(selected: ExerciseKind | undefined): RawHtml {
+  return html`${EXERCISE_KINDS.map((kind) => html`<option value="${kind}" ${kind === selected ? 'selected' : ''}>${KIND_LABELS[kind]}</option>`)}`;
 }
