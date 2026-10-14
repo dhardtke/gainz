@@ -1,4 +1,4 @@
-import { DEFAULT_DB_PATH, openDatabase } from '../backend/db/db.ts';
+import { clearDatabase, DEFAULT_DB_PATH, openDatabase } from '../backend/db/db.ts';
 import { createExerciseFacade } from '../backend/features/exercises/exercises.facade.ts';
 import { createStatsFacade } from '../backend/features/stats/stats.facade.ts';
 import { createWeighInFacade } from '../backend/features/weight/weight.facade.ts';
@@ -63,16 +63,11 @@ function isoDaysAgo(days: number): Iso8601Date {
 
 function main(): void {
   const db = openDatabase(DEFAULT_DB_PATH);
+  clearDatabase(db);
   const exercises = createExerciseFacade(db);
   const { workouts, sets } = createWorkoutFacades(db);
   const stats = createStatsFacade(db);
   const weighIns = createWeighInFacade(db);
-
-  if (workouts.count() > 0) {
-    console.log('Database already contains workouts — nothing seeded.');
-    db.close();
-    return;
-  }
 
   db.transaction(() => {
     const idByName = new Map<string, ExerciseId>();

@@ -72,7 +72,7 @@ Requires [Bun](https://bun.sh) 1.4 or newer.
 
 ```sh
 bun install          # Oat, plus TypeScript types for development
-bun run seed         # optional: a few weeks of sample history
+bun run seed         # optional: replaces the database with a few weeks of sample history
 bun start            # http://localhost:3000
 ```
 

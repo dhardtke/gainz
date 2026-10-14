@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { join } from 'node:path';
-import { openDatabase } from './db.ts';
+import { clearDatabase, openDatabase } from './db.ts';
 import { schemaVersion } from './migrations.ts';
 import { tables, useTempDir } from '../testing.ts';
 
@@ -25,5 +25,25 @@ describe('the real migrations', () => {
 
     // A plain close() leaves the file locked on Windows until outstanding statements are collected.
     file.close(true);
+  });
+});
+
+describe('clearDatabase', () => {
+  test('empties every table, restarts the ids and keeps the migration ledger', () => {
+    const db = openDatabase(':memory:');
+    db.run("INSERT INTO exercises (name) VALUES ('Bench Press')");
+    db.run("INSERT INTO workouts (performed_on) VALUES ('2026-10-14')");
+    db.run('INSERT INTO sets (workout_id, exercise_id, reps, weight) VALUES (1, 1, 5, 100)');
+
+    clearDatabase(db);
+
+    for (const table of ['exercises', 'workouts', 'sets']) {
+      expect(db.query<{ n: number }, []>(`SELECT COUNT(*) AS n FROM ${table}`).get()?.n).toBe(0);
+    }
+    expect(schemaVersion(db)).toBe(8);
+    expect(db.query<{ id: number }, []>("INSERT INTO exercises (name) VALUES ('Squat') RETURNING id").get()?.id).toBe(1);
+    expect(db.query<{ foreign_keys: number }, []>('PRAGMA foreign_keys').get()?.foreign_keys).toBe(1);
+
+    db.close();
   });
 });

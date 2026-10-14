@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 bun install              # deps (Oat + dev types/tooling)
 bun start                # serve API + frontend on PORT (default 3000)
 bun run start:dev        # same, with --watch
-bun run seed             # fill an empty DB with sample workouts
+bun run seed             # empty the DB and refill it with sample workouts
 bun run migrate          # apply pending schema migrations, then exit
 bun run hash-password    # prompt for a password, print its hash for GAINZ_PASSWORD_HASH
 bun run screenshots      # retake the README's screenshots (needs Chrome or Edge, or GAINZ_BROWSER)

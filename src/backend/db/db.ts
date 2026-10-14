@@ -19,4 +19,19 @@ export function openDatabase(path: string, onMigration?: (migration: Migration) 
   return db;
 }
 
+// Empties every table but the migration ledger; foreign keys go off because ON DELETE RESTRICT ignores deferral.
+export function clearDatabase(db: DB): void {
+  const tables = db.query<{ name: string }, []>("SELECT name FROM sqlite_master WHERE type = 'table' AND name <> 'schema_migrations'").all();
+  db.run('PRAGMA foreign_keys = OFF');
+  try {
+    db.transaction(() => {
+      for (const { name } of tables) {
+        db.run(`DELETE FROM "${name}"`);
+      }
+    })();
+  } finally {
+    db.run('PRAGMA foreign_keys = ON');
+  }
+}
+
 export const DEFAULT_DB_PATH = process.env.GAINZ_DB ?? 'data/gainz.sqlite';
