@@ -5,7 +5,7 @@
     "": {
       "name": "gainz",
       "dependencies": {
-        "@knadh/oat": "0.8.2",
+        "@knadh/oat": "0.8.3",
       },
       "devDependencies": {
         "@types/bun": "1.4.2",
@@ -18,7 +18,7 @@
     },
   },
   "packages": {
-    "@knadh/oat": ["@knadh/oat@0.8.2", "", {}, "sha512-zNcKDZihGeT0m2ZXJSymkI4LmfVdT5aa8hUT+33q9BEW3JkXgenE/Bvlge0/MduygmbF6gkvHTEttJpOyRoc7A=="],
+    "@knadh/oat": ["@knadh/oat@0.8.3", "", {}, "sha512-eE07LJ6RpC21PfEbu3U6dFbTO0V6m1OcXocrYr7dwN+Ffr8sx+SqVTPwHO5/+Azv0NWEU8V7frwzBQXdx7CzLA=="],
 
     "@oxfmt/binding-android-arm-eabi": ["@oxfmt/binding-android-arm-eabi@0.72.0", "", { "os": "android", "cpu": "arm" }, "sha512-u4U1uaDOVBuorGNC/07NLm48nECHOiJJka002YGML16Md2DRvf38RGBt01lH60EOGvNlFVmbLoksQedNBoZHKw=="],
 
