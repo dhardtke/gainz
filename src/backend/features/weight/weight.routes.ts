@@ -9,6 +9,9 @@ export function weightRoutes(db: DB): RouteTable {
     '/api/weigh-ins': {
       GET: (req) => controller.list(req),
     },
+    '/api/weigh-ins/import': {
+      POST: (req) => controller.importAll(req),
+    },
     '/api/weigh-ins/:date': {
       GET: (req) => controller.get(req),
       PUT: (req) => controller.put(req),

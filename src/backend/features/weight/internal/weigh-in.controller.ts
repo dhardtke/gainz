@@ -1,7 +1,13 @@
 import { json, noContent, optionalQueryDate, pathDate, readJsonObject } from '../../../http/http.ts';
 import type { ParamRequest } from '../../../http/routing.ts';
 import type { WeighInFacade } from '../weight.facade.ts';
-import { translateToPutWeighInDto, translateToWeighInDto, translateToWeighInListDto } from './weigh-in.translator.ts';
+import {
+  translateToImportWeighInsDto,
+  translateToImportWeighInsResultDto,
+  translateToPutWeighInDto,
+  translateToWeighInDto,
+  translateToWeighInListDto,
+} from './weigh-in.translator.ts';
 
 export class WeighInController {
   readonly #weighIns: WeighInFacade;
@@ -24,6 +30,11 @@ export class WeighInController {
     const dto = translateToPutWeighInDto(await readJsonObject(req));
     const { weighIn, created } = this.#weighIns.put(date, dto);
     return json(translateToWeighInDto(weighIn), created ? 201 : 200);
+  }
+
+  async importAll(req: Request): Promise<Response> {
+    const dto = translateToImportWeighInsDto(await readJsonObject(req));
+    return json(translateToImportWeighInsResultDto(this.#weighIns.importAll(dto)));
   }
 
   delete(req: ParamRequest): Response {

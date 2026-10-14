@@ -26,6 +26,12 @@ test('weighInFacade.put()', async () => {
   expect(fetch.requests).toMatchObject([{ method: 'PUT', url: '/api/weigh-ins/2026-10-13', body: { weight: 82.4 } }]);
 });
 
+test('weighInFacade.importAll()', async () => {
+  await weighInFacade.importAll({ items: [{ measuredOn: '2026-10-13', weight: 82.4 }] });
+
+  expect(fetch.requests).toMatchObject([{ method: 'POST', url: '/api/weigh-ins/import', body: { items: [{ measuredOn: '2026-10-13', weight: 82.4 }] } }]);
+});
+
 test('weighInFacade.delete()', async () => {
   fetch.respondWith(204);
   await weighInFacade.delete('2026-10-13');

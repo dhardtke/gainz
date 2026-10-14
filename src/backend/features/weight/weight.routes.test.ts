@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import type { ErrorDto } from '../../../shared/dto/error.ts';
-import type { WeighInDto, WeighInListDto } from '../../../shared/dto/weight.ts';
+import type { ImportWeighInsResultDto, WeighInDto, WeighInListDto } from '../../../shared/dto/weight.ts';
 import { body, useServer } from '../../testing.ts';
 import { putWeighIn } from './weight.fixtures.ts';
 
-const { api, put, del } = useServer();
+const { api, post, put, del } = useServer();
 
 async function list(query = ''): Promise<WeighInListDto> {
   const res = await api(`/api/weigh-ins${query}`);
@@ -118,5 +118,55 @@ describe('GET /api/weigh-ins', () => {
     const res = await api(`/api/weigh-ins${query}`);
     expect(res.status).toBe(400);
     expect((await body<ErrorDto>(res)).error).toBe('"since" must be a date in YYYY-MM-DD format');
+  });
+});
+
+describe('POST /api/weigh-ins/import', () => {
+  test('creates new dates and replaces logged ones', async () => {
+    await putWeighIn(put, '2026-10-12', 83);
+
+    const res = await post('/api/weigh-ins/import', {
+      items: [
+        { measuredOn: '2026-10-11', weight: 82.9 },
+        { measuredOn: '2026-10-12', weight: 82.456 },
+      ],
+    });
+    expect(res.status).toBe(200);
+    expect(await body<ImportWeighInsResultDto>(res)).toEqual({ created: 1, replaced: 1 });
+    expect((await list()).items).toEqual([
+      { measuredOn: '2026-10-11', weight: 82.9 },
+      { measuredOn: '2026-10-12', weight: 82.46 },
+    ]);
+  });
+
+  test.each([
+    [{}, '"items" must be a list of 1 to 10000 weigh-ins'],
+    [{ items: [] }, '"items" must be a list of 1 to 10000 weigh-ins'],
+    [{ items: ['x'] }, '"items[0]" must be an object'],
+    [{ items: [{ measuredOn: '2026-02-30', weight: 82 }] }, '"items[0].measuredOn" must be a date in YYYY-MM-DD format'],
+    [{ items: [{ measuredOn: '2026-10-12', weight: '82' }] }, '"items[0].weight" on 2026-10-12 must be a number between 20 and 500'],
+    [
+      {
+        items: [
+          { measuredOn: '2026-10-11', weight: 82 },
+          { measuredOn: '2026-10-12', weight: 4.05 },
+        ],
+      },
+      '"items[1].weight" on 2026-10-12 must be a number between 20 and 500',
+    ],
+    [
+      {
+        items: [
+          { measuredOn: '2026-10-12', weight: 82 },
+          { measuredOn: '2026-10-12', weight: 83 },
+        ],
+      },
+      '"items" must not repeat the date 2026-10-12',
+    ],
+  ])('answers %p with 400 and imports nothing', async (dto, error) => {
+    const res = await post('/api/weigh-ins/import', dto);
+    expect(res.status).toBe(400);
+    expect((await body<ErrorDto>(res)).error).toBe(error);
+    expect((await list()).items).toEqual([]);
   });
 });

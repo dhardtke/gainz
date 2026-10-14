@@ -18,3 +18,13 @@ export interface WeighInListDto {
   /** The newest weigh-in overall, in the range or not. */
   latest: WeighInDto | null;
 }
+
+export interface ImportWeighInsDto {
+  /** At most one per date. */
+  items: WeighInDto[];
+}
+
+export interface ImportWeighInsResultDto {
+  created: number;
+  replaced: number;
+}

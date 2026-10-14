@@ -659,6 +659,25 @@ drops that row. A failure toasts and changes nothing. Both inputs take any decim
 between 20 and 500, since the API keeps two decimals and a stored 82.46 would otherwise read as
 invalid.
 
+### Importing from EufyLife
+
+Between the Trend card and the history, `gz-weigh-in-import` from `weight/internal/` imports a CSV
+the EufyLife app exports under Me → Data → Export All Data. `internal/eufy.ts` parses it in the
+browser: `parseEufyCsv(text)` finds the `Time`, `Family Members` and `WEIGHT (kg)` columns by name
+and ignores the rest, takes the date from the `YYYY-MM-DD hh:mm:ss` time as written, and keeps each
+day's last reading per family member, oldest first, since the API keeps one weigh-in per date. A
+reading with no weight, or 0, is skipped. A file
+without those columns, or a row whose time it cannot read, throws an `EufyFormatError`, which the
+card shows in an error alert.
+
+Choosing a file reads it at once and enables Import. With more than one family member, a select
+offers each with its count ("eufy · 115 weigh-ins"), and a line below shows the chosen member's
+count and first and last dates. Only that select and line re-render, since a render would clear
+the file input. Import asks "Import 115 weigh-ins?", noting that a weigh-in already logged on one
+of the dates is replaced, then posts them through `weighInFacade.importAll()`, toasts "Imported 115
+weigh-ins" (with ", 3 replaced" when any were), resets the form and emits `weigh-ins-imported`,
+on which the page reloads. A failed import toasts the API's message and keeps the file chosen.
+
 ### The dashboard tile
 
 The dashboard's fourth tile is Body weight, drawn by `gz-weight-tile`, which sits at the weight

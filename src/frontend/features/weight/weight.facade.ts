@@ -1,4 +1,4 @@
-import type { PutWeighInDto, WeighInDto, WeighInListDto } from '../../../shared/dto/weight.ts';
+import type { ImportWeighInsDto, ImportWeighInsResultDto, PutWeighInDto, WeighInDto, WeighInListDto } from '../../../shared/dto/weight.ts';
 import type { Iso8601Date } from '../../../shared/flavors.ts';
 import { WeighInApi } from './internal/weigh-in.api.ts';
 
@@ -19,6 +19,10 @@ export class WeighInFacade {
 
   put(date: Iso8601Date, dto: PutWeighInDto): Promise<WeighInDto> {
     return this.#api.put(date, dto);
+  }
+
+  importAll(dto: ImportWeighInsDto): Promise<ImportWeighInsResultDto> {
+    return this.#api.importAll(dto);
   }
 
   delete(date: Iso8601Date): Promise<null> {

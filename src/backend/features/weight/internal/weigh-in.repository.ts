@@ -40,6 +40,24 @@ export class WeighInRepository {
     })();
   }
 
+  putAll(weighIns: WeighIn[]): { created: number; replaced: number } {
+    const exists = this.#db.query<{ found: 1 }, [Iso8601Date]>('SELECT 1 AS found FROM weigh_ins WHERE measured_on = ?');
+    const upsert = this.#db.query<null, [Iso8601Date, number]>(
+      `INSERT INTO weigh_ins (measured_on, weight) VALUES (?, ?)
+       ON CONFLICT (measured_on) DO UPDATE SET weight = excluded.weight`,
+    );
+    return this.#db.transaction(() => {
+      let replaced = 0;
+      for (const { measured_on, weight } of weighIns) {
+        if (exists.get(measured_on)) {
+          replaced++;
+        }
+        upsert.run(measured_on, weight);
+      }
+      return { created: weighIns.length - replaced, replaced };
+    })();
+  }
+
   delete(date: Iso8601Date): boolean {
     return this.#db.query('DELETE FROM weigh_ins WHERE measured_on = ?').run(date).changes > 0;
   }

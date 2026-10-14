@@ -461,6 +461,14 @@ The body weight log holds one weigh-in per date, keyed by the date, with no id:
   oldest first, and `latest` the newest weigh-in overall, in the range or not, or `null`. Without
   `since` it answers every weigh-in with `since: null`. There is no paging, since ten years of daily
   weigh-ins is under 4,000 small rows.
+- `POST /api/weigh-ins/import` with `{ "items": [{ "measuredOn": "2026-10-13", "weight": 82.4 }] }`
+  creates or replaces each date's weigh-in and answers `{ created, replaced }`. The facade checks
+  every item before anything is written — 1 to 10,000 of them, each a real date and a number between
+  20 and 500 (no numeric string), no date twice — and a 400 names the first bad one, such as
+  `"items[3].weight" on 2026-06-04 must be a number between 20 and 500`. `WeighInRepository.putAll`
+  then upserts them all in one transaction, so an import lands whole or not at all. The body is
+  format-neutral: reading a scale's export is the frontend's job (see "Importing from EufyLife" in
+  `docs/frontend.md`). Bun matches the static `/import` before `/:date`.
 
 The date in the path is read by `pathDate` and `since` by `optionalQueryDate`, both of which call
 `isRealDate`: `isIsoDate` plus a round trip through `Date.UTC`, so `2026-02-30` is a 400 rather than

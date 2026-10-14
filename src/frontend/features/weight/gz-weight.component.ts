@@ -10,6 +10,7 @@ import type { WeighInDto, WeighInListDto } from '../../../shared/dto/weight.ts';
 import type { Iso8601Date } from '../../../shared/flavors.ts';
 import { weighInFacade } from './weight.facade.ts';
 import { GzWeighInRowComponent, WEIGH_IN_DELETED_EVENT, WEIGH_IN_SAVED_EVENT } from './internal/gz-weigh-in-row.component.ts';
+import { WEIGH_INS_IMPORTED_EVENT } from './internal/gz-weigh-in-import.component.ts';
 import { loadSince, parseRange, RANGES, type RangeKey, rangeFrom, rangePath } from './internal/range.ts';
 import { trendHint, trendPoints } from './internal/trend.ts';
 import type { GzChartComponent } from '../../ui/chart/gz-chart.component.ts';
@@ -46,6 +47,9 @@ export class GzWeightComponent extends GzView<WeightData> {
           this.#showItems((items) => items.filter((item) => item.measuredOn !== date));
         });
       }
+    });
+    this.root.addEventListener(WEIGH_INS_IMPORTED_EVENT, () => {
+      void this.reload();
     });
   }
 
@@ -259,7 +263,9 @@ export class GzWeightComponent extends GzView<WeightData> {
           <h1>Weight</h1>
           <p class="text-light" data-testid="subtitle">${this.#subtitle(data)}</p>
         </hgroup>
-        ${this.#formTemplate(data)} ${this.#trendTemplate(data)} ${this.#historyTemplate(this.#shown(data))}
+        ${this.#formTemplate(data)} ${this.#trendTemplate(data)}
+        <gz-weigh-in-import></gz-weigh-in-import>
+        ${this.#historyTemplate(this.#shown(data))}
       </div>
     `;
   }
