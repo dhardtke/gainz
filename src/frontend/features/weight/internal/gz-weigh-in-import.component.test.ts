@@ -1,5 +1,6 @@
 import { beforeAll, expect, test } from 'bun:test';
 import { choose, collect, find, mount, openDialog, settle, shadow, submit, testId, useDom, useFetch, useToasts } from '../../../testing.ts';
+import { formatDate } from '../../../ui/format.ts';
 
 useDom();
 const fake = useFetch();
@@ -43,9 +44,9 @@ test('offers each family member and summarizes the chosen one', async () => {
   expect(find<HTMLElement>(root, '.member').hidden).toBe(false);
   const select = find<HTMLSelectElement>(root, testId('import-member'));
   expect(Array.from(select.options, (option) => option.textContent)).toEqual(['eufy · 2 weigh-ins', 'luki · 1 weigh-in']);
-  expect(find(root, testId('import-summary')).textContent).toBe('2 weigh-ins · Mon, 12 Oct 2026 – Tue, 13 Oct 2026');
+  expect(find(root, testId('import-summary')).textContent).toBe(`2 weigh-ins · ${formatDate('2026-10-12')} – ${formatDate('2026-10-13')}`);
   choose(select, 'luki');
-  expect(find(root, testId('import-summary')).textContent).toBe('1 weigh-in · Mon, 12 Oct 2026 – Mon, 12 Oct 2026');
+  expect(find(root, testId('import-summary')).textContent).toBe(`1 weigh-in · ${formatDate('2026-10-12')} – ${formatDate('2026-10-12')}`);
   expect(importButton(root).disabled).toBe(false);
 });
 
