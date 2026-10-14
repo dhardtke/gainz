@@ -5,6 +5,15 @@ and the reps, weight and notes for each one. A [Bun](https://bun.sh) and SQLite
 backend serves a frontend of TypeScript custom elements styled with
 [Oat](https://oat.ink).
 
+- Log workouts set by set, ticking each off as you go
+- Start a workout from your exercises' last sessions
+- Weighted, bodyweight and assisted exercises, filterable by muscle group
+- Progress charts per exercise, with an estimated one-rep max
+- A training calendar that marks progressed, held and regressed days
+- Body weight with a 7-day trend, importable from EufyLife
+- Installable on your phone, with a light and a dark theme
+- Optional password login, and a single-file build for deployment
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/dashboard-dark.png">
   <img src="docs/screenshots/dashboard-light.png" alt="The dashboard: totals for workouts, volume and body weight above a list of recent workouts">
