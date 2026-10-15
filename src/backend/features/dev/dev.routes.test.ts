@@ -83,7 +83,8 @@ describe('hot reload switched on', () => {
   test('pushes a change to a connected client', async () => {
     await withDev(true, async (origin) => {
       const socket = new WebSocket(socketUrl(origin));
-      const file = resolve(createStaticFacade().webRoot(), '__hot.css');
+      // Under dev/, which the build never reads, so a parallel build cannot hit the file mid-unlink.
+      const file = resolve(createStaticFacade().webRoot(), 'dev', '__hot.css');
       try {
         expect(await opens(socket)).toBe(true);
         const message = new Promise<unknown>((done) => {
@@ -94,7 +95,7 @@ describe('hot reload switched on', () => {
         await Bun.write(file, 'a { color: red; }\n');
         // A missed watcher event fails the test instead of hanging the suite.
         const timeout = Bun.sleep(2000).then(() => 'timed out');
-        expect(await Promise.race([message, timeout])).toEqual({ swap: '/__hot.css' });
+        expect(await Promise.race([message, timeout])).toEqual({ swap: '/dev/__hot.css' });
       } finally {
         socket.close();
         await unlink(file);
