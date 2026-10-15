@@ -78,7 +78,7 @@ svg {
   border: 2px solid var(--primary);
   border-radius: 50%;
   background: var(--card);
-  cursor: pointer;
+  cursor: help;
 }
 
 .x-axis {
