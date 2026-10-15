@@ -451,8 +451,8 @@ day's the mean over every compared exercise of its workouts, not of the workouts
 exercise counts equally; with nothing compared it is `null`. The values are raw fractions
 (`0.041`); where "progressed" begins is the frontend's call. `StatsRepository.calendar()` runs one
 query over the whole history of the exercises trained that month, since a previous session may lie
-in any earlier month: a CTE of per-(workout, exercise) done reps, volume, top weight and body
-weight, a second adding the effective volume, `LAG()` over each exercise's sessions, then the month filter, with the grouping into workouts and days in TypeScript.
+in any earlier month: a materialized CTE of per-(workout, exercise) done reps, volume, top weight
+and, for an assisted exercise only, body weight, a second adding the effective volume, `LAG()` over each exercise's sessions, then the month filter, with the grouping into workouts and days in TypeScript.
 
 `GET /api/stats/exercises?since=YYYY-MM-DD` is the page's progress section: `{ since, exercises }`
 with every exercise holding a done set in a workout dated on or after `since`. Like `month`,

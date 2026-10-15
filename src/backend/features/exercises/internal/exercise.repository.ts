@@ -152,21 +152,27 @@ export class ExerciseRepository {
   progress(id: ExerciseId): SessionPoint[] {
     return this.#db
       .query<SessionPoint, [ExerciseId]>(
-        `SELECT w.id                   AS workout_id,
-                w.performed_on         AS performed_on,
-                COUNT(s.id)            AS set_count,
-                SUM(s.reps)            AS total_reps,
-                SUM(s.reps * s.weight) AS total_volume,
-                MAX(s.weight)          AS top_weight,
-                MAX(s.reps)            AS top_reps,
-                MAX(${EST_1RM_SQL})    AS est_one_rep_max,
-                MIN(s.weight)          AS least_weight,
-                ${effectiveVolumeSql(bodyWeightOnSql('w.performed_on'), 'SUM(s.reps)', 'SUM(s.reps * s.weight)', 'MAX(s.weight)')} AS effective_volume
-           FROM sets s
-           JOIN workouts w ON w.id = s.workout_id
-          WHERE s.exercise_id = ? AND s.done = 1
-          GROUP BY w.id
-          ORDER BY w.performed_on ASC, w.id ASC`,
+        `WITH sessions AS MATERIALIZED (
+           SELECT w.id                   AS workout_id,
+                  w.performed_on         AS performed_on,
+                  COUNT(s.id)            AS set_count,
+                  SUM(s.reps)            AS total_reps,
+                  SUM(s.reps * s.weight) AS total_volume,
+                  MAX(s.weight)          AS top_weight,
+                  MAX(s.reps)            AS top_reps,
+                  MAX(${EST_1RM_SQL})    AS est_one_rep_max,
+                  MIN(s.weight)          AS least_weight,
+                  CASE WHEN e.kind = 'assisted' THEN ${bodyWeightOnSql('w.performed_on')} END AS body_weight
+             FROM sets s
+             JOIN workouts w  ON w.id = s.workout_id
+             JOIN exercises e ON e.id = s.exercise_id
+            WHERE s.exercise_id = ? AND s.done = 1
+            GROUP BY w.id
+         )
+         SELECT workout_id, performed_on, set_count, total_reps, total_volume, top_weight, top_reps, est_one_rep_max, least_weight,
+                ${effectiveVolumeSql('body_weight', 'total_reps', 'total_volume', 'top_weight')} AS effective_volume
+           FROM sessions
+          ORDER BY performed_on ASC, workout_id ASC`,
       )
       .all(id);
   }

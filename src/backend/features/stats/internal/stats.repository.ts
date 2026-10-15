@@ -56,10 +56,10 @@ interface SessionTotals {
 // for the exercises with a done set in a workout matching `window` (on `ww`).
 function comparedSessionsSql(window: string): string {
   return `
-  WITH sessions AS (
+  WITH sessions AS MATERIALIZED (
     SELECT w.id AS workout_id, w.performed_on, w.title, s.exercise_id, e.name, e.kind,
            SUM(s.reps) AS reps, SUM(s.reps * s.weight) AS volume, MAX(s.weight) AS top_weight,
-           ${bodyWeightOnSql('w.performed_on')} AS body_weight
+           CASE WHEN e.kind = 'assisted' THEN ${bodyWeightOnSql('w.performed_on')} END AS body_weight
       FROM sets s
       JOIN workouts w  ON w.id = s.workout_id
       JOIN exercises e ON e.id = s.exercise_id
