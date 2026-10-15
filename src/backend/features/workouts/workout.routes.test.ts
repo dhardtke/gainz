@@ -88,6 +88,17 @@ describe('workouts', () => {
     expect(page.items[0]).toMatchObject({ setCount: 2, exerciseCount: 1, totalReps: 15, totalVolume: 800 });
   });
 
+  test('counts only weighted exercises in the listed volume', async () => {
+    const bench = await createExercise(post, 'Bench Press');
+    const pullUp = await createExercise(post, 'Assisted Pull-up', { kind: 'assisted' });
+    const workout = await createWorkout(post);
+    await createSet(post, workout.id, { exerciseId: bench.id, reps: 5, weight: 60 });
+    await createSet(post, workout.id, { exerciseId: pullUp.id, reps: 8, weight: 30 });
+
+    const page = await body<WorkoutPageDto>(await api('/api/workouts'));
+    expect(page.items[0]).toMatchObject({ setCount: 2, totalReps: 13, totalVolume: 300 });
+  });
+
   test('rejects an out-of-range limit', async () => {
     expect((await api('/api/workouts?limit=9999')).status).toBe(400);
   });

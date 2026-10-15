@@ -2,7 +2,7 @@ import type { DB } from '../../../db/db.ts';
 import type { ExerciseKind } from '../../../../shared/exercise-kind.ts';
 import type { ExerciseId, Iso8601Date, Iso8601Month, WorkoutId } from '../../../../shared/flavors.ts';
 import { bodyWeightOnSql } from '../../weight/ports/sql.ts';
-import { effectiveVolumeSql } from '../../workouts/ports/sql.ts';
+import { effectiveVolumeSql, VOLUME_SQL } from '../../workouts/ports/sql.ts';
 import type { CalendarDay, CalendarWorkout, RecentExercise, Summary } from '../ports/stats.ts';
 
 interface SummaryTotals {
@@ -120,8 +120,8 @@ export class StatsRepository {
         `SELECT (SELECT COUNT(*) FROM workouts)                          AS workout_count,
                 (SELECT COUNT(*) FROM sets WHERE done = 1)               AS set_count,
                 (SELECT COALESCE(SUM(reps), 0) FROM sets WHERE done = 1) AS total_reps,
-                (SELECT COALESCE(SUM(reps * weight), 0) FROM sets
-                  WHERE done = 1 AND exercise_id IN (SELECT id FROM exercises WHERE kind = 'weighted')) AS total_volume,
+                (SELECT COALESCE(SUM(${VOLUME_SQL}), 0)
+                   FROM sets s JOIN exercises e ON e.id = s.exercise_id WHERE s.done = 1) AS total_volume,
                 (SELECT COUNT(*) FROM exercises)                         AS exercise_count,
                 (SELECT MAX(performed_on) FROM workouts)                 AS last_performed_on`,
       )
@@ -130,10 +130,11 @@ export class StatsRepository {
     const recent = this.#db
       .query<SummaryRecentActivity, [string]>(
         `SELECT COUNT(DISTINCT w.id)                AS workouts_since,
-                COALESCE(SUM(s.reps * s.weight), 0) AS volume_since
+                COALESCE(SUM(${VOLUME_SQL}), 0)     AS volume_since
            FROM workouts w
            -- In the ON clause, so a workout without such sets still counts.
-           LEFT JOIN sets s ON s.workout_id = w.id AND s.done = 1 AND s.exercise_id IN (SELECT id FROM exercises WHERE kind = 'weighted')
+           LEFT JOIN sets s      ON s.workout_id = w.id AND s.done = 1
+           LEFT JOIN exercises e ON e.id = s.exercise_id
           WHERE w.performed_on >= ?1`,
       )
       .get(since);

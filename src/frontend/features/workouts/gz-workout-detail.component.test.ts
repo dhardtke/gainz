@@ -5,7 +5,7 @@ import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import type { WorkoutDto, WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
 import { exercise } from '../exercises/exercises.fixtures.ts';
 import { group, set } from './workouts.fixtures.ts';
-import { formatDate } from '../../ui/format.ts';
+import { formatDate, formatVolume } from '../../ui/format.ts';
 import type { GzView } from '../../ui/view.ts';
 
 useDom();
@@ -732,4 +732,16 @@ test('sums up an assisted group in reps and hands its rows the kind', async () =
   const row = find(groupOf(view, 4), testId('set-row'));
   expect(find(shadow(row), "label[for='weight']").textContent).toBe('kg assist');
   expect(shadow(row).querySelector(testId('volume'))).toBeNull();
+});
+
+test('leaves an assisted group out of the volume total', async () => {
+  const pullUp = group({
+    exerciseId: 4,
+    exerciseName: 'Assisted Pull-up',
+    kind: 'assisted',
+    position: 3,
+    sets: [set({ id: 31, exerciseId: 4, exerciseName: 'Assisted Pull-up', reps: 8, weight: 30 })],
+  });
+  const view = await mountView({ ...WORKOUT, exercises: [BENCH, SQUAT, pullUp] });
+  expect(text(view, testId('totals'))?.trim()).toEndWith(` · ${formatVolume(5 * (80 + 82.5 + 100))}`);
 });

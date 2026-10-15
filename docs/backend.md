@@ -422,9 +422,10 @@ checked, since skipping one that does not exist skips nothing. The query is
 `GET /api/stats/summary?since=YYYY-MM-DD` is the dashboard's tiles: all-time totals, plus
 `workoutsSince` and `volumeSince` over the workouts dated on or after `since`. Both volumes,
 `totalVolume` and `volumeSince`, count the done sets of weighted exercises only — load put on a bar
-or a machine — since a bodyweight set adds 0 and an assisted one would add its assistance;
-`volumeSince` keeps that condition in its `LEFT JOIN … ON`, so a workout without such sets still
-counts in `workoutsSince`. The dashboard sends
+or a machine — since a bodyweight set adds 0 and an assisted one would add its assistance. The rule
+is `VOLUME_SQL` in `workouts/ports/sql.ts`, which the workout list's `totalVolume` and the workout
+page's totals follow too. `volumeSince` keeps `done = 1` in its `LEFT JOIN … ON`, so a workout
+without done sets still counts in `workoutsSince`. The dashboard sends
 the date `RECENT_DAYS` days before the browser's today, since the server's `date('now')` is UTC and
 would shift the window by a day for anyone far from it; a missing or malformed `since` is a 400.
 

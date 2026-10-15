@@ -25,6 +25,11 @@ function isLiftSet(detail: unknown): detail is LiftSetDto {
   return typeof detail === 'object' && detail !== null && 'id' in detail && typeof detail.id === 'number';
 }
 
+// Only a weighted exercise's weight is load, as on the dashboard.
+function volumeOf(group: WorkoutExerciseDto): number {
+  return group.kind === 'weighted' ? group.sets.reduce((total, set) => total + set.reps * set.weight, 0) : 0;
+}
+
 function workoutName(workout: WorkoutWithExercisesDto): string {
   return workout.title ?? formatDate(workout.performedOn);
 }
@@ -393,8 +398,7 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
       const reps = group.sets.reduce((total, set) => total + set.reps, 0);
       return `${plural(count, 'set')} · ${plural(reps, 'rep')}`;
     }
-    const volume = group.sets.reduce((total, set) => total + set.reps * set.weight, 0);
-    return `${plural(count, 'set')} · ${formatVolume(volume)}`;
+    return `${plural(count, 'set')} · ${formatVolume(volumeOf(group))}`;
   }
 
   #groupTemplate(group: WorkoutExerciseDto, open: ExerciseId | null, first: boolean, last: boolean): RawHtml {
@@ -442,7 +446,7 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
 
   override readyTemplate({ workout }: WorkoutDetailData): RawHtml {
     const sets = workout.exercises.flatMap((group) => group.sets);
-    const volume = sets.reduce((total, set) => total + set.reps * set.weight, 0);
+    const volume = workout.exercises.reduce((total, group) => total + volumeOf(group), 0);
     const reps = sets.reduce((total, set) => total + set.reps, 0);
     const exercises = new Set(sets.map((set) => set.exerciseId)).size;
     const doneCount = sets.filter((set) => set.done).length;

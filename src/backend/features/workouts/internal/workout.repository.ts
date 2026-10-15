@@ -3,6 +3,7 @@ import { conflict, notFound } from '../../../http/errors.ts';
 import { buildUpdate } from '../../../db/sql.ts';
 import type { Iso8601Date, WorkoutId } from '../../../../shared/flavors.ts';
 import type { Workout, WorkoutWithStats } from '../ports/workout.ts';
+import { VOLUME_SQL } from '../ports/sql.ts';
 
 export interface CreateWorkout {
   performed_on: Iso8601Date;
@@ -28,10 +29,11 @@ export class WorkoutRepository {
                 COUNT(s.id)                         AS set_count,
                 COUNT(DISTINCT s.exercise_id)       AS exercise_count,
                 COALESCE(SUM(s.reps), 0)            AS total_reps,
-                COALESCE(SUM(s.reps * s.weight), 0) AS total_volume,
+                COALESCE(SUM(${VOLUME_SQL}), 0)     AS total_volume,
                 COALESCE(SUM(s.done), 0)            AS done_set_count
            FROM workouts w
-           LEFT JOIN sets s ON s.workout_id = w.id
+           LEFT JOIN sets s      ON s.workout_id = w.id
+           LEFT JOIN exercises e ON e.id = s.exercise_id
           GROUP BY w.id
           ORDER BY w.performed_on DESC, w.id DESC
           LIMIT ? OFFSET ?`,
