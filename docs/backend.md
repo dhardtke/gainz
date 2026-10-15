@@ -124,10 +124,10 @@ builds the one `AuthFacade` the server has, handing it to `metaRoutes(auth)` and
 and wrapping the data tables in `auth.guard()`; one instance, because it holds the login throttle.
 Building the workouts facades twice costs nothing, because a repository holds only its connection.
 `src/scripts/seed.ts` calls the same factories and hands the facades camelCase DTOs, so seeded data
-passes the same validation as the API. It first empties every table but `schema_migrations` with
-`clearDatabase` from `db/db.ts`, through the connection rather than by deleting the file, so it
-works while a server holds the database open. `meta` has a controller but no facade, since nothing else
-needs it. `static.facade.ts` publishes `webRoot()`, so the dev feature can watch `src/frontend/`
+passes the same validation as the API. It empties every table but `schema_migrations` with
+`clearDatabase` from `db/db.ts` and seeds in the same transaction, so a failing seed keeps the old
+data; it goes through the connection rather than deleting the file, so it works while a server
+holds the database open. `meta` has a controller but no facade, since nothing else needs it. `static.facade.ts` publishes `webRoot()`, so the dev feature can watch `src/frontend/`
 without importing `static/internal/paths.ts`, and `embed()`, so the build can carry the web root
 without reaching into `static/internal/`; `createDevFacade()` builds it, and `staticRoutes()` builds
 a dev facade in turn, to inject the hot-reload client.

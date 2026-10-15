@@ -63,13 +63,12 @@ function isoDaysAgo(days: number): Iso8601Date {
 
 function main(): void {
   const db = openDatabase(DEFAULT_DB_PATH);
-  clearDatabase(db);
   const exercises = createExerciseFacade(db);
   const { workouts, sets } = createWorkoutFacades(db);
   const stats = createStatsFacade(db);
   const weighIns = createWeighInFacade(db);
 
-  db.transaction(() => {
+  clearDatabase(db, () => {
     const idByName = new Map<string, ExerciseId>();
     const bodyweight = new Set(EXERCISES.filter((exercise) => exercise.kind === 'bodyweight').map((exercise) => exercise.name));
     for (const exercise of EXERCISES) {
@@ -125,7 +124,7 @@ function main(): void {
         weighIns.put(isoDaysAgo(daysAgo), { weight: seededWeight(daysAgo) });
       }
     }
-  })();
+  });
 
   const summary = stats.summary(isoDaysAgo(30));
   console.log(

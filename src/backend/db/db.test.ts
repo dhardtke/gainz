@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { join } from 'node:path';
-import { clearDatabase, openDatabase } from './db.ts';
+import { clearDatabase, type DB, openDatabase } from './db.ts';
 import { schemaVersion } from './migrations.ts';
 import { tables, useTempDir } from '../testing.ts';
 
@@ -45,5 +45,32 @@ describe('clearDatabase', () => {
     expect(db.query<{ foreign_keys: number }, []>('PRAGMA foreign_keys').get()?.foreign_keys).toBe(1);
 
     db.close();
+  });
+
+  function expectOldDataKept(refill: (db: DB) => void): void {
+    const db = openDatabase(':memory:');
+    db.run("INSERT INTO exercises (name) VALUES ('Bench Press')");
+
+    expect(() => {
+      clearDatabase(db, () => {
+        refill(db);
+      });
+    }).toThrow();
+
+    expect(db.query<{ name: string }, []>('SELECT name FROM exercises').all()).toEqual([{ name: 'Bench Press' }]);
+    expect(db.query<{ foreign_keys: number }, []>('PRAGMA foreign_keys').get()?.foreign_keys).toBe(1);
+    db.close();
+  }
+
+  test('keeps the old data when the refill throws', () => {
+    expectOldDataKept(() => {
+      throw new Error('Seeding failed');
+    });
+  });
+
+  test('keeps the old data when the refill leaves a dangling foreign key', () => {
+    expectOldDataKept((db) => {
+      db.run('INSERT INTO sets (workout_id, exercise_id, reps, weight) VALUES (99, 99, 5, 100)');
+    });
   });
 });
