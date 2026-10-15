@@ -69,7 +69,7 @@ export class ExerciseFacade {
       muscleGroup: optionalOneOf(dto, 'muscleGroup', MUSCLE_GROUPS),
       notes: optionalString(dto, 'notes', MAX_EXERCISE_NOTES_LENGTH),
       // Not optionalOneOf, which would take '' and null for absent.
-      kind: dto.kind === undefined ? 'weighted' : requiredOneOf(dto, 'kind', EXERCISE_KINDS),
+      kind: dto.kind === undefined ? undefined : requiredOneOf(dto, 'kind', EXERCISE_KINDS),
     };
   }
 

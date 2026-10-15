@@ -18,18 +18,16 @@ export function formatNumber(value: number | null | undefined, maxDecimals = 2):
   return value.toLocaleString(undefined, { maximumFractionDigits: maxDecimals });
 }
 
+export function formatKilograms(value: number | null | undefined): string {
+  return value === null || value === undefined ? '–' : `${formatNumber(value)} ${UNIT}`;
+}
+
 export function formatWeight(value: number | null | undefined): string {
-  if (value === null || value === undefined) {
-    return '–';
-  }
-  if (value === 0) {
-    return `bodyweight`;
-  }
-  return `${formatNumber(value)} ${UNIT}`;
+  return value === 0 ? 'bodyweight' : formatKilograms(value);
 }
 
 export function formatAssistance(kg: number): string {
-  return `${formatNumber(kg)} ${UNIT} assist`;
+  return `${formatKilograms(kg)} assist`;
 }
 
 export function formatBodyWeight(value: number): string {

@@ -1,7 +1,7 @@
 import type { RawHtml } from '../../../ui/html.ts';
 import { define, GzElement } from '../../../ui/base.ts';
 import { html } from '../../../ui/html.ts';
-import { formatNumber, formatShortDate, formatWeight, plural, UNIT } from '../../../ui/format.ts';
+import { formatKilograms, formatNumber, formatShortDate, formatWeight, plural, UNIT } from '../../../ui/format.ts';
 import type { ExerciseLastSessionDto, ExerciseWithStatsDto, LastSessionDto } from '../../../../shared/dto/exercise.ts';
 import type { ExerciseKind } from '../../../../shared/exercise-kind.ts';
 import type { LiftSetDto } from '../../../../shared/dto/set.ts';
@@ -213,7 +213,7 @@ export class GzAddSetFormComponent extends GzElement {
     }
     const sets = session.sets.map((set) => `${set.reps}×${formatNumber(set.weight)}`).join(' · ');
     if (exercise?.kind === 'assisted') {
-      const least = exercise.leastWeight === null ? '' : ` · least ${formatNumber(exercise.leastWeight)} ${UNIT}`;
+      const least = exercise.leastWeight === null ? '' : ` · least ${formatKilograms(exercise.leastWeight)}`;
       return `${last}: ${sets} ${UNIT} assist${least}`;
     }
     const best = exercise?.bestWeight ?? null;

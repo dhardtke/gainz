@@ -1,7 +1,7 @@
 import type { RawHtml } from '../../../ui/html.ts';
 import { define, GzElement } from '../../../ui/base.ts';
 import { html } from '../../../ui/html.ts';
-import { formatAssistance, formatNumber, formatVolume, plural, UNIT } from '../../../ui/format.ts';
+import { formatAssistance, formatKilograms, formatVolume, plural, UNIT } from '../../../ui/format.ts';
 import type { ExerciseKind } from '../../../../shared/exercise-kind.ts';
 import type { EditSetDto, LiftSetDto } from '../../../../shared/dto/set.ts';
 import { toast, toastError } from '../../../ui/toast.ts';
@@ -107,7 +107,7 @@ export class GzSetRowComponent extends GzElement {
     }
 
     if (action === 'delete') {
-      const load = this.#kind === 'assisted' ? formatAssistance(set.weight) : `${formatNumber(set.weight)} ${UNIT}`;
+      const load = this.#kind === 'assisted' ? formatAssistance(set.weight) : formatKilograms(set.weight);
       const message = this.#bodyweight ? plural(set.reps, 'rep') : `${load} × ${set.reps}`;
       if (!(await confirmAction({ title: 'Delete set?', message, confirmLabel: 'Delete', danger: true }))) {
         return;

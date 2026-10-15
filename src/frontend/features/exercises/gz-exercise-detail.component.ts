@@ -1,7 +1,7 @@
 import type { RawHtml } from '../../ui/html.ts';
 import { define } from '../../ui/base.ts';
 import { html } from '../../ui/html.ts';
-import { formatAssistance, formatDate, formatDelta, formatNumber, formatVolume, plural, relativeDay, UNIT } from '../../ui/format.ts';
+import { formatAssistance, formatDate, formatDelta, formatKilograms, formatNumber, formatVolume, plural, relativeDay, UNIT } from '../../ui/format.ts';
 import { navigate } from '../../app/router.ts';
 import type { ExerciseDto, ExerciseProgressDto } from '../../../shared/dto/exercise.ts';
 import { exerciseFacade } from './exercises.facade.ts';
@@ -201,7 +201,7 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
         <gz-tile
           data-testid="tile"
           label="Least assistance"
-          value="${latest ? `${formatNumber(latest.leastWeight)} ${UNIT}` : '–'}"
+          value="${formatKilograms(latest?.leastWeight)}"
           hint="${delta ? `${delta} ${UNIT} vs. previous session` : 'needs two sessions'}"
         ></gz-tile>
         <gz-tile data-testid="tile" label="Effective volume" value="${formatVolume(effectiveVolume)}" hint="across all sessions"></gz-tile>
@@ -234,7 +234,7 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
         <gz-tile
           data-testid="tile"
           label="Best set"
-          value="${bestSet ? `${formatNumber(bestSet.weight)} ${UNIT} × ${bestSet.reps}` : '–'}"
+          value="${bestSet ? `${formatKilograms(bestSet.weight)} × ${bestSet.reps}` : '–'}"
           hint="${bestSet ? formatDate(bestSet.performedOn) : 'no sets logged'}"
         ></gz-tile>
         <gz-tile

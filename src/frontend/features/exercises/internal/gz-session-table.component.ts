@@ -1,7 +1,7 @@
 import type { RawHtml } from '../../../ui/html.ts';
 import { define, GzElement } from '../../../ui/base.ts';
 import { html } from '../../../ui/html.ts';
-import { formatDate, formatDelta, formatNumber, formatVolume, UNIT } from '../../../ui/format.ts';
+import { formatDate, formatDelta, formatKilograms, formatNumber, formatVolume } from '../../../ui/format.ts';
 import type { SessionPointDto } from '../../../../shared/dto/exercise.ts';
 import type { ExerciseKind } from '../../../../shared/exercise-kind.ts';
 
@@ -106,7 +106,7 @@ export class GzSessionTableComponent extends GzElement {
               </td>
               <td class="num">${session.setCount}</td>
               <td class="num">${session.totalReps}</td>
-              <td class="num">${formatNumber(session.topWeight)} ${UNIT}</td>
+              <td class="num">${formatKilograms(session.topWeight)}</td>
               <td class="num">${changeTemplate(session.estOneRepMax, reversed[index + 1]?.estOneRepMax, 1)}</td>
               <td class="num">${formatVolume(session.totalVolume)}</td>
             </tr>
