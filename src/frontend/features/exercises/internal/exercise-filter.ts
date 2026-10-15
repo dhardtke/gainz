@@ -12,15 +12,23 @@ export function parseExerciseKind(value: string | null | undefined): ExerciseKin
   return EXERCISE_KINDS.find((kind) => kind === value) ?? null;
 }
 
-/** An unknown value of either filter reads as "All". */
-export function parseExerciseFilter(search: string): ExerciseFilterDto {
-  const muscleGroup = parseMuscleGroupFilter(search);
-  const type = parseExerciseKind(new URLSearchParams(search).get('type'));
-  return { ...(muscleGroup === null ? {} : { muscleGroup }), ...(type === null ? {} : { type }) };
+const MAX_SEARCH_LENGTH = 120;
+
+/** An unknown value of any filter reads as "All"; an empty or over-long search as none. */
+export function parseExerciseFilter(query: string): ExerciseFilterDto {
+  const params = new URLSearchParams(query);
+  const muscleGroup = parseMuscleGroupFilter(query);
+  const type = parseExerciseKind(params.get('type'));
+  const search = params.get('search')?.trim() ?? '';
+  return {
+    ...(muscleGroup === null ? {} : { muscleGroup }),
+    ...(type === null ? {} : { type }),
+    ...(search === '' || search.length > MAX_SEARCH_LENGTH ? {} : { search }),
+  };
 }
 
 export function isFiltered(filter: ExerciseFilterDto): boolean {
-  return filter.muscleGroup !== undefined || filter.type !== undefined;
+  return filter.muscleGroup !== undefined || filter.type !== undefined || filter.search !== undefined;
 }
 
 export function exercisesPath(filter: ExerciseFilterDto, page: number): string {
@@ -31,11 +39,14 @@ export function exercisesPath(filter: ExerciseFilterDto, page: number): string {
   if (filter.type !== undefined) {
     query.set('type', filter.type);
   }
+  if (filter.search !== undefined) {
+    query.set('search', filter.search);
+  }
   if (page !== 1) {
     query.set('page', String(page));
   }
-  const search = query.toString();
-  return search === '' ? '/exercises' : `/exercises?${search}`;
+  const queryString = query.toString();
+  return queryString === '' ? '/exercises' : `/exercises?${queryString}`;
 }
 
 export function typeFilterOptions(selected: ExerciseKind | undefined): RawHtml {

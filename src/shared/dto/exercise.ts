@@ -27,6 +27,8 @@ export interface ExerciseWithStatsDto extends ExerciseDto {
 export interface ExerciseFilterDto {
   muscleGroup?: MuscleGroupFilter;
   type?: ExerciseKind;
+  /** Matches the names containing it. */
+  search?: string;
 }
 
 export interface ExercisePageDto {

@@ -7,7 +7,7 @@ backend serves a frontend of TypeScript custom elements styled with
 
 - Log workouts set by set, ticking each off as you go
 - Start a workout from your exercises' last sessions
-- Weighted, bodyweight and assisted exercises, filterable by muscle group
+- Weighted, bodyweight and assisted exercises, searchable by name and filterable by muscle group and type
 - Progress charts per exercise, with an estimated one-rep max
 - A training calendar that marks progressed, held and regressed days
 - Body weight with a 7-day trend, importable from EufyLife

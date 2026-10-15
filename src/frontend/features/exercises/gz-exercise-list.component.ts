@@ -21,6 +21,9 @@ interface ExerciseListData {
   filter: ExerciseFilterDto;
 }
 
+// Applying a search renders a fresh view, which takes the focus back for the next one.
+let refocusSearch = false;
+
 export class GzExerciseListComponent extends GzView<ExerciseListData> {
   override loadingText = 'Loading exercises…';
 
@@ -32,18 +35,58 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
       }
     });
     this.root.addEventListener('change', (event) => {
-      if (!(event.target instanceof HTMLSelectElement)) {
+      const { target } = event;
+      if (!(target instanceof HTMLSelectElement || target instanceof HTMLInputElement)) {
         return;
       }
-      const { id, value } = event.target;
-      const { muscleGroup, type } = this.data?.filter ?? {};
+      const { id, value } = target;
+      const { muscleGroup, type, search } = this.data?.filter ?? {};
+      const kept = search === undefined ? {} : { search };
       if (id === 'filter') {
         const group = value === 'none' ? 'none' : parseMuscleGroup(value);
-        navigate(exercisesPath({ ...(group === null ? {} : { muscleGroup: group }), ...(type === undefined ? {} : { type }) }, 1));
+        navigate(exercisesPath({ ...(group === null ? {} : { muscleGroup: group }), ...(type === undefined ? {} : { type }), ...kept }, 1));
       } else if (id === 'type-filter') {
         const chosen = parseExerciseKind(value);
-        navigate(exercisesPath({ ...(muscleGroup === undefined ? {} : { muscleGroup }), ...(chosen === null ? {} : { type: chosen }) }, 1));
+        navigate(exercisesPath({ ...(muscleGroup === undefined ? {} : { muscleGroup }), ...(chosen === null ? {} : { type: chosen }), ...kept }, 1));
+      } else if (id === 'search' && target instanceof HTMLInputElement) {
+        this.#applySearch(target);
       }
+    });
+    // Chrome and Safari fire only `search`, not `change`, when the ✕ clears the field.
+    this.root.addEventListener('search', (event) => {
+      if (event.target instanceof HTMLInputElement && event.target.id === 'search') {
+        this.#applySearch(event.target);
+      }
+    });
+  }
+
+  // Compared with the URL, not `this.data`, which is stale while the next view loads.
+  #applySearch(field: HTMLInputElement): void {
+    const value = field.value.trim();
+    const { muscleGroup, type, search } = parseExerciseFilter(location.search);
+    if (value === (search ?? '')) {
+      return;
+    }
+    // Enter or the ✕ leaves the field focused; leaving it does not.
+    refocusSearch = this.root.activeElement === field;
+    navigate(
+      exercisesPath(
+        { ...(muscleGroup === undefined ? {} : { muscleGroup }), ...(type === undefined ? {} : { type }), ...(value === '' ? {} : { search: value }) },
+        1,
+      ),
+    );
+  }
+
+  override afterRender(): void {
+    if (!refocusSearch || this.$('[data-testid="loading"]') !== null) {
+      return;
+    }
+    refocusSearch = false;
+    const field = this.$<HTMLInputElement>('#search');
+    // gz-app reveals the view only after it rendered, and a hidden field takes no focus.
+    setTimeout(() => {
+      field?.focus();
+      field?.setSelectionRange(field.value.length, field.value.length);
     });
   }
 
@@ -76,7 +119,7 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
     toast(`Added ${name}`, 'success');
 
     try {
-      // Its own group, and its own type while a type is chosen, so the new card is in view.
+      // Its own group, its own type while a type is chosen, and no search, so the new card is in view.
       const filter: ExerciseFilterDto = {
         muscleGroup: exercise.muscleGroup ?? 'none',
         ...(this.data?.filter.type === undefined ? {} : { type: exercise.kind }),
@@ -125,15 +168,17 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
     return `${bodyweight ? plural(best, 'rep') : formatWeight(best)} best`;
   }
 
-  #emptyText(all: number, { muscleGroup, type }: ExerciseFilterDto): string {
-    if (all === 0 || (muscleGroup === undefined && type === undefined)) {
+  #emptyText(all: number, filter: ExerciseFilterDto): string {
+    if (all === 0 || !isFiltered(filter)) {
       return 'No exercises yet. Add the lifts you train above.';
     }
+    const { muscleGroup, type, search } = filter;
     const kind = type === undefined ? '' : `${type} `;
-    if (muscleGroup === 'none') {
-      return `No ${kind}exercises without a muscle group.`;
+    const phrase = muscleGroup === 'none' ? `${kind}exercises without a muscle group` : `${kind}${muscleGroup === undefined ? '' : `${muscleGroup} `}exercises`;
+    if (search !== undefined) {
+      return `No ${phrase} match "${search}".`;
     }
-    return `No ${kind}${muscleGroup === undefined ? '' : `${muscleGroup} `}exercises yet.`;
+    return muscleGroup === 'none' ? `No ${phrase}.` : `No ${phrase} yet.`;
   }
 
   #page({ items, total, all, page, filter }: ExerciseListData): RawHtml {
@@ -160,6 +205,10 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
             <p class="text-light" data-testid="subtitle">${isFiltered(filter) ? `${total} of ${plural(all, 'exercise')}` : plural(all, 'exercise')}</p>
           </hgroup>
           <div class="hstack gap-2">
+            <div class="field">
+              <label for="search">Search</label>
+              <input id="search" type="search" placeholder="Exercise name" value="${filter.search ?? ''}" maxlength="120" data-testid="search" />
+            </div>
             <div class="field">
               <label for="filter">Muscle group</label>
               <select id="filter" class="rich" data-testid="filter">

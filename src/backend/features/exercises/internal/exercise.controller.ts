@@ -1,8 +1,8 @@
-import { json, noContent, optionalQueryInt, optionalQueryOneOf, pathId, queryInt, readJsonObject } from '../../../http/http.ts';
+import { json, noContent, optionalQueryInt, optionalQueryOneOf, optionalQueryString, pathId, queryInt, readJsonObject } from '../../../http/http.ts';
 import type { ParamRequest } from '../../../http/routing.ts';
 import type { ExerciseFilterDto } from '../../../../shared/dto/exercise.ts';
 import type { ExerciseId, WorkoutId } from '../../../../shared/flavors.ts';
-import { EXERCISE_KINDS, type ExerciseFacade, MUSCLE_GROUPS } from '../exercises.facade.ts';
+import { EXERCISE_KINDS, type ExerciseFacade, MAX_EXERCISE_NAME_LENGTH, MUSCLE_GROUPS } from '../exercises.facade.ts';
 import {
   translateToCreateExerciseDto,
   translateToEditExerciseDto,
@@ -74,6 +74,10 @@ export class ExerciseController {
     const type = optionalQueryOneOf(params, 'type', EXERCISE_KINDS);
     if (type !== null) {
       filter.type = type;
+    }
+    const search = optionalQueryString(params, 'search', MAX_EXERCISE_NAME_LENGTH);
+    if (search !== null) {
+      filter.search = search;
     }
     return filter;
   }

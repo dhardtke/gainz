@@ -254,6 +254,82 @@ describe('filtering by type', () => {
   });
 });
 
+describe('searching by name', () => {
+  // Answers each seeded exercise's id by name.
+  async function seed(): Promise<(name: string) => number> {
+    const ids = new Map<string, number>();
+    for (const [name, muscleGroup, kind] of [
+      ['Back Squat', 'Legs', 'weighted'],
+      ['Front Squat', 'Legs', 'weighted'],
+      ['Goblet Squat', 'Legs', 'bodyweight'],
+      ['Bench Press', 'Chest', 'weighted'],
+      ['100% Effort', null, 'bodyweight'],
+      ['Row_Wide', 'Back', 'weighted'],
+      ['Push\\Pull', null, 'weighted'],
+    ] as const) {
+      ids.set(name, (await createExercise(post, name, { muscleGroup, kind })).id);
+    }
+    return (name) => ids.get(name) ?? 0;
+  }
+
+  const names = async (query: string): Promise<string[]> =>
+    (await body<ExercisePageDto>(await api(`/api/exercises?${query}`))).items.map((exercise) => exercise.name);
+
+  test('lists the names containing the text in any case, counting them and every exercise', async () => {
+    await seed();
+    const page = await body<ExercisePageDto>(await api('/api/exercises?search=SQUAT'));
+    expect(page.items.map((exercise) => exercise.name)).toEqual(['Back Squat', 'Front Squat', 'Goblet Squat']);
+    expect(page).toMatchObject({ total: 3, all: 7 });
+  });
+
+  test('combines with the muscle group and type filters', async () => {
+    await seed();
+    expect(await names('search=squat&muscleGroup=Legs&type=weighted')).toEqual(['Back Squat', 'Front Squat']);
+    expect(await names('search=squat&type=bodyweight')).toEqual(['Goblet Squat']);
+    expect(await names('search=squat&muscleGroup=Chest')).toEqual([]);
+  });
+
+  test('pages within the search', async () => {
+    await seed();
+    const second = await body<ExercisePageDto>(await api('/api/exercises?search=squat&limit=1&offset=1'));
+    expect(second.items.map((exercise) => exercise.name)).toEqual(['Front Squat']);
+    expect(second).toMatchObject({ total: 3, all: 7, limit: 1, offset: 1 });
+  });
+
+  test.each([
+    ['%25', '100% Effort'],
+    ['_', 'Row_Wide'],
+    ['%5C', 'Push\\Pull'],
+  ])('matches %s literally', async (search, name) => {
+    await seed();
+    expect(await names(`search=${search}`)).toEqual([name]);
+  });
+
+  test('trims, and treats an empty or blank search as none', async () => {
+    await seed();
+    expect(await names('search=%20front%20')).toEqual(['Front Squat']);
+    expect(await names('search=')).toHaveLength(7);
+    expect(await names('search=%20%20')).toHaveLength(7);
+  });
+
+  test('rejects a search over 120 characters', async () => {
+    const res = await api(`/api/exercises?search=${'a'.repeat(121)}`);
+    expect(res.status).toBe(400);
+    expect((await body<ErrorDto>(res)).error).toBe('"search" must be at most 120 characters');
+    expect((await api(`/api/exercises/1/position?search=${'a'.repeat(121)}`)).status).toBe(400);
+  });
+
+  test('positions an exercise within the search', async () => {
+    const id = await seed();
+    const indexOf = async (name: string, query: string): Promise<number> =>
+      (await body<ExercisePositionDto>(await api(`/api/exercises/${id(name)}/position?${query}`))).index;
+
+    expect(await indexOf('Goblet Squat', '')).toBe(4);
+    expect(await indexOf('Goblet Squat', 'search=squat')).toBe(2);
+    expect(await indexOf('Goblet Squat', 'search=squat&type=bodyweight')).toBe(0);
+  });
+});
+
 describe('position', () => {
   test('is the 0-based index in the list, ignoring case', async () => {
     const bench = await createExercise(post, 'bench Press');

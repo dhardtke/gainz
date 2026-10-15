@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { useServer } from '../testing.ts';
-import { optionalQueryDate, pathDate, queryDate } from './http.ts';
+import { optionalQueryDate, optionalQueryString, pathDate, queryDate } from './http.ts';
 
 const { api, post } = useServer();
 
@@ -51,5 +51,19 @@ describe('optionalQueryDate', () => {
 
   test.each(['since=2026-13-01', 'since=2026-02-30', 'since=abc'])('rejects %p', (query) => {
     expect(() => optionalQueryDate(new URLSearchParams(query), 'since')).toThrow('"since" must be a date in YYYY-MM-DD format');
+  });
+});
+
+describe('optionalQueryString', () => {
+  test('reads and trims a value', () => {
+    expect(optionalQueryString(new URLSearchParams('search=%20squat%20'), 'search', 120)).toBe('squat');
+  });
+
+  test.each(['', 'search=', 'search=%20%20'])('reads %p as null', (query) => {
+    expect(optionalQueryString(new URLSearchParams(query), 'search', 120)).toBeNull();
+  });
+
+  test('rejects a value over the maximum length', () => {
+    expect(() => optionalQueryString(new URLSearchParams({ search: 'a'.repeat(121) }), 'search', 120)).toThrow('"search" must be at most 120 characters');
   });
 });

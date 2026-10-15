@@ -16,12 +16,15 @@ function withQuery(path: string, query: URLSearchParams): string {
   return search === '' ? path : `${path}?${search}`;
 }
 
-function setFilter(query: URLSearchParams, { muscleGroup, type }: ExerciseFilterDto): URLSearchParams {
+function setFilter(query: URLSearchParams, { muscleGroup, type, search }: ExerciseFilterDto): URLSearchParams {
   if (muscleGroup !== undefined) {
     query.set('muscleGroup', muscleGroup);
   }
   if (type !== undefined) {
     query.set('type', type);
+  }
+  if (search !== undefined) {
+    query.set('search', search);
   }
   return query;
 }

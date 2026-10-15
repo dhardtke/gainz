@@ -16,6 +16,7 @@ export interface Exercise {
 export interface ExerciseFilter {
   muscle_group?: MuscleGroup | null;
   kind?: ExerciseKind;
+  name_contains?: string;
 }
 
 export interface ExerciseWithStats extends Exercise {

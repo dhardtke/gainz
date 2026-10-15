@@ -21,7 +21,7 @@ export type EditExercise = Partial<CreateExercise>;
 const EXERCISE_COLUMNS = 'e.id, e.name, e.muscle_group, e.notes, e.kind, e.created_at';
 const FIELDS = ['name', 'muscle_group', 'notes', 'kind'] as const;
 
-type FilterParam = MuscleGroup | ExerciseKind | number | null;
+type FilterParam = string | number | null;
 
 // Unqualified columns: neither `sets` nor `workouts` has one of these, so `list()`'s joins leave them unambiguous.
 function filterConditions(filter: ExerciseFilter): { conditions: string[]; params: FilterParam[] } {
@@ -35,6 +35,10 @@ function filterConditions(filter: ExerciseFilter): { conditions: string[]; param
   if (filter.kind !== undefined) {
     conditions.push('kind = ?');
     params.push(filter.kind);
+  }
+  if (filter.name_contains !== undefined) {
+    conditions.push("name LIKE '%' || ? || '%' ESCAPE '\\'");
+    params.push(filter.name_contains.replace(/[\\%_]/g, '\\$&'));
   }
   return { conditions, params };
 }

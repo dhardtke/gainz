@@ -70,6 +70,9 @@ export function translateDtoToExerciseFilter(dto: ExerciseFilterDto): ExerciseFi
   if (dto.type !== undefined) {
     filter.kind = dto.type;
   }
+  if (dto.search !== undefined) {
+    filter.name_contains = dto.search;
+  }
   return filter;
 }
 

@@ -11,9 +11,17 @@ beforeAll(async () => {
   await import('./gz-exercise-list.component.ts');
 });
 
+// No gz-app is mounted to reload on navigation, so each `popstate` is counted instead.
+let navigations = 0;
+const countNavigation = (): void => {
+  navigations++;
+};
+
 // Adding an exercise navigates, and the location outlives the test.
 beforeEach(() => {
   history.replaceState(null, '', '/exercises');
+  navigations = 0;
+  window.addEventListener('popstate', countNavigation);
 });
 
 const listed = (overrides: Partial<ExerciseWithStatsDto> = {}): ExerciseWithStatsDto => ({
@@ -297,4 +305,128 @@ test.each(['bodyweight', 'weighted', 'assisted'] as const)('adding an exercise w
   addExercise(view, 'Dips', 'Chest');
   await settle();
   expect(`${location.pathname}${location.search}`).toBe(`/exercises?muscleGroup=Chest&type=${type}`);
+});
+
+const searchField = (view: HTMLElement): HTMLInputElement => find<HTMLInputElement>(shadow(view), testId('search'));
+
+function enter(view: HTMLElement, type: 'change' | 'search', value: string): void {
+  const field = searchField(view);
+  field.value = value;
+  field.dispatchEvent(new Event(type, { bubbles: true }));
+}
+
+test('shows the search in the URL, counting it against every exercise', async () => {
+  const view = await mountFiltered('?search=squat', page([listed({ id: 1, name: 'Back Squat' })], 12));
+  expect(searchField(view).value).toBe('squat');
+  expect(text(view, testId('subtitle'))).toBe('1 of 12 exercises');
+});
+
+test('searching navigates with both filters, trimmed, on page 1', async () => {
+  history.replaceState(null, '', '/exercises?muscleGroup=Legs&type=weighted&page=2');
+  fake.respondTo('GET /api/exercises?limit=10&offset=10&muscleGroup=Legs&type=weighted', 200, page([], 12));
+  const view = mount('gz-exercise-list');
+  await settle();
+  enter(view, 'change', '  squat ');
+  expect(`${location.pathname}${location.search}`).toBe('/exercises?muscleGroup=Legs&type=weighted&search=squat');
+});
+
+test.each(['change', 'search'] as const)('clearing the field via %s drops the search', async (type) => {
+  const view = await mountFiltered('?muscleGroup=Legs&search=squat', page([], 12));
+  enter(view, type, '');
+  expect(`${location.pathname}${location.search}`).toBe('/exercises?muscleGroup=Legs');
+});
+
+test.each(['change', 'search'] as const)('an unchanged search via %s navigates nowhere', async (type) => {
+  const view = await mountFiltered('?search=squat', page([], 12));
+  enter(view, type, ' squat');
+  expect(navigations).toBe(0);
+});
+
+test('change then search with the same new value navigates once', async () => {
+  const view = await mountFiltered('?search=squat', page([], 12));
+  enter(view, 'change', 'press');
+  enter(view, 'search', 'press');
+  expect(navigations).toBe(1);
+  expect(`${location.pathname}${location.search}`).toBe('/exercises?search=press');
+});
+
+test('an unchanged search stays on its page', async () => {
+  history.replaceState(null, '', '/exercises?search=squat&page=2');
+  fake.respondTo('GET /api/exercises?limit=10&offset=10&search=squat', 200, page([], 12));
+  const view = mount('gz-exercise-list');
+  await settle();
+  enter(view, 'change', 'squat');
+  expect(navigations).toBe(0);
+  expect(`${location.pathname}${location.search}`).toBe('/exercises?search=squat&page=2');
+});
+
+test("a change on the add form's name navigates nowhere", async () => {
+  const view = await mountAdding();
+  const name = find<HTMLInputElement>(shadow(view), '#name');
+  name.value = 'Back Squat';
+  name.dispatchEvent(new Event('change', { bubbles: true }));
+  expect(navigations).toBe(0);
+});
+
+test('choosing a muscle group or type keeps the search', async () => {
+  const view = await mountFiltered('?type=weighted&search=squat', page([], 12));
+  choose(filterSelect(view), 'Legs');
+  expect(`${location.pathname}${location.search}`).toBe('/exercises?muscleGroup=Legs&type=weighted&search=squat');
+  choose(typeSelect(view), 'bodyweight');
+  expect(`${location.pathname}${location.search}`).toBe('/exercises?type=bodyweight&search=squat');
+});
+
+test('keeps the search when paging', async () => {
+  const view = await mountFiltered('?search=squat', page([listed()], 12));
+  find(shadow(view), 'gz-pagination').dispatchEvent(new CustomEvent('page-change', { detail: 2, bubbles: true, composed: true }));
+  expect(`${location.pathname}${location.search}`).toBe('/exercises?search=squat&page=2');
+});
+
+test.each([
+  ['?search=squat', 'No exercises match "squat".'],
+  ['?muscleGroup=Legs&type=weighted&search=squat', 'No weighted Legs exercises match "squat".'],
+  ['?muscleGroup=none&search=squat', 'No exercises without a muscle group match "squat".'],
+])('says so when %s finds nothing', async (search, empty) => {
+  const view = await mountFiltered(search, page([], 12));
+  expect(text(view, testId('empty'))).toBe(empty);
+});
+
+test('escapes the search in the field and the empty text', async () => {
+  const view = await mountFiltered('?search=a%22%3Cb', page([], 12));
+  expect(searchField(view).value).toBe('a"<b');
+  expect(text(view, testId('empty'))).toBe('No exercises match "a"<b".');
+  expect(find(shadow(view), testId('empty')).children).toHaveLength(0);
+});
+
+test('adding an exercise while searching drops the search', async () => {
+  const view = await mountFiltered('?search=squat', page([], 3));
+  fake.respondTo('POST /api/exercises', 201, JSON.stringify(exercise({ id: 5, name: 'Back Squat', muscleGroup: 'Legs' })));
+  fake.respondTo('GET /api/exercises/5/position?muscleGroup=Legs', 200, JSON.stringify({ index: 0 }));
+  addExercise(view, 'Back Squat', 'Legs');
+  await settle();
+  expect(`${location.pathname}${location.search}`).toBe('/exercises?muscleGroup=Legs');
+});
+
+test('offers a placeholder in the search field', async () => {
+  const view = await mountAdding();
+  expect(searchField(view).placeholder).toBe('Exercise name');
+});
+
+test.each([
+  ['focused', true],
+  ['left', false],
+])('the next view focuses the search field, caret at its end, only when it was %s', async (_state, focused) => {
+  const view = await mountFiltered('?search=squat', page([], 12));
+  if (focused) {
+    searchField(view).focus();
+  }
+  enter(view, 'change', 'press');
+  view.remove();
+  const next = await mountFiltered('?search=press', page([], 12));
+  await settle();
+  const field = searchField(next);
+  expect(shadow(next).activeElement === field).toBe(focused);
+  if (focused) {
+    expect([field.selectionStart, field.selectionEnd]).toEqual([5, 5]);
+  }
 });

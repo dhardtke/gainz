@@ -27,6 +27,11 @@ test.each([
   ['?muscleGroup=none&type=weighted&page=3', { muscleGroup: 'none', type: 'weighted' }],
   ['?type=Bodyweight', {}],
   ['?muscleGroup=Quads&type=true', {}],
+  ['?search=squat', { search: 'squat' }],
+  ['?search=%20squat%20', { search: 'squat' }],
+  ['?search=', {}],
+  [`?search=${'a'.repeat(121)}`, {}],
+  ['?muscleGroup=Legs&type=weighted&search=back+squat', { muscleGroup: 'Legs', type: 'weighted', search: 'back squat' }],
 ] as const)('parseExerciseFilter(%p) is %p', (search, filter) => {
   expect(parseExerciseFilter(search)).toEqual(filter);
 });
@@ -40,10 +45,17 @@ test.each([
   [{ muscleGroup: 'Full body' }, 2, '/exercises?muscleGroup=Full+body&page=2'],
   [{ type: 'bodyweight' }, 1, '/exercises?type=bodyweight'],
   [{ muscleGroup: 'Back', type: 'weighted' }, 2, '/exercises?muscleGroup=Back&type=weighted&page=2'],
+  [{ search: 'back squat' }, 1, '/exercises?search=back+squat'],
+  [{ muscleGroup: 'Legs', type: 'weighted', search: 'squat' }, 2, '/exercises?muscleGroup=Legs&type=weighted&search=squat&page=2'],
 ] as const)('exercisesPath(%p, %p) is %p', (filter: ExerciseFilterDto, page, path) => {
   expect(exercisesPath(filter, page)).toBe(path);
 });
 
-test('is filtered by either filter alone', () => {
-  expect([isFiltered({}), isFiltered({ muscleGroup: 'none' }), isFiltered({ type: 'weighted' })]).toEqual([false, true, true]);
+test('is filtered by any filter alone', () => {
+  expect([isFiltered({}), isFiltered({ muscleGroup: 'none' }), isFiltered({ type: 'weighted' }), isFiltered({ search: 'x' })]).toEqual([
+    false,
+    true,
+    true,
+    true,
+  ]);
 });

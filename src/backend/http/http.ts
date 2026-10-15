@@ -63,6 +63,17 @@ export function optionalQueryOneOf<V extends string>(params: URLSearchParams, ke
   return value;
 }
 
+export function optionalQueryString(params: URLSearchParams, key: string, maxLength: number): string | null {
+  const raw = params.get(key)?.trim() ?? '';
+  if (raw === '') {
+    return null;
+  }
+  if (raw.length > maxLength) {
+    throw badRequest(`"${key}" must be at most ${maxLength} characters`);
+  }
+  return raw;
+}
+
 export function queryMonth(params: URLSearchParams, key: string): Iso8601Month {
   const raw = params.get(key) ?? '';
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(raw)) {

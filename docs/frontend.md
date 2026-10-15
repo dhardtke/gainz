@@ -511,21 +511,29 @@ a failure and changes nothing.
 
 ### The list
 
-The exercises list filters by muscle group and by type, through two `<select>`s beside its
-heading: "Muscle group" offers "All", the muscle groups and "No muscle group", and "Type" offers
-"All", "Weighted", "Bodyweight" and "Assisted". The filters live in the URL as
-`?muscleGroup=<group>` or `?muscleGroup=none` and `?type=weighted`, `?type=bodyweight` or
-`?type=assisted`, beside `?page=`, as an
-`ExerciseFilterDto` that `parseExerciseFilter` reads and `exercisesPath` writes, both in
+The exercises list searches by name and filters by muscle group and by type, through a "Search"
+`<input type="search">` and two `<select>`s beside its heading: "Muscle group" offers "All", the
+muscle groups and "No muscle group", and "Type" offers "All", "Weighted", "Bodyweight" and
+"Assisted". The three live in the URL as `?search=<text>`, `?muscleGroup=<group>` or
+`?muscleGroup=none` and `?type=weighted`, `?type=bodyweight` or `?type=assisted`, beside `?page=`,
+as an `ExerciseFilterDto` that `parseExerciseFilter` reads and `exercisesPath` writes, both in
 `features/exercises/internal/exercise-filter.ts`, since `pagePath` only knows `?page`; an unknown
-value of either reads as "All". Changing one filter keeps the other and navigates to page 1, and a
-`page-change` keeps both. With a filter the subtitle reads "3 of 12 exercises", from the page's
-`total` and `all`, and an empty page names what is filtered: "No Legs exercises yet.", "No
-bodyweight exercises yet." or "No weighted exercises without a muscle group.". Adding an exercise
-navigates to its own group (`none` when it has none), and to its own type while a type is chosen,
-then to the page of that filtered list that now holds it, found through
-`exerciseFacade.position()` with the same filter, so the new card is always in view; should that
-request fail after the exercise was created, the list reloads the page it is on instead.
+value of either select reads as "All", and an empty or over-120-character search as none. The
+search is trimmed and matched on the server, so it spans every page. It applies on `change` (Enter
+or leaving the field) and on the `search` event, which Chrome and Safari fire alone when the ✕
+clears the field, and only when it differs from the URL's search: the two events can both arrive
+for one Enter, and the view in hand is stale by then. It is not applied while typing, since each
+navigation renders a fresh view and would take the field's focus and caret. When the field still
+had the focus as the search applied (Enter or the ✕, not leaving it), the fresh view focuses its
+own field with the caret at the end, once `gz-app` has revealed it. Changing any filter
+keeps the others and navigates to page 1, and a `page-change` keeps all three. With a filter the
+subtitle reads "3 of 12 exercises", from the page's `total` and `all`, and an empty page names what
+is filtered: "No Legs exercises yet.", "No bodyweight exercises yet." or "No weighted exercises
+without a muscle group.", and with a search `No weighted Legs exercises match "squat".`. Adding an
+exercise drops the search and navigates to its own group (`none` when it has none), and to its own
+type while a type is chosen, then to the page of that filtered list that now holds it, found
+through `exerciseFacade.position()` with the same filter, so the new card is always in view; should
+that request fail after the exercise was created, the list reloads the page it is on instead.
 
 The list keeps its add form in a collapsed `<details class="add">`, "Add an exercise", which starts
 open only while there are no exercises at all, whatever the filter. Its muscle group is a

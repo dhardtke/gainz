@@ -24,6 +24,8 @@ test.each([
     '/api/exercises/4/position?muscleGroup=none&type=bodyweight',
   ],
   ['list(type)', (): Promise<unknown> => exerciseFacade.list({ type: 'weighted' }), 'GET', '/api/exercises?type=weighted'],
+  ['list(search)', (): Promise<unknown> => exerciseFacade.list({ search: 'back squat' }), 'GET', '/api/exercises?search=back+squat'],
+  ['position(search)', (): Promise<unknown> => exerciseFacade.position(4, { search: 'squat' }), 'GET', '/api/exercises/4/position?search=squat'],
   ['progress()', (): Promise<unknown> => exerciseFacade.progress(4), 'GET', '/api/exercises/4/progress'],
   ['lastSession()', (): Promise<unknown> => exerciseFacade.lastSession(4), 'GET', '/api/exercises/4/last-session'],
   ['lastSession(except)', (): Promise<unknown> => exerciseFacade.lastSession(4, 3), 'GET', '/api/exercises/4/last-session?exceptWorkout=3'],

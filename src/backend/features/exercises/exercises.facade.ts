@@ -13,7 +13,7 @@ export const MUSCLE_GROUPS = ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Cor
 
 export const EXERCISE_KINDS = ['weighted', 'bodyweight', 'assisted'] as const satisfies readonly ExerciseKind[];
 
-const MAX_EXERCISE_NAME_LENGTH = 120;
+export const MAX_EXERCISE_NAME_LENGTH = 120;
 const MAX_EXERCISE_NOTES_LENGTH = 2000;
 
 export class ExerciseFacade {

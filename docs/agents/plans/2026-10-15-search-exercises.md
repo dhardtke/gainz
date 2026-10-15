@@ -173,7 +173,7 @@ Dependencies: None
 
 **Tasks**:
 
-- [ ] `src/backend/http/http.ts`: add `optionalQueryString`
+- [x] `src/backend/http/http.ts`: add `optionalQueryString`
       ```ts
       export function optionalQueryString(params: URLSearchParams, key: string, maxLength: number): string | null {
         const raw = params.get(key)?.trim() ?? '';
@@ -186,48 +186,48 @@ Dependencies: None
         return raw;
       }
       ```
-- [ ] `src/shared/dto/exercise.ts`: add `search?: string` to `ExerciseFilterDto`, and mention in its doc
+- [x] `src/shared/dto/exercise.ts`: add `search?: string` to `ExerciseFilterDto`, and mention in its doc
       comment that it matches names containing it
-- [ ] `src/backend/features/exercises/ports/exercise.ts`: add `name_contains?: string` to `ExerciseFilter`
-- [ ] `src/backend/features/exercises/exercises.facade.ts`: export `MAX_EXERCISE_NAME_LENGTH`
-- [ ] `src/backend/features/exercises/internal/exercise.controller.ts`: in `#filter`, set
+- [x] `src/backend/features/exercises/ports/exercise.ts`: add `name_contains?: string` to `ExerciseFilter`
+- [x] `src/backend/features/exercises/exercises.facade.ts`: export `MAX_EXERCISE_NAME_LENGTH`
+- [x] `src/backend/features/exercises/internal/exercise.controller.ts`: in `#filter`, set
       `filter.search` from `optionalQueryString(params, 'search', MAX_EXERCISE_NAME_LENGTH)`
-- [ ] `src/backend/features/exercises/internal/exercise.translator.ts`: in `translateDtoToExerciseFilter`,
+- [x] `src/backend/features/exercises/internal/exercise.translator.ts`: in `translateDtoToExerciseFilter`,
       map `dto.search` to `filter.name_contains`
-- [ ] `src/backend/features/exercises/internal/exercise.repository.ts`: widen `FilterParam` with `string`;
+- [x] `src/backend/features/exercises/internal/exercise.repository.ts`: widen `FilterParam` with `string`;
       in `filterConditions` push `"name LIKE '%' || ? || '%' ESCAPE '\\'"` (the SQL reads
       `ESCAPE '\'`) with `filter.name_contains.replace(/[\\%_]/g, '\\$&')`; `name` stays unqualified
       like the other conditions, which `count` and `index` need since they do not alias `exercises`
-- [ ] `src/backend/http/http.test.ts`: `describe('optionalQueryString')` - reads and trims a value; reads
+- [x] `src/backend/http/http.test.ts`: `describe('optionalQueryString')` - reads and trims a value; reads
       missing, empty and whitespace-only as `null`; rejects 121 characters with
       `"search" must be at most 120 characters`
-- [ ] `src/backend/features/exercises/exercise.routes.test.ts`: `describe('searching by name')` with its
+- [x] `src/backend/features/exercises/exercise.routes.test.ts`: `describe('searching by name')` with its
       own seed (e.g. Back Squat/Legs/weighted, Front Squat/Legs/weighted, Goblet Squat/Legs/bodyweight,
       Bench Press/Chest, `100% Effort`, `Row_Wide`, `Push\Pull`):
-  - [ ] lists the names containing the text in any case (`search=SQUAT`) with `total` and `all`
-  - [ ] combines with `muscleGroup` and `type`
-  - [ ] pages within the search (`limit=1&offset=1`)
-  - [ ] treats `%`, `_` and `\` literally (`search=%25` finds only `100% Effort`; `search=_` only
+  - [x] lists the names containing the text in any case (`search=SQUAT`) with `total` and `all`
+  - [x] combines with `muscleGroup` and `type`
+  - [x] pages within the search (`limit=1&offset=1`)
+  - [x] treats `%`, `_` and `\` literally (`search=%25` finds only `100% Effort`; `search=_` only
         `Row_Wide`; `search=%5C` only `Push\Pull`)
-  - [ ] trims, and treats an empty or blank `search` as none
-  - [ ] rejects a 121-character `search` with 400
-  - [ ] positions an exercise within the search (`/position?search=squat`)
+  - [x] trims, and treats an empty or blank `search` as none
+  - [x] rejects a 121-character `search` with 400
+  - [x] positions an exercise within the search (`/position?search=squat`)
 
 **Automated Verification**:
 
-- [ ] `bun test --parallel src/backend` passes
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
+- [x] `bun test --parallel src/backend` passes
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
 
 Docs in this phase:
 
-- [ ] `docs/backend.md` (`:364-379`): `GET /api/exercises` and `/position` take an optional `search`,
+- [x] `docs/backend.md` (`:364-379`): `GET /api/exercises` and `/position` take an optional `search`,
       trimmed, empty as none, at most 120 characters, matched as a case-insensitive (ASCII) substring of
       the name with `LIKE … ESCAPE '\'` and its wildcards escaped, combining with the other two; rewrite
       the closing "The filter is one `muscle_group IS ?` …" sentence, already stale since `type`, to
       describe the three conditions `filterConditions` builds, each left out when not given
-- [ ] `docs/backend.md` (`:17-18`, `:63`): list `optionalQueryString` among the `http.ts` query readers
+- [x] `docs/backend.md` (`:17-18`, `:63`): list `optionalQueryString` among the `http.ts` query readers
 
 ### Phase 2: The Search field on the exercises page
 
@@ -237,75 +237,75 @@ The page reads, writes and shows the search.
 
 **Tasks**:
 
-- [ ] `src/frontend/features/exercises/internal/exercise.api.ts`: `setFilter` sets `search` when given
-- [ ] `src/frontend/features/exercises/internal/exercise-filter.ts`:
-  - [ ] `parseExerciseFilter` reads `search`, trimmed; empty or over 120 characters reads as none (update
+- [x] `src/frontend/features/exercises/internal/exercise.api.ts`: `setFilter` sets `search` when given
+- [x] `src/frontend/features/exercises/internal/exercise-filter.ts`:
+  - [x] `parseExerciseFilter` reads `search`, trimmed; empty or over 120 characters reads as none (update
         the doc comment: "An unknown value of any filter…"); rename its `search` parameter to `query`
         so it does not shadow the new key
-  - [ ] `exercisesPath` writes `search` after `type`, before `page`; rename its local `search`
+  - [x] `exercisesPath` writes `search` after `type`, before `page`; rename its local `search`
         (`:37`) to `queryString`
-  - [ ] `isFiltered` is also true for a `search`
-- [ ] `src/frontend/features/exercises/gz-exercise-list.component.ts`:
-  - [ ] put a `.field` before the two selects:
+  - [x] `isFiltered` is also true for a `search`
+- [x] `src/frontend/features/exercises/gz-exercise-list.component.ts`:
+  - [x] put a `.field` before the two selects:
         ```html
         <div class="field">
           <label for="search">Search</label>
           <input id="search" type="search" value="${filter.search ?? ''}" maxlength="120" data-testid="search" />
         </div>
         ```
-  - [ ] restructure the `change` listener (`:34-47`), which returns early for anything but a
+  - [x] restructure the `change` listener (`:34-47`), which returns early for anything but a
         `<select>`, to dispatch on the target's id: `filter`, `type-filter`, `search`; anything else,
         such as the add form's inputs and selects, is ignored
-  - [ ] add `this.root.addEventListener('search', …)` that runs the same search branch
-  - [ ] the search branch reads `value.trim()` and navigates only if it differs from
+  - [x] add `this.root.addEventListener('search', …)` that runs the same search branch
+  - [x] the search branch reads `value.trim()` and navigates only if it differs from
         `parseExerciseFilter(location.search).search ?? ''` (Decision 7: not `this.data`, which is stale
         while the next view loads), to
         `exercisesPath({ ...filter without search, ...(value === '' ? {} : { search: value }) }, 1)`
-  - [ ] the selects' navigation keeps the current `search`, as each keeps the other select
-  - [ ] `handleSubmit`'s filter for the new exercise never carries `search` (it already builds its own
+  - [x] the selects' navigation keeps the current `search`, as each keeps the other select
+  - [x] `handleSubmit`'s filter for the new exercise never carries `search` (it already builds its own
         object; keep it so and say so in the existing comment at `:79`)
-  - [ ] `#emptyText` takes `search`: with one, `No ${phrase} match "${search}".`, where `phrase` is
+  - [x] `#emptyText` takes `search`: with one, `No ${phrase} match "${search}".`, where `phrase` is
         `exercises`, `weighted Legs exercises` or `exercises without a muscle group`, built from the same
         parts as today; `all === 0` still reads "No exercises yet. Add the lifts you train above."
-- [ ] `src/frontend/features/exercises/internal/exercise-filter.test.ts`:
-  - [ ] `parseExerciseFilter` rows: `?search=squat`, `?search=%20squat%20` → `squat`, `?search=` → `{}`,
+- [x] `src/frontend/features/exercises/internal/exercise-filter.test.ts`:
+  - [x] `parseExerciseFilter` rows: `?search=squat`, `?search=%20squat%20` → `squat`, `?search=` → `{}`,
         `?search=` + 121 characters → `{}`, all three together
-  - [ ] `exercisesPath` rows: `{ search: 'back squat' }` → `/exercises?search=back+squat`, all three with page 2
-  - [ ] `isFiltered({ search: 'x' })` is true
-- [ ] `src/frontend/features/exercises/exercises.facade.test.ts`: rows for `list({ search })` and
+  - [x] `exercisesPath` rows: `{ search: 'back squat' }` → `/exercises?search=back+squat`, all three with page 2
+  - [x] `isFiltered({ search: 'x' })` is true
+- [x] `src/frontend/features/exercises/exercises.facade.test.ts`: rows for `list({ search })` and
       `position(4, { search })`
-- [ ] `src/frontend/features/exercises/gz-exercise-list.component.test.ts`:
-  - [ ] shows the URL's search in the field, and "N of M exercises"
-  - [ ] a `change` on the field navigates to `?muscleGroup=Legs&type=weighted&search=squat` from page 2,
+- [x] `src/frontend/features/exercises/gz-exercise-list.component.test.ts`:
+  - [x] shows the URL's search in the field, and "N of M exercises"
+  - [x] a `change` on the field navigates to `?muscleGroup=Legs&type=weighted&search=squat` from page 2,
         on page 1, trimmed
-  - [ ] clearing the field (via `change` and via the `search` event) drops `search`
-  - [ ] counting `popstate` on `window` (the test mounts no `gz-app`, so list requests cannot tell):
-    - [ ] an unchanged value, from either event, dispatches none
-    - [ ] `change` then `search` with the same new value dispatches exactly one, the view's `data`
+  - [x] clearing the field (via `change` and via the `search` event) drops `search`
+  - [x] counting `popstate` on `window` (the test mounts no `gz-app`, so list requests cannot tell):
+    - [x] an unchanged value, from either event, dispatches none
+    - [x] `change` then `search` with the same new value dispatches exactly one, the view's `data`
           still holding the old search when the second arrives
-    - [ ] an unchanged search on `?search=squat&page=2` stays on page 2 on `change`
+    - [x] an unchanged search on `?search=squat&page=2` stays on page 2 on `change`
   - Events are dispatched as `new Event('change' | 'search', { bubbles: true })` after setting
     `value`; `testing.ts`'s `choose()` covers only selects
-  - [ ] a `change` on the add form's name field does not navigate
-  - [ ] choosing a muscle group or type keeps the search; paging keeps it
-  - [ ] the empty texts for the three acceptance-criteria examples, and a search with `"` and `<`
+  - [x] a `change` on the add form's name field does not navigate
+  - [x] choosing a muscle group or type keeps the search; paging keeps it
+  - [x] the empty texts for the three acceptance-criteria examples, and a search with `"` and `<`
         shown escaped in the field and the empty text
-  - [ ] adding an exercise while searching navigates without `search`
+  - [x] adding an exercise while searching navigates without `search`
 
 **Automated Verification**:
 
-- [ ] `bun test --parallel` passes
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run fmt:check` passes
+- [x] `bun test --parallel` passes
+- [x] `bun run typecheck` passes
+- [x] `bun run lint` passes
+- [x] `bun run fmt:check` passes
 
 Docs in this phase:
 
-- [ ] `docs/frontend.md` (`:514-528`): the "Search" field before the selects, `?search=` in the URL beside
+- [x] `docs/frontend.md` (`:514-528`): the "Search" field before the selects, `?search=` in the URL beside
       the other two, applied on `change` or the `search` event and only when it changed (and why not
       live), trimmed and capped as the selects' unknown values, kept by the selects and paging, dropped
       by adding an exercise, and the empty text's `match "…"`
-- [ ] `README.md:10`: "filterable by muscle group" → "searchable by name and filterable by muscle group
+- [x] `README.md:10`: "filterable by muscle group" → "searchable by name and filterable by muscle group
       and type"
 
 **Manual Verification**:
@@ -319,6 +319,12 @@ Docs in this phase:
 ## Implementation Notes
 
 During implementation, document user feedback, problems, and decisions here.
+
+- User feedback: the field got the placeholder "Exercise name", and applying a search with Enter or
+  the ✕ now keeps the focus: the fresh view focuses its own field, caret at the end, after `gz-app`
+  reveals it. Leaving the field does not pull the focus back.
+- `FilterParam` became `string | number | null`: adding `string` to the old union of literal types
+  failed lint (`no-redundant-type-constituents`).
 
 ## References
 

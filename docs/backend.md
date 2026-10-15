@@ -15,7 +15,7 @@ and its facade. What is left outside `features/` is only what belongs to no feat
   `migrations/`, and the table-agnostic statement helpers in `db/sql.ts`
 - `http/` — `routing.ts` for the `RouteTable` and `ParamRequest` types, `routes.ts` for the
   registry, `http.ts` with the request readers (`pathId`, `pathDate`, `queryInt`,
-  `optionalQueryDate`, `readJsonObject` and the rest), `errors.ts`, `access-log.ts` and `server.ts`
+  `optionalQueryDate`, `optionalQueryString`, `readJsonObject` and the rest), `errors.ts`, `access-log.ts` and `server.ts`
 - `shared/` — `validate.ts` for the request-field rules and their length bounds (`requiredOneOf`
   and `optionalOneOf` for a field limited to a fixed list), `log.ts`, the logger, and
   `embedded.ts` (see "Single-file build")
@@ -61,7 +61,7 @@ reads the way the router dispatches.
 A route file is only a table: each handler is one line that passes the request to its controller
 and returns what comes back. The controller does the rest. It takes the request and returns a
 `Response`, reading it with `pathId`, `queryInt` (or `optionalQueryInt`, null where a missing value
-has no default) and `readJsonObject` and answering with `json()` or `noContent()` and the status
+has no default), `optionalQueryString` (trimmed, null when empty) and `readJsonObject` and answering with `json()` or `noContent()` and the status
 code, and in between it runs
 `body → translateTo<X>Dto → <X>Dto → facade → row → translateTo<X>Dto → DTO`. The facade's write
 methods in turn run
@@ -365,18 +365,22 @@ workout detail's exercise select asks for.
 `GET /api/exercises` also takes an optional `muscleGroup`, one of the muscle groups or `none` for
 exercises without one, and answers 400 for any other value; an empty one is the same as none
 given. It takes an optional `type` the same way, `weighted`, `bodyweight` or `assisted`, for the
-exercises of that `kind`, and the two combine. With either, `items` and `total` cover only
-the matching exercises, while `all`, on the exercise page alone, still counts every exercise. The
-controller reads both into an `ExerciseFilterDto`, which the translator turns into the repository's
+exercises of that `kind`. It takes an optional `search`, trimmed, empty as none and at most 120
+characters (a 400 beyond), matching the exercises whose name contains it, case-insensitively for
+ASCII letters. The three combine. With any of them, `items` and `total` cover only the matching
+exercises, while `all`, on the exercise page alone, still counts every exercise. The
+controller reads them into an `ExerciseFilterDto`, which the translator turns into the repository's
 `ExerciseFilter`.
 
 `GET /api/exercises/:id/position` answers `{ index }`, the exercise's 0-based place in that list's
 name order, so the frontend can open the page a new exercise landed on without the API knowing its
-page size; it takes the same `muscleGroup` and `type` and then counts within them. The index is a
+page size; it takes the same `muscleGroup`, `type` and `search` and then counts within them. The index is a
 `COUNT` of the names that sort before it, which is exact because `idx_exercises_name` makes names
 unique under `NOCASE`, the same collation the list orders by, so no two exercises tie — within a
-group as much as overall. The filter is one `muscle_group IS ?`, since SQLite's `IS` treats two
-`NULL`s as equal, and is left out entirely when no `muscleGroup` is given.
+group as much as overall. `filterConditions` builds the filter from up to three conditions, each
+left out when its key is not given: `muscle_group IS ?`, since SQLite's `IS` treats two `NULL`s as
+equal; `kind = ?`; and `name LIKE '%' || ? || '%' ESCAPE '\'`, with `%`, `_` and `\` escaped in the
+search so they match themselves.
 
 ### Muscle groups
 
