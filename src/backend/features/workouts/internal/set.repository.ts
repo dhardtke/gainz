@@ -6,7 +6,7 @@ import type { WorkoutExerciseRepository } from './workout-exercise.repository.ts
 import type { ExerciseKind } from '../../../../shared/exercise-kind.ts';
 import type { ExerciseId, LiftSetId, WorkoutId } from '../../../../shared/flavors.ts';
 import type { LiftSet } from '../ports/set.ts';
-import { LAST_SESSION_WORKOUT_SQL, SET_COLUMNS } from '../ports/sql.ts';
+import { COPIED_WEIGHT_SQL, LAST_SESSION_WORKOUT_SQL, SET_COLUMNS } from '../ports/sql.ts';
 
 export interface CreateSet {
   exercise_id: ExerciseId;
@@ -120,8 +120,9 @@ export class SetRepository {
         this.#db
           .query<unknown, [WorkoutId, WorkoutId, ExerciseId, number]>(
             `INSERT INTO sets (workout_id, exercise_id, reps, weight, notes, position)
-             SELECT ?1, exercise_id, reps, weight, notes, ?4 + ROW_NUMBER() OVER (ORDER BY position, id)
-               FROM sets WHERE workout_id = ?2 AND exercise_id = ?3 AND done = 1`,
+             SELECT ?1, s.exercise_id, s.reps, ${COPIED_WEIGHT_SQL}, s.notes, ?4 + ROW_NUMBER() OVER (ORDER BY s.position, s.id)
+               FROM sets s JOIN exercises e ON e.id = s.exercise_id
+              WHERE s.workout_id = ?2 AND s.exercise_id = ?3 AND s.done = 1`,
           )
           .run(workoutId, source.id, exerciseId, last);
         this.#workoutExercises.append(workoutId, exerciseId);

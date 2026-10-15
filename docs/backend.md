@@ -343,8 +343,9 @@ all done still moves, because the order a session is listed in is not performed 
 already trained. For each id in request order, `SetRepository.copyLastSessions` copies the done
 sets of the exercise's last session — the one `GET /api/exercises/:id/last-session` describes —
 after the workout's current sets, keeping reps, weight and notes in logged order with `done` 0, as
-"Repeat" does, and appends the exercise to the workout's order. It answers the whole
-`WorkoutWithExercisesDto`, 200. It is all or nothing, in one transaction, and the checks run in
+"Repeat" does, and appends the exercise to the workout's order; both copy a bodyweight exercise's
+weight as 0 (`COPIED_WEIGHT_SQL`), since an exercise turned bodyweight keeps its old loads. It
+answers the whole `WorkoutWithExercisesDto`, 200. It is all or nothing, in one transaction, and the checks run in
 this order: `exerciseIds` must be a non-empty list of at most 200 distinct JSON numbers that are
 safe integers of at least 1 (`requiredIds`, which unlike `requiredInt` refuses numeric strings),
 else a 400, even on an unknown workout; then an unknown workout is a 404 and a done one the done

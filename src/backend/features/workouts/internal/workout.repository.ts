@@ -3,7 +3,7 @@ import { conflict, notFound } from '../../../http/errors.ts';
 import { buildUpdate } from '../../../db/sql.ts';
 import type { Iso8601Date, WorkoutId } from '../../../../shared/flavors.ts';
 import type { Workout, WorkoutWithStats } from '../ports/workout.ts';
-import { VOLUME_SQL } from '../ports/sql.ts';
+import { COPIED_WEIGHT_SQL, VOLUME_SQL } from '../ports/sql.ts';
 
 export interface CreateWorkout {
   performed_on: Iso8601Date;
@@ -79,8 +79,9 @@ export class WorkoutRepository {
         this.#db
           .query<unknown, [WorkoutId, WorkoutId]>(
             `INSERT INTO sets (workout_id, exercise_id, reps, weight, notes, position)
-             SELECT ?, exercise_id, reps, weight, notes, position
-               FROM sets WHERE workout_id = ?`,
+             SELECT ?, s.exercise_id, s.reps, ${COPIED_WEIGHT_SQL}, s.notes, s.position
+               FROM sets s JOIN exercises e ON e.id = s.exercise_id
+              WHERE s.workout_id = ?`,
           )
           .run(row.id, copyFrom);
         this.#db

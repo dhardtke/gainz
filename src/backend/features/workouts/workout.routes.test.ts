@@ -99,6 +99,16 @@ describe('workouts', () => {
     expect(page.items[0]).toMatchObject({ setCount: 2, totalReps: 13, totalVolume: 300 });
   });
 
+  test('copies an exercise turned bodyweight with weight 0', async () => {
+    const exercise = await createExercise(post);
+    const source = await createWorkout(post, '2026-01-05');
+    await createSet(post, source.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
+    expect((await patch(`/api/exercises/${exercise.id}`, { kind: 'bodyweight' })).status).toBe(200);
+
+    const copy = await body<WorkoutWithExercisesDto>(await post('/api/workouts', { performedOn: '2026-01-12', copyFromWorkoutId: source.id }));
+    expect(sets(copy).map((s) => s.weight)).toEqual([0]);
+  });
+
   test('rejects an out-of-range limit', async () => {
     expect((await api('/api/workouts?limit=9999')).status).toBe(400);
   });
@@ -451,6 +461,13 @@ describe('add exercises from their last sessions', () => {
         ],
       },
     ]);
+  });
+
+  test('copies the last session of an exercise turned bodyweight with weight 0', async () => {
+    const { bench, target } = await seed();
+    expect((await patch(`/api/exercises/${bench.id}`, { kind: 'bodyweight' })).status).toBe(200);
+    const workout = await body<WorkoutWithExercisesDto>(await post(`/api/workouts/${target.id}/exercises`, { exerciseIds: [bench.id] }));
+    expect(workout.exercises.at(-1)?.sets.map((s) => s.weight)).toEqual([0, 0]);
   });
 
   test.each([
