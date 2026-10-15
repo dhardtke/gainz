@@ -25,7 +25,7 @@
     "@knadh/oat": "0.8.3"
   },
   "devDependencies": {
-    "@types/bun": "1.4.2",
+    "@types/bun": "1.4.3",
     "happy-dom": "20.14.6",
     "oxfmt": "0.72.0",
     "oxlint": "1.87.0",
