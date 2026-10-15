@@ -1,3 +1,10 @@
+@media (max-width: 640px) {
+  .filters,
+  .filters .search {
+    flex: 1 1 100%;
+  }
+}
+
 .add .new-form .field-notes {
   flex: 2 1 15rem;
 }

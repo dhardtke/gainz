@@ -204,8 +204,8 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
             <h1>Exercises</h1>
             <p class="text-light" data-testid="subtitle">${isFiltered(filter) ? `${total} of ${plural(all, 'exercise')}` : plural(all, 'exercise')}</p>
           </hgroup>
-          <div class="hstack gap-2">
-            <div class="field">
+          <div class="filters hstack gap-2">
+            <div class="field search">
               <label for="search">Search</label>
               <input id="search" type="search" placeholder="Exercise name" value="${filter.search ?? ''}" maxlength="120" data-testid="search" />
             </div>
