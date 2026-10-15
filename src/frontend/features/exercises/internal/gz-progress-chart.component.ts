@@ -108,7 +108,10 @@ export class GzProgressChartComponent extends GzElement {
     return html`
       <article class="card vstack gap-2">
         <div class="hstack justify-between gap-2">
-          <h2 data-testid="heading">${current.label}</h2>
+          <div class="heading">
+            <h2 data-testid="heading">${current.label}</h2>
+            ${this.#metrics.map((candidate) => html`<h2 class="sizer" aria-hidden="true">${candidate.label}</h2>`)}
+          </div>
           <div class="metric-switch">
             ${this.#metrics.map(
               (candidate) => html`
