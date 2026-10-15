@@ -95,3 +95,8 @@ a.worked:hover {
     margin: 0;
   }
 }
+
+.icon svg {
+  width: auto;
+  height: 1.125rem;
+}

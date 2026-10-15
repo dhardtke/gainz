@@ -110,11 +110,11 @@ test.each([
   ['2026-10', true],
   ['2026-12', true],
   ['2026-09', false],
-])('in %s, › is disabled: %p', (month, disabled) => {
+])('in %s, next month is disabled: %p', (month, disabled) => {
   expect(find<HTMLButtonElement>(shadow(mountCalendar(month)), testId('next')).disabled).toBe(disabled);
 });
 
-test('‹ emits month-change with the previous month, › the next', () => {
+test('previous month emits month-change with the previous month, next month the next', () => {
   const months = collect('month-change');
   const root = shadow(mountCalendar('2026-01', '2026-10-12', []));
   find<HTMLButtonElement>(root, testId('previous')).click();

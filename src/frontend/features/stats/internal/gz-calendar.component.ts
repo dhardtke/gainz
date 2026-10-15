@@ -120,7 +120,18 @@ export class GzCalendarComponent extends GzElement {
             aria-label="Previous month"
             data-testid="previous"
           >
-            ‹
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m15 18-6-6 6-6" />
+            </svg>
           </button>
           <h2 data-testid="label">${formatMonth(this.#month)}</h2>
           <button
@@ -132,7 +143,18 @@ export class GzCalendarComponent extends GzElement {
             data-testid="next"
             ${isLatest ? 'disabled' : ''}
           >
-            ›
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m9 18 6-6-6-6" />
+            </svg>
           </button>
         </div>
         <div class="grid" data-testid="grid">

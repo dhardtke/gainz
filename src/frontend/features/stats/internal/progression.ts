@@ -4,11 +4,11 @@ export const PROGRESSION_LEVELS: readonly ProgressionLevel[] = ['up', 'held', 'd
 
 export const PROGRESSION_THRESHOLD = 0.025;
 
-export const LEVELS: Record<ProgressionLevel, { icon: string; label: string }> = {
-  up: { icon: '▲', label: 'progressed' },
-  held: { icon: '■', label: 'held' },
-  down: { icon: '▼', label: 'regressed' },
-  none: { icon: '', label: 'nothing to compare' },
+export const LEVELS: Record<ProgressionLevel, { label: string }> = {
+  up: { label: 'progressed' },
+  held: { label: 'held' },
+  down: { label: 'regressed' },
+  none: { label: 'nothing to compare' },
 };
 
 export function progressionLevel(value: number | null): ProgressionLevel {

@@ -166,7 +166,7 @@ test('keeps the filter when paging', async () => {
   expect(`${location.pathname}${location.search}`).toBe('/exercises?muscleGroup=Legs&page=2');
 });
 
-test('heads a card with its muscle group icon before the group, then the notes', async () => {
+test("puts a card's muscle group icon beside its text, and the group, then the notes, in its subtitle", async () => {
   fake.respondTo(
     'GET /api/exercises?limit=10&offset=0',
     200,
@@ -176,11 +176,14 @@ test('heads a card with its muscle group icon before the group, then the notes',
   await settle();
   const [legs, plain] = Array.from(shadow(view).querySelectorAll(testId('card')));
   const subtitle = find(legs ?? shadow(view), testId('card-subtitle'));
-  const icon = find(subtitle, 'gz-muscle-group-icon');
+  const icon = find(legs ?? shadow(view), testId('card-icon'));
+  expect(icon.parentElement === find(legs ?? shadow(view), testId('card-icon-slot'))).toBe(true);
+  expect(subtitle.querySelector('gz-muscle-group-icon')).toBeNull();
   expect(find(shadow(icon), 'svg').getAttribute('data-group')).toBe('Legs');
   expect(find(shadow(icon), 'svg').getAttribute('aria-hidden')).toBe('true');
   expect(subtitle.textContent.replace(/\s+/g, ' ').trim()).toBe('Legs · Low bar, belt');
   expect(plain?.querySelector('gz-muscle-group-icon')).toBeNull();
+  expect(plain?.querySelector(testId('card-icon-slot'))).not.toBeNull();
 });
 
 test('labels a bodyweight card between its muscle group and its notes', async () => {

@@ -32,3 +32,8 @@
     border: 2px dashed var(--primary);
   }
 }
+
+svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}

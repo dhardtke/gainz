@@ -92,21 +92,22 @@ export class GzExerciseListComponent extends GzView<ExerciseListData> {
 
   #card(exercise: ExerciseWithStatsDto): RawHtml {
     const { muscleGroup, notes } = exercise;
-    const parts = [
-      muscleGroup ? html`<gz-muscle-group-icon group="${muscleGroup}"></gz-muscle-group-icon> ${muscleGroup}` : null,
-      exercise.kind === 'weighted' ? null : KIND_LABELS[exercise.kind],
-      notes,
-    ].filter((part) => part !== null);
+    const parts = [muscleGroup, exercise.kind === 'weighted' ? null : KIND_LABELS[exercise.kind], notes].filter((part) => part !== null);
     return html`
       <article class="card open-card" data-testid="card">
-        <div class="head">
-          <a class="open" href="/exercises/${exercise.id}">${exercise.name}</a>
-        </div>
-        ${parts.length > 0 ? html`<div class="text-light" data-testid="card-subtitle">${parts.map((part, i) => html`${i > 0 ? ' · ' : ''}${part}`)}</div>` : ''}
-        <div class="foot">
-          <span class="text-light">
-            ${plural(exercise.setCount, 'set')} · ${this.#best(exercise)} · ${exercise.lastPerformedOn ? relativeDay(exercise.lastPerformedOn) : 'never done'}
-          </span>
+        <span class="icon-slot" data-testid="card-icon-slot">
+          ${muscleGroup ? html`<gz-muscle-group-icon group="${muscleGroup}" data-testid="card-icon"></gz-muscle-group-icon>` : ''}
+        </span>
+        <div class="content">
+          <div class="head">
+            <a class="open" href="/exercises/${exercise.id}">${exercise.name}</a>
+          </div>
+          ${parts.length > 0 ? html`<div class="text-light" data-testid="card-subtitle">${parts.join(' · ')}</div>` : ''}
+          <div class="foot">
+            <span class="text-light">
+              ${plural(exercise.setCount, 'set')} · ${this.#best(exercise)} · ${exercise.lastPerformedOn ? relativeDay(exercise.lastPerformedOn) : 'never done'}
+            </span>
+          </div>
         </div>
       </article>
     `;

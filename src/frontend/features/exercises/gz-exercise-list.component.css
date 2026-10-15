@@ -6,3 +6,30 @@
 .add .new-form .submit-row {
   align-items: flex-end;
 }
+
+article.open-card {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-3);
+
+  /* Kept without an icon too, so every card's name lines up. */
+  & .icon-slot {
+    display: flex;
+    flex: none;
+    width: 3.5em;
+    height: 3.5em;
+  }
+
+  & gz-muscle-group-icon {
+    width: 100%;
+    height: 100%;
+  }
+
+  & .content {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+}

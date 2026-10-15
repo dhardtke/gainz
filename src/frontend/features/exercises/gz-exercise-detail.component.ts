@@ -94,16 +94,15 @@ export class GzExerciseDetailComponent extends GzView<ExerciseProgressDto> {
   #headerTemplate(exercise: ExerciseDto): RawHtml {
     const kind = exercise.kind === 'weighted' ? null : KIND_LABELS[exercise.kind];
     return html`
-      <hgroup>
-        <h1 data-testid="heading">${exercise.name}</h1>
-        <p class="text-light" data-testid="muscle-group">
-          ${
-            exercise.muscleGroup
-              ? html`<gz-muscle-group-icon group="${exercise.muscleGroup}"></gz-muscle-group-icon> ${exercise.muscleGroup}${kind === null ? '' : ` · ${kind}`}`
-              : (kind ?? 'No muscle group set')
-          }
-        </p>
-      </hgroup>
+      <div class="title hstack gap-3">
+        ${exercise.muscleGroup ? html`<gz-muscle-group-icon group="${exercise.muscleGroup}" data-testid="icon"></gz-muscle-group-icon>` : ''}
+        <hgroup>
+          <h1 data-testid="heading">${exercise.name}</h1>
+          <p class="text-light" data-testid="muscle-group">
+            ${exercise.muscleGroup ? `${exercise.muscleGroup}${kind === null ? '' : ` · ${kind}`}` : (kind ?? 'No muscle group set')}
+          </p>
+        </hgroup>
+      </div>
     `;
   }
 
