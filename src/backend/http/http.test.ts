@@ -18,6 +18,24 @@ describe('request bodies', () => {
     const res = await post('/api/exercises', ['Bench Press']);
     expect(res.status).toBe(400);
   });
+
+  test.each([[undefined], ['text/plain'], ['application/x-www-form-urlencoded']])('rejects a body sent as %p', async (type) => {
+    const res = await api('/api/exercises', {
+      method: 'POST',
+      headers: type === undefined ? {} : { 'Content-Type': type },
+      body: '{"name":"Squat"}',
+    });
+    expect(res.status).toBe(415);
+  });
+
+  test('accepts application/json with a charset', async () => {
+    const res = await api('/api/exercises', {
+      method: 'POST',
+      headers: { 'Content-Type': 'Application/JSON; charset=utf-8' },
+      body: '{"name":"Squat"}',
+    });
+    expect(res.status).toBe(201);
+  });
 });
 
 describe('queryDate', () => {

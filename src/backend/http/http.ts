@@ -1,6 +1,6 @@
 import type { Iso8601Date, Iso8601Month } from '../../shared/flavors.ts';
 import { isIsoDate, isRealDate } from '../shared/validate.ts';
-import { badRequest } from './errors.ts';
+import { badRequest, unsupportedMediaType } from './errors.ts';
 
 export function json(data: unknown, status = 200, headers: HeadersInit = {}): Response {
   return Response.json(data, { status, headers });
@@ -14,7 +14,12 @@ function isJsonObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+// A cross-origin fetch cannot send application/json without a preflight, which nothing here answers.
 export async function readJsonObject(req: Request): Promise<Record<string, unknown>> {
+  const type = req.headers.get('Content-Type')?.split(';', 1)[0]?.trim().toLowerCase();
+  if (type !== 'application/json') {
+    throw unsupportedMediaType('Request body must be sent as application/json');
+  }
   let parsed: unknown;
   try {
     parsed = await req.json();

@@ -160,9 +160,10 @@ with the request that caused it. It is the one error path, for the API and the s
 so a new route needs nothing to get it. The `error` hook in `http/server.ts` is only a safety net
 for an error outside a route, since Bun hands it the error but never the request.
 
-Four statuses cover everything the API refuses — 400 for bad input, 401 for a missing session or a
-wrong password, 404 for something missing, 409 for a conflict — which is why `http/errors.ts`
-exports exactly `badRequest`, `unauthorized`, `notFound` and `conflict`. The one other refusal, the
+Six statuses cover everything the API refuses — 400 for bad input, 401 for a missing session or a
+wrong password, 403 for a cross-site write, 404 for something missing, 409 for a conflict, 415 for a
+body not sent as `application/json` — which is why `http/errors.ts` exports exactly `badRequest`,
+`unauthorized`, `forbidden`, `notFound`, `conflict` and `unsupportedMediaType`. The one other refusal, the
 login lockout's 429 with `Retry-After`, is not thrown: the auth controller answers it itself, since
 it carries a header. Which status a broken reference earns depends on where the id came from: a
 workout id in the path that names nothing is a 404, while an `exerciseId` in the body that names
@@ -688,9 +689,13 @@ There is no sessions table and no second secret: changing the password invalidat
 which is the "log out everywhere" for a lost phone. `POST /api/auth/logout` answers 204 with the
 cookie expired; it only clears that browser, and a copied cookie stays valid until it expires or
 the password changes. The cookie is always `Secure` — HTTPS ends at the reverse proxy in
-production, and browsers accept `Secure` cookies from `http://localhost` — and `SameSite=Lax` plus
-JSON request bodies is the CSRF protection: a cross-site form cannot send `application/json`, and a
-cross-site `fetch` does not carry a Lax cookie.
+production, and browsers accept `Secure` cookies from `http://localhost`. Three things refuse CSRF:
+`SameSite=Lax` keeps the cookie off a cross-site `fetch`; `sameOriginWrites()` in
+`http/same-origin.ts` answers 403 to any write whose `Sec-Fetch-Site` is neither `same-origin` nor
+`none`, which also covers a sibling subdomain that Lax lets through and a bodyless write like
+logout; and `readJsonObject` answers 415 to a body not sent as `application/json`, which no form
+can send and no cross-origin `fetch` can without a preflight nothing answers. A client that sends
+no `Sec-Fetch-Site`, such as curl or the deploy script, is let through.
 
 Each accepted password is logged as `auth login` and each rejected one as `auth wrong password`;
 the password itself never is, because the access log redacts it from the login's body. A locked

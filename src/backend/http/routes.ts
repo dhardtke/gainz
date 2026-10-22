@@ -11,21 +11,25 @@ import { staticRoutes } from '../features/static/static.routes.ts';
 import { workoutRoutes } from '../features/workouts/workout.routes.ts';
 import { weightRoutes } from '../features/weight/weight.routes.ts';
 import { accessLog } from './access-log.ts';
+import { sameOriginWrites } from './same-origin.ts';
 
-// accessLog wraps the guard so 401s are logged. Spread order is cosmetic: Bun matches by specificity.
+// accessLog wraps the guards so their refusals are logged.
+// Spread order is cosmetic: Bun matches by specificity.
 export function allRoutes(db: DB, authOptions: AuthOptions): RouteTable {
   const auth = createAuthFacade(authOptions);
-  return accessLog({
-    ...metaRoutes(auth),
-    ...authRoutes(auth),
-    ...auth.guard({
-      ...statsRoutes(db),
-      ...exerciseRoutes(db),
-      ...workoutRoutes(db),
-      ...setRoutes(db),
-      ...weightRoutes(db),
+  return accessLog(
+    sameOriginWrites({
+      ...metaRoutes(auth),
+      ...authRoutes(auth),
+      ...auth.guard({
+        ...statsRoutes(db),
+        ...exerciseRoutes(db),
+        ...workoutRoutes(db),
+        ...setRoutes(db),
+        ...weightRoutes(db),
+      }),
+      ...devRoutes(),
+      ...staticRoutes(auth),
     }),
-    ...devRoutes(),
-    ...staticRoutes(auth),
-  });
+  );
 }
