@@ -20,7 +20,10 @@ The rest of this document covers this repository's own server.
 Every push to `main` runs `.github/workflows/ci.yml`. The `check` job runs format, lint, typecheck,
 tests and the build on GitHub and uploads `dist/`. The `deploy` job runs on a self-hosted runner on
 the server, which accepts no inbound connections, and pipes the build into
-`sudo -u gainz gainz-deploy <sha>`. Pull requests get the `check` job only. Actions are pinned to
+`sudo -u gainz gainz-deploy <sha>`. The `deploy` job is skipped unless the push changed something
+the build reads: `src/` other than `*.test.ts`, `package.json`, `bun.lock`, `bunfig.toml`,
+`tsconfig.json` or `.bun-version`. A push whose previous head is unknown, such as a force push,
+always deploys. Pull requests get the `check` job only. Actions are pinned to
 commit SHAs, and CI's Bun comes from `.bun-version`.
 
 The runner's user, `gh-runner`, may run only `/usr/local/bin/gainz-deploy` as `gainz`

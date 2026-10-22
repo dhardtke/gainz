@@ -11,10 +11,24 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.changes.outputs.deploy }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
+      - id: changes
+        if: github.event_name == 'push'
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if git cat-file -e "$BEFORE^{commit}" 2>/dev/null &&
+            git diff --quiet "$BEFORE" HEAD -- src ':!*.test.ts' package.json bun.lock bunfig.toml tsconfig.json .bun-version; then
+            echo deploy=false >> "$GITHUB_OUTPUT"
+          else
+            echo deploy=true >> "$GITHUB_OUTPUT"
+          fi
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: .bun-version
@@ -24,7 +38,7 @@ jobs:
       - run: bun run typecheck
       - run: bun test --parallel
       - run: bun run build
-      - if: github.event_name == 'push'
+      - if: steps.changes.outputs.deploy == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: gainz
@@ -33,7 +47,7 @@ jobs:
           retention-days: 7
 
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.check.outputs.deploy == 'true'
     needs: check
     runs-on: [self-hosted, gainz-prod]
     environment: production
