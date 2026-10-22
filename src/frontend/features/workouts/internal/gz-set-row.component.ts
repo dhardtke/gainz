@@ -1,5 +1,6 @@
 import type { RawHtml } from '../../../ui/html.ts';
-import { define, GzElement } from '../../../ui/base.ts';
+import { define } from '../../../ui/base.ts';
+import { GzEditableRow } from '../../../ui/editable-row.ts';
 import { html } from '../../../ui/html.ts';
 import { formatAssistance, formatKilograms, formatVolume, plural, UNIT } from '../../../ui/format.ts';
 import type { ExerciseKind } from '../../../../shared/exercise-kind.ts';
@@ -11,12 +12,7 @@ import { setFacade } from '../workouts.facade.ts';
 // Carries the updated set, which the view applies without a reload; other changes emit `sets-changed`.
 export const SET_UPDATED_EVENT = 'set-updated';
 
-export interface FocusedField {
-  name: string;
-  value: string;
-}
-
-export class GzSetRowComponent extends GzElement {
+export class GzSetRowComponent extends GzEditableRow {
   #set: LiftSetDto | null = null;
 
   #index = 0;
@@ -24,9 +20,6 @@ export class GzSetRowComponent extends GzElement {
   #locked = false;
 
   #kind: ExerciseKind = 'weighted';
-
-  // Serialized: a blur save must land before the click that caused it marks the set done.
-  #pending: Promise<void> = Promise.resolve();
 
   set set(value: LiftSetDto | undefined) {
     this.#set = value ?? null;
@@ -54,26 +47,8 @@ export class GzSetRowComponent extends GzElement {
     return this.#kind === 'bodyweight';
   }
 
-  focusedField(): FocusedField | null {
-    const input = this.root.activeElement;
-    return input instanceof HTMLInputElement && input.name ? { name: input.name, value: input.value } : null;
-  }
-
-  restoreField({ name, value }: FocusedField): void {
-    const input = this.$<HTMLInputElement>(`input[name='${name}']`);
-    if (input) {
-      input.value = value;
-      input.focus();
-    }
-  }
-
-  #enqueue(request: () => Promise<void>): Promise<void> {
-    this.#pending = this.#pending.then(request);
-    return this.#pending;
-  }
-
   override handleAction(action: string): Promise<void> {
-    return this.#enqueue(() => this.#run(action));
+    return this.enqueue(() => this.#run(action));
   }
 
   async #run(action: string): Promise<void> {
@@ -122,7 +97,7 @@ export class GzSetRowComponent extends GzElement {
     }
   }
 
-  async #save(form: HTMLFormElement): Promise<void> {
+  override async save(form: HTMLFormElement): Promise<void> {
     const set = this.#set;
     if (!set || !form.reportValidity()) {
       return;
@@ -147,20 +122,6 @@ export class GzSetRowComponent extends GzElement {
     } catch (error) {
       toastError(error);
     }
-  }
-
-  override afterRender(): void {
-    const form = this.$<HTMLFormElement>('form');
-    form?.addEventListener('change', () => {
-      void this.#enqueue(() => this.#save(form));
-    });
-    // A multi-field form without a submit button ignores Enter.
-    form?.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' && event.target instanceof HTMLInputElement) {
-        event.preventDefault();
-        void this.#enqueue(() => this.#save(form));
-      }
-    });
   }
 
   #toggleTemplate(set: LiftSetDto): RawHtml {

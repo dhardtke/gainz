@@ -6,10 +6,11 @@ import { toast, toastError } from '../../ui/toast.ts';
 import { confirmAction } from '../../ui/confirm/confirm.ts';
 import { ApiError } from '../../http/errors.ts';
 import { GzView } from '../../ui/view.ts';
+import { keepRowFocus } from '../../ui/editable-row.ts';
 import type { WeighInDto, WeighInListDto } from '../../../shared/dto/weight.ts';
 import type { Iso8601Date } from '../../../shared/flavors.ts';
 import { weighInFacade } from './weight.facade.ts';
-import { GzWeighInRowComponent, WEIGH_IN_DELETED_EVENT, WEIGH_IN_SAVED_EVENT } from './internal/gz-weigh-in-row.component.ts';
+import { type GzWeighInRowComponent, WEIGH_IN_DELETED_EVENT, WEIGH_IN_SAVED_EVENT } from './internal/gz-weigh-in-row.component.ts';
 import { WEIGH_INS_IMPORTED_EVENT } from './internal/gz-weigh-in-import.component.ts';
 import { loadSince, parseRange, RANGES, type RangeKey, rangeFrom, rangePath } from './internal/range.ts';
 import { trendHint, trendPoints } from './internal/trend.ts';
@@ -102,13 +103,9 @@ export class GzWeightComponent extends GzView<WeightData> {
   }
 
   #keepingFocus(rerender: () => void): void {
-    const active = this.root.activeElement;
-    const row = active instanceof GzWeighInRowComponent ? active : null;
-    const field = row?.focusedField() ?? null;
+    const restore = keepRowFocus(this.root, 'date');
     rerender();
-    if (row && field) {
-      this.$<GzWeighInRowComponent>(`gz-weigh-in-row[data-date='${row.dataset.date}']`)?.restoreField(field);
-    }
+    restore();
   }
 
   override async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {

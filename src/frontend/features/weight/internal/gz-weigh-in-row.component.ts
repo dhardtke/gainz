@@ -1,5 +1,6 @@
 import type { RawHtml } from '../../../ui/html.ts';
-import { define, GzElement } from '../../../ui/base.ts';
+import { define } from '../../../ui/base.ts';
+import { GzEditableRow } from '../../../ui/editable-row.ts';
 import { html } from '../../../ui/html.ts';
 import { formatBodyWeight, formatDate, formatShortDate, UNIT } from '../../../ui/format.ts';
 import type { WeighInDto } from '../../../../shared/dto/weight.ts';
@@ -10,16 +11,8 @@ import { weighInFacade } from '../weight.facade.ts';
 export const WEIGH_IN_SAVED_EVENT = 'weigh-in-saved';
 export const WEIGH_IN_DELETED_EVENT = 'weigh-in-deleted';
 
-export interface FocusedField {
-  name: string;
-  value: string;
-}
-
-export class GzWeighInRowComponent extends GzElement {
+export class GzWeighInRowComponent extends GzEditableRow {
   #weighIn: WeighInDto | null = null;
-
-  // Serialized, so an Enter and the change it commits save once.
-  #pending: Promise<void> = Promise.resolve();
 
   set weighIn(value: WeighInDto | undefined) {
     this.#weighIn = value ?? null;
@@ -28,26 +21,8 @@ export class GzWeighInRowComponent extends GzElement {
     }
   }
 
-  focusedField(): FocusedField | null {
-    const input = this.root.activeElement;
-    return input instanceof HTMLInputElement && input.name ? { name: input.name, value: input.value } : null;
-  }
-
-  restoreField({ name, value }: FocusedField): void {
-    const input = this.$<HTMLInputElement>(`input[name='${name}']`);
-    if (input) {
-      input.value = value;
-      input.focus();
-    }
-  }
-
-  #enqueue(request: () => Promise<void>): Promise<void> {
-    this.#pending = this.#pending.then(request);
-    return this.#pending;
-  }
-
   override handleAction(action: string): Promise<void> {
-    return this.#enqueue(async () => {
+    return this.enqueue(async () => {
       if (action === 'delete') {
         await this.#delete();
       }
@@ -72,7 +47,7 @@ export class GzWeighInRowComponent extends GzElement {
     }
   }
 
-  async #save(form: HTMLFormElement): Promise<void> {
+  override async save(form: HTMLFormElement): Promise<void> {
     const weighIn = this.#weighIn;
     if (!weighIn || !form.reportValidity()) {
       return;
@@ -87,19 +62,6 @@ export class GzWeighInRowComponent extends GzElement {
     } catch (error) {
       toastError(error);
     }
-  }
-
-  override afterRender(): void {
-    const form = this.$<HTMLFormElement>('form');
-    form?.addEventListener('change', () => {
-      void this.#enqueue(() => this.#save(form));
-    });
-    form?.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' && event.target instanceof HTMLInputElement) {
-        event.preventDefault();
-        void this.#enqueue(() => this.#save(form));
-      }
-    });
   }
 
   override template(): RawHtml {

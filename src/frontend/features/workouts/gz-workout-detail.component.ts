@@ -8,11 +8,12 @@ import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import type { EditWorkoutDto, MoveDirection, WorkoutDto, WorkoutExerciseDto, WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
 import type { ExerciseId } from '../../../shared/flavors.ts';
 import { type GzAddSetFormComponent, LastSessionCache } from './internal/gz-add-set-form.component.ts';
-import { GzSetRowComponent, SET_UPDATED_EVENT } from './internal/gz-set-row.component.ts';
+import { type GzSetRowComponent, SET_UPDATED_EVENT } from './internal/gz-set-row.component.ts';
 import { repeatWorkout } from './internal/repeat-workout.ts';
 import { toast, toastError } from '../../ui/toast.ts';
 import { confirmAction } from '../../ui/confirm/confirm.ts';
 import { GzView } from '../../ui/view.ts';
+import { keepRowFocus } from '../../ui/editable-row.ts';
 import { exerciseFacade } from '../exercises/exercises.facade.ts';
 import { workoutFacade } from './workouts.facade.ts';
 import '../exercises/gz-muscle-group-icon.component.ts';
@@ -89,13 +90,10 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
 
   async #keepingFocus(rerender: () => Promise<void> | void): Promise<void> {
     const active = this.root.activeElement;
-    const row = active instanceof GzSetRowComponent ? active : null;
-    const rowField = row?.focusedField() ?? null;
+    const restoreRow = keepRowFocus(this.root, 'id');
     const detailsField = active instanceof HTMLElement && active.closest('form.details') ? active.id : '';
     await rerender();
-    if (row && rowField) {
-      this.$<GzSetRowComponent>(`gz-set-row[data-id='${row.dataset.id}']`)?.restoreField(rowField);
-    } else if (detailsField) {
+    if (!restoreRow() && detailsField) {
       this.$<HTMLElement>(`#${detailsField}`)?.focus();
     }
   }

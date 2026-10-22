@@ -43,7 +43,9 @@ What belongs to no feature sits beside `features/`:
   an error without being able to make a request.
 - `ui/` is what any component may use: `base.ts` with `GzElement` (open shadow root,
   `data-action` click/submit delegation, `template()`/`render()`) and `define()`; `view.ts` with
-  `GzView`, the base of the route views (see below); `html.ts` with the escaping `html` tagged
+  `GzView`, the base of the route views (see below); `editable-row.ts` with `GzEditableRow`, the
+  base of `gz-set-row` and `gz-weigh-in-row` (see "Set rows"), and `keepRowFocus()`, which their
+  views call around a re-render; `html.ts` with the escaping `html` tagged
   template and `raw()`; `styles.ts`, `theme.ts` and `format.ts`, which holds the display formats and
   the date helpers `todayIso()` and `daysBefore()`; the document stylesheet `app.css`
   and the utilities in `shared.css`; `toast.ts`, whose `toast()` and `toastError()` show Oat's
