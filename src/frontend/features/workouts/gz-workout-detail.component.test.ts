@@ -648,6 +648,16 @@ test('reopens a done workout without asking or a reload', async () => {
   expect(button(view, 'finish-workout').textContent).toBe('Mark workout done');
 });
 
+test('repeats a done workout into a new session dated today and opens it', async () => {
+  const view = await mountView({ ...WORKOUT, done: true });
+  fake.respondTo('POST /api/workouts', 201, JSON.stringify({ ...WORKOUT, id: 9 }));
+  button(view, 'repeat-workout').click();
+  await settle();
+  expect(fake.sent('POST /api/workouts')).toMatchObject([{ title: 'Push day', copyFromWorkoutId: 3 }]);
+  expect(toasts).toEqual(['Copied 3 sets into a new session']);
+  expect(location.pathname).toBe('/workouts/9');
+});
+
 test('toasts a failed finish, once confirmed, and does not reload', async () => {
   const view = await mountView();
   const loads = workoutLoads();

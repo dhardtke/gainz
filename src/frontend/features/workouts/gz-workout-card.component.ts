@@ -1,11 +1,9 @@
 import type { RawHtml } from '../../ui/html.ts';
 import { define, GzElement } from '../../ui/base.ts';
 import { html, raw } from '../../ui/html.ts';
-import { formatDate, formatVolume, plural, relativeDay, todayIso } from '../../ui/format.ts';
-import { navigate } from '../../app/router.ts';
+import { formatDate, formatVolume, plural, relativeDay } from '../../ui/format.ts';
 import type { WorkoutWithStatsDto } from '../../../shared/dto/workout.ts';
-import { toast, toastError } from '../../ui/toast.ts';
-import { workoutFacade } from './workouts.facade.ts';
+import { repeatWorkout } from './internal/repeat-workout.ts';
 
 export class GzWorkoutCardComponent extends GzElement {
   #workout: WorkoutWithStatsDto | null = null;
@@ -22,13 +20,7 @@ export class GzWorkoutCardComponent extends GzElement {
     if (action !== 'repeat' || !workout) {
       return;
     }
-    try {
-      const copy = await workoutFacade.create({ performedOn: todayIso(), title: workout.title, copyFromWorkoutId: workout.id });
-      toast(`Copied ${plural(copy.exercises.flatMap((group) => group.sets).length, 'set')} into a new session`, 'success');
-      navigate(`/workouts/${copy.id}`);
-    } catch (error) {
-      toastError(error);
-    }
+    await repeatWorkout(workout);
   }
 
   override template(): RawHtml {

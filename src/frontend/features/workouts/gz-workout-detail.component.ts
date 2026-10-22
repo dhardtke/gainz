@@ -9,6 +9,7 @@ import type { EditWorkoutDto, MoveDirection, WorkoutDto, WorkoutExerciseDto, Wor
 import type { ExerciseId } from '../../../shared/flavors.ts';
 import { type GzAddSetFormComponent, LastSessionCache } from './internal/gz-add-set-form.component.ts';
 import { GzSetRowComponent, SET_UPDATED_EVENT } from './internal/gz-set-row.component.ts';
+import { repeatWorkout } from './internal/repeat-workout.ts';
 import { toast, toastError } from '../../ui/toast.ts';
 import { confirmAction } from '../../ui/confirm/confirm.ts';
 import { GzView } from '../../ui/view.ts';
@@ -150,6 +151,13 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
 
     if (action === 'reopen-workout') {
       await this.#update({ done: false });
+      return;
+    }
+
+    if (action === 'repeat-workout') {
+      if (this.data) {
+        await repeatWorkout(this.data.workout);
+      }
       return;
     }
 
@@ -377,7 +385,14 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
       return html``;
     }
     if (workout.done) {
-      return html`<div><button class="outline" data-action="reopen-workout" data-testid="reopen-workout">Reopen workout</button></div>`;
+      return html`
+        <div class="hstack gap-2">
+          <button class="outline" data-action="reopen-workout" data-testid="reopen-workout">Reopen workout</button>
+          <button class="outline" data-action="repeat-workout" data-testid="repeat-workout" title="Copy these sets into a new session dated today">
+            Repeat
+          </button>
+        </div>
+      `;
     }
     return html`<div><button data-action="finish-workout" data-testid="finish-workout">Mark workout done</button></div>`;
   }
