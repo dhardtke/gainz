@@ -52,6 +52,10 @@
 summary {
   & gz-muscle-group-icon {
     flex: none;
+    width: 2em;
+    height: 2em;
+    /* Takes up the 1.25em it did before, so the row keeps its height. */
+    margin-block: -0.375em;
   }
 
   & .exercise-name {
@@ -101,7 +105,7 @@ summary {
     flex-wrap: wrap;
 
     & .exercise-name {
-      flex-basis: calc(100% - 2em - 1.25em - var(--space-2));
+      flex-basis: calc(100% - 2em - 2em - var(--space-2));
     }
 
     & :is(.group-stats, .badge) {
