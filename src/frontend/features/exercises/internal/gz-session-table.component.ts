@@ -14,35 +14,6 @@ function changeTemplate(current: number, earlier: number | undefined, decimals?:
   return html`${formatNumber(current, decimals)} ${change ? html`<span class="${direction}" data-testid="change"> ${change}</span>` : ''}`;
 }
 
-interface Column {
-  label: string;
-  cell: (session: SessionPointDto, earlier: SessionPointDto | undefined) => unknown;
-}
-
-const SETS: Column = { label: 'Sets', cell: (session) => session.setCount };
-const REPS: Column = { label: 'Reps', cell: (session) => session.totalReps };
-
-const COLUMNS: Record<ExerciseKind, Column[]> = {
-  bodyweight: [
-    SETS,
-    { label: 'Top set', cell: (session) => session.topReps },
-    { label: 'Reps', cell: (session, earlier) => changeTemplate(session.totalReps, earlier?.totalReps) },
-  ],
-  assisted: [
-    SETS,
-    REPS,
-    { label: 'Least assist', cell: (session, earlier) => changeTemplate(session.leastWeight, earlier?.leastWeight, undefined, true) },
-    { label: 'Effective volume', cell: (session) => (session.effectiveVolume === null ? '–' : formatVolume(session.effectiveVolume)) },
-  ],
-  weighted: [
-    SETS,
-    REPS,
-    { label: 'Top set', cell: (session) => formatKilograms(session.topWeight) },
-    { label: 'Est. 1RM', cell: (session, earlier) => changeTemplate(session.estOneRepMax, earlier?.estOneRepMax, 1) },
-    { label: 'Volume', cell: (session) => formatVolume(session.totalVolume) },
-  ],
-};
-
 export class GzSessionTableComponent extends GzElement {
   #sessions: SessionPointDto[] = [];
 
@@ -60,13 +31,14 @@ export class GzSessionTableComponent extends GzElement {
     }
   }
 
-  #rows(): RawHtml {
-    const columns = COLUMNS[this.#kind];
+  #bodyweightRows(): RawHtml {
     return html`
       <thead>
         <tr>
           <th scope="col">Date</th>
-          ${columns.map((column) => html`<th scope="col" class="num">${column.label}</th>`)}
+          <th scope="col" class="num">Sets</th>
+          <th scope="col" class="num">Top set</th>
+          <th scope="col" class="num">Reps</th>
         </tr>
       </thead>
       <tbody>
@@ -76,12 +48,79 @@ export class GzSessionTableComponent extends GzElement {
               <td class="name nowrap">
                 <a href="/workouts/${session.workoutId}" data-testid="workout-link">${formatDate(session.performedOn)}</a>
               </td>
-              ${columns.map((column) => html`<td class="num">${column.cell(session, reversed[index + 1])}</td>`)}
+              <td class="num">${session.setCount}</td>
+              <td class="num">${session.topReps}</td>
+              <td class="num">${changeTemplate(session.totalReps, reversed[index + 1]?.totalReps)}</td>
             </tr>
           `,
         )}
       </tbody>
     `;
+  }
+
+  #assistedRows(): RawHtml {
+    return html`<thead>
+        <tr>
+          <th scope="col">Date</th>
+          <th scope="col" class="num">Sets</th>
+          <th scope="col" class="num">Reps</th>
+          <th scope="col" class="num">Least assist</th>
+          <th scope="col" class="num">Effective volume</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${[...this.#sessions].reverse().map(
+          (session, index, reversed) => html`
+            <tr data-testid="session">
+              <td class="name nowrap">
+                <a href="/workouts/${session.workoutId}" data-testid="workout-link">${formatDate(session.performedOn)}</a>
+              </td>
+              <td class="num">${session.setCount}</td>
+              <td class="num">${session.totalReps}</td>
+              <td class="num">${changeTemplate(session.leastWeight, reversed[index + 1]?.leastWeight, undefined, true)}</td>
+              <td class="num">${session.effectiveVolume === null ? '–' : formatVolume(session.effectiveVolume)}</td>
+            </tr>
+          `,
+        )}
+      </tbody> `;
+  }
+
+  #weightedRows(): RawHtml {
+    return html`
+      <thead>
+        <tr>
+          <th scope="col">Date</th>
+          <th scope="col" class="num">Sets</th>
+          <th scope="col" class="num">Reps</th>
+          <th scope="col" class="num">Top set</th>
+          <th scope="col" class="num">Est. 1RM</th>
+          <th scope="col" class="num">Volume</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${[...this.#sessions].reverse().map(
+          (session, index, reversed) => html`
+            <tr data-testid="session">
+              <td class="name nowrap">
+                <a href="/workouts/${session.workoutId}" data-testid="workout-link">${formatDate(session.performedOn)}</a>
+              </td>
+              <td class="num">${session.setCount}</td>
+              <td class="num">${session.totalReps}</td>
+              <td class="num">${formatKilograms(session.topWeight)}</td>
+              <td class="num">${changeTemplate(session.estOneRepMax, reversed[index + 1]?.estOneRepMax, 1)}</td>
+              <td class="num">${formatVolume(session.totalVolume)}</td>
+            </tr>
+          `,
+        )}
+      </tbody>
+    `;
+  }
+
+  #rows(): RawHtml {
+    if (this.#kind === 'bodyweight') {
+      return this.#bodyweightRows();
+    }
+    return this.#kind === 'assisted' ? this.#assistedRows() : this.#weightedRows();
   }
 
   override template(): RawHtml {
