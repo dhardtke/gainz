@@ -58,20 +58,12 @@ export function translateDtoToCreateWorkout(dto: CreateWorkoutDto): CreateWorkou
 }
 
 export function translateDtoToEditWorkout(dto: EditWorkoutDto): EditWorkout {
-  const patch: EditWorkout = {};
-  if (dto.performedOn !== undefined) {
-    patch.performed_on = dto.performedOn;
-  }
-  if (dto.title !== undefined) {
-    patch.title = dto.title;
-  }
-  if (dto.notes !== undefined) {
-    patch.notes = dto.notes;
-  }
-  if (dto.done !== undefined) {
-    patch.done = dto.done ? 1 : 0;
-  }
-  return patch;
+  return {
+    performed_on: dto.performedOn,
+    title: dto.title,
+    notes: dto.notes,
+    done: dto.done === undefined ? undefined : dto.done ? 1 : 0,
+  };
 }
 
 export function translateToWorkoutDto(row: Workout): WorkoutDto {

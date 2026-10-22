@@ -46,34 +46,20 @@ export function translateDtoToCreateExercise(dto: CreateExerciseDto): CreateExer
 }
 
 export function translateDtoToEditExercise(dto: EditExerciseDto): EditExercise {
-  const patch: EditExercise = {};
-  if (dto.name !== undefined) {
-    patch.name = dto.name;
-  }
-  if (dto.muscleGroup !== undefined) {
-    patch.muscle_group = dto.muscleGroup;
-  }
-  if (dto.notes !== undefined) {
-    patch.notes = dto.notes;
-  }
-  if (dto.kind !== undefined) {
-    patch.kind = dto.kind;
-  }
-  return patch;
+  return {
+    name: dto.name,
+    muscle_group: dto.muscleGroup,
+    notes: dto.notes,
+    kind: dto.kind,
+  };
 }
 
 export function translateDtoToExerciseFilter(dto: ExerciseFilterDto): ExerciseFilter {
-  const filter: ExerciseFilter = {};
-  if (dto.muscleGroup !== undefined) {
-    filter.muscle_group = dto.muscleGroup === 'none' ? null : dto.muscleGroup;
-  }
-  if (dto.type !== undefined) {
-    filter.kind = dto.type;
-  }
-  if (dto.search !== undefined) {
-    filter.name_contains = dto.search;
-  }
-  return filter;
+  return {
+    muscle_group: dto.muscleGroup === 'none' ? null : dto.muscleGroup,
+    kind: dto.type,
+    name_contains: dto.search,
+  };
 }
 
 export function translateToExerciseDto(row: Exercise): ExerciseDto {

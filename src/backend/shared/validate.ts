@@ -108,6 +108,17 @@ export function optionalOneOf<T extends object, V extends string>(dto: T, field:
   return requiredOneOf(dto, field, values);
 }
 
+// Runs a field's rule only when the DTO carries the field, so an edit leaves the others alone.
+export function validatePresent<T extends object>(dto: T, rules: { [K in keyof T]-?: () => T[K] }): Partial<T> {
+  const valid: Partial<T> = {};
+  for (const field in rules) {
+    if (dto[field] !== undefined) {
+      valid[field] = rules[field]();
+    }
+  }
+  return valid;
+}
+
 export function isIsoDate(value: string): boolean {
   return ISO_DATE.test(value) && !Number.isNaN(Date.parse(value));
 }

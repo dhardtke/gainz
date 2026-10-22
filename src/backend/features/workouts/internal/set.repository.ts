@@ -135,7 +135,7 @@ export class SetRepository {
     return this.#db.transaction(() => {
       const current = this.require(id);
       this.#requireOpen(current.workout_id);
-      if (current.done === 1 && Object.keys(patch).some((field) => field !== 'done')) {
+      if (current.done === 1 && Object.entries(patch).some(([field, value]) => field !== 'done' && value !== undefined)) {
         throw conflict('Set is done; mark it as not done before changing it');
       }
 

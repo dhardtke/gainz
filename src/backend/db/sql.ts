@@ -17,9 +17,9 @@ export function buildUpdate<T extends object>(table: string, fields: readonly Ex
   const values: (string | number | null)[] = [];
 
   for (const field of fields) {
-    // `in`, not `!== undefined`, so an explicit null clears the column.
-    if (field in patch) {
-      const value = patch[field] ?? null;
+    const value = patch[field];
+    // An undefined field is left alone, while null clears the column.
+    if (value !== undefined) {
       if (value !== null && typeof value !== 'string' && typeof value !== 'number') {
         throw new TypeError(`Cannot bind ${table}.${field}: expected a string, a number or null`);
       }

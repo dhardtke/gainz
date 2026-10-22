@@ -10,6 +10,7 @@ import {
   requiredNumber,
   requiredOneOf,
   requiredString,
+  validatePresent,
 } from './validate.ts';
 
 describe('requiredString', () => {
@@ -152,5 +153,17 @@ describe('requiredIds', () => {
     const ids = Array.from({ length: 200 }, (_, index) => index + 1);
     expect(requiredIds({ ids }, 'ids')).toHaveLength(200);
     expect(() => requiredIds({ ids: [...ids, 201] }, 'ids')).toThrow('"ids" must be a list of 1 to 200 ids');
+  });
+});
+
+describe('validatePresent', () => {
+  test('runs only the rules of the fields present and keeps null, which clears a field', () => {
+    const dto: { name?: string; notes?: string | null; reps?: number } = { name: ' Squat ', notes: null };
+    expect(
+      validatePresent(dto, { name: () => requiredString(dto, 'name'), notes: () => optionalString(dto, 'notes'), reps: () => requiredInt(dto, 'reps') }),
+    ).toEqual({
+      name: 'Squat',
+      notes: null,
+    });
   });
 });

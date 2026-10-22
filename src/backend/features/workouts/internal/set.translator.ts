@@ -31,20 +31,12 @@ export function translateDtoToCreateSet(dto: CreateSetDto): CreateSet {
 }
 
 export function translateDtoToEditSet(dto: EditSetDto): EditSet {
-  const patch: EditSet = {};
-  if (dto.reps !== undefined) {
-    patch.reps = dto.reps;
-  }
-  if (dto.weight !== undefined) {
-    patch.weight = dto.weight;
-  }
-  if (dto.notes !== undefined) {
-    patch.notes = dto.notes;
-  }
-  if (dto.done !== undefined) {
-    patch.done = dto.done ? 1 : 0;
-  }
-  return patch;
+  return {
+    reps: dto.reps,
+    weight: dto.weight,
+    notes: dto.notes,
+    done: dto.done === undefined ? undefined : dto.done ? 1 : 0,
+  };
 }
 
 export function translateToLiftSetDto(row: LiftSet): LiftSetDto {

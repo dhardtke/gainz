@@ -2,7 +2,16 @@ import type { CreateSetDto, EditSetDto } from '../../../shared/dto/set.ts';
 import type { AddWorkoutExercisesDto, CreateWorkoutDto, EditWorkoutDto, MoveWorkoutExerciseDto } from '../../../shared/dto/workout.ts';
 import type { ExerciseId, LiftSetId, WorkoutId } from '../../../shared/flavors.ts';
 import type { DB } from '../../db/db.ts';
-import { optionalString, requiredBoolean, requiredDate, requiredIds, requiredInt, requiredNumber, requiredOneOf } from '../../shared/validate.ts';
+import {
+  optionalString,
+  requiredBoolean,
+  requiredDate,
+  requiredIds,
+  requiredInt,
+  requiredNumber,
+  requiredOneOf,
+  validatePresent,
+} from '../../shared/validate.ts';
 import { SetRepository } from './internal/set.repository.ts';
 import { translateDtoToCreateSet, translateDtoToEditSet } from './internal/set.translator.ts';
 import { WorkoutRepository } from './internal/workout.repository.ts';
@@ -14,6 +23,8 @@ import type { WorkoutExercise } from './ports/workout-exercise.ts';
 
 const MAX_WORKOUT_NAME_LENGTH = 120;
 const MAX_WORKOUT_NOTES_LENGTH = 2000;
+const REPS_RANGE = { min: 1, max: 1000 };
+const WEIGHT_RANGE = { min: 0, max: 100000 };
 
 export class WorkoutFacade {
   readonly #workouts: WorkoutRepository;
@@ -71,20 +82,12 @@ export class WorkoutFacade {
   }
 
   #validateEdit(dto: EditWorkoutDto): EditWorkoutDto {
-    const valid: EditWorkoutDto = {};
-    if (dto.performedOn !== undefined) {
-      valid.performedOn = requiredDate(dto, 'performedOn');
-    }
-    if (dto.title !== undefined) {
-      valid.title = optionalString(dto, 'title', MAX_WORKOUT_NAME_LENGTH);
-    }
-    if (dto.notes !== undefined) {
-      valid.notes = optionalString(dto, 'notes', MAX_WORKOUT_NOTES_LENGTH);
-    }
-    if (dto.done !== undefined) {
-      valid.done = requiredBoolean(dto, 'done');
-    }
-    return valid;
+    return validatePresent(dto, {
+      performedOn: () => requiredDate(dto, 'performedOn'),
+      title: () => optionalString(dto, 'title', MAX_WORKOUT_NAME_LENGTH),
+      notes: () => optionalString(dto, 'notes', MAX_WORKOUT_NOTES_LENGTH),
+      done: () => requiredBoolean(dto, 'done'),
+    });
   }
 }
 
@@ -124,27 +127,19 @@ export class SetFacade {
   #validateCreate(dto: CreateSetDto): CreateSetDto {
     return {
       exerciseId: requiredInt(dto, 'exerciseId', { min: 1 }),
-      reps: requiredInt(dto, 'reps', { min: 1, max: 1000 }),
-      ...(dto.weight !== undefined ? { weight: requiredNumber(dto, 'weight', { min: 0, max: 100000 }) } : {}),
+      reps: requiredInt(dto, 'reps', REPS_RANGE),
+      ...(dto.weight !== undefined ? { weight: requiredNumber(dto, 'weight', WEIGHT_RANGE) } : {}),
       notes: optionalString(dto, 'notes', MAX_WORKOUT_NOTES_LENGTH),
     };
   }
 
   #validateEdit(dto: EditSetDto): EditSetDto {
-    const valid: EditSetDto = {};
-    if (dto.reps !== undefined) {
-      valid.reps = requiredInt(dto, 'reps', { min: 1, max: 1000 });
-    }
-    if (dto.weight !== undefined) {
-      valid.weight = requiredNumber(dto, 'weight', { min: 0, max: 100000 });
-    }
-    if (dto.notes !== undefined) {
-      valid.notes = optionalString(dto, 'notes', MAX_WORKOUT_NOTES_LENGTH);
-    }
-    if (dto.done !== undefined) {
-      valid.done = requiredBoolean(dto, 'done');
-    }
-    return valid;
+    return validatePresent(dto, {
+      reps: () => requiredInt(dto, 'reps', REPS_RANGE),
+      weight: () => requiredNumber(dto, 'weight', WEIGHT_RANGE),
+      notes: () => optionalString(dto, 'notes', MAX_WORKOUT_NOTES_LENGTH),
+      done: () => requiredBoolean(dto, 'done'),
+    });
   }
 }
 
