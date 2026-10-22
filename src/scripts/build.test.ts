@@ -8,10 +8,24 @@ import { build } from './build.ts';
 
 const FRONTEND = resolve(import.meta.dir, '..', 'frontend');
 
+type Server = Bun.Subprocess<'ignore', 'pipe', 'pipe'>;
+
+function spawnBuilt(script: string, cwd: string, env: Record<string, string>): Server {
+  return Bun.spawn([process.execPath, script], { cwd, env: { ...process.env, PORT: '0', ...env }, stdout: 'pipe', stderr: 'pipe' });
+}
+
+async function stopBuilt(proc: Server | undefined, dir: string): Promise<void> {
+  if (proc) {
+    proc.kill();
+    await proc.exited;
+  }
+  rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+}
+
 describe('single-file build', () => {
   let dir = '';
   let embedded: Embedded;
-  let proc: Bun.Subprocess<'ignore', 'pipe', 'pipe'> | undefined;
+  let proc: Server | undefined;
   let origin = '';
   let stdout = '';
 
@@ -23,24 +37,13 @@ describe('single-file build', () => {
     mkdirSync(deploy);
     copyFileSync(join(dir, 'out', 'gainz.js'), join(deploy, 'gainz.js'));
 
-    proc = Bun.spawn([process.execPath, 'gainz.js'], {
-      cwd: deploy,
-      env: { ...process.env, PORT: '0', GAINZ_DB: join(deploy, 'data', 'gainz.sqlite'), GAINZ_DEV: '1' },
-      stdout: 'pipe',
-      stderr: 'pipe',
-    });
+    proc = spawnBuilt('gainz.js', deploy, { GAINZ_DB: join(deploy, 'data', 'gainz.sqlite'), GAINZ_DEV: '1' });
     const started = await waitForUrl(proc.stdout, () => new Response(proc?.stderr).text());
     origin = new URL(started.url).origin;
     stdout = started.stdout;
   }, 60_000);
 
-  afterAll(async () => {
-    if (proc) {
-      proc.kill();
-      await proc.exited;
-    }
-    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
-  });
+  afterAll(() => stopBuilt(proc, dir));
 
   function get(path: string, init?: RequestInit): Promise<Response> {
     return fetch(`${origin}${path}`, init);
@@ -189,29 +192,18 @@ describe('single-file build', () => {
 
 describe('single-file build with GAINZ_PASSWORD_HASH set', () => {
   let dir = '';
-  let proc: Bun.Subprocess<'ignore', 'pipe', 'pipe'> | undefined;
+  let proc: Server | undefined;
   let origin = '';
 
   beforeAll(async () => {
     dir = mkdtempSync(join(tmpdir(), 'gainz-build-auth-'));
     await build(join(dir, 'out'));
     const hash = await Bun.password.hash('right', { algorithm: 'bcrypt', cost: 4 });
-    proc = Bun.spawn([process.execPath, join(dir, 'out', 'gainz.js')], {
-      cwd: dir,
-      env: { ...process.env, PORT: '0', GAINZ_DB: join(dir, 'gainz.sqlite'), GAINZ_PASSWORD_HASH: hash },
-      stdout: 'pipe',
-      stderr: 'pipe',
-    });
+    proc = spawnBuilt(join(dir, 'out', 'gainz.js'), dir, { GAINZ_DB: join(dir, 'gainz.sqlite'), GAINZ_PASSWORD_HASH: hash });
     origin = new URL((await waitForUrl(proc.stdout, () => new Response(proc?.stderr).text())).url).origin;
   }, 60_000);
 
-  afterAll(async () => {
-    if (proc) {
-      proc.kill();
-      await proc.exited;
-    }
-    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
-  });
+  afterAll(() => stopBuilt(proc, dir));
 
   test('guards the API and says so in the health check', async () => {
     expect((await fetch(`${origin}/api/workouts`)).status).toBe(401);
