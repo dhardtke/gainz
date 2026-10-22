@@ -163,7 +163,8 @@ for an error outside a route, since Bun hands it the error but never the request
 Six statuses cover everything the API refuses — 400 for bad input, 401 for a missing session or a
 wrong password, 403 for a cross-site write, 404 for something missing, 409 for a conflict, 415 for a
 body not sent as `application/json` — which is why `http/errors.ts` exports exactly `badRequest`,
-`unauthorized`, `forbidden`, `notFound`, `conflict` and `unsupportedMediaType`. The one other refusal, the
+`unauthorized`, `forbidden`, `notFound`, `conflict` and `unsupportedMediaType`. A body over
+`MAX_BODY_BYTES` (1 MiB, in `http/server.ts`) Bun answers with 413 before any route sees it. The one other refusal, the
 login lockout's 429 with `Retry-After`, is not thrown: the auth controller answers it itself, since
 it carries a header. Which status a broken reference earns depends on where the id came from: a
 workout id in the path that names nothing is a 404, while an `exerciseId` in the body that names

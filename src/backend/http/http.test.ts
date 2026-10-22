@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { useServer } from '../testing.ts';
 import { optionalQueryDate, optionalQueryString, pathDate, queryDate } from './http.ts';
+import { MAX_BODY_BYTES } from './server.ts';
 
 const { api, post } = useServer();
 
@@ -35,6 +36,29 @@ describe('request bodies', () => {
       body: '{"name":"Squat"}',
     });
     expect(res.status).toBe(201);
+  });
+
+  // Headers only: Bun refuses by Content-Length and closes, so a fetch still uploading would see a reset.
+  test('refuses a body over the limit', async () => {
+    const { hostname, port } = new URL(await api('/api/health').then((res) => res.url));
+    const { promise, resolve } = Promise.withResolvers<string>();
+    let response = '';
+    const socket = await Bun.connect({
+      hostname,
+      port: Number(port),
+      socket: {
+        data: (_socket, chunk) => {
+          response += chunk.toString();
+          resolve(response);
+        },
+        close: () => {
+          resolve(response);
+        },
+      },
+    });
+    socket.write(`POST /api/exercises HTTP/1.1\r\nHost: ${hostname}\r\nContent-Type: application/json\r\nContent-Length: ${MAX_BODY_BYTES + 1}\r\n\r\n`);
+    expect(await promise).toStartWith('HTTP/1.1 413');
+    socket.end();
   });
 });
 
