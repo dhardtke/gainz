@@ -54,10 +54,11 @@ What belongs to no feature sits beside `features/`:
   `ChartPoint`s it spaces by index, or by date when every point carries an `x`, and draws through
   the points' `trend` values instead of their own when any has one, with the raw values as dots,
   and whose `empty` and `label` set the empty-state text and the plot's `aria-label`; `pagination/`, the paged lists' page arithmetic in `pagination.ts` beside
-  `gz-pagination`, their pager; and `confirm/`, whose `confirmAction()` appends a
-  `gz-confirm-dialog` to the body, a modal Oat `<dialog>`, and resolves `true` only for its action
-  button. Cancel, Escape and a click on the backdrop resolve `false`, and the dialog removes itself
-  once it closes.
+  `gz-pagination`, their pager; `modal.ts` with `GzModal`, whose `open()` appends it to the body,
+  shows its Oat `<dialog>` as a modal and resolves its `answer()` once the dialog closes, by a
+  button, Escape or a click on the backdrop, and then removes it; and `confirm/`, whose
+  `confirmAction()` opens a `gz-confirm-dialog`, a `GzModal` that answers `true` only for its action
+  button.
 
 The features are `exercises`, `workouts`, `stats`, which owns the dashboard and the Statistics
 page, `weight`, which owns the body weight log, and `auth`, which owns the login page.

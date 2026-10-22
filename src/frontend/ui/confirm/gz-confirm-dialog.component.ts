@@ -1,9 +1,7 @@
 import type { RawHtml } from '../html.ts';
-import { define, GzElement } from '../base.ts';
+import { define } from '../base.ts';
 import { html } from '../html.ts';
-
-// Not bubbling, unlike `emit()`: only confirmAction() listens, on the host.
-export const CONFIRM_CLOSED_EVENT = 'confirm-closed';
+import { GzModal } from '../modal.ts';
 
 export interface ConfirmOptions {
   title: string;
@@ -13,7 +11,7 @@ export interface ConfirmOptions {
   danger?: boolean;
 }
 
-export class GzConfirmDialogComponent extends GzElement {
+export class GzConfirmDialogComponent extends GzModal<boolean> {
   options: ConfirmOptions | undefined;
 
   override handleAction(action: string): void {
@@ -25,22 +23,8 @@ export class GzConfirmDialogComponent extends GzElement {
     }
   }
 
-  override afterRender(): void {
-    const dialog = this.$<HTMLDialogElement>('dialog');
-    if (!dialog) {
-      return;
-    }
-    // Oat's touch shim listens on `document`, where this shadow root's clicks name the host instead.
-    dialog.addEventListener('click', (event) => {
-      if (event.target === dialog) {
-        dialog.close();
-      }
-    });
-    dialog.addEventListener('close', () => {
-      this.dispatchEvent(new CustomEvent(CONFIRM_CLOSED_EVENT, { detail: dialog.returnValue === 'confirm' }));
-      this.remove();
-    });
-    dialog.showModal();
+  override answer(dialog: HTMLDialogElement): boolean {
+    return dialog.returnValue === 'confirm';
   }
 
   override template(): RawHtml {

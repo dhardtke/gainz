@@ -1,15 +1,13 @@
 import type { RawHtml } from '../../../ui/html.ts';
-import { define, GzElement } from '../../../ui/base.ts';
+import { define } from '../../../ui/base.ts';
 import { html } from '../../../ui/html.ts';
+import { GzModal } from '../../../ui/modal.ts';
 import { formatShortDate } from '../../../ui/format.ts';
 import type { ExerciseWithStatsDto } from '../../../../shared/dto/exercise.ts';
 import type { ExerciseId } from '../../../../shared/flavors.ts';
 import '../../exercises/gz-muscle-group-icon.component.ts';
 
-// Not bubbling, unlike `emit()`: only pickExercises() listens, on the host.
-export const START_SESSION_CLOSED_EVENT = 'start-session-closed';
-
-export class GzStartSessionDialogComponent extends GzElement {
+export class GzStartSessionDialogComponent extends GzModal<ExerciseId[] | null> {
   exercises: ExerciseWithStatsDto[] = [];
 
   // In tick order, which is the order they are copied in.
@@ -31,29 +29,19 @@ export class GzStartSessionDialogComponent extends GzElement {
     }
   }
 
+  override answer(): ExerciseId[] | null {
+    return this.#result;
+  }
+
   override afterRender(): void {
-    const dialog = this.$<HTMLDialogElement>('dialog');
-    if (!dialog) {
-      return;
-    }
-    // Oat's touch shim listens on `document`, where this shadow root's clicks name the host instead.
-    dialog.addEventListener('click', (event) => {
-      if (event.target === dialog) {
-        dialog.close();
-      }
-    });
-    dialog.addEventListener('change', (event) => {
+    this.$('dialog')?.addEventListener('change', (event) => {
       if (event.target instanceof HTMLInputElement) {
         const id = Number(event.target.value);
         this.#picked = event.target.checked ? [...this.#picked, id] : this.#picked.filter((picked) => picked !== id);
         this.#updateStart();
       }
     });
-    dialog.addEventListener('close', () => {
-      this.dispatchEvent(new CustomEvent(START_SESSION_CLOSED_EVENT, { detail: this.#result }));
-      this.remove();
-    });
-    dialog.showModal();
+    super.afterRender();
   }
 
   // In place: a re-render would close the dialog.
