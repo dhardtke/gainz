@@ -154,7 +154,7 @@ job.
 
 Error handling is by throwing: controllers throw `HttpError`, directly or through the facades they
 call — the facades' validation and the repositories behind them — and the access log in
-`http/access-log.ts`, the outermost wrapper around every handler, catches any throw from any route,
+`http/access-log.ts`, the outermost wrapper around every handler but `securityHeaders()`, catches any throw from any route,
 answers it through `errorResponse` as a JSON `{ error }` body with the right status, and logs it
 with the request that caused it. It is the one error path, for the API and the static route alike,
 so a new route needs nothing to get it. The `error` hook in `http/server.ts` is only a safety net
@@ -571,6 +571,20 @@ whole server, answered by `StaticController.frontend`: `/*` is declared as a bar
 rather than a `{ GET, HEAD }` map, because a map answers an unmatched verb with an empty-bodied 404
 and there is no `fetch` behind it to say otherwise. An unmatched verb on a vendor route falls
 through to `/*` and is answered there.
+
+### Security headers
+
+`securityHeaders()` in `http/security-headers.ts`, the outermost wrapper of `allRoutes()`, gives
+every response `X-Content-Type-Options: nosniff`, `Referrer-Policy: same-origin`,
+`X-Frame-Options: DENY` and, unless it has one, `Content-Security-Policy: default-src 'none';
+frame-ancestors 'none'`. An HTML page has one: `StaticController` sets it from
+`internal/csp.ts`, which allows `'self'` and each inline script of the served page by its SHA-256 —
+the theme script, and on disk the import map — so the policy follows the page instead of listing
+hashes by hand. Styles allow `'unsafe-inline'`, since the charts place their points with `style`
+attributes; a component's sheet is a constructed `CSSStyleSheet`, which no policy governs. A 304
+carries the page's policy too: its headers replace the cached ones, and the API's policy in their
+place blanks the page on the next reload. `security-headers.test.ts` checks the hashes against the
+page as served.
 
 ### Caching
 

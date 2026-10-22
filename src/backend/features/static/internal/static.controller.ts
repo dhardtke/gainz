@@ -2,6 +2,7 @@ import { extname } from 'node:path';
 import type { AuthFacade } from '../../auth/auth.facade.ts';
 import type { DevFacade } from '../../dev/dev.facade.ts';
 import { contentTag } from './content-tag.ts';
+import { contentSecurityPolicy } from './csp.ts';
 import { embedAuthStatus } from './page.ts';
 import type { WebFile, WebFiles } from './web-files.ts';
 
@@ -60,10 +61,11 @@ export class StaticController {
 
   /** Injects before hashing, so the ETag covers the auth status and the hot-reload client. */
   async #serve(req: Request, file: WebFile & { kind: 'file' }): Promise<Response> {
-    const body = file.type.startsWith('text/html')
-      ? await this.#dev.injectClient(await embedAuthStatus(file.body, { enabled: this.#auth.enabled() }))
-      : file.body;
-    return this.#respond(req, body, { 'Content-Type': file.type });
+    if (!file.type.startsWith('text/html')) {
+      return this.#respond(req, file.body, { 'Content-Type': file.type });
+    }
+    const body = await this.#dev.injectClient(await embedAuthStatus(file.body, { enabled: this.#auth.enabled() }));
+    return this.#respond(req, body, { 'Content-Type': file.type, 'Content-Security-Policy': await contentSecurityPolicy(body) });
   }
 
   #respond(req: Request, body: string | Uint8Array<ArrayBuffer>, headers: Record<string, string>): Response {
@@ -72,7 +74,9 @@ export class StaticController {
     const current = new URL(req.url).searchParams.get('v') === tag;
     const cache = { ETag: etag, 'Cache-Control': current ? IMMUTABLE : 'no-cache' };
     if (matchesEtag(req.headers.get('If-None-Match'), etag)) {
-      return new Response(null, { status: 304, headers: cache });
+      // A 304's headers replace the cached ones, so without the page's policy it would get the API's.
+      const policy = headers['Content-Security-Policy'];
+      return new Response(null, { status: 304, headers: policy === undefined ? cache : { ...cache, 'Content-Security-Policy': policy } });
     }
     return new Response(body, { headers: { ...headers, ...cache } });
   }

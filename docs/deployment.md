@@ -91,7 +91,9 @@ Finally, create the `production` environment (_Settings → Environments_) and r
 The HTTPS reverse proxy must connect over loopback and append the client's address to
 `X-Forwarded-For` (nginx: `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`; Caddy
 does it on its own). The login throttle keys on the last entry, and trusts the header only from
-`127.0.0.1` or `::1`; without it, every client shares one throttle again.
+`127.0.0.1` or `::1`; without it, every client shares one throttle again. gainz sends its own
+`Content-Security-Policy`, `X-Frame-Options`, `X-Content-Type-Options` and `Referrer-Policy`; the
+proxy adds `Strict-Transport-Security`, since only it knows the site is served over HTTPS.
 
 ## Operating
 

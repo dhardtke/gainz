@@ -12,24 +12,27 @@ import { workoutRoutes } from '../features/workouts/workout.routes.ts';
 import { weightRoutes } from '../features/weight/weight.routes.ts';
 import { accessLog } from './access-log.ts';
 import { sameOriginWrites } from './same-origin.ts';
+import { securityHeaders } from './security-headers.ts';
 
-// accessLog wraps the guards so their refusals are logged.
+// accessLog wraps the guards so their refusals are logged, and securityHeaders wraps it so its error responses get headers.
 // Spread order is cosmetic: Bun matches by specificity.
 export function allRoutes(db: DB, authOptions: AuthOptions): RouteTable {
   const auth = createAuthFacade(authOptions);
-  return accessLog(
-    sameOriginWrites({
-      ...metaRoutes(auth),
-      ...authRoutes(auth),
-      ...auth.guard({
-        ...statsRoutes(db),
-        ...exerciseRoutes(db),
-        ...workoutRoutes(db),
-        ...setRoutes(db),
-        ...weightRoutes(db),
+  return securityHeaders(
+    accessLog(
+      sameOriginWrites({
+        ...metaRoutes(auth),
+        ...authRoutes(auth),
+        ...auth.guard({
+          ...statsRoutes(db),
+          ...exerciseRoutes(db),
+          ...workoutRoutes(db),
+          ...setRoutes(db),
+          ...weightRoutes(db),
+        }),
+        ...devRoutes(),
+        ...staticRoutes(auth),
       }),
-      ...devRoutes(),
-      ...staticRoutes(auth),
-    }),
+    ),
   );
 }
