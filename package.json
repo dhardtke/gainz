@@ -8,8 +8,8 @@
   "module": "src/backend/main.ts",
   "scripts": {
     "build": "bun run src/scripts/build.ts",
-    "fmt": "oxfmt .",
-    "fmt:check": "oxfmt --check .",
+    "fmt": "bun fmt --no-script",
+    "fmt:check": "bun fmt --no-script --check",
     "hash-password": "bun run src/scripts/hash-password.ts",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
@@ -27,12 +27,11 @@
   "devDependencies": {
     "@types/bun": "1.4.3",
     "happy-dom": "21.0.3",
-    "oxfmt": "0.73.0",
     "oxlint": "1.88.0",
     "oxlint-tsgolint": "7.0.2004",
     "typescript": "7.0.2"
   },
   "engines": {
-    "bun": "1.4.3"
+    "bun": "1.4.4"
   }
 }

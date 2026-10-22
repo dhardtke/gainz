@@ -784,4 +784,4 @@ timestamp and, when `GITHUB_RUN_ID` is set (as it is in GitHub Actions), the wor
 
 The server itself is built with `target: 'bun'` and `minify: true`; Bun reads the linked source map
 for stack traces. `GAINZ_DEV` is ignored in a built file. `dist/` is git-ignored, which is also
-what keeps oxlint and oxfmt out of it.
+what keeps oxlint and `bun fmt` out of it.

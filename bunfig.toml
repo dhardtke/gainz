@@ -2,3 +2,12 @@
 # `bun add` would write a caret range again and quietly undo that.
 [install]
 exact = true
+
+[fmt]
+printWidth = 160
+singleQuote = true
+ignorePatterns = ["docs/agents/"]
+
+[[fmt.overrides]]
+files = ["**/*.css"]
+options = { singleQuote = false }

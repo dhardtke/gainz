@@ -956,5 +956,5 @@ fixtures, such as `exercise()` and `session()` in `features/exercises/` and `set
 site names exactly the values its assertions read. The single-file build leaves `*.fixtures.ts`
 out, as it does tests.
 
-oxfmt formats the markup inside an `html` tagged template, so a test that compares exact output
+`bun fmt` formats the markup inside an `html` tagged template, so a test that compares exact output
 keeps its template free of markup and interpolates the parts it needs instead.

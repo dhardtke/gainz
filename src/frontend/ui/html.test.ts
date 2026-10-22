@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { escapeHtml, html, raw, RawHtml } from './html.ts';
 
-// No markup in these templates: oxfmt would reformat HTML inside html`` literals.
+// No markup in these templates: bun fmt would reformat HTML inside html`` literals.
 
 describe('escapeHtml', () => {
   test('escapes the five characters that can break out of text or an attribute', () => {

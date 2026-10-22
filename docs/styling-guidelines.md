@@ -47,6 +47,5 @@
   theme is `data-theme` on `<html>`, which `app.css` turns into `color-scheme`; Oat's
   `light-dark()` tokens follow it everywhere.
 - **CSS keeps double quotes**, while the TypeScript around it uses single ones. Double quotes are
-  the prevailing CSS convention, so `.oxfmtrc.json` overrides `singleQuote` back off for
-  `**/*.css`; that file is plain JSON and cannot carry a comment saying why, so the reason lives
-  here.
+  the prevailing CSS convention, so the `[fmt]` section of `bunfig.toml` overrides `singleQuote`
+  back off for `**/*.css`.
