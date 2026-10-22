@@ -81,7 +81,9 @@ by the facade). A translator never imports another feature's `internal/`, which 
 `exercise.translator.ts` names `BestSetDto`'s fields itself rather than reusing the workouts
 feature's set translation. Those functions are the only place that reads a row's fields outside the
 repository that produced it, and each one names every field it maps: a spread would compile and
-would ship `workout_id` and `created_at` to the browser with nothing to catch it. The camelCase
+would ship `workout_id` and `created_at` to the browser with nothing to catch it. A translator may
+spread another translator's DTO, as `translateToWorkoutWithStatsDto` does `translateToWorkoutDto`'s,
+since that one is already camelCase. The camelCase
 rename is what keeps that honest — a row is not structurally assignable to its own DTO.
 
 Ids and dates are flavored on both sides of that rename. `src/shared/flavors.ts` declares

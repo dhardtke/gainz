@@ -89,12 +89,7 @@ export function translateToExerciseDto(row: Exercise): ExerciseDto {
 
 export function translateToExerciseWithStatsDto(row: ExerciseWithStats): ExerciseWithStatsDto {
   return {
-    id: row.id,
-    name: row.name,
-    muscleGroup: row.muscle_group,
-    notes: row.notes,
-    kind: row.kind,
-    createdAt: row.created_at,
+    ...translateToExerciseDto(row),
     setCount: row.set_count,
     workoutCount: row.workout_count,
     lastPerformedOn: row.last_performed_on,
