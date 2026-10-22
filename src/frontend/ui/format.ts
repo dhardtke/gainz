@@ -42,20 +42,20 @@ export function formatVolume(value: number | null | undefined): string {
   return `${formatNumber(num, 0)} ${UNIT}`;
 }
 
-export function formatDate(iso: Iso8601Date | null | undefined): string {
+function formatIsoDate(iso: Iso8601Date | null | undefined, format: Intl.DateTimeFormat): string {
   if (!iso) {
     return '–';
   }
   const date = new Date(`${iso}T00:00:00`);
-  return Number.isNaN(date.getTime()) ? iso : DATE_FORMAT.format(date);
+  return Number.isNaN(date.getTime()) ? iso : format.format(date);
+}
+
+export function formatDate(iso: Iso8601Date | null | undefined): string {
+  return formatIsoDate(iso, DATE_FORMAT);
 }
 
 export function formatShortDate(iso: Iso8601Date | null | undefined): string {
-  if (!iso) {
-    return '–';
-  }
-  const date = new Date(`${iso}T00:00:00`);
-  return Number.isNaN(date.getTime()) ? iso : SHORT_DATE_FORMAT.format(date);
+  return formatIsoDate(iso, SHORT_DATE_FORMAT);
 }
 
 export function relativeDay(iso: Iso8601Date | null | undefined): string {
