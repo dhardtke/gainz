@@ -35,7 +35,7 @@ export class AuthFacade {
     return this.#hash !== null;
   }
 
-  async login(dto: LoginRequestDto): Promise<LoginResult> {
+  async login(dto: LoginRequestDto, client: string): Promise<LoginResult> {
     const password: unknown = dto.password;
     if (typeof password !== 'string' || password === '' || password.length > MAX_PASSWORD_LENGTH) {
       throw badRequest(`"password" is required and must be a non-empty string of at most ${MAX_PASSWORD_LENGTH} characters`);
@@ -44,17 +44,17 @@ export class AuthFacade {
       return { kind: 'ok', cookie: null };
     }
     // Reserve the attempt before the await, so concurrent guesses are counted and locks cost no hashing.
-    const decision = this.#throttle.begin();
+    const decision = this.#throttle.begin(client);
     if (decision.kind === 'locked') {
       return decision;
     }
     if (!(await Bun.password.verify(password, this.#hash))) {
       // Before failed(), so a lockout's line follows the attempt that started it.
       log.warn('auth', 'wrong password');
-      this.#throttle.failed();
+      this.#throttle.failed(client);
       throw unauthorized('Wrong password');
     }
-    this.#throttle.succeeded();
+    this.#throttle.succeeded(client);
     log.info('auth', 'login');
     return { kind: 'ok', cookie: issue(this.#hash, this.#now()) };
   }

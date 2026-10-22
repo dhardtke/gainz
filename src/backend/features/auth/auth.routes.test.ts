@@ -14,8 +14,14 @@ beforeEach(() => {
 
 const { api, post, logs } = useServer({ auth: { passwordHash: hash, now: () => now } });
 
-function login(password: string): Promise<Response> {
-  return post('/api/auth/login', { password });
+const CLIENT = '203.0.113.7';
+
+function login(password: string, client = CLIENT): Promise<Response> {
+  return api('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': client },
+    body: JSON.stringify({ password }),
+  });
 }
 
 function cookieOf(res: Response): string {
@@ -131,7 +137,7 @@ describe('login', () => {
     const locked = await login('right');
     expect(locked.status).toBe(429);
     expect(locked.headers.get('retry-after')).toBe('60');
-    expect(logs()).toContainEqual({ level: 'warn', text: 'auth login locked for 60 s after 5 failed attempts' });
+    expect(logs()).toContainEqual({ level: 'warn', text: 'auth login locked for 60 s after 5 failed attempts from 203.0.113.7' });
   });
 
   test('a success resets the count', async () => {
@@ -162,6 +168,48 @@ describe('login', () => {
   test('reserves concurrent attempts before verifying them', async () => {
     const statuses = await Promise.all(Array.from({ length: 10 }, async () => (await login('wrong')).status));
     expect(statuses.filter((status) => status === 429).length).toBeGreaterThanOrEqual(5);
+  });
+
+  test('a lockout leaves other clients alone', async () => {
+    for (let i = 0; i < 5; i++) {
+      await login('wrong');
+    }
+    expect((await login('right')).status).toBe(429);
+    expect((await login('right', '198.51.100.2')).status).toBe(204);
+  });
+
+  test('one IPv6 /64 shares a lockout', async () => {
+    for (let i = 0; i < 5; i++) {
+      await login('wrong', `2001:db8:aa:bb::${i + 1}`);
+    }
+    expect((await login('right', '2001:db8:aa:bb:ffff::1')).status).toBe(429);
+    expect((await login('right', '2001:db8:aa:bc::1')).status).toBe(204);
+  });
+
+  test('forgets a client a day after its last attempt', async () => {
+    for (let i = 0; i < 5; i++) {
+      await login('wrong');
+    }
+    now += 25 * 60 * 60 * 1000;
+    for (let i = 0; i < 5; i++) {
+      expect((await login('wrong')).status).toBe(401);
+    }
+    expect((await login('right')).headers.get('retry-after')).toBe('60');
+  });
+
+  test('locks everyone after 100 failures within an hour', async () => {
+    for (let client = 0; client < 20; client++) {
+      for (let i = 0; i < 5; i++) {
+        expect((await login('wrong', `198.51.100.${client}`)).status).toBe(401);
+      }
+    }
+    now += 10 * 60 * 1000;
+    const locked = await login('right', '192.0.2.1');
+    expect(locked.status).toBe(429);
+    expect(locked.headers.get('retry-after')).toBe('3000');
+    expect(logs()).toContainEqual({ level: 'warn', text: 'auth login locked for everyone after 100 failed attempts within an hour' });
+    now += 50 * 60 * 1000;
+    expect((await login('right', '192.0.2.1')).status).toBe(204);
   });
 
   test('a lockout does not touch an existing cookie', async () => {
@@ -195,7 +243,7 @@ describe('the auth log', () => {
     }
     expect(authLogs().slice(-2)).toEqual([
       { level: 'warn', text: 'auth wrong password' },
-      { level: 'warn', text: 'auth login locked for 60 s after 5 failed attempts' },
+      { level: 'warn', text: 'auth login locked for 60 s after 5 failed attempts from 203.0.113.7' },
     ]);
   });
 

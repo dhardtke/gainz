@@ -7,7 +7,7 @@ export function authRoutes(auth: AuthFacade): RouteTable {
   const controller = new AuthController(auth);
   return {
     '/api/auth/login': {
-      POST: (req) => controller.login(req),
+      POST: (req, server) => controller.login(req, server),
     },
 
     '/api/auth/logout': {

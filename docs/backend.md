@@ -634,7 +634,8 @@ and the dev hub — never in a repository or a data facade; the migration runner
 | `http`   | error | `unhandled error outside a route` + stack                               | `Bun.serve` `error` hook     |
 | `auth`   | info  | `login`                                                                 | `AuthFacade.login()`         |
 | `auth`   | warn  | `wrong password`                                                        | `AuthFacade.login()`         |
-| `auth`   | warn  | `login locked for <n> s after <m> failed attempts`                      | `LoginThrottle.failed()`     |
+| `auth`   | warn  | `login locked for <n> s after <m> failed attempts from <client>`        | `LoginThrottle.failed()`     |
+| `auth`   | warn  | `login locked for everyone after <n> failed attempts within an hour`    | `LoginThrottle.failed()`     |
 | `server` | info  | `gainz is running on <url>`, `database: …`, `auth: …`, `hot reload: on` | `main.ts` banner             |
 | `server` | info  | `stopping (SIGTERM)` / `stopping (SIGINT)`                              | `main.ts` shutdown           |
 | `server` | error | `GAINZ_PASSWORD_HASH is not an argon2 or bcrypt hash; …`                | `main.ts`, exit 1            |
@@ -708,13 +709,20 @@ Everything outside those tables stays public: `/api/health`, the `/api` 404s, lo
 `/dev/ws`, and the whole frontend, whose code is public in the repository anyway — guarding it
 would only need an allowlist of the modules the login page imports.
 
-`internal/login-throttle.ts` backs off wrong passwords for every client at once, since behind the
-proxy every client is `127.0.0.1` and `X-Forwarded-For` is not trusted. From the fifth consecutive
-failure on, each failure locks the login for `60 · 2^(failures − 5)` seconds, up to an hour, and a
-locked login answers `429` with `Retry-After` before any hashing. `begin()` counts an attempt as a
+`internal/login-throttle.ts` backs off wrong passwords per client, so a stranger's guesses cannot
+lock the owner out. `internal/client-address.ts` names the client: the connection's address or,
+when the connection comes from loopback — the reverse proxy — the last `X-Forwarded-For` entry, the
+one the proxy appended; an IPv6 address counts by its /64, which one subscriber holds whole. From a
+client's fifth consecutive failure on, each failure locks it out for `60 · 2^(failures − 5)`
+seconds, up to an hour, and a locked login answers `429` with `Retry-After` before any hashing. A
+client is forgotten a day after its last attempt, and at most 10 000 are remembered, the least
+recently seen dropped first. Behind them all, 100 failures within an hour lock the login for
+everyone until that hour is over, which caps what many addresses at once can guess; a single
+address is locked out long before it gets near. `begin()` counts an attempt as a
 failure before `Bun.password.verify` runs, so concurrent guesses cannot all slip past the check;
-`succeeded()` resets the count, as does a restart. Each lockout is logged with `log.warn`, once the
-failure that started it is confirmed. Someone hammering the login can delay your next login, but
+`succeeded()` resets the client's count and takes the attempt back off the hourly one, and a restart
+resets everything. Each lockout is logged with `log.warn`, once the
+failure that started it is confirmed. Only many addresses at once can delay your next login, and
 never a device that already holds a cookie. The facade and the throttle read an injectable `now()`
 from `AuthOptions`, which is how `auth.routes.test.ts` tests expiry and backoff without waiting.
 
