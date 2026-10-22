@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { ErrorDto } from '../../../shared/dto/error.ts';
+import type { ExerciseDto } from '../../../shared/dto/exercise.ts';
 import type { ExerciseKind } from '../../../shared/exercise-kind.ts';
 import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import type { WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
@@ -9,11 +10,15 @@ import { createSet, createWorkout, markDone, markWorkoutDone } from './workouts.
 
 const { api, post, patch } = useServer();
 
+async function loggedSet(): Promise<{ exercise: ExerciseDto; workout: WorkoutWithExercisesDto; set: LiftSetDto }> {
+  const exercise = await createExercise(post);
+  const workout = await createWorkout(post);
+  return { exercise, workout, set: await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 }) };
+}
+
 describe('sets', () => {
   test('updates and deletes a set', async () => {
-    const exercise = await createExercise(post);
-    const workout = await createWorkout(post);
-    const set = await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
+    const { workout, set } = await loggedSet();
 
     const updated = await body<LiftSetDto>(await patch(`/api/sets/${set.id}`, { reps: 6, weight: 62.5 }));
     expect(updated).toMatchObject({ reps: 6, weight: 62.5 });
@@ -35,17 +40,13 @@ describe('sets', () => {
   });
 
   test('no longer moves a set', async () => {
-    const exercise = await createExercise(post);
-    const workout = await createWorkout(post);
-    const set = await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
+    const { set } = await loggedSet();
 
     expect((await post(`/api/sets/${set.id}/move`, { direction: 'up' })).status).not.toBe(200);
   });
 
   test('starts a set not done and toggles it both ways', async () => {
-    const exercise = await createExercise(post);
-    const workout = await createWorkout(post);
-    const set = await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
+    const { set } = await loggedSet();
     expect(set.done).toBe(false);
 
     expect(await body<LiftSetDto>(await patch(`/api/sets/${set.id}`, { done: true }))).toMatchObject({ done: true });
@@ -53,9 +54,7 @@ describe('sets', () => {
   });
 
   test('rejects a done state that is not a boolean', async () => {
-    const exercise = await createExercise(post);
-    const workout = await createWorkout(post);
-    const set = await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
+    const { set } = await loggedSet();
 
     expect((await patch(`/api/sets/${set.id}`, { done: 'yes' })).status).toBe(400);
   });
@@ -73,9 +72,7 @@ describe('sets', () => {
   });
 
   test('changes a set again once it is unchecked', async () => {
-    const exercise = await createExercise(post);
-    const workout = await createWorkout(post);
-    const set = await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
+    const { set } = await loggedSet();
     await markDone(patch, set.id);
 
     expect((await patch(`/api/sets/${set.id}`, { done: false })).status).toBe(200);
@@ -83,9 +80,7 @@ describe('sets', () => {
   });
 
   test('changes a set not done and marks it done in one patch', async () => {
-    const exercise = await createExercise(post);
-    const workout = await createWorkout(post);
-    const set = await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
+    const { set } = await loggedSet();
 
     const res = await patch(`/api/sets/${set.id}`, { done: true, reps: 6 });
     expect(res.status).toBe(200);
@@ -104,9 +99,7 @@ describe('sets', () => {
   });
 
   test('deleting a workout still removes its done sets', async () => {
-    const exercise = await createExercise(post);
-    const workout = await createWorkout(post);
-    const set = await createSet(post, workout.id, { exerciseId: exercise.id, reps: 5, weight: 60 });
+    const { workout, set } = await loggedSet();
     await markDone(patch, set.id);
 
     expect((await api(`/api/workouts/${workout.id}`, { method: 'DELETE' })).status).toBe(204);
