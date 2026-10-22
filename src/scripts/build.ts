@@ -61,9 +61,7 @@ async function main(): Promise<void> {
   const shown = relative(process.cwd(), outfile).replaceAll('\\', '/');
   console.log(`built ${shown} (${Math.round(bytes / 1024)} KB), ${shown}.map and bun-version (${Bun.version})`);
   const count = (n: number, noun: string): string => `${n} ${noun}${n === 1 ? '' : 's'}`;
-  console.log(
-    `  embedded ${count(Object.keys(embedded.pages).length, 'frontend file')}, ${count(Object.keys(embedded.vendor).length, 'vendor file')}, ${count(embedded.migrations.length, 'migration')}`,
-  );
+  console.log(`  embedded ${count(Object.keys(embedded.pages).length, 'frontend file')}, ${count(embedded.migrations.length, 'migration')}`);
 }
 
 if (import.meta.main) {

@@ -3,7 +3,7 @@ import type { EmbeddedFile, EmbeddedWeb } from '../../../shared/embedded.ts';
 import { bundleFrontend } from './bundle.ts';
 import { contentTag } from './content-tag.ts';
 import { renderPage } from './page.ts';
-import { FRONTEND_DIR, isShipped, isVersioned, resolveVendorPath, vendorUrls } from './paths.ts';
+import { FRONTEND_DIR, isShipped, isVersioned, resolveVendorPath } from './paths.ts';
 
 const MODULE_TYPE = 'text/javascript;charset=utf-8';
 
@@ -50,13 +50,21 @@ async function linkOneSheet(html: string): Promise<{ html: string; sheets: strin
   return { html: rewritten, sheets };
 }
 
+async function readSheet(url: string): Promise<string> {
+  const file = Bun.file(resolveVendorPath(url) ?? resolve(FRONTEND_DIR, `.${url}`));
+  if (!(await file.exists())) {
+    throw new Error(`Stylesheet ${url} missing — run \`bun install\``);
+  }
+  return file.text();
+}
+
 export async function embedWebRoot(): Promise<EmbeddedWeb> {
   const pages: Record<string, EmbeddedFile> = {};
   for await (const entry of new Bun.Glob('**/*').scan({ cwd: FRONTEND_DIR })) {
     // Glob yields `ui\app.css` on Windows.
     const url = `/${entry.replaceAll('\\', '/')}`;
-    // The modules ship as the one bundle below.
-    if (!isShipped(url) || url.endsWith('.ts')) {
+    // The modules and stylesheets ship inside the bundle and main.css below.
+    if (!isShipped(url) || url.endsWith('.ts') || url.endsWith('.css')) {
       continue;
     }
 
@@ -68,26 +76,18 @@ export async function embedWebRoot(): Promise<EmbeddedWeb> {
   pages['/main.ts'] = { body: bundle.code, type: MODULE_TYPE };
   pages['/main.ts.map'] = { body: bundle.map, type: 'application/json;charset=utf-8' };
 
-  const vendor: Record<string, EmbeddedFile> = {};
-  for (const url of vendorUrls()) {
-    const path = resolveVendorPath(url);
-    const file = path === null ? null : Bun.file(path);
-    if (file === null || !(await file.exists())) {
-      throw new Error('Vendor file missing — run `bun install`');
-    }
-    vendor[url] = { body: await file.text(), type: file.type };
-  }
-
   const index = pages['/index.html'];
   if (index !== undefined) {
     const { html, sheets } = await linkOneSheet(index.body);
     index.body = html;
-    pages[MAIN_CSS] = { body: sheets.map((url) => (pages[url] ?? vendor[url])?.body ?? '').join('\n'), type: 'text/css;charset=utf-8' };
+    pages[MAIN_CSS] = { body: (await Promise.all(sheets.map(readSheet))).join('\n'), type: 'text/css;charset=utf-8' };
   }
 
   // Last, tagged from the strings EmbeddedWebFiles serves, so a version matches its ETag.
   const tags = Object.fromEntries(
-    [...Object.entries(pages).filter(([url]) => isVersioned(url)), ...Object.entries(vendor)].map(([url, file]) => [url, contentTag(file.body)]),
+    Object.entries(pages)
+      .filter(([url]) => isVersioned(url))
+      .map(([url, file]) => [url, contentTag(file.body)]),
   );
   for (const page of Object.values(pages)) {
     if (page.type.startsWith('text/html')) {
@@ -95,5 +95,5 @@ export async function embedWebRoot(): Promise<EmbeddedWeb> {
     }
   }
 
-  return { pages, vendor };
+  return { pages };
 }

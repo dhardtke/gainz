@@ -861,8 +861,8 @@ shows on the splash screen.
 
 Oat is served from `node_modules` at `/vendor/oat.css` and `/vendor/oat.js` through an explicit
 allowlist in `src/backend/features/static` — installing a package never publishes anything the app
-did not ask to serve. A single-file build carries both files inside it and serves them at the same
-URLs, though its page reaches them only through `/main.css` and the bundle.
+did not ask to serve. A single-file build serves neither: its page reaches Oat only through
+`/main.css` and the bundle.
 
 ## Installing
 

@@ -9,7 +9,6 @@ export interface EmbeddedFile {
 
 export interface EmbeddedWeb {
   pages: Record<string, EmbeddedFile>;
-  vendor: Record<string, EmbeddedFile>;
 }
 
 export interface Embedded extends EmbeddedWeb {

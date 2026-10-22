@@ -752,11 +752,12 @@ returns `undefined`. Production therefore carries a socket handler no route can 
 one file run with `bun`. `src/backend/shared/embedded.ts` is a committed stub exporting
 `EMBEDDED = null`, which means "read from disk" — the state under `bun start` and in every test.
 The build replaces that module through `Bun.build`'s `files` option with one that exports the
-embedded web root, the vendor files and the migrations; `bun:sqlite` stays external. It sits
+embedded web root and the migrations; `bun:sqlite` stays external. It sits
 outside `features/` because both `db/` and the static feature read it.
 
 What is embedded comes from `StaticFacade.embed()`: every file under `src/frontend/` except
-`dev/**`, `testing.ts`, `*.test.ts` and `*.fixtures.ts`, keyed by its URL, except the modules.
+`dev/**`, `testing.ts`, `*.test.ts` and `*.fixtures.ts`, keyed by its URL, except the modules and
+the stylesheets, which ship only inside the bundle and `/main.css`; nor are Oat's vendor files.
 Those `internal/bundle.ts` bundles into one fully minified ES module served at `/main.ts`, beside
 its linked source map at `/main.ts.map`, which carries the sources, so DevTools shows the
 TypeScript and maps a trace back to it; a toast still shows the minified names an error message

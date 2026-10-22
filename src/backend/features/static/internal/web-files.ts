@@ -96,12 +96,10 @@ interface ServedFile {
 }
 
 class EmbeddedWebFiles implements WebFiles {
-  readonly #web: EmbeddedWeb;
   /** Base64 decoded once, so ETags hash the same bytes `DiskWebFiles` serves. */
   readonly #pages: Record<string, ServedFile>;
 
   constructor(web: EmbeddedWeb) {
-    this.#web = web;
     this.#pages = Object.fromEntries(
       Object.entries(web.pages).map(([url, file]) => [url, file.base64 === true ? { body: Uint8Array.fromBase64(file.body), type: file.type } : file]),
     );
@@ -125,9 +123,9 @@ class EmbeddedWebFiles implements WebFiles {
     return Promise.resolve(found(this.#pages[url]));
   }
 
-  /** The raw pathname only, so a vendor file is reachable at its literal URL and nowhere else. */
-  vendor(pathname: string): Promise<WebFile> {
-    return Promise.resolve(found(this.#web.vendor[pathname]));
+  /** Oat ships inside the bundle and main.css. */
+  vendor(): Promise<WebFile> {
+    return Promise.resolve({ kind: 'missing' });
   }
 }
 

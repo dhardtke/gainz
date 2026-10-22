@@ -108,20 +108,20 @@ describe('single-file build', () => {
   test('joins Oat, the shared and the app stylesheet in that order', async () => {
     const res = await get('/main.css');
     expect(res.headers.get('content-type')).toStartWith('text/css');
-    const parts = await Promise.all(['/vendor/oat.css', '/ui/shared.css', '/ui/app.css'].map(async (url) => (await get(url)).text()));
+    const paths = [Bun.resolveSync('@knadh/oat/oat.min.css', FRONTEND), join(FRONTEND, 'ui', 'shared.css'), join(FRONTEND, 'ui', 'app.css')];
+    const parts = await Promise.all(paths.map((path) => Bun.file(path).text()));
     expect(await res.text()).toBe(parts.join('\n'));
   });
 
-  test('serves every component stylesheet, the app stylesheet and Oat', async () => {
-    const urls = ['/ui/app.css', '/vendor/oat.css', '/vendor/oat.js'];
+  test('serves no stylesheet or Oat file that the bundle and main.css already carry', async () => {
+    const urls = ['/ui/app.css', '/ui/shared.css', '/vendor/oat.css', '/vendor/oat.js'];
     for await (const entry of new Bun.Glob('**/gz-*.component.ts').scan({ cwd: FRONTEND })) {
       urls.push(`/${entry.replaceAll('\\', '/').replace(/\.ts$/, '.css')}`);
     }
-    expect(urls.length).toBeGreaterThan(3);
+    expect(urls.length).toBeGreaterThan(4);
     for (const url of urls) {
-      expect({ url, status: (await get(url)).status }).toEqual({ url, status: 200 });
+      expect({ url, status: (await get(url)).status }).toEqual({ url, status: 404 });
     }
-    expect((await get('/vendor/oat.js')).headers.get('content-type')).toStartWith('text/javascript');
   });
 
   test('serves the manifest and the icons byte for byte as they are on disk', async () => {
