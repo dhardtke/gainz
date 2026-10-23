@@ -64,6 +64,12 @@ export abstract class GzView<Data> extends GzElement {
     this.emit(PAGE_TITLE_EVENT);
   }
 
+  // For a change the view patches into its DOM itself, so the field being typed in is never replaced.
+  replaceData(data: Data): void {
+    this.#state = { status: 'ready', data };
+    this.emit(PAGE_TITLE_EVENT);
+  }
+
   override template(): RawHtml {
     if (this.#state.status === 'loading') {
       return html`<p aria-busy="true" data-testid="loading">${this.loadingText}</p>`;

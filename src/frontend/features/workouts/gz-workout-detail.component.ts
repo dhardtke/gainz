@@ -64,6 +64,9 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
   // Here, not in the form: every render of this page creates a new form.
   readonly #lastSessions = new LastSessionCache();
 
+  // Carried from the form a render replaces to the one it creates.
+  #addSetDraft: Record<string, string> | null = null;
+
   override connectedCallback(): void {
     super.connectedCallback();
     this.root.addEventListener('sets-changed', () => {
@@ -72,12 +75,10 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     this.root.addEventListener(SET_UPDATED_EVENT, (event) => {
       if (event instanceof CustomEvent && isLiftSet(event.detail)) {
         const updated = event.detail;
-        void this.#keepingFocus(() => {
-          this.#showWorkout((workout) => ({
-            ...workout,
-            exercises: workout.exercises.map((group) => ({ ...group, sets: group.sets.map((set) => (set.id === updated.id ? updated : set)) })),
-          }));
-        });
+        this.#patchWorkout((workout) => ({
+          ...workout,
+          exercises: workout.exercises.map((group) => ({ ...group, sets: group.sets.map((set) => (set.id === updated.id ? updated : set)) })),
+        }));
       }
     });
     this.root.addEventListener('set-logged', (event) => {
@@ -102,6 +103,50 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     if (this.data) {
       this.show({ ...this.data, workout: change(this.data.workout) });
     }
+  }
+
+  // For a change that adds, removes or locks nothing: re-rendering would replace the field the save's blur
+  // moved to, and a phone would close its keyboard.
+  #patchWorkout(change: (workout: WorkoutWithExercisesDto) => WorkoutWithExercisesDto): void {
+    if (!this.data) {
+      return;
+    }
+    const workout = change(this.data.workout);
+    this.replaceData({ ...this.data, workout });
+    const sets = workout.exercises.flatMap((group) => group.sets);
+    const doneCount = sets.filter((set) => set.done).length;
+
+    this.#replace('hgroup', this.#headerTemplate(workout));
+    this.#replace('.summary', this.#summaryTemplate(workout));
+    this.#replace('.progress-strip', this.#progressStrip(doneCount, sets.length));
+    this.#slideBar();
+    for (const group of workout.exercises) {
+      const summary = this.$(`details[data-exercise-id='${group.exerciseId}'] > summary`);
+      if (summary) {
+        summary.innerHTML = String(this.#groupHeadTemplate(group));
+      }
+    }
+    for (const row of this.$$<GzSetRowComponent>('gz-set-row')) {
+      row.set = sets.find((candidate) => candidate.id === Number(row.dataset.id));
+    }
+    this.$<GzAddSetFormComponent>('gz-add-set-form')?.updateSets(this.#loggedOrder(sets));
+  }
+
+  #replace(selector: string, markup: RawHtml): void {
+    const element = this.$(selector);
+    if (element) {
+      element.outerHTML = String(markup);
+    }
+  }
+
+  override render(): void {
+    this.#addSetDraft = this.$<GzAddSetFormComponent>('gz-add-set-form')?.draft ?? null;
+    super.render();
+  }
+
+  // Logged order: the add-set form starts from the last set it is given.
+  #loggedOrder(sets: LiftSetDto[]): LiftSetDto[] {
+    return sets.toSorted((a, b) => a.position - b.position || a.id - b.id);
   }
 
   override async load(): Promise<WorkoutDetailData> {
@@ -190,9 +235,13 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
       toastError(error);
       return false;
     }
-    await this.#keepingFocus(() => {
-      this.#showWorkout((workout) => ({ ...workout, ...updated }));
-    });
+    if (changes.done === undefined) {
+      this.#patchWorkout((workout) => ({ ...workout, ...updated }));
+    } else {
+      await this.#keepingFocus(() => {
+        this.#showWorkout((workout) => ({ ...workout, ...updated }));
+      });
+    }
     return true;
   }
 
@@ -285,10 +334,14 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
       addSet.workoutId = workout.id;
       addSet.exercises = exercises;
       addSet.lastSessions = this.#lastSessions;
-      // Logged order: the form starts from the last set it is given.
-      addSet.sets = sets.toSorted((a, b) => a.position - b.position || a.id - b.id);
+      addSet.draft = this.#addSetDraft;
+      addSet.sets = this.#loggedOrder(sets);
     }
 
+    this.#slideBar();
+  }
+
+  #slideBar(): void {
     const bar = this.$<HTMLProgressElement>('progress');
     if (bar) {
       const target = Number(bar.dataset.value);
@@ -414,17 +467,21 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     return `${plural(count, 'set')} · ${formatVolume(volumeOf(group))}`;
   }
 
-  #groupTemplate(group: WorkoutExerciseDto, open: ExerciseId | null, first: boolean, last: boolean): RawHtml {
-    const { exerciseId: id, exerciseName: name } = group;
+  #groupHeadTemplate(group: WorkoutExerciseDto): RawHtml {
     const doneCount = group.sets.filter((set) => set.done).length;
     return html`
+      <gz-muscle-group-icon group="${group.muscleGroup ?? ''}" label="${group.muscleGroup ?? ''}"></gz-muscle-group-icon>
+      <span class="exercise-name" data-testid="exercise-name">${group.exerciseName}</span>
+      <span class="group-stats text-light" data-testid="group-stats">${this.#groupSummary(group)}</span>
+      ${this.#progressBadge(doneCount, group.sets.length)}
+    `;
+  }
+
+  #groupTemplate(group: WorkoutExerciseDto, open: ExerciseId | null, first: boolean, last: boolean): RawHtml {
+    const { exerciseId: id, exerciseName: name } = group;
+    return html`
       <details name="exercises" data-exercise-id="${id}" data-testid="exercise-group" ${id === open ? 'open' : ''}>
-        <summary>
-          <gz-muscle-group-icon group="${group.muscleGroup ?? ''}" label="${group.muscleGroup ?? ''}"></gz-muscle-group-icon>
-          <span class="exercise-name" data-testid="exercise-name">${name}</span>
-          <span class="group-stats text-light" data-testid="group-stats">${this.#groupSummary(group)}</span>
-          ${this.#progressBadge(doneCount, group.sets.length)}
-        </summary>
+        <summary>${this.#groupHeadTemplate(group)}</summary>
         <div class="sets">
           ${group.sets.map((set, index) => html`<gz-set-row data-id="${set.id}" data-index="${index + 1}" data-testid="set-row"></gz-set-row>`)}
         </div>
@@ -457,24 +514,29 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     `;
   }
 
-  override readyTemplate({ workout }: WorkoutDetailData): RawHtml {
+  #summaryTemplate(workout: WorkoutWithExercisesDto): RawHtml {
     const sets = workout.exercises.flatMap((group) => group.sets);
     const volume = workout.exercises.reduce((total, group) => total + volumeOf(group), 0);
     const reps = sets.reduce((total, set) => total + set.reps, 0);
     const exercises = new Set(sets.map((set) => set.exerciseId)).size;
+    return html`
+      <div class="summary hstack gap-2" data-testid="summary">
+        <span class="text-light" data-testid="totals">
+          ${plural(sets.length, 'set')} · ${plural(exercises, 'exercise')} · ${plural(reps, 'rep')} · ${formatVolume(volume)}
+        </span>
+        ${workout.done ? html`<span class="badge" data-variant="success" data-testid="workout-done">✓ Done</span>` : ''}
+      </div>
+    `;
+  }
+
+  override readyTemplate({ workout }: WorkoutDetailData): RawHtml {
+    const sets = workout.exercises.flatMap((group) => group.sets);
     const doneCount = sets.filter((set) => set.done).length;
     const open = this.#openFor(workout.exercises);
 
     return html`
       <div class="vstack">
-        ${this.#progressStrip(doneCount, sets.length)} ${this.#headerTemplate(workout)}
-
-        <div class="summary hstack gap-2" data-testid="summary">
-          <span class="text-light" data-testid="totals">
-            ${plural(sets.length, 'set')} · ${plural(exercises, 'exercise')} · ${plural(reps, 'rep')} · ${formatVolume(volume)}
-          </span>
-          ${workout.done ? html`<span class="badge" data-variant="success" data-testid="workout-done">✓ Done</span>` : ''}
-        </div>
+        ${this.#progressStrip(doneCount, sets.length)} ${this.#headerTemplate(workout)} ${this.#summaryTemplate(workout)}
 
         <section class="vstack gap-2">
           <h2>Sets</h2>

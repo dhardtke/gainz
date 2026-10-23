@@ -82,7 +82,8 @@ hook and renders `loadingText`, then `readyTemplate()` or `errorTemplate()` (the
 names what it shows through its `titleFor(data)` hook (`null` by default) and the `pageTitle`
 getter (that answer for the loaded data, `null` while loading or after an error), and emits
 `PAGE_TITLE_EVENT` (`page-title`) after every `reload()`, failed or not, and every `show(data)`,
-which renders data a mutation's response already carries without loading. Its
+which renders data a mutation's response already carries without loading, and every
+`replaceData(data)`, which only stores it, for a view that patches its own DOM. Its
 `numericAttribute()` reads the id attribute a route sets, throwing when it is missing.
 
 All interpolation goes through the `html` template, which escapes, so notes and exercise names are
@@ -369,7 +370,8 @@ listener, because a save in it and every set change re-render the view.
 
 The workout's details form saves without a button or a toast: a committed change, or Enter in the
 date or title (in the notes it is a new line), PATCHes the details that differ from the workout,
-and the re-render puts focus back in the field by its id while `#edits` keeps its text.
+and the view patches the heading in place (see "Set rows"). A re-render for any other reason puts
+focus back in a details field by its id while `#edits` keeps its text.
 
 ### Exercise groups
 
@@ -434,6 +436,11 @@ new form; a resolved lookup renders from the cache in `template()`, so the hint 
 set, and only a pending one fills the hint in place, once it resolves and only if that exercise is
 still selected. A failed lookup shows no hint and no toast.
 
+For the same reason the form keeps what was typed into it in its `draft`, from its first `input`
+until a set is logged, and the view carries that draft from the form a render replaces to the one
+it creates. So a +1, × or move elsewhere on the page keeps the selected exercise, reps, weight and
+notes, and no prefill overwrites them.
+
 For an exercise not in the workout whose last session was found, an outline "Add last session's N
 sets" button follows the hint, below the `<form>` so it is not part of its submit. It posts the
 selected exercise through `setFacade.addExercises(workoutId, [exerciseId])` and emits the same
@@ -452,7 +459,7 @@ row's content stays aligned.
 It leads with a done toggle, a button the size of +1 that is `.outline` while the set is not done
 and Oat's default fill once it is, with `aria-pressed` to match. A click PATCHes `{ done }` through
 `setFacade` and emits `set-updated` (`SET_UPDATED_EVENT`) with the set the API answers, as a saved
-field does, and the view swaps that set into its data and re-renders without a request. +1 and ×
+field does, and the view swaps that set into its data without a request. +1 and ×
 emit `sets-changed` instead, and the view reloads the workout; the exercises for `gz-add-set-form`
 it loads only once, since nothing on the page changes one.
 
@@ -462,10 +469,19 @@ A set not done has no Edit button: the row is a form whose weight and reps are i
 button: a committed `change` (blur) or Enter, which the row catches on `keydown` because a form of
 several fields without a submit button ignores it, PATCHes just the fields that differ from the
 set, and nothing when none do or a field is invalid. The row runs its requests one after another,
-so a change saved by the blur of a click on the done toggle lands before the set is locked. Every
-save re-renders the view, which would drop focus from the field the blur moved to, so
-`gz-workout-detail` asks the focused row for `focusedField()` before re-rendering and hands it to
-the replacing row's `restoreField()`, with whatever was typed there by then.
+so a change saved by the blur of a click on the done toggle lands before the set is locked.
+
+A save never re-renders the view. If it did, it would replace the field the blur moved to, and a
+phone would close its keyboard, which a later `focus()` outside a tap does not reopen. Instead,
+`#patchWorkout()` stores the data through `replaceData()` and replaces only what holds no field:
+the heading, the totals line, the progress strip and each group's `<summary>`. It hands each row
+its set and hands `gz-add-set-form` the sets through `updateSets()`, which does not render. A saved
+field updates its row's volume in place, and the row's `set` setter skips rendering when handed
+the set it already holds, so only the done toggle, which the view hands a new set, re-renders a
+row. The workout's details save the same way. Marking the workout done or reopening it locks or
+unlocks every row, and a reload after +1, × or a logged set adds or removes rows, so those still
+re-render. Around them `gz-workout-detail` asks the focused row for `focusedField()` and hands it
+to the replacing row's `restoreField()`, with whatever was typed there by then.
 
 A done row mirrors the backend's lock: it keeps its fields and × in place but disabled, keeps +1,
 and mutes its load. A done workout locks every row, as the backend locks its sets: the view sets

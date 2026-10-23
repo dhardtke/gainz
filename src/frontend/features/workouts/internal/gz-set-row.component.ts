@@ -21,7 +21,11 @@ export class GzSetRowComponent extends GzEditableRow {
 
   #kind: ExerciseKind = 'weighted';
 
+  // The set a save already applied comes back from the view; rendering it again would take the focus.
   set set(value: LiftSetDto | undefined) {
+    if (value !== undefined && value === this.#set) {
+      return;
+    }
     this.#set = value ?? null;
     if (this.isConnected) {
       this.render();
@@ -117,8 +121,13 @@ export class GzSetRowComponent extends GzEditableRow {
       return;
     }
     try {
-      this.#set = await setFacade.update(set.id, changes);
-      this.emit(SET_UPDATED_EVENT, this.#set);
+      const updated = await setFacade.update(set.id, changes);
+      this.#set = updated;
+      const volume = this.$('.volume');
+      if (volume) {
+        volume.textContent = formatVolume(updated.weight * updated.reps);
+      }
+      this.emit(SET_UPDATED_EVENT, updated);
     } catch (error) {
       toastError(error);
     }

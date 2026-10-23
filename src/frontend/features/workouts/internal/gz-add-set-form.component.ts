@@ -52,6 +52,17 @@ export class GzAddSetFormComponent extends GzElement {
   // Read by template(), so the button stays disabled through a re-render.
   #adding = false;
 
+  // What was typed since the last logged set; the view hands it to the form that replaces this one.
+  #draft: Record<string, string> | null = null;
+
+  get draft(): Record<string, string> | null {
+    return this.#draft;
+  }
+
+  set draft(value: Record<string, string> | null) {
+    this.#draft = value;
+  }
+
   set workoutId(value: WorkoutId) {
     this.#workoutId = value;
   }
@@ -70,6 +81,11 @@ export class GzAddSetFormComponent extends GzElement {
     if (this.isConnected) {
       this.render();
     }
+  }
+
+  // For a change to sets already in the workout, which leaves what is typed alone.
+  updateSets(value: LiftSetDto[]): void {
+    this.#sets = value;
   }
 
   focusReps(): void {
@@ -91,6 +107,7 @@ export class GzAddSetFormComponent extends GzElement {
         ...(values.weight === undefined ? {} : { weight: Number(values.weight) }),
         notes: values.notes,
       });
+      this.#draft = null;
       this.emit('set-logged', { exerciseId });
     } catch (error) {
       toastError(error);
@@ -107,6 +124,7 @@ export class GzAddSetFormComponent extends GzElement {
     this.$<HTMLButtonElement>(`[data-action='add-last-session']`)?.toggleAttribute('disabled', true);
     try {
       await setFacade.addExercises(workoutId, [exerciseId]);
+      this.#draft = null;
       this.emit('set-logged', { exerciseId });
     } catch (error) {
       toastError(error);
@@ -118,9 +136,17 @@ export class GzAddSetFormComponent extends GzElement {
 
   override afterRender(): void {
     const select = this.$<HTMLSelectElement>("select[name='exerciseId']");
-    if (!select) {
+    const form = this.$<HTMLFormElement>('form');
+    if (!select || !form) {
       return;
     }
+    // Untrimmed, so a restored field reads exactly as it was typed.
+    const keep = (): void => {
+      this.#draft = Object.fromEntries(
+        Array.from(form.querySelectorAll<HTMLInputElement | HTMLSelectElement>('select, input')).map((field) => [field.name, field.value]),
+      );
+    };
+    form.addEventListener('input', keep);
     select.addEventListener('change', () => {
       const exerciseId = Number(select.value);
       this.#syncWeight(exerciseId);
@@ -128,9 +154,10 @@ export class GzAddSetFormComponent extends GzElement {
       if (inWorkout) {
         this.#prefillFrom(exerciseId);
       }
-      void this.#showLastSession(exerciseId, !inWorkout);
+      void this.#showLastSession(exerciseId, !inWorkout).then(keep);
+      keep();
     });
-    void this.#showLastSession(Number(select.value), this.#sets?.length === 0);
+    void this.#showLastSession(Number(select.value), this.#sets?.length === 0 && !this.#draft);
   }
 
   #selectedId(): ExerciseId | null {
@@ -257,7 +284,9 @@ export class GzAddSetFormComponent extends GzElement {
       `;
     }
     const last = this.#sets.at(-1);
-    const selected = last?.exerciseId ?? this.#exercises[0]?.id;
+    const draft = this.#draft;
+    const drafted = draft ? this.#exercises.find((exercise) => String(exercise.id) === draft.exerciseId)?.id : undefined;
+    const selected = drafted ?? last?.exerciseId ?? this.#exercises[0]?.id;
     const kind = this.#kindOf(selected);
     const bodyweight = kind === 'bodyweight';
 
@@ -277,7 +306,7 @@ export class GzAddSetFormComponent extends GzElement {
               </div>
               <div class="field field-num">
                 <label for="reps">Reps</label>
-                <input id="reps" name="reps" type="number" step="1" min="1" value="${last?.reps ?? ''}" required data-testid="reps" />
+                <input id="reps" name="reps" type="number" step="1" min="1" value="${draft?.reps ?? last?.reps ?? ''}" required data-testid="reps" />
               </div>
               <div class="field field-num field-weight" data-testid="weight-field" ${bodyweight ? 'hidden' : ''}>
                 <label for="weight">${weightLabel(kind)}</label>
@@ -287,7 +316,7 @@ export class GzAddSetFormComponent extends GzElement {
                   type="number"
                   step="any"
                   min="0"
-                  value="${last?.weight ?? ''}"
+                  value="${draft?.weight ?? last?.weight ?? ''}"
                   required
                   data-testid="weight"
                   ${bodyweight ? 'disabled' : ''}
@@ -295,7 +324,15 @@ export class GzAddSetFormComponent extends GzElement {
               </div>
               <div class="field field-notes">
                 <label for="set-notes">Notes</label>
-                <input id="set-notes" name="notes" type="text" maxlength="2000" placeholder="Paused, felt easy" data-testid="notes" />
+                <input
+                  id="set-notes"
+                  name="notes"
+                  type="text"
+                  maxlength="2000"
+                  placeholder="Paused, felt easy"
+                  value="${draft?.notes ?? ''}"
+                  data-testid="notes"
+                />
               </div>
               <button type="submit">Log set</button>
             </div>

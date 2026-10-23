@@ -1,5 +1,5 @@
 import { beforeAll, expect, test } from 'bun:test';
-import { find, mount, openDialog, settle, shadow, submit, testId, text, type, useDom, useFetch, useToasts } from '../../testing.ts';
+import { choose, find, mount, openDialog, settle, shadow, submit, testId, text, type, useDom, useFetch, useToasts } from '../../testing.ts';
 import type { ExercisePageDto } from '../../../shared/dto/exercise.ts';
 import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import type { WorkoutDto, WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
@@ -532,6 +532,55 @@ test('applies an updated set without a reload', async () => {
   expect(text(view, testId('progress-label'))).toBe('1/3 sets');
   expect(slid).toEqual([1]);
   expect(bar(view).value).toBe(1);
+});
+
+test('applies an updated set in place, keeping the field focus moved to and what was typed there', async () => {
+  const view = await mountView();
+  const reps = field(addSetForm(view), 'reps');
+  const notes = find<HTMLInputElement>(shadow(setRow(view, 12)), testId('notes'));
+  for (const input of [reps, notes]) {
+    input.focus();
+    type(input, '7');
+    const updated = set({ id: 11, exerciseId: 1, exerciseName: 'Bench Press', weight: 90 });
+    setRow(view, 11).dispatchEvent(new CustomEvent('set-updated', { detail: updated, bubbles: true, composed: true }));
+    await settle();
+    expect(input.isConnected).toBe(true);
+    expect(focused(input)).toBe(true);
+    expect(input.value).toBe('7');
+  }
+  expect(field(addSetForm(view), 'reps')).toBe(reps);
+  expect(text(view, testId('totals'))?.trim()).toEndWith(` · ${formatVolume(5 * (90 + 82.5 + 100))}`);
+});
+
+test('keeps what was typed in the add-set form across a reload', async () => {
+  const view = await mountView();
+  choose(exerciseSelect(view), '1');
+  type(field(addSetForm(view), 'reps'), '4');
+  type(field(addSetForm(view), 'weight'), '92.5');
+  type(field(addSetForm(view), 'notes'), 'Paused ');
+  await changeSets(view);
+  expect(exerciseSelect(view).value).toBe('1');
+  expect(['reps', 'weight', 'notes'].map((name) => field(addSetForm(view), name).value)).toEqual(['4', '92.5', 'Paused ']);
+});
+
+test('starts the add-set form afresh once the set is logged', async () => {
+  const view = await mountView();
+  type(field(addSetForm(view), 'notes'), 'Paused');
+  submit(addSetForm(view));
+  await settle();
+  expect(fake.sent('POST /api/workouts/3/sets')).toHaveLength(1);
+  expect(field(addSetForm(view), 'notes').value).toBe('');
+});
+
+test('renames the workout in place once its title is saved', async () => {
+  const view = await mountView();
+  const reps = field(addSetForm(view), 'reps');
+  answerUpdate({ title: 'Heavy push day' });
+  commit(field(detailsForm(view), 'title'), 'Heavy push day');
+  await settle();
+  expect(text(view, testId('heading'))).toBe('Heavy push day');
+  expect(view.pageTitle).toBe('Heavy push day');
+  expect(field(addSetForm(view), 'reps')).toBe(reps);
 });
 
 test('loads the exercises and their last sessions once, not on every reload', async () => {

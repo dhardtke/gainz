@@ -127,6 +127,29 @@ test('saves a committed change, sending only the field that differs, and emits t
   expect(changed).toEqual([updated]);
 });
 
+function isLiftSet(value: unknown): value is LiftSetDto {
+  return typeof value === 'object' && value !== null && 'id' in value;
+}
+
+test('shows a saved change in place, keeping the field focus moved to within the row', async () => {
+  const changed = collect('set-updated');
+  answerWith(set({ id: 7, reps: 6, weight: 60 }));
+  const row = mountRow(set({ id: 7, reps: 5, weight: 60 }));
+  const notes = input(row, 'notes');
+  change(input(row, 'reps'), '6');
+  notes.focus();
+  await settle();
+  // What the view hands back from the event.
+  const [emitted] = changed;
+  if (!isLiftSet(emitted)) {
+    throw new Error('no set emitted');
+  }
+  row.set = emitted;
+  expect(input(row, 'notes')).toBe(notes);
+  expect(shadow(row).activeElement).toBe(notes);
+  expect(find(shadow(row), testId('volume')).textContent).toBe('360 kg');
+});
+
 test('has no save button', () => {
   const row = mountRow(set({ id: 7 }));
   expect(shadow(row).querySelector("[type='submit']")).toBeNull();
