@@ -14,7 +14,11 @@ export const WEIGH_IN_DELETED_EVENT = 'weigh-in-deleted';
 export class GzWeighInRowComponent extends GzEditableRow {
   #weighIn: WeighInDto | null = null;
 
+  // The weigh-in a save already applied comes back from the page; rendering it again would take the focus.
   set weighIn(value: WeighInDto | undefined) {
+    if (value !== undefined && value === this.#weighIn) {
+      return;
+    }
     this.#weighIn = value ?? null;
     if (this.isConnected) {
       this.render();

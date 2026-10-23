@@ -40,6 +40,25 @@ test('saves a changed weight and emits the answered weigh-in', async () => {
   expect(saved).toEqual([answered]);
 });
 
+function isWeighIn(value: unknown): value is WeighInDto {
+  return typeof value === 'object' && value !== null && 'measuredOn' in value;
+}
+
+test('keeps its input when handed back the weigh-in it saved', async () => {
+  const saved = collect('weigh-in-saved');
+  fake.respondTo(URL, 200, JSON.stringify({ measuredOn: '2026-10-13', weight: 81.9 }));
+  const row = mountRow();
+  const field = input(row);
+  change(field, '81.9');
+  await settle();
+  const [emitted] = saved;
+  if (!isWeighIn(emitted)) {
+    throw new Error('no weigh-in emitted');
+  }
+  row.weighIn = emitted;
+  expect(input(row)).toBe(field);
+});
+
 test.each(['82.4', '', '19', '501'])('sends nothing for %p', async (value) => {
   const row = mountRow();
   change(input(row), value);

@@ -115,6 +115,54 @@ test('removes a deleted row', async () => {
   expect(fake.sent(LIST_URL)).toHaveLength(1);
 });
 
+function rowWeight(root: ShadowRoot, date: Iso8601Date): HTMLInputElement {
+  return find<HTMLInputElement>(shadow(find(root, `gz-weigh-in-row[data-date='${date}']`)), testId('weight'));
+}
+
+function logWeight(root: ShadowRoot): HTMLInputElement {
+  return find<HTMLInputElement>(find(root, testId('log-form')), testId('weight'));
+}
+
+test("applies a row's save in place, keeping the field focus moved to and what was typed in the log form", async () => {
+  answer([weighIn('2026-10-12', 82.9), weighIn('2026-10-13', 82.4)]);
+  fake.respondTo('PUT /api/weigh-ins/2026-10-13', 200, JSON.stringify(weighIn('2026-10-13', 82.1)));
+  const root = await open();
+  const typed = logWeight(root);
+  typed.value = '81.5';
+  const other = rowWeight(root, '2026-10-12');
+  const saving = rowWeight(root, '2026-10-13');
+  saving.value = '82.1';
+  saving.dispatchEvent(new Event('change', { bubbles: true }));
+  other.focus();
+  await settle();
+  expect(fake.sent('PUT /api/weigh-ins/2026-10-13')).toEqual([{ weight: 82.1 }]);
+  expect(rowWeight(root, '2026-10-12')).toBe(other);
+  expect(root.activeElement).toBe(find(root, "gz-weigh-in-row[data-date='2026-10-12']"));
+  expect(logWeight(root)).toBe(typed);
+  expect(typed.value).toBe('81.5');
+  expect(find(root, testId('subtitle')).textContent).toStartWith(formatBodyWeight(82.1));
+});
+
+test('keeps what was typed in the log form across a delete and a range switch', async () => {
+  answer([weighIn('2026-10-12', 82.9), weighIn('2026-10-13', 82.4)]);
+  answer([weighIn('2026-10-13', 82.4)], weighIn('2026-10-13', 82.4), 'GET /api/weigh-ins?since=2026-09-07');
+  fake.respondTo('DELETE /api/weigh-ins/2026-10-12', 204);
+  const root = await open();
+  const typed = logWeight(root);
+  typed.value = '81.5';
+  find<HTMLButtonElement>(shadow(find(root, "gz-weigh-in-row[data-date='2026-10-12']")), testId('delete')).click();
+  await settle();
+  find<HTMLButtonElement>(openDialog(), testId('confirm')).click();
+  await settle();
+  find<HTMLButtonElement>(root, testId('range-30d')).click();
+  await settle();
+  expect(dates(root)).toEqual(['2026-10-13']);
+  expect(find(root, testId('range-30d')).classList.contains('outline')).toBe(false);
+  expect(find(root, testId('range-90d')).classList.contains('outline')).toBe(true);
+  expect(logWeight(root)).toBe(typed);
+  expect(typed.value).toBe('81.5');
+});
+
 test('shows a failed load', async () => {
   fake.respondTo(LIST_URL, 500, '{"error":"Database is locked"}');
   const root = await open();

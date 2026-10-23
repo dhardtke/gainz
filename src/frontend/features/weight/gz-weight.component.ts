@@ -6,7 +6,6 @@ import { toast, toastError } from '../../ui/toast.ts';
 import { confirmAction } from '../../ui/confirm/confirm.ts';
 import { ApiError } from '../../http/errors.ts';
 import { GzView } from '../../ui/view.ts';
-import { keepRowFocus } from '../../ui/editable-row.ts';
 import type { WeighInDto, WeighInListDto } from '../../../shared/dto/weight.ts';
 import type { Iso8601Date } from '../../../shared/flavors.ts';
 import { weighInFacade } from './weight.facade.ts';
@@ -36,17 +35,13 @@ export class GzWeightComponent extends GzView<WeightData> {
     this.root.addEventListener(WEIGH_IN_SAVED_EVENT, (event) => {
       if (event instanceof CustomEvent && isWeighIn(event.detail)) {
         const saved = event.detail;
-        this.#keepingFocus(() => {
-          this.#showItems((items) => items.map((item) => (item.measuredOn === saved.measuredOn ? saved : item)));
-        });
+        this.#changeItems((items) => items.map((item) => (item.measuredOn === saved.measuredOn ? saved : item)), false);
       }
     });
     this.root.addEventListener(WEIGH_IN_DELETED_EVENT, (event) => {
       if (event instanceof CustomEvent && typeof event.detail === 'string') {
         const date = event.detail;
-        this.#keepingFocus(() => {
-          this.#showItems((items) => items.filter((item) => item.measuredOn !== date));
-        });
+        this.#changeItems((items) => items.filter((item) => item.measuredOn !== date), true);
       }
     });
     this.root.addEventListener(WEIGH_INS_IMPORTED_EVENT, () => {
@@ -67,7 +62,7 @@ export class GzWeightComponent extends GzView<WeightData> {
     }
   }
 
-  // In place rather than navigate(), which would remount the page and drop the form's input.
+  // In place rather than navigate(), which would remount the page and drop the forms' input.
   async #showRange(range: RangeKey): Promise<void> {
     const token = ++this.#rangeToken;
     const today = todayIso();
@@ -82,11 +77,11 @@ export class GzWeightComponent extends GzView<WeightData> {
       return;
     }
     history.pushState(null, '', rangePath(range));
-    this.show({ ...list, today, range });
+    this.#patch({ ...list, today, range }, true);
   }
 
   // `latest` follows the items, unless the deleted one was the last loaded: then only the server knows it.
-  #showItems(change: (items: WeighInDto[]) => WeighInDto[]): void {
+  #changeItems(change: (items: WeighInDto[]) => WeighInDto[], rebuildHistory: boolean): void {
     const data = this.data;
     if (!data) {
       return;
@@ -99,13 +94,29 @@ export class GzWeightComponent extends GzView<WeightData> {
       return;
     }
     const latest = latestGone || (newest !== null && data.latest !== null && newest.measuredOn >= data.latest.measuredOn) ? newest : data.latest;
-    this.show({ ...data, items, latest });
+    this.#patch({ ...data, items, latest }, rebuildHistory);
   }
 
-  #keepingFocus(rerender: () => void): void {
-    const restore = keepRowFocus(this.root, 'date');
-    rerender();
-    restore();
+  // Leaves the log form, the import card and, unless the list changed, the rows in place: a re-render would
+  // drop what is typed or chosen in them, and a phone would close its keyboard.
+  #patch(data: WeightData, rebuildHistory: boolean): void {
+    this.replaceData(data);
+    const subtitle = this.$("[data-testid='subtitle']");
+    if (subtitle) {
+      subtitle.innerHTML = String(this.#subtitle(data));
+    }
+    for (const button of this.$$<HTMLButtonElement>("[data-action='range']")) {
+      const current = button.dataset.range === data.range;
+      button.classList.toggle('outline', !current);
+      button.setAttribute('aria-pressed', String(current));
+    }
+    if (rebuildHistory) {
+      const section = this.$('section.history');
+      if (section) {
+        section.outerHTML = String(this.#historyTemplate(this.#shown(data)));
+      }
+    }
+    this.#fill(data);
   }
 
   override async handleSubmit(action: string, form: HTMLFormElement): Promise<void> {
@@ -160,12 +171,18 @@ export class GzWeightComponent extends GzView<WeightData> {
   }
 
   override afterRender(): void {
+    if (this.data) {
+      this.#fill(this.data);
+    }
+  }
+
+  #fill(data: WeightData): void {
     const chart = this.$<GzChartComponent>('gz-chart');
-    if (chart && this.data) {
+    if (chart) {
       chart.unit = UNIT;
       chart.label = 'Body weight over time';
       chart.empty = 'No weigh-ins in this range.';
-      chart.series = trendPoints(this.data.items, rangeFrom(this.data.range, this.data.today)).map((point) => ({
+      chart.series = trendPoints(data.items, rangeFrom(data.range, data.today)).map((point) => ({
         x: point.date,
         label: formatShortDate(point.date),
         value: point.value,
@@ -174,7 +191,7 @@ export class GzWeightComponent extends GzView<WeightData> {
       }));
     }
     for (const row of this.$$<GzWeighInRowComponent>('gz-weigh-in-row')) {
-      row.weighIn = this.data?.items.find((item) => item.measuredOn === row.dataset.date);
+      row.weighIn = data.items.find((item) => item.measuredOn === row.dataset.date);
     }
   }
 
@@ -240,7 +257,7 @@ export class GzWeightComponent extends GzView<WeightData> {
 
   #historyTemplate(items: WeighInDto[]): RawHtml {
     return html`
-      <section class="vstack gap-2">
+      <section class="history vstack gap-2">
         <h2>History</h2>
         ${
           items.length === 0

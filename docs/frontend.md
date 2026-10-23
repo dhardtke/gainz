@@ -695,10 +695,16 @@ Below the form, the history lists the weigh-ins newest first as `gz-weigh-in-row
 input with "kg" in Oat's `fieldset.group`, and a `.ghost` × named "Delete Oct 13's weigh-in". Like
 `gz-set-row`, it has no save button: a committed `change` or Enter PUTs the weight when it differs
 and is valid, one request after another, and emits `weigh-in-saved` with the weigh-in the API
-answers; the page swaps it into its data and re-renders without a request, keeping the focused field
-through `focusedField()` and `restoreField()` as `gz-workout-detail` does. × asks "Delete
+answers; the page swaps it into its data without a request. × asks "Delete
 weigh-in?" in a danger dialog, then DELETEs and emits `weigh-in-deleted` with the date, and the page
-drops that row. A failure toasts and changes nothing. Both inputs take any decimal (`step="any"`)
+drops that row. A failure toasts and changes nothing.
+
+Neither re-renders the page, and neither does a range switch, for the reason the workout page's
+saves do not (see "Set rows"): it would replace the field being typed in, the log form's input and
+the import card's chosen file. `#patch()` stores the data through `replaceData()`, rewrites the
+subtitle, updates the range buttons' `outline` and `aria-pressed`, and hands the chart its series
+and each row its weigh-in. The row's `weighIn` setter skips rendering when handed the weigh-in it
+saved. Only a delete or a range switch, which change the list, rebuilds the history section. Both inputs take any decimal (`step="any"`)
 between 20 and 500, since the API keeps two decimals and a stored 82.46 would otherwise read as
 invalid.
 
