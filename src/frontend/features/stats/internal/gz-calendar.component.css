@@ -96,6 +96,10 @@ a.worked:hover {
   }
 }
 
+.icon {
+  align-self: stretch;
+}
+
 .icon svg {
   width: auto;
   height: 1.125rem;
