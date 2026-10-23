@@ -49,25 +49,17 @@ export class GzChartComponent extends GzElement {
     return this.#series;
   }
 
+  // Only stored, like `empty` and `label`: the parent sets them before `series`, which renders.
   set unit(value: string) {
     this.#unit = value;
-    if (this.isConnected) {
-      this.render();
-    }
   }
 
   set empty(value: string) {
     this.#empty = value;
-    if (this.isConnected) {
-      this.render();
-    }
   }
 
   set label(value: string) {
     this.#label = value;
-    if (this.isConnected) {
-      this.render();
-    }
   }
 
   #trends(): { index: number; value: number }[] {

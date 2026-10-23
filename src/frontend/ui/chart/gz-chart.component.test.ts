@@ -84,6 +84,7 @@ test('renders the empty text it is given', () => {
   const chart = mountChart([]);
   expect(find(shadow(chart), testId('empty')).textContent).toBe('No sessions logged yet — add a set to start the curve.');
   chart.empty = 'No weigh-ins in this range.';
+  chart.series = [];
   expect(find(shadow(chart), testId('empty')).textContent).toBe('No weigh-ins in this range.');
 });
 
@@ -91,7 +92,20 @@ test('labels the plot', () => {
   const chart = mountChart([{ label: 'a', value: 1 }]);
   expect(find(shadow(chart), 'svg').getAttribute('aria-label')).toBe('Progress over the logged sessions');
   chart.label = 'Body weight over time';
+  chart.series = [{ label: 'a', value: 1 }];
   expect(find(shadow(chart), 'svg').getAttribute('aria-label')).toBe('Body weight over time');
+});
+
+test('redraws only when the series is set', () => {
+  const chart = mountChart([{ label: 'a', value: 1 }]);
+  const dot = find(shadow(chart), testId('dot'));
+  chart.unit = 'kg';
+  chart.label = 'Body weight over time';
+  chart.empty = 'No weigh-ins in this range.';
+  expect(dot.isConnected).toBe(true);
+  chart.series = [{ label: 'a', value: 1 }];
+  expect(dot.isConnected).toBe(false);
+  expect(find(shadow(chart), testId('dot')).getAttribute('title')).toBe('a: 1 kg');
 });
 
 test('centers a single point', () => {
