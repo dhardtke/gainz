@@ -7,6 +7,7 @@ import {
   translateToCreateWorkoutDto,
   translateToEditWorkoutDto,
   translateToMoveWorkoutExerciseDto,
+  translateToSwapWorkoutExerciseDto,
   translateToWorkoutDto,
   translateToWorkoutPageDto,
   translateToWorkoutWithExercisesDto,
@@ -52,6 +53,14 @@ export class WorkoutController {
     const id: WorkoutId = pathId(req.params.id, 'workout');
     const dto = translateToAddWorkoutExercisesDto(await readJsonObject(req));
     this.#sets.addExercises(id, dto);
+    return json(translateToWorkoutWithExercisesDto(this.#workouts.require(id), this.#workouts.exercises(id), this.#sets.list(id)));
+  }
+
+  async swapExercise(req: ParamRequest): Promise<Response> {
+    const id: WorkoutId = pathId(req.params.id, 'workout');
+    const exerciseId: ExerciseId = pathId(req.params.exerciseId, 'exercise');
+    const dto = translateToSwapWorkoutExerciseDto(await readJsonObject(req));
+    this.#sets.swapExercise(id, exerciseId, dto);
     return json(translateToWorkoutWithExercisesDto(this.#workouts.require(id), this.#workouts.exercises(id), this.#sets.list(id)));
   }
 

@@ -41,6 +41,12 @@ describe('setFacade', () => {
     expect(fetch.requests).toMatchObject([{ method: 'POST', url: '/api/workouts/7/exercises', body: { exerciseIds: [2, 4] } }]);
   });
 
+  test('swapExercise() posts the new id under the swapped exercise', async () => {
+    await setFacade.swapExercise(7, 2, 4);
+
+    expect(fetch.requests).toMatchObject([{ method: 'POST', url: '/api/workouts/7/exercises/2/swap', body: { exerciseId: 4 } }]);
+  });
+
   test.each([
     ['update()', (): Promise<unknown> => setFacade.update(3, { reps: 6 }), 'PATCH', '/api/sets/3'],
     ['delete()', (): Promise<unknown> => setFacade.delete(3), 'DELETE', '/api/sets/3'],

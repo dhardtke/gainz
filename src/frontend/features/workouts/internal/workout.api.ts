@@ -4,6 +4,7 @@ import type {
   CreateWorkoutDto,
   EditWorkoutDto,
   MoveWorkoutExerciseDto,
+  SwapWorkoutExerciseDto,
   WorkoutDto,
   WorkoutPageDto,
   WorkoutWithExercisesDto,
@@ -43,5 +44,9 @@ export class WorkoutApi {
 
   moveExercise(id: WorkoutId, exerciseId: ExerciseId, dto: MoveWorkoutExerciseDto): Promise<WorkoutWithExercisesDto> {
     return post(`/workouts/${id}/exercises/${exerciseId}/move`, dto);
+  }
+
+  swapExercise(id: WorkoutId, exerciseId: ExerciseId, dto: SwapWorkoutExerciseDto): Promise<WorkoutWithExercisesDto> {
+    return post(`/workouts/${id}/exercises/${exerciseId}/swap`, dto);
   }
 }

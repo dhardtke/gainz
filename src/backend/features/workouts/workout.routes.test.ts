@@ -522,3 +522,133 @@ describe('add exercises from their last sessions', () => {
     expect((await post(`/api/workouts/${target.id}/exercises`, { exerciseIds: [row.id, 9999] })).status).toBe(409);
   });
 });
+
+describe('swap exercise', () => {
+  const shape = (workout: WorkoutWithExercisesDto): unknown =>
+    workout.exercises.map((group) => ({
+      exercise: group.exerciseName,
+      position: group.position,
+      sets: group.sets.map(({ reps, weight, notes, done }) => ({ reps, weight, notes, done })),
+    }));
+
+  async function current(workoutId: WorkoutId): Promise<unknown> {
+    return shape(await body<WorkoutWithExercisesDto>(await api(`/api/workouts/${workoutId}`)));
+  }
+
+  function swap(workoutId: WorkoutId, fromId: number, exerciseId: unknown): Promise<Response> {
+    return post(`/api/workouts/${workoutId}/exercises/${fromId}/swap`, { exerciseId });
+  }
+
+  // Bench, assisted dips with two sets, then squat; dips were last done in an older session.
+  async function seed(): Promise<{ assisted: ExerciseDto; dips: ExerciseDto; bench: ExerciseDto; target: WorkoutWithExercisesDto; dipSets: LiftSetDto[] }> {
+    const bench = await createExercise(post, 'Bench Press');
+    const assisted = await createExercise(post, 'Assisted Dips', { kind: 'assisted' });
+    const dips = await createExercise(post, 'Dips', { kind: 'bodyweight' });
+    const squat = await createExercise(post, 'Back Squat');
+    const older = await createWorkout(post, '2026-01-05');
+    await markDone(patch, (await createSet(post, older.id, { exerciseId: dips.id, reps: 9, notes: 'slow' })).id);
+    await markDone(patch, (await createSet(post, older.id, { exerciseId: dips.id, reps: 7 })).id);
+    const target = await createWorkout(post, '2026-01-12');
+    await createSet(post, target.id, { exerciseId: bench.id, reps: 5, weight: 80 });
+    const dipSets = [
+      await createSet(post, target.id, { exerciseId: assisted.id, reps: 10, weight: 20 }),
+      await createSet(post, target.id, { exerciseId: assisted.id, reps: 8, weight: 15 }),
+    ];
+    await createSet(post, target.id, { exerciseId: squat.id, reps: 5, weight: 100 });
+    return { assisted, dips, bench, target, dipSets };
+  }
+
+  test("replaces the exercise in its place with the new one's last session", async () => {
+    const { assisted, dips, target } = await seed();
+    const res = await swap(target.id, assisted.id, dips.id);
+    expect(res.status).toBe(200);
+    expect(shape(await body<WorkoutWithExercisesDto>(res))).toEqual([
+      { exercise: 'Bench Press', position: 1, sets: [{ reps: 5, weight: 80, notes: null, done: false }] },
+      {
+        exercise: 'Dips',
+        position: 2,
+        sets: [
+          { reps: 9, weight: 0, notes: 'slow', done: false },
+          { reps: 7, weight: 0, notes: null, done: false },
+        ],
+      },
+      { exercise: 'Back Squat', position: 3, sets: [{ reps: 5, weight: 100, notes: null, done: false }] },
+    ]);
+  });
+
+  test('keeps the done sets and puts the new exercise right after them', async () => {
+    const { assisted, dips, target, dipSets } = await seed();
+    await markDone(patch, at(dipSets, 0).id);
+    const workout = await body<WorkoutWithExercisesDto>(await swap(target.id, assisted.id, dips.id));
+    expect(workout.exercises.map((group) => [group.exerciseName, group.position])).toEqual([
+      ['Bench Press', 1],
+      ['Assisted Dips', 2],
+      ['Dips', 3],
+      ['Back Squat', 4],
+    ]);
+    expect(workout.exercises[1]?.sets.map(({ reps, weight, done }) => ({ reps, weight, done }))).toEqual([{ reps: 10, weight: 20, done: true }]);
+    expect(workout.exercises[2]?.sets.map((set) => set.reps)).toEqual([9, 7]);
+  });
+
+  test('turns the sets not yet done into the new exercise when it has no last session', async () => {
+    const { assisted, target, dipSets } = await seed();
+    const ringDips = await createExercise(post, 'Ring Dips', { kind: 'bodyweight' });
+    const weighted = await createExercise(post, 'Weighted Dips');
+    const workout = await body<WorkoutWithExercisesDto>(await swap(target.id, assisted.id, ringDips.id));
+    expect(workout.exercises[1]?.exerciseName).toBe('Ring Dips');
+    expect(workout.exercises[1]?.sets.map(({ id, reps, weight }) => ({ id, reps, weight }))).toEqual([
+      { id: at(dipSets, 0).id, reps: 10, weight: 0 },
+      { id: at(dipSets, 1).id, reps: 8, weight: 0 },
+    ]);
+
+    const back = await body<WorkoutWithExercisesDto>(await swap(target.id, ringDips.id, assisted.id));
+    expect(back.exercises[1]?.exerciseName).toBe('Assisted Dips');
+    const again = await body<WorkoutWithExercisesDto>(await swap(target.id, assisted.id, weighted.id));
+    expect(again.exercises[1]?.sets.map((set) => set.weight)).toEqual([0, 0]);
+  });
+
+  test('keeps the weight when neither exercise is bodyweight', async () => {
+    const { assisted, target } = await seed();
+    const machine = await createExercise(post, 'Machine Dips', { kind: 'assisted' });
+    const workout = await body<WorkoutWithExercisesDto>(await swap(target.id, assisted.id, machine.id));
+    expect(workout.exercises[1]?.sets.map((set) => set.weight)).toEqual([20, 15]);
+  });
+
+  test.each([
+    ['the same exercise', 'assisted', '"Assisted Dips" is already in this workout'],
+    ['an exercise already in the workout', 'bench', '"Bench Press" is already in this workout'],
+    ['an exercise without a last session when every set is done', 'fresh', '"Deadlift" has no done sets to copy'],
+  ] as const)('refuses %s with a 409 naming it', async (_name, which, error) => {
+    const { assisted, bench, target, dipSets } = await seed();
+    const fresh = await createExercise(post, 'Deadlift');
+    for (const set of dipSets) {
+      await markDone(patch, set.id);
+    }
+    const before = await current(target.id);
+    const res = await swap(target.id, assisted.id, { assisted: assisted.id, bench: bench.id, fresh: fresh.id }[which]);
+    expect(res.status).toBe(409);
+    expect((await body<ErrorDto>(res)).error).toBe(error);
+    expect(await current(target.id)).toEqual(before);
+  });
+
+  test('refuses a done workout with a 409', async () => {
+    const { assisted, dips, target } = await seed();
+    await markWorkoutDone(patch, target.id);
+    const before = await current(target.id);
+    const res = await swap(target.id, assisted.id, dips.id);
+    expect(res.status).toBe(409);
+    expect((await body<ErrorDto>(res)).error).toBe('Workout is done; reopen it before changing its sets');
+    expect(await current(target.id)).toEqual(before);
+  });
+
+  test('checks the body, then the workout, then the exercise in it, then the new one', async () => {
+    const { assisted, dips, target } = await seed();
+    for (const exerciseId of [undefined, 'abc', 0, 1.5]) {
+      expect((await swap(9999, assisted.id, exerciseId)).status).toBe(400);
+    }
+    expect((await swap(9999, assisted.id, dips.id)).status).toBe(404);
+    expect((await swap(target.id, dips.id, assisted.id)).status).toBe(404);
+    expect((await swap(target.id, assisted.id, 9999)).status).toBe(400);
+    expect((await post(`/api/workouts/${target.id}/exercises/abc/swap`, { exerciseId: dips.id })).status).toBe(400);
+  });
+});

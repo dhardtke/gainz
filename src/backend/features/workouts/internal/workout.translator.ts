@@ -4,6 +4,7 @@ import type {
   EditWorkoutDto,
   MoveDirection,
   MoveWorkoutExerciseDto,
+  SwapWorkoutExerciseDto,
   WorkoutDto,
   WorkoutExerciseDto,
   WorkoutPageDto,
@@ -39,6 +40,12 @@ export function translateToEditWorkoutDto(body: Record<string, unknown>): EditWo
 export function translateToMoveWorkoutExerciseDto(body: Record<string, unknown>): MoveWorkoutExerciseDto {
   return {
     direction: body.direction as MoveDirection,
+  };
+}
+
+export function translateToSwapWorkoutExerciseDto(body: Record<string, unknown>): SwapWorkoutExerciseDto {
+  return {
+    exerciseId: body.exerciseId as ExerciseId,
   };
 }
 

@@ -64,6 +64,29 @@ export class WorkoutExerciseRepository {
     })();
   }
 
+  /** Takes the place of `fromId`, or the place after it while it keeps sets; call it inside the transaction that moved them. */
+  replace(workoutId: WorkoutId, fromId: ExerciseId, toId: ExerciseId): void {
+    const kept = this.#db
+      .query<{ found: 1 }, [WorkoutId, ExerciseId]>('SELECT 1 AS found FROM sets WHERE workout_id = ? AND exercise_id = ? LIMIT 1')
+      .get(workoutId, fromId);
+    if (!kept) {
+      this.#db.query('UPDATE workout_exercises SET exercise_id = ?3 WHERE workout_id = ?1 AND exercise_id = ?2').run(workoutId, fromId, toId);
+      return;
+    }
+    this.#db
+      .query(
+        `UPDATE workout_exercises SET position = position + 1
+          WHERE workout_id = ?1 AND position > (SELECT position FROM workout_exercises WHERE workout_id = ?1 AND exercise_id = ?2)`,
+      )
+      .run(workoutId, fromId);
+    this.#db
+      .query(
+        `INSERT INTO workout_exercises (workout_id, exercise_id, position)
+         SELECT workout_id, ?3, position + 1 FROM workout_exercises WHERE workout_id = ?1 AND exercise_id = ?2`,
+      )
+      .run(workoutId, fromId, toId);
+  }
+
   removeIfUnused(workoutId: WorkoutId, exerciseId: ExerciseId): void {
     this.#db
       .query<unknown, [WorkoutId, ExerciseId]>(

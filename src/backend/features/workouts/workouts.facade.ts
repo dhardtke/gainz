@@ -1,5 +1,5 @@
 import type { CreateSetDto, EditSetDto } from '../../../shared/dto/set.ts';
-import type { AddWorkoutExercisesDto, CreateWorkoutDto, EditWorkoutDto, MoveWorkoutExerciseDto } from '../../../shared/dto/workout.ts';
+import type { AddWorkoutExercisesDto, CreateWorkoutDto, EditWorkoutDto, MoveWorkoutExerciseDto, SwapWorkoutExerciseDto } from '../../../shared/dto/workout.ts';
 import type { ExerciseId, LiftSetId, WorkoutId } from '../../../shared/flavors.ts';
 import type { DB } from '../../db/db.ts';
 import {
@@ -114,6 +114,11 @@ export class SetFacade {
   /** Validates first, so a malformed body on an unknown workout is a 400. */
   addExercises(workoutId: WorkoutId, dto: AddWorkoutExercisesDto): void {
     this.#sets.copyLastSessions(workoutId, requiredIds(dto, 'exerciseIds'));
+  }
+
+  /** Validates first, so a malformed body on an unknown workout is a 400. */
+  swapExercise(workoutId: WorkoutId, exerciseId: ExerciseId, dto: SwapWorkoutExerciseDto): void {
+    this.#sets.swapExercise(workoutId, exerciseId, requiredInt(dto, 'exerciseId', { min: 1 }));
   }
 
   update(id: LiftSetId, dto: EditSetDto): LiftSet {

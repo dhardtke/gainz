@@ -30,5 +30,9 @@ export function workoutRoutes(db: DB): RouteTable {
     '/api/workouts/:id/exercises/:exerciseId/move': {
       POST: (req) => controller.moveExercise(req),
     },
+
+    '/api/workouts/:id/exercises/:exerciseId/swap': {
+      POST: (req) => controller.swapExercise(req),
+    },
   };
 }

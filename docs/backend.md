@@ -133,7 +133,8 @@ disagree. A built file reads migrations from `EMBEDDED.migrations` instead of di
   `workout_id` is `ON DELETE CASCADE`; `exercise_id` is `ON DELETE RESTRICT`.
 - `workout_exercises (workout_id, exercise_id, position)`: the exercise order. A row exists exactly
   while the workout has a set of that exercise — `SetRepository` creates it with the first set and
-  removes it with the last.
+  removes it with the last. A swap (`SetRepository.swapExercise`) hands the row to the new exercise,
+  or inserts the new one right after it while done sets keep the old one in the workout.
 - `workouts.done` is stored and independent of the sets.
 - `exercises.muscle_group` is one of `MUSCLE_GROUPS` or null (`CHECK`); `exercises.kind` is
   `weighted`, `bodyweight` or `assisted` (`CHECK`). Names are unique under `NOCASE`.

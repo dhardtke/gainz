@@ -56,6 +56,11 @@ export class SetFacade {
     return this.#workouts.addExercises(workoutId, { exerciseIds });
   }
 
+  /** Replaces the exercise's sets not yet done with the other one's last session, keeping its place. */
+  swapExercise(workoutId: WorkoutId, exerciseId: ExerciseId, toId: ExerciseId): Promise<WorkoutWithExercisesDto> {
+    return this.#workouts.swapExercise(workoutId, exerciseId, { exerciseId: toId });
+  }
+
   update(id: LiftSetId, dto: EditSetDto): Promise<LiftSetDto> {
     return this.#sets.update(id, dto);
   }

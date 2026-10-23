@@ -104,29 +104,49 @@ export class SetRepository {
         if (!exercise) {
           throw badRequest('"exerciseIds" must name existing exercises');
         }
-        if (
-          this.#db
-            .query<{ found: 1 }, [WorkoutId, ExerciseId]>('SELECT 1 AS found FROM workout_exercises WHERE workout_id = ? AND exercise_id = ?')
-            .get(workoutId, exerciseId)
-        ) {
+        if (this.#inWorkout(workoutId, exerciseId)) {
           throw conflict(`"${exercise.name}" is already in this workout`);
         }
         const source = this.#db.query<{ id: WorkoutId }, [ExerciseId, WorkoutId]>(LAST_SESSION_WORKOUT_SQL).get(exerciseId, workoutId);
         if (!source) {
           throw conflict(`"${exercise.name}" has no done sets to copy`);
         }
-        const last =
-          this.#db.query<{ last: number }, [WorkoutId]>('SELECT COALESCE(MAX(position), 0) AS last FROM sets WHERE workout_id = ?').get(workoutId)?.last ?? 0;
-        this.#db
-          .query<unknown, [WorkoutId, WorkoutId, ExerciseId, number]>(
-            `INSERT INTO sets (workout_id, exercise_id, reps, weight, notes, position)
-             SELECT ?1, s.exercise_id, s.reps, ${COPIED_WEIGHT_SQL}, s.notes, ?4 + ROW_NUMBER() OVER (ORDER BY s.position, s.id)
-               FROM sets s JOIN exercises e ON e.id = s.exercise_id
-              WHERE s.workout_id = ?2 AND s.exercise_id = ?3 AND s.done = 1`,
-          )
-          .run(workoutId, source.id, exerciseId, last);
+        this.#copySession(workoutId, source.id, exerciseId);
         this.#workoutExercises.append(workoutId, exerciseId);
       }
+    })();
+  }
+
+  /** Replaces the sets of `fromId` not yet done with the last session of `toId`, or turns them into its sets when it has none; done sets stay. */
+  swapExercise(workoutId: WorkoutId, fromId: ExerciseId, toId: ExerciseId): void {
+    this.#db.transaction(() => {
+      this.#requireOpen(workoutId);
+      if (!this.#inWorkout(workoutId, fromId)) {
+        throw notFound('Exercise in this workout');
+      }
+      const target = this.#db.query<{ name: string; kind: ExerciseKind }, [ExerciseId]>('SELECT name, kind FROM exercises WHERE id = ?').get(toId);
+      if (!target) {
+        throw badRequest('"exerciseId" must name an existing exercise');
+      }
+      if (this.#inWorkout(workoutId, toId)) {
+        throw conflict(`"${target.name}" is already in this workout`);
+      }
+      const source = this.#db.query<{ id: WorkoutId }, [ExerciseId, WorkoutId]>(LAST_SESSION_WORKOUT_SQL).get(toId, workoutId);
+      if (source) {
+        this.#db.query('DELETE FROM sets WHERE workout_id = ? AND exercise_id = ? AND done = 0').run(workoutId, fromId);
+        this.#copySession(workoutId, source.id, toId);
+      } else {
+        const { changes } = this.#db
+          .query<unknown, [WorkoutId, ExerciseId, ExerciseId, ExerciseKind]>(
+            `UPDATE sets SET exercise_id = ?3, weight = CASE WHEN ?4 = 'bodyweight' THEN 0 ELSE weight END
+              WHERE workout_id = ?1 AND exercise_id = ?2 AND done = 0`,
+          )
+          .run(workoutId, fromId, toId, target.kind);
+        if (changes === 0) {
+          throw conflict(`"${target.name}" has no done sets to copy`);
+        }
+      }
+      this.#workoutExercises.replace(workoutId, fromId, toId);
     })();
   }
 
@@ -174,6 +194,28 @@ export class SetRepository {
       throw badRequest('"weight" must be a number');
     }
     return weight;
+  }
+
+  // Copies the done sets as not done, after the workout's last set.
+  #copySession(workoutId: WorkoutId, sourceId: WorkoutId, exerciseId: ExerciseId): void {
+    const last =
+      this.#db.query<{ last: number }, [WorkoutId]>('SELECT COALESCE(MAX(position), 0) AS last FROM sets WHERE workout_id = ?').get(workoutId)?.last ?? 0;
+    this.#db
+      .query<unknown, [WorkoutId, WorkoutId, ExerciseId, number]>(
+        `INSERT INTO sets (workout_id, exercise_id, reps, weight, notes, position)
+         SELECT ?1, s.exercise_id, s.reps, ${COPIED_WEIGHT_SQL}, s.notes, ?4 + ROW_NUMBER() OVER (ORDER BY s.position, s.id)
+           FROM sets s JOIN exercises e ON e.id = s.exercise_id
+          WHERE s.workout_id = ?2 AND s.exercise_id = ?3 AND s.done = 1`,
+      )
+      .run(workoutId, sourceId, exerciseId, last);
+  }
+
+  #inWorkout(workoutId: WorkoutId, exerciseId: ExerciseId): boolean {
+    return (
+      this.#db
+        .query<{ found: 1 }, [WorkoutId, ExerciseId]>('SELECT 1 AS found FROM workout_exercises WHERE workout_id = ? AND exercise_id = ?')
+        .get(workoutId, exerciseId) !== null
+    );
   }
 
   #requireOpen(workoutId: WorkoutId): void {

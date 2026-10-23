@@ -10,6 +10,7 @@ import type { ExerciseId } from '../../../shared/flavors.ts';
 import { type GzAddSetFormComponent, LastSessionCache } from './internal/gz-add-set-form.component.ts';
 import { type GzSetRowComponent, SET_UPDATED_EVENT } from './internal/gz-set-row.component.ts';
 import { repeatWorkout } from './internal/repeat-workout.ts';
+import { swapExercise } from './internal/swap-exercise.ts';
 import { toast, toastError } from '../../ui/toast.ts';
 import { confirmAction } from '../../ui/confirm/confirm.ts';
 import { GzView } from '../../ui/view.ts';
@@ -178,6 +179,11 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
       return;
     }
 
+    if (action === 'swap-exercise') {
+      await this.#swap(Number(element.dataset.exerciseId));
+      return;
+    }
+
     if (action === 'finish-workout') {
       const items = this.data ? this.#incompleteItems(this.data.workout.exercises) : [];
       if (
@@ -224,6 +230,20 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     } catch (error) {
       toastError(error);
     }
+  }
+
+  async #swap(exerciseId: ExerciseId): Promise<void> {
+    const group = this.data?.workout.exercises.find((candidate) => candidate.exerciseId === exerciseId);
+    if (!this.data || !group) {
+      return;
+    }
+    const before = this.data.workout.exercises.map((candidate) => candidate.exerciseId);
+    const swapped = await swapExercise(this.data.workout.id, group, before, this.data.exercises);
+    if (!swapped) {
+      return;
+    }
+    this.#openExerciseId = swapped.exercises.find((candidate) => !before.includes(candidate.exerciseId))?.exerciseId ?? null;
+    this.#showWorkout(() => swapped);
   }
 
   // The response carries no `exercises`, so the loaded ones are kept.
@@ -477,7 +497,7 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     `;
   }
 
-  #groupTemplate(group: WorkoutExerciseDto, open: ExerciseId | null, first: boolean, last: boolean): RawHtml {
+  #groupTemplate(group: WorkoutExerciseDto, open: ExerciseId | null, first: boolean, last: boolean, done: boolean): RawHtml {
     const { exerciseId: id, exerciseName: name } = group;
     return html`
       <details name="exercises" data-exercise-id="${id}" data-testid="exercise-group" ${id === open ? 'open' : ''}>
@@ -508,6 +528,19 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
               ▼
             </button>
           </fieldset>
+          ${
+            done
+              ? ''
+              : html`<button
+                  class="outline swap"
+                  data-action="swap-exercise"
+                  data-exercise-id="${id}"
+                  data-testid="swap-exercise"
+                  title="Replace ${name} with another exercise"
+                >
+                  Swap
+                </button>`
+          }
           <a class="button outline" href="/exercises/${id}" data-testid="history-link">Exercise history →</a>
         </div>
       </details>
@@ -544,7 +577,7 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
             sets.length === 0
               ? html`<p class="empty" data-testid="empty">No sets logged for this session yet.</p>`
               : html`<div class="exercises">
-                  ${workout.exercises.map((group, index, all) => this.#groupTemplate(group, open, index === 0, index === all.length - 1))}
+                  ${workout.exercises.map((group, index, all) => this.#groupTemplate(group, open, index === 0, index === all.length - 1, workout.done))}
                 </div>`
           }
         </section>

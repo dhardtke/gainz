@@ -90,6 +90,11 @@ summary {
   padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--border);
 
+  /* Beside the arrows, leaving the history link at the end. */
+  & .swap {
+    margin-inline-end: auto;
+  }
+
   & .move {
     margin: 0;
 

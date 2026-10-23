@@ -41,6 +41,11 @@ export interface MoveWorkoutExerciseDto {
   direction: MoveDirection;
 }
 
+/** Replaces the exercise's sets not yet done with this one's last session, or turns them into its sets when it has none. */
+export interface SwapWorkoutExerciseDto {
+  exerciseId: ExerciseId;
+}
+
 export interface AddWorkoutExercisesDto {
   /** Each exercise's last session is copied in this order. */
   exerciseIds: ExerciseId[];

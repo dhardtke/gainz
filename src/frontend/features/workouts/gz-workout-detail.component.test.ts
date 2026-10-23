@@ -3,7 +3,7 @@ import { choose, find, mount, openDialog, settle, shadow, submit, testId, text, 
 import type { ExercisePageDto } from '../../../shared/dto/exercise.ts';
 import type { LiftSetDto } from '../../../shared/dto/set.ts';
 import type { WorkoutDto, WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
-import { exercise } from '../exercises/exercises.fixtures.ts';
+import { exercise, listedExercise } from '../exercises/exercises.fixtures.ts';
 import { group, set } from './workouts.fixtures.ts';
 import { formatDate, formatVolume } from '../../ui/format.ts';
 import type { GzView } from '../../ui/view.ts';
@@ -67,9 +67,9 @@ function withSets(change: (item: LiftSetDto, index: number) => LiftSetDto): Work
   return { ...WORKOUT, exercises: WORKOUT.exercises.map((item) => ({ ...item, sets: item.sets.map((each) => change(each, index++)) })) };
 }
 
-async function mountView(workout: WorkoutWithExercisesDto = WORKOUT): Promise<GzView<unknown>> {
+async function mountView(workout: WorkoutWithExercisesDto = WORKOUT, exercises: ExercisePageDto = EXERCISES): Promise<GzView<unknown>> {
   fake.respondTo('GET /api/workouts/3', 200, JSON.stringify(workout));
-  fake.respondTo('GET /api/exercises', 200, JSON.stringify(EXERCISES));
+  fake.respondTo('GET /api/exercises', 200, JSON.stringify(exercises));
   const view = mount<GzView<unknown>>('gz-workout-detail', { 'workout-id': '3' });
   await settle();
   return view;
@@ -516,6 +516,101 @@ test('toasts a failed move and does not reload', async () => {
   await settle();
   expect(toasts).toEqual(['Exercise in this workout not found']);
   expect(workoutLoads()).toBe(loads);
+});
+
+// Bench and squat are in the workout; of the rest, the chest exercises come first.
+const SWAPPABLE: ExercisePageDto = {
+  ...EXERCISES,
+  items: [
+    ...EXERCISES.items,
+    listedExercise({ id: 4, name: 'Barbell Row', muscleGroup: 'Back' }),
+    listedExercise({ id: 5, name: 'Dips', muscleGroup: 'Chest', kind: 'bodyweight', lastPerformedOn: '2026-09-13' }),
+  ],
+};
+
+function swapButton(view: HTMLElement, exerciseId: number): HTMLButtonElement {
+  return find<HTMLButtonElement>(groupOf(view, exerciseId), testId('swap-exercise'));
+}
+
+function swapDialog(): ShadowRoot {
+  const root = shadow(find(document.body, 'gz-swap-exercise-dialog'));
+  if (!find<HTMLDialogElement>(root, 'dialog').open) {
+    throw new Error('the swap dialog is not open');
+  }
+  return root;
+}
+
+function pick(root: ShadowRoot, exerciseId: number): void {
+  const radio = find<HTMLInputElement>(root, `input[value='${exerciseId}']`);
+  radio.checked = true;
+  radio.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+test('offers no swap on a done workout', async () => {
+  const view = await mountView({ ...WORKOUT, done: true });
+  expect(groupOf(view, 1).querySelector(testId('swap-exercise'))).toBeNull();
+});
+
+test('offers the exercises not in the workout, those of the same muscle group first, and swaps only once one is picked', async () => {
+  const chestBench = { ...BENCH, muscleGroup: 'Chest' as const };
+  const view = await mountView({ ...WORKOUT, exercises: [chestBench, SQUAT] }, SWAPPABLE);
+  swapButton(view, 1).click();
+  await settle();
+  const root = swapDialog();
+  expect(find(root, '#title').textContent).toBe('Swap Bench Press');
+  expect(Array.from(root.querySelectorAll(testId('pick-name'))).map((name) => name.textContent)).toEqual(['Dips', 'Barbell Row']);
+  expect(find<HTMLButtonElement>(root, testId('swap')).disabled).toBe(true);
+  pick(root, 4);
+  expect(find<HTMLButtonElement>(root, testId('swap')).disabled).toBe(false);
+});
+
+test('swaps the picked exercise in, shows the workout it answers without a reload, and opens the new group', async () => {
+  const view = await mountView(WORKOUT, SWAPPABLE);
+  const loads = workoutLoads();
+  const dips = group({
+    exerciseId: 5,
+    exerciseName: 'Dips',
+    kind: 'bodyweight',
+    position: 1,
+    sets: [set({ id: 21, exerciseId: 5, exerciseName: 'Dips', weight: 0 })],
+  });
+  fake.respondTo('POST /api/workouts/3/exercises/1/swap', 200, JSON.stringify({ ...WORKOUT, exercises: [dips, SQUAT] }));
+  swapButton(view, 1).click();
+  await settle();
+  const root = swapDialog();
+  pick(root, 5);
+  find<HTMLButtonElement>(root, testId('swap')).click();
+  await settle();
+  expect(fake.sent('POST /api/workouts/3/exercises/1/swap')).toEqual([{ exerciseId: 5 }]);
+  expect(workoutLoads()).toBe(loads);
+  expect(groups(view).map((item) => item.dataset.exerciseId)).toEqual(['5', '2']);
+  expect(openGroups(view)).toEqual(['5']);
+  expect(document.body.querySelector('gz-swap-exercise-dialog')).toBeNull();
+});
+
+test('sends nothing when the swap is cancelled', async () => {
+  const view = await mountView(WORKOUT, SWAPPABLE);
+  swapButton(view, 1).click();
+  await settle();
+  const root = swapDialog();
+  pick(root, 5);
+  find<HTMLButtonElement>(root, testId('cancel')).click();
+  await settle();
+  expect(fake.requests.filter((request) => request.method === 'POST')).toEqual([]);
+  expect(groups(view).map((item) => item.dataset.exerciseId)).toEqual(['1', '2']);
+});
+
+test('toasts a failed swap and leaves the workout as it was', async () => {
+  const view = await mountView(WORKOUT, SWAPPABLE);
+  fake.respondTo('POST /api/workouts/3/exercises/1/swap', 409, JSON.stringify({ error: '"Dips" has no done sets to copy' }));
+  swapButton(view, 1).click();
+  await settle();
+  const root = swapDialog();
+  pick(root, 5);
+  find<HTMLButtonElement>(root, testId('swap')).click();
+  await settle();
+  expect(toasts).toEqual(['"Dips" has no done sets to copy']);
+  expect(groups(view).map((item) => item.dataset.exerciseId)).toEqual(['1', '2']);
 });
 
 test('applies an updated set without a reload', async () => {
