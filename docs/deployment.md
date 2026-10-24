@@ -26,9 +26,9 @@ the build reads: `src/` other than `*.test.ts`, `package.json`, `bun.lock`, `bun
 always deploys. Pull requests get the `check` job only. Actions are pinned to
 commit SHAs, and CI's Bun comes from `.bun-version`.
 
-The runner's user, `gh-runner`, may run only `/usr/local/bin/gainz-deploy` as `gainz`
-(`deploy/gh-runner.sudoers`), and nothing as root. gainz runs as a systemd user service of `gainz`
-(`deploy/gainz.service`), kept running by lingering.
+The runner's user, `gainz-gh-runner`, may run only `/usr/local/bin/gainz-deploy` as `gainz`
+(`deploy/gainz-gh-runner.sudoers`), and nothing as root. gainz runs as a systemd user service of
+`gainz` (`deploy/gainz.service`), kept running by lingering.
 
 `deploy/gainz-deploy`:
 
@@ -60,7 +60,7 @@ sudo install -o gainz -g gainz -m 0644 deploy/gainz.service /home/gainz/.config/
 sudo systemctl --user -M gainz@ daemon-reload
 sudo systemctl --user -M gainz@ enable gainz
 sudo install -m 0755 deploy/gainz-deploy /usr/local/bin/gainz-deploy
-sudo install -m 0440 deploy/gh-runner.sudoers /etc/sudoers.d/gh-runner
+sudo install -m 0440 deploy/gainz-gh-runner.sudoers /etc/sudoers.d/gainz-gh-runner
 ```
 
 The first deploy creates the release, the database and Bun, and starts the service. CI never
@@ -70,21 +70,21 @@ line, and for the unit also `daemon-reload` and `restart gainz`.
 Then the runner, with a token from _Settings → Actions → Runners → New self-hosted runner_:
 
 ```sh
-sudo useradd --system --create-home --home-dir /var/lib/gh-runner --shell /sbin/nologin gh-runner
-sudo -u gh-runner mkdir /var/lib/gh-runner/actions-runner
-cd /var/lib/gh-runner/actions-runner
-sudo -u gh-runner sh -c 'curl -fsSL <runner tarball URL> | tar -xz'
+sudo useradd --system --create-home --home-dir /var/lib/gainz-gh-runner --shell /sbin/nologin gainz-gh-runner
+sudo -u gainz-gh-runner mkdir /var/lib/gainz-gh-runner/actions-runner
+cd /var/lib/gainz-gh-runner/actions-runner
+sudo -u gainz-gh-runner sh -c 'curl -fsSL <runner tarball URL> | tar -xz'
 sudo ./bin/installdependencies.sh
-sudo -u gh-runner ./config.sh --unattended --url https://github.com/dhardtke/gainz --token <token> \
+sudo -u gainz-gh-runner ./config.sh --unattended --url https://github.com/dhardtke/gainz --token <token> \
   --labels gainz-prod --name "$(hostname)"
-sudo ./svc.sh install gh-runner && sudo ./svc.sh start
+sudo ./svc.sh install gainz-gh-runner && sudo ./svc.sh start
 ```
 
 If the runner service fails with `203/EXEC`, SELinux is blocking `runsvc.sh`:
 
 ```sh
-sudo semanage fcontext -a -t bin_t '/var/lib/gh-runner/actions-runner/runsvc\.sh'
-sudo restorecon -v /var/lib/gh-runner/actions-runner/runsvc.sh
+sudo semanage fcontext -a -t bin_t '/var/lib/gainz-gh-runner/actions-runner/runsvc\.sh'
+sudo restorecon -v /var/lib/gainz-gh-runner/actions-runner/runsvc.sh
 ```
 
 Finally, create the `production` environment (_Settings → Environments_) and restrict it to `main`.
