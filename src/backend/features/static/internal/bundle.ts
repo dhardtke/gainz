@@ -25,7 +25,18 @@ async function inlineStyles(): Promise<Record<string, string>> {
   for await (const entry of new Bun.Glob('**/*.css').scan({ cwd: FRONTEND_DIR })) {
     const path = resolve(FRONTEND_DIR, entry);
     if (isShipped(urlOf(path))) {
-      styles[urlOf(path)] = await Bun.file(path).text();
+      // Deleted since the scan, like a test's scratch sheet under --parallel.
+      const text = await Bun.file(path)
+        .text()
+        .catch((err: unknown) => {
+          if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
+            return null;
+          }
+          throw err;
+        });
+      if (text !== null) {
+        styles[urlOf(path)] = text;
+      }
     }
   }
   for (const url of vendorUrls().filter((url) => url.endsWith('.css'))) {
