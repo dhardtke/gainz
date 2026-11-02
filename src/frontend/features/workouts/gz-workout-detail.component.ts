@@ -5,7 +5,7 @@ import { formatDate, formatVolume, plural, relativeDay } from '../../ui/format.t
 import { navigate } from '../../app/router.ts';
 import type { ExerciseWithStatsDto } from '../../../shared/dto/exercise.ts';
 import type { LiftSetDto } from '../../../shared/dto/set.ts';
-import type { EditWorkoutDto, MoveDirection, WorkoutDto, WorkoutExerciseDto, WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
+import type { EditWorkoutDto, WorkoutDto, WorkoutExerciseDto, WorkoutWithExercisesDto } from '../../../shared/dto/workout.ts';
 import type { ExerciseId } from '../../../shared/flavors.ts';
 import { type GzAddSetFormComponent, LastSessionCache } from './internal/gz-add-set-form.component.ts';
 import { type GzSetRowComponent, SET_UPDATED_EVENT } from './internal/gz-set-row.component.ts';
@@ -124,7 +124,11 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     for (const group of workout.exercises) {
       const summary = this.$(`details[data-exercise-id='${group.exerciseId}'] > summary`);
       if (summary) {
+        const menu = summary.querySelector('.group-menu');
         summary.innerHTML = String(this.#groupHeadTemplate(group));
+        if (menu) {
+          summary.append(menu);
+        }
       }
     }
     for (const row of this.$$<GzSetRowComponent>('gz-set-row')) {
@@ -164,6 +168,11 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
   }
 
   override async handleAction(action: string, element: HTMLElement): Promise<void> {
+    const menu = element.closest<HTMLElement>('[popover]');
+    if (menu?.matches(':popover-open') === true) {
+      menu.hidePopover();
+    }
+
     if (action === 'move-exercise-up' || action === 'move-exercise-down') {
       const exerciseId = Number(element.dataset.exerciseId);
       const direction = action === 'move-exercise-up' ? 'up' : 'down';
@@ -175,7 +184,7 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
         return;
       }
       this.#showWorkout(() => moved);
-      this.#focusMove(exerciseId, direction);
+      this.$<HTMLButtonElement>(`[popovertarget='exercise-menu-${exerciseId}']`)?.focus();
       return;
     }
 
@@ -271,13 +280,6 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
       .map((group) => `${group.exerciseName} — ${group.sets.filter((set) => set.done).length}/${group.sets.length} sets`);
   }
 
-  #focusMove(exerciseId: ExerciseId, direction: MoveDirection): void {
-    const arrow = (to: MoveDirection): HTMLButtonElement | null =>
-      this.$<HTMLButtonElement>(`[data-action='move-exercise-${to}'][data-exercise-id='${exerciseId}']`);
-    const moved = arrow(direction);
-    (moved?.disabled === false ? moved : arrow(direction === 'up' ? 'down' : 'up'))?.focus();
-  }
-
   async #saveDetails(form: HTMLFormElement): Promise<void> {
     const workout = this.data?.workout;
     if (!workout || !form.reportValidity()) {
@@ -322,6 +324,18 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
           this.#openExerciseId = id;
         } else if (this.#openExerciseId === id) {
           this.#openExerciseId = null;
+        }
+      });
+    }
+
+    // A click in a group's menu would toggle the group. Spared: a link, which gz-app no longer routes once
+    // default-prevented, and the trigger, which would no longer open the menu.
+    for (const menu of this.$$('.group-menu')) {
+      menu.addEventListener('click', (event) => {
+        if (
+          !event.composedPath().some((target) => target instanceof HTMLAnchorElement || (target instanceof HTMLElement && target.hasAttribute('popovertarget')))
+        ) {
+          event.preventDefault();
         }
       });
     }
@@ -501,47 +515,42 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
     const { exerciseId: id, exerciseName: name } = group;
     return html`
       <details name="exercises" data-exercise-id="${id}" data-testid="exercise-group" ${id === open ? 'open' : ''}>
-        <summary>${this.#groupHeadTemplate(group)}</summary>
+        <summary>
+          ${this.#groupHeadTemplate(group)}
+          <ot-dropdown class="group-menu">
+            <button type="button" class="outline small" popovertarget="exercise-menu-${id}" aria-label="Actions for ${name}" data-testid="group-menu">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <circle cx="5" cy="12" r="2" />
+                <circle cx="12" cy="12" r="2" />
+                <circle cx="19" cy="12" r="2" />
+              </svg>
+            </button>
+            <menu popover id="exercise-menu-${id}">
+              ${
+                first
+                  ? ''
+                  : html`<button role="menuitem" class="ghost" data-action="move-exercise-up" data-exercise-id="${id}" data-testid="move-up">Move up</button>`
+              }
+              ${
+                last
+                  ? ''
+                  : html`<button role="menuitem" class="ghost" data-action="move-exercise-down" data-exercise-id="${id}" data-testid="move-down">
+                      Move down
+                    </button>`
+              }
+              ${
+                done
+                  ? ''
+                  : html`<button role="menuitem" class="ghost" data-action="swap-exercise" data-exercise-id="${id}" data-testid="swap-exercise">
+                      Swap exercise
+                    </button>`
+              }
+              <a role="menuitem" class="button ghost" href="/exercises/${id}" data-testid="history-link">History</a>
+            </menu>
+          </ot-dropdown>
+        </summary>
         <div class="sets">
           ${group.sets.map((set, index) => html`<gz-set-row data-id="${set.id}" data-index="${index + 1}" data-testid="set-row"></gz-set-row>`)}
-        </div>
-        <div class="group-actions">
-          <fieldset class="group move">
-            <button
-              class="outline"
-              data-action="move-exercise-up"
-              data-exercise-id="${id}"
-              data-testid="move-up"
-              aria-label="Move ${name} up"
-              ${first ? 'disabled' : ''}
-            >
-              ▲
-            </button>
-            <button
-              class="outline"
-              data-action="move-exercise-down"
-              data-exercise-id="${id}"
-              data-testid="move-down"
-              aria-label="Move ${name} down"
-              ${last ? 'disabled' : ''}
-            >
-              ▼
-            </button>
-          </fieldset>
-          ${
-            done
-              ? ''
-              : html`<button
-                  class="outline swap"
-                  data-action="swap-exercise"
-                  data-exercise-id="${id}"
-                  data-testid="swap-exercise"
-                  title="Replace ${name} with another exercise"
-                >
-                  Swap
-                </button>`
-          }
-          <a class="button outline" href="/exercises/${id}" data-testid="history-link">History →</a>
         </div>
       </details>
     `;

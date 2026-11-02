@@ -406,16 +406,27 @@ test("sums up each group in its header's muted stats and its progress in a badge
   expect(find<HTMLElement>(groupOf(view, 2), testId('progress')).dataset.variant).toBe('success');
 });
 
-test('keeps buttons and links out of the group headers', async () => {
+test("keeps a group header's buttons and links in its menu", async () => {
   const view = await mountView();
-  expect(shadow(view).querySelectorAll('summary :is(button, a)')).toHaveLength(0);
+  const controls = Array.from(shadow(view).querySelectorAll('summary :is(button, a)'));
+  expect(controls.length).toBeGreaterThan(0);
+  expect(controls.every((control) => control.closest('.group-menu'))).toBe(true);
 });
 
-test("links each group's footer to the exercise's history", async () => {
+test("cancels a click in a group's menu, so the group does not toggle, but not on its trigger", async () => {
+  const view = await mountView();
+  const click = (target: Element): boolean => !target.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true, cancelable: true }));
+  expect(click(find(groupOf(view, 1), 'menu[popover]'))).toBe(true);
+  expect(click(find(groupOf(view, 1), testId('group-menu')))).toBe(false);
+  expect(click(find(groupOf(view, 1), 'summary .exercise-name'))).toBe(false);
+});
+
+test("links each group's menu to the exercise's history", async () => {
   const view = await mountView();
   const link = find<HTMLAnchorElement>(groupOf(view, 1), testId('history-link'));
   expect(link.getAttribute('href')).toBe('/exercises/1');
-  expect(link.textContent).toBe('History →');
+  expect(link.closest('menu[popover]')?.id).toBe('exercise-menu-1');
+  expect(find(groupOf(view, 1), testId('group-menu')).getAttribute('popovertarget')).toBe('exercise-menu-1');
 });
 
 test('first opens the exercise of the first set not done', async () => {
@@ -474,15 +485,16 @@ function workoutLoads(): number {
   return fake.requests.filter((request) => request.method === 'GET' && request.url === '/api/workouts/3').length;
 }
 
-test('disables ▲ on the first exercise and ▼ on the last', async () => {
+function moves(view: HTMLElement, exerciseId: number): string[] {
+  return Array.from(groupOf(view, exerciseId).querySelectorAll<HTMLElement>("[data-action^='move-exercise']")).map((item) => item.dataset.testid ?? '');
+}
+
+test('offers no move up on the first exercise and no move down on the last', async () => {
   const view = await mountView();
-  expect([1, 2].map((id) => [arrow(view, id, 'up').disabled, arrow(view, id, 'down').disabled])).toEqual([
-    [true, false],
-    [false, true],
-  ]);
+  expect([moves(view, 1), moves(view, 2)]).toEqual([['move-down'], ['move-up']]);
 });
 
-test('moves an exercise up, shows the order it answers without a reload, keeps the open one open and focus on the moved arrow', async () => {
+test("moves an exercise up, shows the order it answers without a reload, keeps the open one open and focus on the group's menu", async () => {
   const view = await mountView();
   setOpen(groupOf(view, 2), true);
   const loads = workoutLoads();
@@ -503,8 +515,8 @@ test('moves an exercise up, shows the order it answers without a reload, keeps t
   expect(workoutLoads()).toBe(loads);
   expect(groups(view).map((item) => item.dataset.exerciseId)).toEqual(['2', '1']);
   expect(openGroups(view)).toEqual(['2']);
-  expect(arrow(view, 2, 'up').disabled).toBe(true);
-  expect(shadow(view).activeElement).toBe(arrow(view, 2, 'down'));
+  expect(moves(view, 2)).toEqual(['move-down']);
+  expect(shadow(view).activeElement).toBe(find(groupOf(view, 2), testId('group-menu')));
 });
 
 test('toasts a failed move and does not reload', async () => {

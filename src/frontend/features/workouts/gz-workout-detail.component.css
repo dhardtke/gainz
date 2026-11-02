@@ -69,6 +69,22 @@ summary {
   & .group-stats {
     flex: none;
   }
+
+  /* As tall as the progress badge beside it, by the badge's own padding. */
+  & .group-menu {
+    display: flex;
+    flex: none;
+
+    & > button {
+      position: relative;
+      padding-block: calc(var(--space-1) / 2);
+    }
+
+    & svg {
+      width: auto;
+      height: 1lh;
+    }
+  }
 }
 
 .sets {
@@ -81,41 +97,27 @@ summary {
   }
 }
 
-.group-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  margin: 0;
-  padding: var(--space-3) var(--space-4);
-  border-top: 1px solid var(--border);
-
-  /* Beside the arrows, leaving the history link at the end. */
-  & .swap {
-    margin-inline-end: auto;
-  }
-
-  & .move {
-    margin: 0;
-
-    /* Oat joins the corners of grouped buttons but not their shared border, as it does for inputs. */
-    & > button:first-child {
-      border-inline-end-color: transparent;
-    }
-  }
-}
-
 @media (max-width: 720px) {
   summary {
     flex-wrap: wrap;
 
     & .exercise-name {
-      flex-basis: calc(100% - 2em - 2em - var(--space-2));
+      flex-basis: calc(100% - 2em - 2em - 2.75rem - 2 * var(--space-2));
     }
 
     & :is(.group-stats, .badge) {
       order: 1;
+    }
+
+    /* Kept badge-sized; an invisible margin around it still makes the 44px touch target. */
+    & .group-menu > button {
+      min-height: 0;
+
+      &::before {
+        content: "";
+        position: absolute;
+        inset: min(0px, (100% - 2.75rem) / 2);
+      }
     }
   }
 }
