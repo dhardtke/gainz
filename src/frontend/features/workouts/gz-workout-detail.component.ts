@@ -541,7 +541,7 @@ export class GzWorkoutDetailComponent extends GzView<WorkoutDetailData> {
                   Swap
                 </button>`
           }
-          <a class="button outline" href="/exercises/${id}" data-testid="history-link">Exercise history →</a>
+          <a class="button outline" href="/exercises/${id}" data-testid="history-link">History →</a>
         </div>
       </details>
     `;

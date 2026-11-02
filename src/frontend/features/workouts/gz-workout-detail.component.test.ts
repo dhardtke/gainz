@@ -415,7 +415,7 @@ test("links each group's footer to the exercise's history", async () => {
   const view = await mountView();
   const link = find<HTMLAnchorElement>(groupOf(view, 1), testId('history-link'));
   expect(link.getAttribute('href')).toBe('/exercises/1');
-  expect(link.textContent).toBe('Exercise history →');
+  expect(link.textContent).toBe('History →');
 });
 
 test('first opens the exercise of the first set not done', async () => {
