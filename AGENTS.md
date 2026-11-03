@@ -5,8 +5,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```sh
-bun install              # deps (Oat + dev types/tooling)
-bun start                # serve API + frontend on PORT (default 3000)
 bun run start:dev        # same, with --watch
 bun run seed             # empty the DB and refill it with sample workouts
 bun run migrate          # apply pending schema migrations, then exit
@@ -16,9 +14,6 @@ bun run build            # one-file deployment build: dist/gainz.js (+ .map)
 bun test --parallel      # the test suite against in-memory SQLite
 bun test --parallel src/backend/features/workouts/workout.routes.test.ts # one file
 bun test --parallel -t "health" # one test / describe block by name
-bun run typecheck        # typechecking (backend + frontend)
-bun run lint             # linting
-bun run fmt              # format (fmt:check for CI)
 ```
 
 The database lives at `data/gainz.sqlite` (override with `GAINZ_DB`), is created on first run,
@@ -40,15 +35,20 @@ the repository as it stood on the date it carries, so an old path in one is a re
 
 Tests sit beside the module they exercise. `bun run lint` enforces the import boundaries.
 
-Details live in `docs/`:
+Details live in `docs/`. Read the ones a task touches before starting it:
 
-- `docs/backend.md` — features, ports/internal, routes, repositories, migrations, the data model, tests
+- `docs/coding-guidelines.md` — pinning, quote style, comments, American English, commits on `main`.
+  Read before writing any code, prose or commit.
+- `docs/backend.md` — features, ports/internal, routes, repositories, migrations, the data model, tests.
+  Read before changing anything under `src/backend/` or `src/shared/`.
 - `docs/frontend.md` — features and facades, components, import boundaries, loading, theming, tests, and
-  why a module's URL is its path
-- `docs/checklists.md` — what adding an endpoint, a migration, a component or a page touches
-- `docs/coding-guidelines.md` — pinning, quote style, comments, American English, commits on `main`
-- `docs/deployment.md` — the CI workflow, the self-hosted runner and its privileges, server setup
-- `docs/styling-guidelines.md` — Oat, no CSS in JavaScript, no font sizes
+  why a module's URL is its path. Read before changing anything under `src/frontend/`.
+- `docs/styling-guidelines.md` — Oat, no CSS in JavaScript, no font sizes. Read before touching markup
+  or CSS.
+- `docs/checklists.md` — what adding an endpoint, a migration, a component or a page touches. Read
+  before adding one of those, and its "Before committing" list before every commit.
+- `docs/deployment.md` — the CI workflow, the self-hosted runner and its privileges, server setup.
+  Read before changing `.github/`, the build, or anything about how gainz runs in production.
 
 That list is the only index in the repository: a document added to `docs/` is added here in the
 same commit.
