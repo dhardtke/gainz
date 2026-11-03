@@ -4,5 +4,20 @@
   },
   "env": {
     "CLAUDE_CODE_USE_POWERSHELL_TOOL": "1"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun \"$CLAUDE_PROJECT_DIR/src/scripts/pre-commit-checks.ts\"",
+            "timeout": 600,
+            "statusMessage": "Running fmt:check, lint, typecheck and tests before commit..."
+          }
+        ]
+      }
+    ]
   }
 }

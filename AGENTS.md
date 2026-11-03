@@ -31,7 +31,9 @@ the repository as it stood on the date it carries, so an old path in one is a re
 - `src/frontend/` — no-build-step frontend of TypeScript ES modules and custom elements, organized
   by feature like the backend
 - `src/shared/` — types-only wire contract (DTOs, flavored ids and dates) both halves import
-- `src/scripts/` — the `migrate`, `seed`, `build`, `hash-password` and `screenshots` entry points
+- `src/scripts/` — the `migrate`, `seed`, `build`, `hash-password` and `screenshots` entry points, plus
+  `pre-commit-checks`, a Claude Code hook in `.claude/settings.json` that blocks `git commit` until
+  `fmt:check`, `lint`, `typecheck` and the tests pass
 
 Tests sit beside the module they exercise. `bun run lint` enforces the import boundaries.
 
